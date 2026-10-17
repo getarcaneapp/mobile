@@ -1,7 +1,3 @@
-/**
- * Android rendering of `ActivityDetailView` + `ActivityMessageRow`
- * (Views/Activities/ActivitiesView.swift) in Material 3.
- */
 import { Stack } from 'expo-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';

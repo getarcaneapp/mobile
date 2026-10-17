@@ -1,10 +1,3 @@
-/**
- * SwiftUI-tree ports of the `Motion.swift` modifiers for @expo/ui trees.
- * Every export here returns @expo/ui swift-ui elements or modifiers (no Host);
- * compose them inside an existing SwiftUI tree. iOS only.
- *
- * SwiftUI-tree.
- */
 import { Group, ZStack } from '@expo/ui/swift-ui';
 import {
 	Animation,
@@ -24,9 +17,7 @@ import { Motion, type MotionToken } from '@/theme/tokens';
 import { useReduceMotion } from './accessibility';
 import { seenEntranceIdentities } from './motion-views';
 
-/** A Motion token as a SwiftUI `Animation`, with the same curve the Swift app uses. */
 export function swiftAnimation(token: MotionToken): ChainableAnimationType {
-	// These two are `.interpolatingSpring(duration:)` in Motion.swift.
 	if (token === Motion.overlay) return Animation.interpolatingSpring({ duration: 0.3 });
 	if (token === Motion.toast) return Animation.interpolatingSpring({ duration: 0.35, bounce: 0 });
 	if (token.type === 'spring') {
@@ -45,10 +36,6 @@ export function swiftAnimation(token: MotionToken): ChainableAnimationType {
 	}
 }
 
-/**
- * `.motionAwareAnimation(_:value:)`: an implicit animation that disappears when
- * Reduce Motion is on. Returns an empty list in that case so it can be spread.
- */
 export function motionAwareAnimation(
 	token: MotionToken,
 	value: number | boolean,
@@ -57,14 +44,12 @@ export function motionAwareAnimation(
 	return reduceMotion ? [] : [animation(swiftAnimation(token), value)];
 }
 
-/** A stable number for a string, so string keys can drive `animation(_:value:)`. */
 export function hashKey(key: string): number {
 	let hash = 5381;
 	for (let i = 0; i < key.length; i++) hash = ((hash << 5) + hash + key.charCodeAt(i)) | 0;
 	return hash;
 }
 
-/** Port of `.cardEntrance(id:index:)`: one-shot 2% scale + fade, latched per identity for the session. */
 export function CardEntrance({
 	id,
 	index = 0,
@@ -97,7 +82,6 @@ export function CardEntrance({
 	);
 }
 
-/** Port of `.staggeredReveal(index:)`: rise + fade that replays on every appear. */
 export function StaggeredReveal({ index, children }: { index: number; children: ReactNode }) {
 	const reduceMotion = useReduceMotion();
 	const [revealed, setRevealed] = useState(false);
@@ -118,20 +102,10 @@ export function StaggeredReveal({ index, children }: { index: number; children: 
 	);
 }
 
-/**
- * Port of `.scrollEdgeFade(scales:)`. @expo/ui has no `scrollTransition`, so in
- * SwiftUI trees this renders its content unchanged. Use `ScrollEdgeFade` from
- * `motion-views` for RN scroll views.
- */
 export function ScrollEdgeFadeSwiftUI({ children }: { scales?: boolean; children: ReactNode }) {
 	return <>{children}</>;
 }
 
-/**
- * Port of `LoadingCrossfade`. The default SwiftUI insertion/removal transition
- * is `.opacity`, so an implicit `Motion.state` animation on the ZStack gives the
- * same cross-fade. Set `animatesTransition` false when a branch is a `List`.
- */
 export function LoadingCrossfade({
 	showSkeleton,
 	animatesTransition = true,
@@ -152,10 +126,5 @@ export function LoadingCrossfade({
 	);
 }
 
-/**
- * `PressableButtonStyle` / `CardRowLinkStyle` for SwiftUI-tree buttons. @expo/ui
- * can't author a custom `ButtonStyle` (no access to `isPressed`), so both map to
- * `.plain`, which keeps the system press dim but not the scale.
- */
 export const pressableButtonStyle = (): ModifierConfig => buttonStyle('plain');
 export const cardRowLinkStyle = (): ModifierConfig => buttonStyle('plain');

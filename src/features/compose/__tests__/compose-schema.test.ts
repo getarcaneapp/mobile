@@ -1,4 +1,3 @@
-// Port of ComposeSchemaTests.swift and ComposeArcaneMetadataTests.swift.
 import assert from 'node:assert/strict';
 import { describe, it } from 'vite-plus/test';
 
@@ -191,7 +190,6 @@ describe('Compose schema field suggestions', () => {
 			...makeSettingDraft('gpus', [...service, k('gpus')], true),
 			kind: 'sequence' as const
 		};
-		// An enum on the alternative string branch must not reject a list.
 		addingDraft(gpu, 'services: {app: {image: alpine}}\n', service);
 	});
 

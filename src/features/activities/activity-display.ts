@@ -1,8 +1,3 @@
-/**
- * Port of Views/Activities/ActivityDisplay.swift plus the value types from
- * Services/ActivityCenterStore.swift (`ActivityCenterItem`,
- * `ActivityBatchSummary`, `ActivityHistoryClearFilter`). Pure TS.
- */
 import { EnvironmentID } from '@/sdk/client/environment';
 import type {
 	Activity,
@@ -13,8 +8,6 @@ import type {
 import { parseArcaneDate } from '@/sdk/models/base/date';
 import { systemColors } from '@/theme/colors';
 import { relativeTimeFormat } from '@/core/relative-time';
-
-// MARK: - ActivityStatusFilter
 
 export type ActivityStatusFilter =
 	| 'all'
@@ -94,14 +87,10 @@ export const ActivityStatusFilter = {
 	}
 } as const;
 
-// MARK: - Strings
-
-/** Swift `String.capitalized` (per word). */
 export function capitalizedWords(text: string): string {
 	return text.replace(/\S+/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
 }
 
-/** `String.activityDisplayName`: `image_pull` → `Image Pull`. */
 export function activityDisplayName(raw: string): string {
 	return raw
 		.split('_')
@@ -110,19 +99,14 @@ export function activityDisplayName(raw: string): string {
 		.join(' ');
 }
 
-/** `localizedStandardCompare` ascending, deduplicated, empties dropped. */
 export function sortedUnique(values: readonly string[]): string[] {
 	return [...new Set(values.filter((value) => value !== ''))].sort((a, b) =>
 		a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
 	);
 }
 
-// MARK: - Tints
-
-/** A SwiftUI color: a system color hex, or `.secondary`. */
 export type ActivityTint = 'secondary' | (string & {});
 
-/** `ActivityStatus.activityTint`. */
 export function activityStatusTint(status: ActivityStatus): ActivityTint {
 	switch (status) {
 		case 'running':
@@ -138,9 +122,6 @@ export function activityStatusTint(status: ActivityStatus): ActivityTint {
 	}
 }
 
-// MARK: - Activity extensions
-
-/** Milliseconds since 1970, 0 when the timestamp doesn't parse. */
 export function dateMs(value: string | undefined): number {
 	return parseArcaneDate(value)?.getTime() ?? 0;
 }
@@ -178,7 +159,6 @@ export const ActivityDisplay = {
 		return trimmedEnvironment === '' ? EnvironmentID.localDocker : trimmedEnvironment;
 	},
 
-	/** `sortTime` in ms. */
 	sortTime(this: void, activity: Activity): number {
 		return dateMs(activity.updatedAt ?? activity.endedAt ?? activity.startedAt);
 	},
@@ -198,13 +178,11 @@ export const ActivityDisplay = {
 		return 'clock.arrow.circlepath';
 	},
 
-	/** `ActivityType.displayName`. */
 	typeDisplayName(this: void, activity: Activity): string {
 		return activityDisplayName(activity.type);
 	}
 } as const;
 
-/** `ActivityMessageLevel.icon` / `.tint`. */
 export function messageLevelIcon(level: ActivityMessageLevel): string {
 	switch (level) {
 		case 'error':
@@ -231,15 +209,11 @@ export function messageLevelTint(level: ActivityMessageLevel): ActivityTint {
 	}
 }
 
-/** `ActivityStartedBy.displayLabel`. */
 export function startedByLabel(startedBy: ActivityStartedBy): string {
 	const trimmed = startedBy.displayName?.trim() ?? '';
 	return trimmed === '' ? startedBy.username : trimmed;
 }
 
-// MARK: - Formatting
-
-/** `Text(date, format: .relative(presentation: .named))`. */
 export function relativeNamed(ms: number, now = Date.now()): string {
 	const seconds = Math.round((ms - now) / 1000);
 	const format = relativeTimeFormat();
@@ -253,7 +227,6 @@ export function relativeNamed(ms: number, now = Date.now()): string {
 	return format.format(Math.round(seconds / (86400 * 365)), 'year');
 }
 
-/** `ActivityDetailView.formatDuration`. */
 export function formatDuration(durationMs: number): string {
 	const seconds = Math.max(0, Math.trunc(durationMs / 1000));
 	if (seconds < 60) return `${seconds}s`;
@@ -264,8 +237,6 @@ export function formatDuration(durationMs: number): string {
 	return `${hours}h ${minutes % 60}m`;
 }
 
-// MARK: - ActivityCenterItem / ActivityBatchSummary
-
 export type ActivityBatchSummary = {
 	id: string;
 	activities: Activity[];
@@ -275,7 +246,6 @@ export type ActivityCenterItem =
 	| { kind: 'activity'; activity: Activity }
 	| { kind: 'batch'; batch: ActivityBatchSummary };
 
-/** `ActivityCenterItem.activity(activity).id`. */
 export function activityItemKey(activity: Activity): string {
 	return `activity-${ActivityDisplay.sourceEnvironmentKey(activity)}-${activity.id}`;
 }
@@ -348,7 +318,6 @@ export const ActivityBatch = {
 	}
 } as const;
 
-/** Port of `ActivityHistoryClearFilter.retainingActiveActivities`. */
 export function retainingActiveActivities(
 	activities: readonly Activity[],
 	clearedEnvironmentIDs: ReadonlySet<string>

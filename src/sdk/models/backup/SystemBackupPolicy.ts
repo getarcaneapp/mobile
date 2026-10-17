@@ -1,4 +1,3 @@
-/** Port of Models/Backup/SystemBackupPolicy.swift. */
 import type { SystemBackupRun } from './SystemBackupRun';
 
 export interface SystemBackupPolicy {

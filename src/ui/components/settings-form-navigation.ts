@@ -1,9 +1,3 @@
-/**
- * Navigation for the shared settings form: `SettingFieldRow`'s
- * `NavigationLink { ContainerMultiSelectView(...) }` becomes a push of
- * `environment/[id]/excluded-containers` on the current tab's stack. The
- * draft travels by its registry token.
- */
 import { useRouter, useSegments, type Href } from 'expo-router';
 import { useCallback } from 'react';
 

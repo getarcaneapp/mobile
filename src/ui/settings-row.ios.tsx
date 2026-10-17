@@ -19,7 +19,6 @@ type SettingsRowProps = {
 	titleColor?: string;
 };
 
-/** Port of `SettingsRow` (SettingsRows.swift). */
 export function SettingsRow({ title, subtitle, systemImage, color, titleColor }: SettingsRowProps) {
 	return (
 		<HStack spacing={12}>
@@ -46,11 +45,6 @@ export function SettingsRow({ title, subtitle, systemImage, color, titleColor }:
 	);
 }
 
-/**
- * Trailing `chevron.right` disclosure. Uses the semantic `tertiaryLabel` color
- * (not hierarchical `.tertiary`) so it stays grey like a NavigationLink chevron
- * even inside a tinted (non-plain) Button.
- */
 export function DisclosureChevron() {
 	return (
 		<Image

@@ -1,4 +1,3 @@
-/** Port of `BuildSettingsView` (Views/Settings/System/BuildSettingsView.swift). */
 import { Host } from '@/ui/host';
 import { Form, Label, Section, Text } from '@expo/ui/swift-ui';
 import { foregroundStyle, refreshable } from '@expo/ui/swift-ui/modifiers';

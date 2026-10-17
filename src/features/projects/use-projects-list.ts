@@ -1,9 +1,3 @@
-/**
- * The platform-neutral model behind ProjectsView.swift: loading and
- * pagination (one or all environments), search/filter/sort, sections, pins,
- * delete, archived/templates/create navigation, and the All Environments
- * maintenance actions. The `.ios` / `.android` screens only render it.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
@@ -54,11 +48,9 @@ let listCounter = 0;
 export type ProjectsListProps = {
 	environmentID: EnvironmentID;
 	environmentName: string;
-	/** All Environments preview: list and act on projects from every enabled environment. */
 	allEnvironments?: boolean;
 };
 
-/** `invalidateProjectCaches(_:)`. */
 export function invalidateProjectCaches(environmentID: EnvironmentID, includeContainers = false) {
 	const client = useClientManager.getState().client;
 	const cached = cachedClient();
@@ -92,18 +84,14 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 	const [pendingMaintenance, setPendingMaintenance] = useState<AllEnvironmentsMaintenanceAction>();
 	const isOperationRunning = useAllEnvironmentsOperationStore((s) => s.isRunning);
 
-	/** The environments this list covers, known before the first load finishes. */
 	const listEnvironments: ListEnvironment[] = useMemo(
 		() => (allEnvironments ? snapshot.environments : [{ id: environmentID }]),
 		[allEnvironments, snapshot.environments, environmentID]
 	);
 
-	// Keep the filter sheet's Environment section + tag catalog sources in sync with the list.
 	useEffect(() => {
 		updateFilter(listKey, { environments: snapshot.environments, listEnvironments });
 	}, [listKey, snapshot.environments, listEnvironments, updateFilter]);
-
-	// MARK: Loading
 
 	const tagsRef = useRef(filter.tagFilter);
 	tagsRef.current = filter.tagFilter;
@@ -136,7 +124,6 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 		if (fetch) await list.loadMore(fetch);
 	}, [projectsPage, list]);
 
-	// Reappearing (back from a detail) refreshes every loaded page in place; the first appear loads page one.
 	useFocusEffect(
 		useCallback(() => {
 			void loadProjects(true);
@@ -152,8 +139,6 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 	useOnChange(mutationVersion, () => void loadProjects(true));
 	useOnChange(filter.tagFilter.join(','), () => void loadProjects());
 	useOnChange(client, () => void loadProjects());
-
-	// MARK: Sections
 
 	const pinnedIDs = useMemo(() => {
 		void pinVersion;
@@ -184,26 +169,20 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 		]
 	);
 
-	// MARK: Permissions
-
 	useClientManager((s) => s.accessGeneration);
 	const canBrowseTemplates =
 		hasPermission(Permission.Templates.list, null) &&
 		hasPermission(Permission.Templates.read, null);
-	/** Environments the user can create projects in. */
 	const createEnvironments = listEnvironments.filter((e) =>
 		hasPermission(Permission.Projects.create, e.id)
 	);
 	const enabledEnvironments = environments.filter((e) => e.enabled);
-
-	// MARK: Row actions
 
 	const togglePin = useCallback((item: ProjectItem) => {
 		lightHaptic();
 		toggleEnvironmentItemPin(item, 'project');
 	}, []);
 
-	/** Lets the swipe row settle before the row moves sections. */
 	const togglePinAfterSwipe = useCallback(
 		(item: ProjectItem) => setTimeout(() => togglePin(item), 250),
 		[togglePin]
@@ -228,8 +207,6 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 		}
 	};
 
-	// MARK: Confirmations
-
 	useItemDeleteConfirmation(pendingDelete, setPendingDelete, (item) => ({
 		title: 'Delete Project',
 		message: 'Remove the project from Arcane, or also remove its files from disk.',
@@ -241,7 +218,6 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 		dismissOnConfirm: false
 	}));
 
-	// `.alert("Couldn't Delete Project", isPresented:)`.
 	useEffect(() => {
 		if (actionErrorMessage === undefined) return;
 		Alert.alert(
@@ -272,12 +248,10 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 		loadProjects,
 		loadMore,
 		refresh: () => loadProjects(),
-		// Row
 		openDetail: (item: ProjectItem) => nav.openDetail(item.environmentID, item.value),
 		togglePin,
 		togglePinAfterSwipe,
 		requestDelete: setPendingDelete,
-		// Toolbar
 		canBrowseTemplates,
 		openTemplates: nav.openTemplates,
 		listEnvironments,

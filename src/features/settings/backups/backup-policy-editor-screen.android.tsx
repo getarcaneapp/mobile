@@ -1,4 +1,3 @@
-/** Android rendering of `BackupPolicyEditor` (BackupPolicyEditor.swift). */
 import { FormNumberField, FormPicker, FormTextField } from '@/ui/components/form-fields';
 
 import { M3Section, SwitchRow, TextButtonRow } from '../shared/android-material';

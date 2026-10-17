@@ -1,9 +1,3 @@
-/**
- * Small Material 3 building blocks for the Containers Android screens:
- * radio groups, switch rows, text fields, labeled values, and section text.
- *
- * Standalone (RN views).
- */
 import type { ReactNode } from 'react';
 import { Pressable, Text, TextInput, View, type KeyboardTypeOptions } from 'react-native';
 
@@ -180,7 +174,6 @@ export function M3TextField({
 					}
 				]}
 			/>
-			{/* Outlined text field label: floats into the border notch once there is a value. */}
 			{value ? (
 				<Text
 					pointerEvents="none"
@@ -203,7 +196,6 @@ export function M3TextField({
 	);
 }
 
-/** `LabeledContent`: title left, value right. */
 export function ValueRow({
 	title,
 	value,
@@ -278,7 +270,6 @@ export function TextButtonRow({
 	);
 }
 
-/** `ContentUnavailableView` (+ optional action) for Android screens. */
 export function CenteredMessage({
 	icon,
 	title,

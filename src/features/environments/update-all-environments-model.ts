@@ -1,10 +1,3 @@
-/**
- * State + networking for `UpdateAllEnvironmentsView`
- * (Views/Environments/UpdateAllEnvironmentsView.swift), shared by both platforms.
- *
- * All-environments Arcane self-upgrade: online remote agents are upgraded
- * first, then the manager itself restarts.
- */
 import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -37,7 +30,6 @@ export type UpdateAllPhase =
 	| { kind: 'unsupported'; message: string }
 	| { kind: 'failed'; message: string };
 
-/** The manager environment. The server ignores the path segment for these endpoints. */
 const managerEnvID = '0';
 
 export interface ResultCounts {
@@ -76,7 +68,6 @@ export function resultCounts(results: EnvironmentUpdateResult[]): ResultCounts {
 	};
 }
 
-/** Hides digest-style targets (`sha256:…`) that read as noise in the UI. */
 function displayVersion(raw: string | undefined): string | undefined {
 	if (!raw || raw.includes(':') || raw.length > 20) return undefined;
 	return raw;
@@ -93,7 +84,6 @@ export function lastRunSummary(job: EnvironmentUpdateJob): string {
 	return parts.join(' · ');
 }
 
-/** Collapses polling payloads into meaningful presentation changes. */
 export function phaseKey(phase: UpdateAllPhase): number {
 	switch (phase.kind) {
 		case 'loading':
@@ -230,7 +220,6 @@ export function sceneModel(
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** Reads the route's `count` param (pushed by the dashboard's Update All button). */
 export function useUpdateAllEnvironmentsRoute(): { environmentCount: number } {
 	const params = useLocalSearchParams<{ count?: string }>();
 	const parsed = Number.parseInt(params.count ?? '', 10);
@@ -272,8 +261,6 @@ export function useUpdateAllEnvironments({
 		void (async () => {
 			let lastKnown = initialJob;
 			let consecutiveFailures = 0;
-			// ~3 minutes of failed ticks before giving an optimistic verdict —
-			// the manager container replacement can take a while.
 			const maxFailures = 60;
 			while (!isCancelled()) {
 				await sleep(3000);
@@ -290,8 +277,6 @@ export function useUpdateAllEnvironments({
 					setPhase({ kind: 'polling', job });
 				} catch {
 					if (isCancelled()) return;
-					// Expected while the manager replaces itself: connection refused,
-					// 502s from a proxy, or 401s before auth is back.
 					consecutiveFailures += 1;
 					if (consecutiveFailures === 2) setPhase({ kind: 'reconnecting', job: lastKnown });
 					if (consecutiveFailures >= maxFailures) {
@@ -328,7 +313,6 @@ export function useUpdateAllEnvironments({
 		} catch (error) {
 			if (error instanceof ArcaneError) {
 				if (error.kind === 'conflict') {
-					// Someone beat us to it — attach to the job that's already running.
 					await preflight();
 					return;
 				}
@@ -341,7 +325,6 @@ export function useUpdateAllEnvironments({
 					return;
 				}
 				if (error instanceof ArcaneServerError && error.serverMessage !== '') {
-					// Agent-mode servers reject update-all with a 400 explaining it's managed on the manager.
 					setPhase({ kind: 'unsupported', message: error.serverMessage });
 					return;
 				}
@@ -368,14 +351,10 @@ export function useUpdateAllEnvironments({
 				if (startsImmediately) await trigger();
 				else setPhase({ kind: 'ready', lastJob: job });
 			} else {
-				// A job is already running (started here earlier, or from the web UI) —
-				// resume watching it instead of offering a new run.
 				setPhase({ kind: 'polling', job });
 				startPolling(client, job);
 			}
 		} catch (error) {
-			// No job has ever run (also what an old server without the endpoint
-			// returns — the POST disambiguates), or an undecodable payload.
 			if (
 				error instanceof ArcaneError &&
 				(error.kind === 'notFound' || error.kind === 'decoding')

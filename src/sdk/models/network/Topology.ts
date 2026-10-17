@@ -1,6 +1,3 @@
-/** Port of Models/Network/Topology.swift. */
-
-/** TopologyNodeType distinguishes network nodes from container nodes. */
 export type TopologyNodeType = 'network' | 'container';
 
 export const TopologyNodeType = {
@@ -8,7 +5,6 @@ export const TopologyNodeType = {
 	container: 'container'
 } as const satisfies Record<string, TopologyNodeType>;
 
-/** TopologyNodeMetadata carries additional context shown by the UI. */
 export interface TopologyNodeMetadata {
 	driver?: string;
 	scope?: string;
@@ -17,7 +13,6 @@ export interface TopologyNodeMetadata {
 	isDefault?: boolean;
 }
 
-/** TopologyNode is a single node (network or container) in the topology graph. */
 export interface TopologyNode {
 	id: string;
 	name: string;
@@ -31,7 +26,6 @@ export const TopologyNode = {
 	}
 } as const;
 
-/** TopologyEdge is a directed edge from a network node to a container node. */
 export interface TopologyEdge {
 	id: string;
 	source: string;
@@ -40,7 +34,6 @@ export interface TopologyEdge {
 	ipv6Address?: string;
 }
 
-/** NetworkTopology is the full topology graph for a Docker environment. */
 export interface NetworkTopology {
 	nodes: TopologyNode[];
 	edges: TopologyEdge[];

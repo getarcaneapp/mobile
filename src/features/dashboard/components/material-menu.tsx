@@ -1,9 +1,3 @@
-/**
- * Compose `DropdownMenu` anchored to its RN parent — the Android rendering of
- * the dashboard's SwiftUI `.contextMenu`s (opened by a long press).
- *
- * Standalone. Android only (Compose); import it from `.android.tsx` files.
- */
 import { Host } from '@expo/ui';
 import {
 	DropdownMenu,

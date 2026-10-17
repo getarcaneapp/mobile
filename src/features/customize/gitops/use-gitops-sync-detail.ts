@@ -1,4 +1,3 @@
-/** The platform-neutral model behind `GitOpsSyncDetailView` (GitOpsSyncDetailView.swift). */
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -38,7 +37,6 @@ export function useGitOpsSyncDetail() {
 			? GitOpsSyncDetails.fromResource(payload.resource)
 			: GitOpsSyncDetails.fromValues({}, syncID)
 	);
-	/** Raw sync from the last reload; seeds the edit form. */
 	const [resource, setResource] = useState<DynamicResource>();
 	const [runningActionID, setRunningActionID] = useState<string>();
 	const environmentName = useEnvironmentsStore((s) => s.displayName(environmentID));
@@ -64,7 +62,6 @@ export function useGitOpsSyncDetail() {
 		}
 	}, [syncPath]);
 
-	// `.task { await reload() }`.
 	useEffect(() => {
 		void reload();
 	}, [reload]);
@@ -132,7 +129,6 @@ export function useGitOpsSyncDetail() {
 		showToast(Toasts.copied());
 	};
 
-	/** `GitOpsProjectDestination`: the sync's project page. */
 	const openProject = () => {
 		if (sync.projectID === undefined) return;
 		nav.push(`project/${encodeURIComponent(sync.projectID)}`, {
@@ -212,7 +208,6 @@ export function useGitOpsSyncDetail() {
 		shortCommit: GitOpsSyncDetails.shortCommit(sync),
 		commitURL: GitOpsSyncDetails.commitURL(sync),
 		syncIntervalDescription: GitOpsSyncDetails.syncIntervalDescription(sync),
-		/** The project row links to the project page (not for Swarm stacks). */
 		projectLinks: sync.projectID !== undefined && !GitOpsSyncDetails.isSwarmStack(sync),
 		repositoryWebURL,
 		environmentName,

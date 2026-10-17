@@ -1,8 +1,3 @@
-/**
- * Port of `SystemUpgradeView` (Views/Settings/System/SystemUpgradeView.swift).
- * The Dashboard card presents it as a sheet (`NavigationStack` + Done);
- * Environment Detail pushes it (`navigationDestination`).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

@@ -1,4 +1,3 @@
-/** Android rendering of `CreateWebhookView` (WebhooksView.swift). */
 import { Stack } from 'expo-router';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 

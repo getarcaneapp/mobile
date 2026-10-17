@@ -1,4 +1,3 @@
-/** Port of `SystemBackupsView` (SystemBackupsView.swift). */
 import { Host } from '@/ui/host';
 import { ContentUnavailableView, List, Section, Text, VStack } from '@expo/ui/swift-ui';
 import {

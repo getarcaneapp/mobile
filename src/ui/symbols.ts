@@ -1,8 +1,3 @@
-/**
- * SF Symbol → Material Symbol names. Every SF Symbol the app renders must
- * have an entry so Android shows an equivalent glyph. Add entries as screens
- * are ported; `materialSymbol()` falls back to a stripped-down guess.
- */
 export const sfToMaterial: Record<string, string> = {
 	'antenna.radiowaves.left.and.right': 'cell_tower',
 	'app.fill': 'apps',

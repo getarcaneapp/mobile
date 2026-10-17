@@ -1,4 +1,3 @@
-/** Port of `GitOpsSyncDetailView` (GitOpsSyncDetailView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

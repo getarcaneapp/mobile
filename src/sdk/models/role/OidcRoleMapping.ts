@@ -1,4 +1,3 @@
-/** Port of Models/Role/OidcRoleMapping.swift. */
 import type { ISODateString } from '../base/date';
 
 export type OidcRoleMappingSource = 'manual' | 'env';
@@ -6,7 +5,6 @@ export type OidcRoleMappingSource = 'manual' | 'env';
 export const OidcRoleMappingSource = {
 	manual: 'manual',
 	env: 'env',
-	/** Swift `OidcRoleMappingSource(rawValue:)`. */
 	fromRawValue(raw: string): OidcRoleMappingSource | undefined {
 		return raw === 'manual' || raw === 'env' ? raw : undefined;
 	}
@@ -23,7 +21,6 @@ export interface OidcRoleMapping {
 }
 
 export const OidcRoleMapping = {
-	/** Swift `OidcRoleMapping.init(...)`; `source` defaults to `"manual"`. */
 	make(init: {
 		id: string;
 		claimValue: string;

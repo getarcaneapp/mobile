@@ -1,7 +1,3 @@
-/**
- * Android rendering of `VolumeBrowserView` (breadcrumb chips, folder list,
- * Go to Path dialog) and `VolumeFileDetailView` (VolumeBrowserView.swift).
- */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -274,7 +270,6 @@ export function VolumeBrowserScreen() {
 	);
 }
 
-/** Android rendering of `VolumeFileDetailView`. */
 export function VolumeFileDetailScreen() {
 	const {
 		name = '',

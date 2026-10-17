@@ -1,4 +1,3 @@
-/** Android renderings of `CreateAPIKeyView` and `EditAPIKeyView` (CreateAPIKeyView.swift). */
 import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';

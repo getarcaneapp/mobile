@@ -1,8 +1,3 @@
-/**
- * SwiftUI-tree rows shared by the Backups screens: `NavigationLink` rows
- * (plain button + disclosure chevron), the inline error + Retry rows, and the
- * `Form` error text.
- */
 import { Button, HStack, Label, Spacer, Text } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -19,7 +14,6 @@ import { useAccentColor } from '@/theme/accent';
 import { systemColors } from '@/theme/colors';
 import { DisclosureChevron } from '@/ui/settings-row';
 
-/** `NavigationLink { … } label: { … }` with the label as given. */
 export function NavigationRow({ onPress, children }: { onPress: () => void; children: ReactNode }) {
 	return (
 		<Button onPress={onPress} modifiers={[buttonStyle('plain')]}>
@@ -37,7 +31,6 @@ export function NavigationRow({ onPress, children }: { onPress: () => void; chil
 	);
 }
 
-/** `NavigationLink { … } label: { Label(title, systemImage:) }`. */
 export function NavigationLabelRow({
 	title,
 	systemImage,
@@ -56,7 +49,6 @@ export function NavigationLabelRow({
 	);
 }
 
-/** `NavigationLink("title") { … }` (text only). */
 export function NavigationTextRow({ title, onPress }: { title: string; onPress: () => void }) {
 	return (
 		<NavigationRow onPress={onPress}>
@@ -65,7 +57,6 @@ export function NavigationTextRow({ title, onPress }: { title: string; onPress: 
 	);
 }
 
-/** A list `Label` whose icon keeps the accent tint inside a plain button. */
 export function AccentLabel({
 	systemImage,
 	children
@@ -81,12 +72,10 @@ export function AccentLabel({
 	);
 }
 
-/** `Text(message).foregroundStyle(.red)`. */
 export function RedText({ children }: { children: string }) {
 	return <Text modifiers={[foregroundStyle(systemColors.red)]}>{children}</Text>;
 }
 
-/** `if let errorMessage { Text(errorMessage).foregroundStyle(.red); Button("Retry") { … } }`. */
 export function ErrorRetryRows({
 	message,
 	onRetry

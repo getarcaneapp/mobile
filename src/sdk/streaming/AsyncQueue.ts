@@ -1,7 +1,3 @@
-/**
- * Single-consumer async queue backing push-based streams (Swift
- * `AsyncThrowingStream` with a buffering policy).
- */
 export type BufferingPolicy = { kind: 'unbounded' } | { kind: 'bufferingNewest'; limit: number };
 
 export const BufferingPolicy = {

@@ -1,9 +1,3 @@
-/**
- * `LogsView` for a Compose project (ProjectDetailView.swift `projectLogs`):
- * the embedded console with Expand, and the dedicated full-screen viewer,
- * sharing one `LogViewerStore` between them. Reuses the Containers log
- * console, status bar, and options menus.
- */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
 import { useEffect, useRef, useState } from 'react';
@@ -26,7 +20,6 @@ import {
 import { LogStatusBar } from '@/features/containers/log-status-bar';
 import { useLogStore, useLogViewer } from '@/features/containers/use-log-viewer';
 
-/** `manager.client?.boundedProjectLogs(envID:projectID:timestamps: true)`. */
 export function projectLogStore(environmentID: EnvironmentID, projectID: string) {
 	return new LogViewerStore((signal) => {
 		const client = useClientManager.getState().client;
@@ -36,7 +29,6 @@ export function projectLogStore(environmentID: EnvironmentID, projectID: string)
 	});
 }
 
-/** Embedded `LogsView(..., embedded: true)`. */
 export function EmbeddedProjectLogs({
 	environmentID,
 	projectID,
@@ -68,7 +60,6 @@ export function EmbeddedProjectLogs({
 	);
 }
 
-/** `LogViewerDedicatedView` for a project: full-screen, Done + options in the navigation bar. */
 export function ProjectLogsScreen() {
 	const router = useRouter();
 	const accent = useAccentColor();

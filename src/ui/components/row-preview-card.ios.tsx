@@ -1,10 +1,3 @@
-/**
- * Port of `RowPreviewCard` (RowPreviewCard.swift): the `ContextMenu.Preview`
- * content for resource list rows, so long-press previews look the same
- * across Containers / Images / Projects / etc.
- *
- * SwiftUI-tree (place inside `ContextMenu.Preview`).
- */
 import { HStack, Label, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {

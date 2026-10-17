@@ -1,4 +1,3 @@
-/** Data + actions for `TemplatePreviewView` (TemplatePreviewView.swift), shared by both platforms. */
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -78,7 +77,6 @@ export function useTemplatePreview() {
 	const canDelete = sessionMatches && permissions.canDelete;
 	const canDownload = sessionMatches && permissions.canRead;
 
-	/** The active environment, or with All Environments every enabled one allowing project creation. */
 	const deployEnvironments: ListEnvironment[] = (
 		allEnvironmentsPreview
 			? environments
@@ -114,12 +112,10 @@ export function useTemplatePreview() {
 		}
 	}, [client]);
 
-	// `.task(id: "\(template.id)|\(manager.cacheSessionIdentity)")`.
 	useEffect(() => {
 		void loadContent();
 	}, [loadContent, templateID, cacheSessionIdentity]);
 
-	// `.task { if allEnvironmentsPreview { await environmentsStore.load() } }`.
 	useEffect(() => {
 		if (allEnvironmentsPreview) void useEnvironmentsStore.getState().load();
 	}, [allEnvironmentsPreview]);
@@ -171,8 +167,6 @@ export function useTemplatePreview() {
 		}
 	};
 
-	// After a deployment creates the project, the preview closes once the
-	// create sheet has gone (Swift: `deployment = nil; dismiss()`).
 	const dismissAfterDeploy = useRef(false);
 	useFocusEffect(
 		useCallback(() => {
@@ -234,7 +228,6 @@ export function useTemplatePreview() {
 
 export type TemplatePreviewModel = ReturnType<typeof useTemplatePreview>;
 
-/** `TemplateContentSummary.accessibilitySummary`. */
 export function templateSummaryAccessibility(template: Template, content: TemplateContent): string {
 	const source = template.isRemote ? 'Remote' : 'Local';
 	return `${source} template. ${content.services.length} services. ${content.envVariables.length} environment variables.`;

@@ -1,7 +1,3 @@
-/**
- * Android rendering of `FederatedCredentialsView` (FederatedCredentialsView.swift).
- * The swipe-to-delete action becomes the row's long-press menu.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

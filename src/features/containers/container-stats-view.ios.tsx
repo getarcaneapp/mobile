@@ -1,7 +1,3 @@
-/**
- * Port of `ContainerStatsView` (ContainerStatsView.swift): live summary tiles
- * and CPU / memory / network / block I/O charts over the last 60 frames.
- */
 import { Host } from '@/ui/host';
 import {
 	Circle,

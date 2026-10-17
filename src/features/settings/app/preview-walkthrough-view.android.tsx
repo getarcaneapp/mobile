@@ -1,8 +1,3 @@
-/**
- * Android rendering of `PreviewWalkthrough` (PreviewWalkthrough.swift): a
- * horizontal pager of Material pages with page dots and a filled
- * Enable Preview button on the last page.
- */
 import { Stack } from 'expo-router';
 import { useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';

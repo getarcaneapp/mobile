@@ -1,4 +1,3 @@
-/** The platform-neutral model behind `DynamicCreateFormView` (DynamicResourceViews.swift). */
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -39,7 +38,6 @@ export function useDynamicForm() {
 	const fields = payload?.fields ?? [];
 	const isEditing = payload?.initial !== undefined;
 
-	/** Edits leave blank fields untouched on the server, so only creation enforces `required`. */
 	const canSave =
 		isEditing ||
 		fields.every(
@@ -49,7 +47,6 @@ export function useDynamicForm() {
 				(state.values[field.id] ?? '').trim() !== ''
 		);
 
-	/** Placeholder for fields the server doesn't echo back when editing. */
 	const placeholder = (field: BackendFormField, fallback: string) => {
 		if (isEditing && payload?.initial?.values[field.id] === undefined)
 			return 'Leave blank to keep current value';

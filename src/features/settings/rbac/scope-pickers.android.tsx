@@ -1,9 +1,3 @@
-/**
- * Android rendering of the Role / Scope / Environment pickers shared by the
- * Add Assignment and OIDC mapping sheets.
- *
- * Standalone (RN views).
- */
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { Role } from '@/sdk/models/role/Role';
 import { FormPicker } from '@/ui/components/form-fields';

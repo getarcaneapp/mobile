@@ -1,8 +1,3 @@
-/**
- * Port of APIKeyModels.swift plus the helpers APIKeysView.swift shares with
- * the detail and form screens (`APIKeyOwnerText`, `APIKeyDateText`,
- * `APIKeySortField`). Pure TS.
- */
 import { formatDate } from '@/core/date-formatting';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import { parseArcaneDate, type ISODateString } from '@/sdk/models/base/date';
@@ -11,20 +6,12 @@ import type { ApiKeyPermissionGrant } from '@/sdk/models/role/ApiKeyPermissionGr
 import type { User } from '@/sdk/models/user/User';
 import { relativeTimeFormat } from '@/core/relative-time';
 
-/**
- * API-key fields added by Arcane v2 that are not yet surfaced by the SDK's
- * `APIKey` model. Optional so the detail screen decodes v1 and v2 responses.
- */
 export interface APIKeyServerMetadata {
 	kind?: string;
 	isBootstrap?: boolean;
 	permissions?: ApiKeyPermissionGrant[];
 }
 
-/**
- * Shared create/update payload. `permissions` is omitted for v1 and personal
- * keys, while v2 scoped keys send the same global grants as Arcane's web UI.
- */
 export interface APIKeyMutationRequest {
 	name: string;
 	description?: string;
@@ -32,7 +19,6 @@ export interface APIKeyMutationRequest {
 	permissions?: ApiKeyPermissionGrant[];
 }
 
-/** One-time secret presentation used after creating or rotating a key. */
 export interface APIKeySecretPresentation {
 	key: string;
 	navigationTitle: string;
@@ -73,18 +59,15 @@ export const apiKeySortFields: { value: APIKeySortField; title: string }[] = [
 	{ value: 'lastUsedAt', title: 'Last Used' }
 ];
 
-/** `apiKey.expiresAt.map { $0 <= Date() } == true`. */
 export function apiKeyIsExpired(apiKey: Pick<APIKey, 'expiresAt'>): boolean {
 	const date = parseArcaneDate(apiKey.expiresAt);
 	return date !== undefined && date.getTime() <= Date.now();
 }
 
-/** Swift `User.displayUsername` (Models.swift). */
 export function displayUsername(user: Pick<User, 'displayName' | 'username'>): string {
 	return user.displayName ? user.displayName : user.username;
 }
 
-/** Port of `APIKeyOwnerText`. */
 export const APIKeyOwnerText = {
 	title(user: User | undefined, userID: string | undefined): string {
 		if (user) return displayUsername(user);
@@ -103,7 +86,6 @@ export const APIKeyOwnerText = {
 	}
 } as const;
 
-/** `Date.formatted(.relative(presentation: .named))`. */
 function relativeNamed(date: Date): string {
 	const seconds = Math.round((date.getTime() - Date.now()) / 1000);
 	const format = relativeTimeFormat();
@@ -117,7 +99,6 @@ function relativeNamed(date: Date): string {
 	return format.format(Math.round(seconds / (86400 * 365)), 'year');
 }
 
-/** Port of `APIKeyDateText`. */
 export const APIKeyDateText = {
 	expiration(value: ISODateString | undefined): string {
 		const date = parseArcaneDate(value);
@@ -131,26 +112,22 @@ export const APIKeyDateText = {
 		return relativeNamed(date);
 	},
 
-	/** `date.formatted(date: .abbreviated, time: .shortened)`, or `fallback` when absent. */
 	detail(value: ISODateString | undefined, fallback: string): string {
 		const date = parseArcaneDate(value);
 		return date ? formatDate(date, 'abbreviated', 'shortened') : fallback;
 	}
 } as const;
 
-/** `cached.invalidateGlobal(paths: ["api-keys", "api-keys/*"])`. */
 export function invalidateAPIKeyCache() {
 	cachedClient()?.invalidateGlobal(['api-keys', 'api-keys/*']);
 }
 
-/** `Calendar.current.date(byAdding: .day, value: 90, to: Date())`. */
 export function defaultExpirationDate(): Date {
 	const date = new Date();
 	date.setDate(date.getDate() + 90);
 	return date;
 }
 
-/** Route payloads handed to the pushed API-key screens. */
 export type APIKeyDetailPayload = {
 	apiKey: APIKey;
 	assignedUser?: User;

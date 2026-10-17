@@ -1,4 +1,3 @@
-/** Port of the volume flavour of `BackupPolicyEditor` (Views/Settings/Backups/BackupPolicyEditor.swift). */
 import { Host } from '@/ui/host';
 import { Button, Form, Section, Stepper, Text, Toggle } from '@expo/ui/swift-ui';
 import { disabled, foregroundStyle } from '@expo/ui/swift-ui/modifiers';

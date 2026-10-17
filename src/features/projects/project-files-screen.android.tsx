@@ -1,8 +1,3 @@
-/**
- * Android rendering of `ProjectFilesWorkspaceView`
- * (ProjectFilesWorkspaceView.swift): one sheet with an in-sheet drill-down
- * stack (compose / .env editors, folders, managed files) sharing one draft.
- */
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -166,7 +161,6 @@ function TextFileEditor({
 	);
 }
 
-/** `projectFileActions(folderPath:)` as editor menu items (Swift `menuActions`). */
 function projectFileActions(model: Model, folderPath: string): ComposeMenuAction[] {
 	const actions: ComposeMenuAction[] = [];
 	if (model.previewEnabled && model.canDeploy) {
@@ -205,7 +199,6 @@ function projectFileActions(model: Model, folderPath: string): ComposeMenuAction
 	return actions;
 }
 
-/** `editorNotice`. */
 function EditorNotice({ model }: { model: Model }) {
 	const message = model.errorMessage ?? model.readOnlyReason;
 	return (
@@ -224,7 +217,6 @@ function EditorNotice({ model }: { model: Model }) {
 	);
 }
 
-/** `ComposePreviewEditor` / `EnvPreviewEditor` embedded in the workspace, sharing its draft. */
 function NativeEditor({
 	model,
 	session,
@@ -250,7 +242,6 @@ function NativeEditor({
 	const latest = useRef(actions);
 	latest.current = actions;
 	const signature = JSON.stringify(actions.map((action) => [action.id, action.disabled ?? false]));
-	// Stable identities (re-registered only when the shape changes) that always run the latest closures.
 	const menuActions = useMemo(
 		() =>
 			latest.current.map((action) => ({
@@ -272,7 +263,6 @@ function NativeEditor({
 	);
 }
 
-/** The native editor for a managed file with the preview on (compose-related or `.env*`), or undefined. */
 function nativeManagedScreen(model: Model, path: string): 'editor' | 'envEditor' | undefined {
 	if (!model.previewEnabled || model.managedFileContent(path) === undefined) return undefined;
 	if (model.composeRelatedPaths.has(path)) return 'editor';
@@ -570,8 +560,6 @@ export function ProjectFilesScreen() {
 		setPath((stack) => [...stack, destination]);
 	const pop = () => setPath((stack) => stack.slice(0, -1));
 
-	// Hardware back pops the in-sheet stack first; at the root it behaves like Done.
-	// Focus-scoped so a pushed native Compose editor route handles its own back.
 	useFocusEffect(
 		useCallback(() => {
 			const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -593,7 +581,6 @@ export function ProjectFilesScreen() {
 		}),
 		[nav]
 	);
-	// `editorToolbar(combined:)`: with the preview the editor's own menu replaces the add menu.
 	const combined =
 		model.previewEnabled &&
 		(current.kind === 'compose' ||

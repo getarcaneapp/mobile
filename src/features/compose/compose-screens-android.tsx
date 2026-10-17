@@ -1,14 +1,3 @@
-/**
- * Android renderings of the native Compose editor screens (Views/Compose):
- * `ComposePreviewEditor`, `EnvPreviewEditor`, `ComposeServiceForm` and the
- * forms it pushes, `ComposeNativeFieldsForm`, `ComposeMappingForm`,
- * `ComposeCollectionForm`, `ComposeStringListForm`, `ComposeHealthcheckForm`,
- * `ComposeNetworkAttachmentsForm`, `ComposeResourceDefinitionList`/`Form`,
- * and `ComposeEnvironmentFileEntry`. All edits go through the shared
- * source-preserving model in `compose-actions.ts`.
- *
- * Standalone (RN views). Android only.
- */
 import { Stack } from 'expo-router';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { BackHandler, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -111,14 +100,8 @@ import {
 import { EnvDocument } from './model/env-document';
 import type { AddFieldsOptions } from './use-add-fields';
 
-// MARK: - Navigation and chrome
-
 type Push = (destination: ComposeDestination) => void;
 
-/**
- * How screens push and where their title/actions render: the route header,
- * a dialog's own bar, or (`embedded`) the host screen's toolbar via `setChromeItems`.
- */
 export type ComposeNavigation = {
 	push: Push;
 	mode: 'route' | 'dialog' | 'embedded';
@@ -150,7 +133,6 @@ function ScreenChrome({ title, items = [] }: { title: string; items?: AndroidToo
 	const signature = chromeSignature(items);
 	useEffect(() => {
 		if (mode !== 'embedded' || !setChromeItems) return;
-		// Forward presses to the latest closures; re-publish only when the shape changes.
 		setChromeItems(
 			latest.current.map((item) =>
 				item.kind === 'menu'
@@ -262,7 +244,6 @@ const deleteItem = (onPress: () => void) => [
 	{ id: 'delete', title: 'Delete', destructive: true, onPress }
 ];
 
-/** Applies a mutation to the bound text, returning the error message (Swift `change`/`mutate`). */
 function useMutate(binding: ComposeBinding, readOnly = false) {
 	const [error, setError] = useState<string>();
 	const mutate = (action: (document: ComposeDocument) => string): string | undefined => {
@@ -322,8 +303,6 @@ function menuItems(
 		onPress: action.onPress
 	}));
 }
-
-// MARK: - ComposePreviewEditor
 
 function EditorScreen({
 	destination
@@ -551,8 +530,6 @@ function EditorScreen({
 	);
 }
 
-// MARK: - EnvPreviewEditor
-
 function EnvEditorScreen({
 	destination
 }: {
@@ -718,9 +695,6 @@ function EnvEditorScreen({
 	);
 }
 
-// MARK: - Shared fields
-
-/** `ComposeScalarField`. */
 function ScalarField({
 	binding,
 	path,
@@ -770,7 +744,6 @@ function ScalarField({
 	);
 }
 
-/** `ComposeBooleanField`. */
 function BooleanField({
 	binding,
 	path,
@@ -811,7 +784,6 @@ function BooleanField({
 	);
 }
 
-/** `ComposeServiceForm.policy`. */
 function PolicyPicker({
 	binding,
 	path,
@@ -850,8 +822,6 @@ function PolicyPicker({
 		/>
 	);
 }
-
-// MARK: - ComposeServiceForm
 
 function Tile({
 	title,
@@ -1398,8 +1368,6 @@ function ServiceSubScreen({
 	}
 }
 
-// MARK: - ComposeNativeFieldsForm
-
 function NativeFieldsScreen({
 	destination
 }: {
@@ -1662,8 +1630,6 @@ function NativeFieldsScreen({
 	);
 }
 
-// MARK: - ComposeMappingForm
-
 function MappingScreen({
 	destination
 }: {
@@ -1817,8 +1783,6 @@ function MappingScreen({
 	);
 }
 
-// MARK: - ComposeCollectionForm
-
 let selectionCounter = 0;
 
 function CollectionScreen({
@@ -1957,8 +1921,6 @@ function CollectionScreen({
 		</View>
 	);
 }
-
-// MARK: - ComposeStringListForm
 
 function StringListScreen({
 	destination
@@ -2103,8 +2065,6 @@ function StringListScreen({
 	);
 }
 
-// MARK: - ComposeHealthcheckForm
-
 function HealthcheckScreen({
 	destination
 }: {
@@ -2219,8 +2179,6 @@ function HealthcheckScreen({
 		</View>
 	);
 }
-
-// MARK: - ComposeNetworkAttachmentsForm
 
 function NetworkAttachmentsScreen({
 	destination
@@ -2451,8 +2409,6 @@ function NetworkAttachmentScreen({
 		</View>
 	);
 }
-
-// MARK: - ComposeResourceDefinitionList / Form
 
 function ResourceListScreen({
 	destination
@@ -2700,8 +2656,6 @@ function ResourceFormScreen({
 	);
 }
 
-// MARK: - ComposeEnvironmentFileEntry
-
 function EnvFileScreen({
 	destination
 }: {
@@ -2781,8 +2735,6 @@ function EnvFileScreen({
 	);
 }
 
-// MARK: - Dispatch
-
 export function ComposeDestinationScreen({ destination }: { destination: ComposeDestination }) {
 	switch (destination.screen) {
 		case 'editor':
@@ -2820,7 +2772,6 @@ export function ComposeDestinationScreen({ destination }: { destination: Compose
 	}
 }
 
-/** An in-dialog drill-down stack (a sheet's own `NavigationStack`, e.g. an entry's "All settings"). */
 export function DialogStack({ root }: { root: ComposeDestination }) {
 	const [stack, setStack] = useState<ComposeDestination[]>([]);
 	const top = stack[stack.length - 1] ?? root;

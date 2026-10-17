@@ -1,4 +1,3 @@
-/** State behind `NetworkTopologyView` (NetworkTopologyView.swift). */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -64,7 +63,6 @@ export function useNetworkTopology({
 			) {
 				throw RemoteDataLimitError.collectionTooLarge(RemoteDataLimits.maximumTopologyEdges);
 			}
-			// The environment choice changed while this load was in flight.
 			if (target !== latest.current.shownEnvironmentID) return;
 			setTopology(response);
 			setLayout(makeTopologyLayout(response));
@@ -83,7 +81,6 @@ export function useNetworkTopology({
 		}
 	}, []);
 
-	// `.task(id: loadKey)`: the client and the shown environment.
 	useEffect(() => {
 		void loadTopology();
 	}, [client, shownEnvironmentID, loadTopology]);
@@ -127,7 +124,6 @@ export function useNetworkTopology({
 
 export type NetworkTopologyModel = ReturnType<typeof useNetworkTopology>;
 
-/** The sheet's `(node, topology)` handed over by the diagram. */
 export function useTopologyNodePayload() {
 	const { token } = useLocalSearchParams<{ token?: string }>();
 	const [payload] = useState(() => routePayloads.get<TopologyNodeSheetPayload>(token));

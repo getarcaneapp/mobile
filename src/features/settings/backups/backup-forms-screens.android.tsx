@@ -1,7 +1,3 @@
-/**
- * Android renderings of `SystemBackupCreateView`, `SystemVolumeRunView` and
- * `BackupRecoveryKeyView` (SystemBackupsView.swift).
- */
 import { Share, Text } from 'react-native';
 
 import type { S3Destination } from '@/sdk/models/backup/S3Destination';

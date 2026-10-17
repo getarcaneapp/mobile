@@ -4,7 +4,6 @@ import { create } from 'zustand';
 
 import { systemColors } from '@/theme/colors';
 
-/** Which haptic a toast plays when it appears. */
 export type HapticKind = 'none' | 'light' | 'success' | 'error';
 
 export type ToastActivityState = 'running' | 'success' | 'failure' | 'cancelled';
@@ -13,27 +12,22 @@ const activityTint: Record<ToastActivityState, string | undefined> = {
 	running: systemColors.blue,
 	success: systemColors.green,
 	failure: systemColors.red,
-	cancelled: undefined // secondary label
+	cancelled: undefined
 };
 
-/** Port of `Toast` in Toast.swift. */
 export type Toast = {
 	id: string;
 	title: string;
-	/** Seconds on screen before auto-dismiss (floored at 1). */
 	duration: number;
 	symbol?: string;
-	/** Glyph color; undefined means primary label. */
 	symbolTint?: string;
 	actionTitle?: string;
 	haptic: HapticKind;
 	activityID?: string;
-	/** Normalized 0...1. */
 	activityProgress?: number;
 	activityState?: ToastActivityState;
 	isPersistent?: boolean;
 	tapAction?: () => void;
-	/** Optional trailing button. Returns true to dismiss the toast. */
 	action?: () => boolean;
 };
 
@@ -43,7 +37,6 @@ const makeID = () => `toast-${Date.now()}-${nextID++}`;
 const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
 
 export const Toasts = {
-	/** Neutral "copied to clipboard" confirmation. */
 	copied: (title = 'Copied'): Toast => ({
 		id: makeID(),
 		title,
@@ -51,7 +44,6 @@ export const Toasts = {
 		symbol: 'doc.on.doc',
 		haptic: 'light'
 	}),
-	/** Success confirmation — green check. */
 	success: (title: string): Toast => ({
 		id: makeID(),
 		title,
@@ -60,7 +52,6 @@ export const Toasts = {
 		symbolTint: systemColors.green,
 		haptic: 'success'
 	}),
-	/** Failure notice — red triangle. Longer so a two-line message can be read. */
 	error: (title: string): Toast => ({
 		id: makeID(),
 		title,
@@ -69,7 +60,6 @@ export const Toasts = {
 		symbolTint: systemColors.red,
 		haptic: 'error'
 	}),
-	/** Neutral informational message. */
 	info: (title: string): Toast => ({
 		id: makeID(),
 		title,
@@ -111,7 +101,6 @@ function playHaptic(kind: HapticKind) {
 
 type ToastPresenterState = { activeToast?: Toast };
 
-/** Port of `ToastPresenter`: one visible toast, with a 170 ms hand-off between toasts. */
 export const useToastPresenter = create<ToastPresenterState>(() => ({}));
 
 let pendingToast: Toast | undefined;
@@ -140,7 +129,6 @@ export function showToast(toast: Toast) {
 	clearTimer();
 	pendingToast = undefined;
 	if (useToastPresenter.getState().activeToast) {
-		// Fade the current toast out first, then present the new one.
 		useToastPresenter.setState({ activeToast: undefined });
 		pendingToast = toast;
 		dismissTimer = setTimeout(() => {
@@ -202,10 +190,6 @@ const terminalSymbol: Record<ToastActivityState, string> = {
 	cancelled: 'slash.circle.fill'
 };
 
-/**
- * Marks an activity toast finished, or presents an already-finished activity
- * as a short result toast when it was never shown running.
- */
 export function finishActivityToast(
 	id: string,
 	title: string,

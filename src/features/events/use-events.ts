@@ -1,8 +1,3 @@
-/**
- * The model behind EventsView.swift: one `EventsStore`, the debounced query
- * reload, the 5-second live poll, copy / delete actions, and the
- * EventRow / EventDetailView presentation helpers.
- */
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -25,7 +20,6 @@ import { screenCache, useTabRouter } from '@/features/networks/tab-routes';
 import { EventsStore, type EventSeverityFilter } from './events-store';
 import { relativeTimeFormat } from '@/core/relative-time';
 
-/** `EventRow.severityIcon` / `EventDetailView.severityIcon`. */
 export function severityIcon(severity: string) {
 	switch (severity.toLowerCase()) {
 		case 'critical':
@@ -45,7 +39,6 @@ export function severityIcon(severity: string) {
 	}
 }
 
-/** `severityTint` (hex). */
 export function severityTint(severity: string) {
 	switch (severity.toLowerCase()) {
 		case 'critical':
@@ -65,7 +58,6 @@ export function severityTint(severity: string) {
 	}
 }
 
-/** `EventSeveritySummary.tint(for:)`. */
 export const severityFilterTint: Record<EventSeverityFilter, string> = {
 	info: systemColors.blue,
 	success: systemColors.green,
@@ -81,7 +73,6 @@ export const capitalized = (value: string) =>
 		.toLowerCase()
 		.replace(/(^|\s)(\S)/g, (_m, space: string, c: string) => space + c.toUpperCase());
 
-/** `Event.metadataMap` (Models.swift): JSON metadata flattened to strings. */
 export function metadataMap(event: Event): Record<string, string> {
 	const out: Record<string, string> = {};
 	for (const [key, value] of Object.entries(event.metadata ?? {})) {
@@ -98,7 +89,6 @@ function metadataString(value: JSONValue): string {
 	return JSON.stringify(value);
 }
 
-/** `Text(date, format: .relative(presentation: .named))`. */
 export function relativeNamed(value: string, now = Date.now()) {
 	const date = parseArcaneDate(value);
 	if (!date) return value;
@@ -136,7 +126,6 @@ export function useEvents() {
 	const queryKey = store.queryKey;
 	const queryTaskKey = `${client ? 'client' : 'none'}|${queryKey}`;
 
-	// `.task(id: queryTaskKey)`: a changed query waits out typing; returning from an event refreshes in place.
 	useEffect(() => {
 		store.configure(client);
 		const key = queryKey;
@@ -152,7 +141,6 @@ export function useEvents() {
 		return () => clearTimeout(timer);
 	}, [store, client, queryKey]);
 
-	// `.task(id: clientIdentity)`.
 	useEffect(() => {
 		store.configure(client);
 		void store.loadSeverityCounts();
@@ -161,14 +149,12 @@ export function useEvents() {
 	useFocusEffect(
 		useCallback(() => {
 			setIsFocused(true);
-			// Back from a pushed event: refresh the first page in place.
 			if (loadedQueryKey.current !== undefined && loadedQueryKey.current === store.queryKey)
 				void store.poll();
 			return () => setIsFocused(false);
 		}, [store])
 	);
 
-	// `.task(id: liveTaskKey) { await liveLoop() }`.
 	useEffect(() => {
 		if (!isLive || !isActive || !isFocused) return;
 		const timer = setInterval(() => {

@@ -1,7 +1,3 @@
-/**
- * Android stand-in for SwiftUI `.contextMenu` / `.swipeActions` on list rows:
- * tap runs `onPress`, long-press opens a native popup menu of the row's actions.
- */
 import { MenuView, type MenuComponentRef } from '@react-native-menu/menu';
 import { useRef, type ReactNode } from 'react';
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
@@ -16,7 +12,6 @@ export type RowMenuItem = {
 	onPress: () => void;
 };
 
-/** Layout keys that size the row inside its parent; they belong on the outer `MenuView`, not the inner `Pressable`. */
 const outerKeys = new Set<string>([
 	'flex',
 	'flexGrow',
@@ -66,8 +61,6 @@ export function LongPressMenu({
 	const menu = useRef<MenuComponentRef>(null);
 	const { outer, inner } = splitStyle(style);
 	return (
-		// The native view opens the menu on long-press itself: its imperative `show()`
-		// command only has an int-ID handler, which the new architecture never calls.
 		<MenuView
 			ref={menu}
 			shouldOpenOnLongPress
@@ -84,7 +77,6 @@ export function LongPressMenu({
 		>
 			<Pressable
 				onPress={onPress}
-				// No-op so a long-press doesn't also fire `onPress` on release.
 				onLongPress={items.length > 0 ? () => {} : undefined}
 				accessibilityRole={onPress ? 'button' : undefined}
 				accessibilityLabel={accessibilityLabel}

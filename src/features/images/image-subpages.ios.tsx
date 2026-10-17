@@ -1,7 +1,3 @@
-/**
- * Ports of `ImageAttestationDetailView` (ImageAttestationsView.swift) and the
- * image config's `EnvVarsView` / `LabelsView` (ContainerDetailView.swift).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

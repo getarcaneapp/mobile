@@ -1,4 +1,3 @@
-/** Model behind `VolumeBrowserView` (VolumeBrowserView.swift). */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
@@ -15,7 +14,6 @@ import { useDebounced } from '@/features/containers/hooks';
 import { containsCaseInsensitive } from './volume-model';
 import { useVolumeNavigation } from './volume-routes';
 
-/** `VolumeBrowserView.segments(from:)`. */
 export function pathSegments(path: string): string[] {
 	return path.split('/').filter((part) => part.trim() !== '');
 }
@@ -79,7 +77,6 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 		void loadEntries();
 	}, [currentPath, loadEntries]);
 
-	// Leaving the screen drops late responses.
 	useEffect(
 		() => () => {
 			loadGeneration.current += 1;

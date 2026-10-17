@@ -1,4 +1,3 @@
-/** Port of Services/PasskeysService.swift. */
 import type { AuthManager } from '../auth/AuthManager';
 import { ArcaneError } from '../errors/ArcaneError';
 import { ArcaneRequestOptions } from '../http/requestOptions';
@@ -25,7 +24,6 @@ export class PasskeysService {
 	private readonly rest: RESTService;
 	private readonly authManager: AuthManager;
 
-	/** @internal */
 	constructor(rest: RESTService, authManager: AuthManager) {
 		this.rest = rest;
 		this.authManager = authManager;
@@ -166,7 +164,6 @@ export class PasskeysService {
 		});
 	}
 
-	/** Unauthenticated POST that yields an `AuthenticationResult` and persists it. */
 	private async authenticate(path: string, body: unknown): Promise<AuthenticationResult> {
 		const generation = await this.authManager.beginAuthenticationOperation();
 		const result = await this.rest.transport.request(path, {
@@ -185,7 +182,6 @@ function requestOptions(stepUpToken: string | undefined): ArcaneRequestOptions |
 	return ArcaneRequestOptions.withStepUpToken(stepUpToken);
 }
 
-/** `CharacterSet.urlPathAllowed` minus `/?#`. Throws a validation error for an empty ID. */
 function encodedPathSegment(value: string): string {
 	if (value === '') {
 		throw ArcaneError.validation({ id: ['Passkey identifier is required.'] });

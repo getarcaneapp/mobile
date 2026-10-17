@@ -1,9 +1,7 @@
 export type RowIconProps = {
 	systemImage: string;
-	/** Hex tint; undefined follows the app accent color. */
 	tint?: string;
 	size?: number;
-	/** The glyph bounces whenever this changes (e.g. a dashboard tile's value). */
 	changeToken?: string;
 };
 
@@ -20,7 +18,6 @@ export type TextStyleName =
 	| 'caption'
 	| 'caption2';
 
-/** iOS text-style point sizes at the default Dynamic Type size. */
 export const textStyleSize: Record<TextStyleName, number> = {
 	largeTitle: 34,
 	title: 28,

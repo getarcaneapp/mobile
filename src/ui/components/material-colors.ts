@@ -6,7 +6,6 @@ import { appearanceColors } from '@/theme/colors';
 const dyn = (role: keyof typeof Color.android.dynamic, fallback: string): ColorValue =>
 	(Platform.OS === 'android' ? Color.android.dynamic[role] : undefined) ?? fallback;
 
-/** Material 3 dynamic color roles used by the Android component renderings (follow dark mode live). */
 export const m3 = appearanceColors(() => ({
 	primary: dyn('primary', '#6750A4'),
 	onPrimary: dyn('onPrimary', '#FFFFFF'),

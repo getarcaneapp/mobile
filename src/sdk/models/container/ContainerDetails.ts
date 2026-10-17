@@ -1,4 +1,3 @@
-/** Port of Models/Container/ContainerDetails.swift. */
 import { D } from '../base/decoding';
 import type { PaginationResponse } from '../base/pagination';
 import {
@@ -15,7 +14,6 @@ import {
 	type ContainerSummary
 } from './ContainerSummary';
 
-/** Detailed container information. */
 export interface ContainerDetails {
 	id: string;
 	name: string;
@@ -33,7 +31,6 @@ export interface ContainerDetails {
 	iconLightUrl?: string;
 	iconDarkUrl?: string;
 	redeployDisabled?: boolean;
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -86,17 +83,12 @@ export const ContainerDetails = {
 	}
 } as const;
 
-/** Paginated container list response. Includes optional groups + status counts. */
 export interface ContainerListResponse {
 	success: boolean;
 	data: ContainerSummary[];
 	groups?: ContainerSummaryGroup[];
 	counts: ContainerStatusCounts;
 	pagination: PaginationResponse;
-	/**
-	 * True when the server honors `ContainerResourceSort` keys. Older servers omit it
-	 * and silently ignore resource sorts.
-	 */
 	resourceSortSupported: boolean;
 }
 
@@ -113,7 +105,6 @@ export const ContainerListResponse = {
 		};
 	},
 
-	/** Swift `init(from:)`: undecodable rows in `data` are dropped. */
 	decode(this: void, raw: unknown): ContainerListResponse {
 		const o = D.object(raw, 'ContainerListResponse');
 		return {

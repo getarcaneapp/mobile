@@ -1,4 +1,3 @@
-/** Port of Pagination/PaginatedResponse.swift. */
 import type { PaginationResponse } from '../models/base/pagination';
 
 export interface PaginatedResponse<T> {
@@ -12,15 +11,6 @@ export type PageFetcher<Element> = (
 	limit: number
 ) => Promise<PaginatedResponse<Element>>;
 
-/**
- * An async iterable that walks a paginated endpoint, fetching successive
- * `limit`-sized pages until `pagination.totalItems` is exhausted.
- *
- * ```ts
- * for await (const c of new ArcanePaginator(50, (start, limit) =>
- *   client.rest.paginated("environments/0/containers", { start, limit }))) { … }
- * ```
- */
 export class ArcanePaginator<Element> implements AsyncIterable<Element> {
 	private readonly limit: number;
 	private readonly fetch: PageFetcher<Element>;

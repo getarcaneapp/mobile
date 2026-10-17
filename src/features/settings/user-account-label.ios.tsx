@@ -10,16 +10,21 @@ import {
 	lineLimit,
 	resizable
 } from '@expo/ui/swift-ui/modifiers';
+import { useEffect } from 'react';
 
 import { useClientManager } from '@/stores/client-manager';
 import { useAccentColor } from '@/theme/accent';
 import { colorGradient } from '@/theme/colors';
 
-/** Port of `UserAvatarCircle`. */
 export function UserAvatarCircle({ size }: { size: number }) {
 	const accent = useAccentColor();
 	const user = useClientManager((s) => s.currentUser);
 	const avatarURI = useClientManager((s) => s.currentUserAvatarURI);
+	const refreshAvatar = useClientManager((s) => s.refreshCurrentUserAvatar);
+	const updatedAt = user?.updatedAt;
+	useEffect(() => {
+		void refreshAvatar();
+	}, [refreshAvatar, updatedAt]);
 	const source = user?.displayName ? user.displayName : (user?.username ?? '?');
 	const initials = source.slice(0, 1).toUpperCase();
 
@@ -45,7 +50,6 @@ export function UserAvatarCircle({ size }: { size: number }) {
 	);
 }
 
-/** Port of `UserAccountLabel`: signed-in identity used by rows that open Profile. */
 export function UserAccountLabel({ avatarSize = 36 }: { avatarSize?: number }) {
 	const user = useClientManager((s) => s.currentUser);
 	const displayName = !user ? 'Account' : user.displayName ? user.displayName : user.username;

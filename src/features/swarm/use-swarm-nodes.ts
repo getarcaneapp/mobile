@@ -1,4 +1,3 @@
-/** State behind `SwarmNodesView`, `SwarmNodeRow` and `SwarmNodeDetailView` (SwarmNodesView.swift). */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 
@@ -28,7 +27,6 @@ import {
 import { swarmKeys, useSwarmNavigation } from './swarm-routes';
 import { useSwarmPagedList } from './use-swarm-list';
 
-/** `SwarmNodeAction`. */
 export type SwarmNodeAction =
 	| { kind: 'promote' }
 	| { kind: 'demote' }
@@ -72,7 +70,6 @@ async function performNodeAction(
 
 export const availabilityValues = ['active', 'pause', 'drain'] as const;
 
-/** `SwarmNodeRow` subtitle. */
 export const nodeSubtitle = (node: SwarmNode) =>
 	[nodeIsLeader(node) ? 'Leader' : capitalized(node.role), node.address, node.engineVersion]
 		.filter((v): v is string => !!v)
@@ -200,7 +197,6 @@ export function useSwarmNodeDetail() {
 			await client.swarm.deleteNode({ nodeId: node.id, force: true, envID: environmentID });
 			swarmChanged(environmentID);
 			showToast(Toasts.success('Node removed'));
-			// The toolbar's confirmation already dismissed this screen.
 		} catch (error) {
 			showToast(Toasts.error(friendlyErrorMessage(error)));
 		} finally {

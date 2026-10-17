@@ -1,12 +1,3 @@
-/**
- * Port of `ComposeDocument` (Types/ComposeDocument.swift) and its extensions in
- * pkg/utils/compose (+Syntax, +Editing, +BlockScalars, +Native, +Networks).
- *
- * A source-backed YAML document: edits replace syntax ranges and never
- * re-serialize the document, so comments, quoting, spelling and line endings
- * of untouched YAML survive byte for byte. The syntax tree comes from
- * `yaml-syntax.ts` (tree-sitter shaped), so this ports nearly line for line.
- */
 import { ComposeDocumentError, ComposeFormError } from './compose-errors';
 import {
 	isKey,
@@ -20,7 +11,6 @@ type Range = { location: number; length: number };
 const maxRange = (range: Range) => range.location + range.length;
 type Edit = [Range, string];
 
-/** `ComposeBlockScalar`: the semantic value and source extent of a literal or folded scalar. */
 export type ComposeBlockScalar = {
 	value: string;
 	replacementRange: Range;
@@ -32,7 +22,6 @@ export type ComposeBlockScalar = {
 
 type CacheEntry = { source: string; result: { document: ComposeDocument } | { error: unknown } };
 
-/** `ComposeDocumentParseCache`: recently parsed sources, most recent last. */
 const parseCache = {
 	capacity: 16,
 	entries: [] as CacheEntry[],
@@ -66,7 +55,6 @@ export class ComposeDocument {
 		this.root = root;
 	}
 
-	/** `try ComposeDocument(source)`, reusing the result for recently parsed text. */
 	static parse(source: string): ComposeDocument {
 		const cached = parseCache.result(source);
 		if (cached) {
@@ -83,7 +71,6 @@ export class ComposeDocument {
 		}
 	}
 
-	/** `try? ComposeDocument(source)`. */
 	static tryParse(source: string): ComposeDocument | undefined {
 		try {
 			return ComposeDocument.parse(source);
@@ -164,8 +151,6 @@ export class ComposeDocument {
 	static quoted(string: string): string {
 		return JSON.stringify(string);
 	}
-
-	// MARK: - Syntax (ComposeDocument+Syntax.swift)
 
 	get newline(): string {
 		return this.source.includes('\r\n') ? '\r\n' : '\n';
@@ -344,8 +329,6 @@ export class ComposeDocument {
 		for (const child of ComposeDocument.children(node)) this.validateKeys(child);
 	}
 
-	// MARK: - Editing (ComposeDocument+Editing.swift)
-
 	setting(value: string, path: readonly string[]): string {
 		const key = path[path.length - 1];
 		if (key === undefined) throw ComposeDocumentError.unsupported;
@@ -361,7 +344,6 @@ export class ComposeDocument {
 		if (node) {
 			this.editableTarget(path);
 			if (value === this.fragment(node)) return this.source;
-			// Avoid changing spelling, comments, or quoting on an unchanged form value.
 			if (
 				ComposeDocument.isScalar(node) &&
 				(ComposeDocument.decode(value) ?? null) ===
@@ -389,7 +371,6 @@ export class ComposeDocument {
 		const parent = this.resolve(parentPath);
 		const mapping = parent ? ComposeDocument.mapping(parent) : undefined;
 		if (!mapping) {
-			// Create missing ancestor mappings, using the same source-range insertion path.
 			if (parentPath.length > 0 && parent === undefined)
 				return this.setting(this.entry(key, value, 0), parentPath);
 			if (parent && this.fragment(parent) === '{}') {
@@ -426,7 +407,6 @@ export class ComposeDocument {
 		const pair = this.pairs(mapping).find((candidate) => this.pairKeyMatches(candidate, key));
 		if (!pair) throw ComposeDocumentError.missing;
 		if (this.pairs(mapping).length === 1) {
-			// An empty mapping stays a mapping rather than changing to YAML null.
 			return this.replace(this.range(mapping), '{}');
 		}
 		return this.replace(this.fullLines(pair), '');
@@ -459,7 +439,6 @@ export class ComposeDocument {
 			const item = items[index];
 			if (!item) throw ComposeDocumentError.missing;
 			const commas = this.flowCommas(flow);
-			// Delete syntax tokens only, retaining surrounding whitespace and comments.
 			const itemRange = this.range(item);
 			const comma =
 				commas.find((candidate) => this.range(candidate).location >= maxRange(itemRange)) ??
@@ -539,8 +518,7 @@ export class ComposeDocument {
 		const prefix = insertion > 0 && this.source[insertion - 1] !== '\n' ? this.newline : '';
 		const text = nested
 			? this.entry(key, value, this.column(pair) + 2)
-			: // The requested key is the existing null entry; add its value below its original line.
-				spaces(this.column(pair) + 2) + this.reindent(value, this.column(pair) + 2);
+			: spaces(this.column(pair) + 2) + this.reindent(value, this.column(pair) + 2);
 		let result =
 			this.source.slice(0, insertion) + prefix + text + this.newline + this.source.slice(insertion);
 		if (bounds) result = result.slice(0, bounds.location) + result.slice(maxRange(bounds));
@@ -627,9 +605,6 @@ export class ComposeDocument {
 		return { location: start, length: this.lineEnd(maxRange(bounds)) - start };
 	}
 
-	// MARK: - Block scalars (ComposeDocument+BlockScalars.swift)
-
-	/** YAML 1.2 block scalar indentation, folding and chomping; never resolves interpolation. */
 	blockScalar(node: SyntaxNode): ComposeBlockScalar {
 		if (node.type !== 'block_scalar') throw ComposeDocumentError.unsupported;
 		const bounds = this.range(node);
@@ -649,7 +624,6 @@ export class ComposeDocument {
 			parent = parent.parent;
 		const parentIndent = parent ? this.column(parent) : 0;
 		let extentEnd = maxRange(bounds);
-		// Tree-sitter excludes the final newline and chomped empty lines from clipped/stripped nodes.
 		if (extentEnd < text.length && text.charCodeAt(extentEnd) === 13) extentEnd += 1;
 		if (extentEnd < text.length && text.charCodeAt(extentEnd) === 10) extentEnd += 1;
 		while (extentEnd < text.length) {
@@ -695,7 +669,6 @@ export class ComposeDocument {
 				following[0] !== ' ' &&
 				following[0] !== '\t'
 			) {
-				// The first break of a paragraph separator is folded away; the empty lines remain.
 			} else {
 				value += '\n';
 			}
@@ -743,7 +716,6 @@ export class ComposeDocument {
 			if (value === '') lines = [];
 			const padding = spaces(indentation);
 			const body = lines.map((line) => (line === '' ? '' : padding + line)).join(this.newline);
-			// Literal style expresses the exact edited value without introducing new folding.
 			replacement =
 				'|' +
 				indicator +
@@ -758,8 +730,6 @@ export class ComposeDocument {
 		ComposeDocument.parse(result);
 		return result;
 	}
-
-	// MARK: - Native fields (ComposeDocument+Native.swift)
 
 	nativeField(path: ComposeFieldPath, name = 'Value'): ComposeNativeField {
 		const fieldPath = [...path];
@@ -917,7 +887,6 @@ export class ComposeDocument {
 		const parent = this.nativeNode(parentPath);
 		const content = parent ? ComposeDocument.content(parent) : undefined;
 		if (!parent || !content || this.nativeUnsafe(parent)) {
-			// Native callers can create a missing object a field at a time.
 			if (isKey(last)) {
 				const parentSource = this.settingNative('', 'mapping', parentPath);
 				return ComposeDocument.parse(parentSource).settingNative(value, kind, [
@@ -1022,7 +991,6 @@ export class ComposeDocument {
 			if (!item) throw ComposeDocumentError.missing;
 			target = item;
 		}
-		// Refuse deleting anchors or aliases; their references can exist outside this subtree.
 		if (this.nativeContainsReferences(target)) throw ComposeDocumentError.unsupported;
 		if (container.type.startsWith('flow_')) {
 			const edits: Edit[] = [[this.range(target), '']];
@@ -1038,7 +1006,6 @@ export class ComposeDocument {
 			return this.nativeApplying(edits);
 		}
 		if (entries.length === 1) {
-			// Keep comments from the removed subtree as comments adjacent to the empty container.
 			const replacement = this.nativeMapping(container) ? '{}' : '[]';
 			const comments = this.nativeComments(target).map((comment) =>
 				this.substring(this.range(comment))
@@ -1060,8 +1027,6 @@ export class ComposeDocument {
 			.join('');
 		const prefix = this.substring({ location: start, length: bounds.location - start });
 		if (prefix.replace(/^[ \t]+|[ \t]+$/g, '') !== '') {
-			// A compact mapping/list can share its first line with an outer sequence dash.
-			// Retain that dash and leave the remaining children on their indented lines.
 			const trailing = this.substring({
 				location: maxRange(bounds),
 				length: end - maxRange(bounds)
@@ -1251,9 +1216,6 @@ export class ComposeDocument {
 		return result;
 	}
 
-	// MARK: - Networks (ComposeDocument+Networks.swift)
-
-	/** Converts only attachment syntax, keeping each name, comment and surrounding source in place. */
 	convertingNetworkAttachments(path: readonly string[]): string {
 		const node = this.resolve(path);
 		if (!node) return this.source;
@@ -1304,7 +1266,6 @@ export class ComposeDocument {
 				ComposeDocument.parse(result);
 				return result;
 			}
-			// Keep the attachment key's trailing comment on its original line.
 			const insertion = this.lineEnd(maxRange(this.range(pair)));
 			const prefix = insertion > 0 && this.source[insertion - 1] === '\n' ? '' : this.newline;
 			let result =

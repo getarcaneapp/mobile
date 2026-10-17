@@ -1,4 +1,3 @@
-/** `FederatedCredentialFormView` model (FederatedCredentialFormView.swift). */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -35,14 +34,12 @@ export function useFederatedCredentialFormModel() {
 		if (router.canGoBack()) router.back();
 	};
 
-	// `.onChange(of: manager.clientGeneration) { dismiss() }`.
 	const latestDismiss = useRef(dismiss);
 	latestDismiss.current = dismiss;
 	useEffect(() => {
 		if (clientGeneration !== initialGeneration.current) latestDismiss.current();
 	}, [clientGeneration]);
 
-	// `.task`: roles and environments for the pickers.
 	useEffect(() => {
 		const manager = useClientManager.getState();
 		const client = manager.client;
@@ -112,7 +109,6 @@ export function useFederatedCredentialFormModel() {
 		isEditing: credential !== undefined,
 		title: credential ? 'Edit Credential' : 'Create Credential',
 		confirmTitle: credential ? 'Save' : 'Create',
-		/** The server can change an expiration date but not remove it. */
 		expirationLocked: credential?.expiresAt !== undefined,
 		form,
 		update,

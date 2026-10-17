@@ -88,7 +88,6 @@ type Refs = {
 	recoveryCode: RefObject<TextFieldRef | null>;
 };
 
-/** Port of `LoginView` (Views/Auth/LoginView.swift). */
 export function LoginScreen() {
 	const model = useLoginModel();
 	const reduceMotion = useReduceMotion();
@@ -99,17 +98,12 @@ export function LoginScreen() {
 		recoveryCode: useRef<TextFieldRef>(null)
 	};
 
-	// `@FocusState`: move native focus when the model asks.
-	// Native calls on a field that just (un)mounted reject; that's harmless.
 	const ignore = () => {};
 	model.bindFocus((field: LoginField | null) => {
 		if (field) refs[field].current?.focus().catch(ignore);
 		else for (const ref of Object.values(refs)) ref.current?.blur().catch(ignore);
 	});
 
-	// Each field binds to screen-level native state (`TextField(text: $serverURL)`),
-	// so a field that remounts (setup ⇄ sign-in ⇄ MFA) shows the current value,
-	// and programmatic changes (saved sign-in fill, resets, Cancel) land in it.
 	const { serverURL, username, password, recoveryCode } = model;
 	const texts = {
 		serverURL: useNativeState(serverURL),
@@ -135,7 +129,6 @@ export function LoginScreen() {
 			<LoginBackground brandColor={model.brandColor} />
 			<Host style={{ flex: 1 }}>
 				<VStack spacing={0}>
-					{/* `.safeAreaInset(edge: .top)`: the demo is an offer, not a peer of sign-in. */}
 					{model.showsDemoBanner ? <DemoOfferBanner model={model} /> : null}
 					<ScrollView modifiers={[scrollDismissesKeyboard('interactively')]}>
 						<VStack
@@ -143,7 +136,6 @@ export function LoginScreen() {
 							modifiers={[
 								padding({ horizontal: 24, vertical: 24 }),
 								frame({ maxWidth: Infinity }),
-								// `.containerRelativeFrame(.vertical, alignment: .center) { length, _ in length }`
 								containerRelativeFrame({ axes: 'vertical', alignment: 'center' }),
 								contentShape(shapes.rectangle()),
 								onTapGesture(model.dismissKeyboard),
@@ -175,7 +167,6 @@ export function LoginScreen() {
 							<Spacer minLength={0} />
 						</VStack>
 					</ScrollView>
-					{/* `.safeAreaInset(edge: .bottom)`: keyboard "Done" accessory. */}
 					{model.focusedField !== null ? (
 						<HStack modifiers={[padding({ horizontal: 16, bottom: 12 })]}>
 							<Spacer />
@@ -208,7 +199,6 @@ export function LoginScreen() {
 	);
 }
 
-/** Linear wash toward the brand color plus a soft radial bloom behind the logo. */
 function LoginBackground({ brandColor }: { brandColor: string }) {
 	return (
 		<View
@@ -225,8 +215,6 @@ function LoginBackground({ brandColor }: { brandColor: string }) {
 	);
 }
 
-// MARK: - Header
-
 function Header({ model }: { model: LoginModel }) {
 	const reduceMotion = useReduceMotion();
 	const [logoAppeared, setLogoAppeared] = useState(reduceMotion);
@@ -235,7 +223,6 @@ function Header({ model }: { model: LoginModel }) {
 		<VStack spacing={12}>
 			<ZStack
 				modifiers={[
-					// The stroke overlay below must not size the tile: pin it to the logo.
 					frame({ width: 76, height: 76 }),
 					padding({ all: 20 }),
 					glassEffectCompat({ shape: 'roundedRectangle', cornerRadius: Radius.hero }),
@@ -278,7 +265,6 @@ function Header({ model }: { model: LoginModel }) {
 				>
 					{model.headerSubtitle}
 				</Text>
-				{/* The connected server doubles as the "change server" control. */}
 				{model.showsServerChip ? <ServerChip model={model} /> : null}
 			</VStack>
 		</VStack>
@@ -317,8 +303,6 @@ function ServerChip({ model }: { model: LoginModel }) {
 		</Button>
 	);
 }
-
-// MARK: - Form
 
 const cardGlass = () => glassEffectCompat({ shape: 'roundedRectangle', cornerRadius: Radius.card });
 
@@ -385,8 +369,6 @@ function FormCard({ model, refs, texts }: { model: LoginModel; refs: Refs; texts
 			</VStack>
 		);
 	}
-	// The "what is this" copy lives in the header subtitle; the card carries
-	// only the one thing the user has to type.
 	if (model.pendingMFAChallenge) {
 		return (
 			<VStack spacing={0} modifiers={[cardGlass()]}>
@@ -443,7 +425,6 @@ function FormCard({ model, refs, texts }: { model: LoginModel; refs: Refs; texts
 	);
 }
 
-/** A single-line field: leading glyph, then the control. Sized by its content. */
 function FieldRow({ icon, label, children }: { icon: string; label: string; children: ReactNode }) {
 	return (
 		<HStack spacing={12} modifiers={[padding({ horizontal: 16, vertical: 18 })]}>
@@ -503,8 +484,6 @@ function InfoBanner({ message, onDismiss }: { message: string; onDismiss: () => 
 	);
 }
 
-// MARK: - Actions
-
 function Actions({ model }: { model: LoginModel }) {
 	if (model.isSetupMode) {
 		return (
@@ -516,7 +495,6 @@ function Actions({ model }: { model: LoginModel }) {
 					disabled={!model.serverURL || model.isLoading}
 					onPress={model.connectToServer}
 				/>
-				{/* Only reachable when the user opened setup from an existing session. */}
 				{model.mode === 'login' ? (
 					<Button
 						label="Cancel"
@@ -552,7 +530,6 @@ function Actions({ model }: { model: LoginModel }) {
 			</VStack>
 		);
 	}
-	// One prominent action, with every alternative demoted to one compact row.
 	return (
 		<VStack spacing={10}>
 			{model.isOIDCAvailable && (!model.isLocalAuthAvailable || !model.showsPasswordForm) ? (
@@ -639,7 +616,6 @@ function ButtonLabel({
 	);
 }
 
-/** Both button tiers are plain `.extraLarge` native controls; the system sizes them. */
 function PrimaryButton({ title, icon, loading, disabled: isDisabled, onPress }: ActionButtonProps) {
 	return (
 		<Button
@@ -676,7 +652,6 @@ function SecondaryButton({
 	);
 }
 
-/** Pinned above the scroll content: the demo is an offer, not a peer of sign-in. */
 function DemoOfferBanner({ model }: { model: LoginModel }) {
 	const reduceMotion = useReduceMotion();
 	return (

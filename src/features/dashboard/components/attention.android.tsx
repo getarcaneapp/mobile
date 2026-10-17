@@ -1,10 +1,3 @@
-/**
- * Android (Material 3) renderings of NeedsAttentionSection.swift: the toolbar
- * button (badged icon; tap → summary sheet, long press → Attention Center),
- * `AttentionItemRow`, and the Attention Center sheet.
- *
- * Standalone (RN views + Compose sheets).
- */
 import * as Haptics from 'expo-haptics';
 import { Pressable, Text, View } from 'react-native';
 
@@ -89,7 +82,6 @@ function ItemButton({
 
 const maximumRows = 4;
 
-/** The toolbar entry point (renders inside a `Stack.Toolbar.View`). */
 export function AttentionToolbarButton({
 	items,
 	setPresented,
@@ -146,7 +138,6 @@ export function AttentionToolbarButton({
 	);
 }
 
-/** The compact summary (SwiftUI's popover) as a Material bottom sheet. */
 export function AttentionSummarySheet({
 	items,
 	isPresented,

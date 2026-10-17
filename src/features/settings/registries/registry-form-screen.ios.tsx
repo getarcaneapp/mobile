@@ -1,4 +1,3 @@
-/** Port of `RegistryFormView` (RegistryFormView.swift): Add / Edit Registry sheet. */
 import { Host } from '@/ui/host';
 import {
 	Button,

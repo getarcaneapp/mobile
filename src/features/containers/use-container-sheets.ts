@@ -1,8 +1,3 @@
-/**
- * Models for the small container sheets: `RenameContainerSheet`,
- * `ContainerCommitView`, and `ContainerComposeView`
- * (RenameContainerSheet.swift, ContainerImageActionsView.swift).
- */
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -17,7 +12,6 @@ import { containersChanged } from './container-actions';
 
 const nameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_.-]+$/;
 
-/** Closes a sheet when the session or active environment changes under it. */
 function useDismissOnContextChange(environmentID: EnvironmentID, onDismiss: () => void) {
 	const generation = useClientManager((s) => s.clientGeneration);
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);

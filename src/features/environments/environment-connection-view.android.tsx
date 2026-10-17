@@ -1,10 +1,3 @@
-/**
- * Android rendering of `EnvironmentConnectionView` (EnvironmentConnectionView.swift):
- * status, manager → agent path with animated packets, tunnel metrics, session
- * details, and the mTLS certificate.
- *
- * Standalone (RN views).
- */
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 
@@ -38,7 +31,6 @@ function useNow(seconds: number) {
 	return now;
 }
 
-// Read per render: colors follow the current appearance.
 const caption = () => [m3Type.bodySmall, { color: colors.secondaryLabel }];
 
 function Divider() {
@@ -91,7 +83,6 @@ function ConnectionStatus({
 	isEdge: boolean;
 	isAccessibilitySize: boolean;
 }) {
-	// `Text(date, style: .timer)` ticks every second.
 	const now = useNow(isEdge && p.live && p.connectedAt ? 1 : 30);
 	const stale = p.lastHeartbeat ? isHeartbeatStale(p.lastHeartbeat, now) : false;
 	return (

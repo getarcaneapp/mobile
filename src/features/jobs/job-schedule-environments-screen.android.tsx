@@ -1,7 +1,3 @@
-/**
- * Android rendering of `JobsView.scheduleEnvironments` (JobsView.swift):
- * pick the environment whose schedules to configure.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';

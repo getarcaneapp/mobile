@@ -1,10 +1,3 @@
-/**
- * Port of `DeleteConfirmationCard` (Android): a Material 3 basic dialog with
- * the same icon, title, message and choices, over a scrim. One action sits
- * beside Cancel as text buttons; several stack, with Cancel last.
- *
- * Standalone (RN overlay).
- */
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';

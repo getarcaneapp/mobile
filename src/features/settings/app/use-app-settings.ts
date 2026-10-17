@@ -1,8 +1,3 @@
-/**
- * Shared state for `AppSettingsView` (AppSettingsView.swift): stored
- * preferences, cache size + Clear Cache confirmation, push notifications, and
- * the version footer.
- */
 import * as Application from 'expo-application';
 import * as Clipboard from 'expo-clipboard';
 import { Directory, Paths } from 'expo-file-system';
@@ -52,7 +47,6 @@ export const supportLinks = [
 	}
 ] as const;
 
-/** expo-image's disk cache: SDWebImage on iOS, Glide on Android. */
 function imageCacheDirectory(): Directory {
 	return new Directory(
 		Paths.cache,
@@ -60,7 +54,6 @@ function imageCacheDirectory(): Directory {
 	);
 }
 
-/** `ImageCache.diskBytes()` + `AvatarDiskCache.diskBytes()`. */
 function cacheDiskBytes(): number {
 	let images = 0;
 	try {
@@ -72,7 +65,6 @@ function cacheDiskBytes(): number {
 	return images + AvatarDiskCache.diskBytes();
 }
 
-/** `@AppStorage(LiveStatsLimit.preferenceKey)` (an Int). */
 function useLiveStatsLimit(): [number, (value: number) => void] {
 	const value = useSyncExternalStore(
 		(listener) => storage.subscribe(LiveStatsLimit.preferenceKey, listener),
@@ -162,7 +154,6 @@ export function useAppSettings() {
 	const appVersionString = Application.nativeApplicationVersion ?? '1.0';
 	const appBuildString = Application.nativeBuildVersion ?? '—';
 
-	/** Tapping the bottom footer copies the complete version string. */
 	const copyVersion = () => {
 		void Clipboard.setStringAsync(`${appVersionString} (${appBuildString})`);
 		showToast(Toasts.copied('Version copied'));

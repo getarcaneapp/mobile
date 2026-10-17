@@ -1,7 +1,5 @@
-/** Port of Models/Image/ImageBuild.swift. */
 import type { ISODateString } from '../base/date';
 
-/** Options for building an image with BuildKit. */
 export interface ImageBuildRequest {
 	contextDir: string;
 	dockerfile?: string;
@@ -27,7 +25,6 @@ export interface ImageBuildRequest {
 	provider?: string;
 }
 
-/** Result of an image build. */
 export interface ImageBuildResult {
 	provider: string;
 	tags?: string[];
@@ -40,7 +37,6 @@ export const ImageBuildResult = {
 	}
 } as const;
 
-/** A historical image build entry. */
 export interface ImageBuildRecord {
 	id: string;
 	environmentId: string;

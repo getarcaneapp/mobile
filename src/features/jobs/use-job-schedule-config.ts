@@ -1,8 +1,3 @@
-/**
- * The platform-neutral model behind JobScheduleConfigView.swift: loads the
- * schedule cron settings for one environment, tracks edits, and saves the
- * changed ones.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -71,12 +66,6 @@ export const jobScheduleFields: readonly JobScheduleField[] = [
 	}
 ];
 
-/**
- * The schedule keys `UpdateSettings` carries. Swift round-trips the changed
- * values through `JSONDecoder().decode(UpdateSettings.self, …)`, which drops
- * any key the model doesn't declare (`eventCleanupInterval`,
- * `gitopsSyncInterval`), so only these reach the server.
- */
 const updatableKeys = {
 	autoHealInterval: true,
 	autoUpdateInterval: true,
@@ -128,7 +117,6 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 		[environmentID]
 	);
 
-	// `.task { await load() }`
 	useEffect(() => {
 		void load();
 	}, [load]);
@@ -168,7 +156,6 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 		isSaving,
 		errorMessage,
 		hasChanges,
-		/** `isLoading && values.isEmpty`. */
 		showsLoading: isLoading && valuesEmpty,
 		value: (key: string) => values[key] ?? '',
 		setValue: (key: string, value: string) =>

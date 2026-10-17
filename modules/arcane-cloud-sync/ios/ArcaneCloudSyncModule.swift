@@ -2,21 +2,11 @@ import ExpoModulesCore
 import Foundation
 import Security
 
-/// Synchronizable generic-password keychain items (iCloud Keychain).
-///
-/// Ports the query shapes of the reference app's `ConnectionProfileKeychainStore`
-/// and `ConnectionCredentialKeychainStore`: items are keyed by
-/// service + account + access group with `kSecAttrSynchronizable = true`, and
-/// writes update in place before falling back to an add (retrying the update on
-/// a duplicate), so items written by either app read back identically.
 public class ArcaneCloudSyncModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ArcaneCloudSync")
 
     AsyncFunction("getStatus") { () -> [String: Bool] in
-      // A probe read tells a missing keychain-access-groups entitlement apart
-      // from a working store. Synchronizable items always leave the device
-      // when iCloud Keychain is on; the system offers no API to check that.
       var query = Keychain.baseQuery(service: Keychain.probeService, account: nil, accessGroup: nil)
       query[kSecMatchLimit as String] = kSecMatchLimitOne
       let status = SecItemCopyMatching(query as CFDictionary, nil)
@@ -46,8 +36,6 @@ public class ArcaneCloudSyncModule: Module {
       let query = Keychain.baseQuery(service: service, account: account, accessGroup: accessGroup)
       var update: [String: Any] = [kSecValueData as String: Data(value.utf8)]
       let protection = try Keychain.accessibility(accessible)
-      // Credential items re-assert their protection class on update
-      // (`newItemAttributes`); profile items only replace the data.
       if accessible == "whenUnlocked" {
         update[kSecAttrAccessible as String] = protection
       }

@@ -1,7 +1,3 @@
-/**
- * Logic for `PermissionPickerView` (RBAC/PermissionPickerView.swift): search
- * filtering, per-resource selection counts, icons and tints. Pure TS.
- */
 import type {
 	PermissionAction,
 	PermissionResource,
@@ -48,7 +44,6 @@ export function resourceSelection(resource: PermissionResource, selected: Readon
 	};
 }
 
-/** The header's select-all / deselect-all button. */
 export function toggleResource(
 	resource: PermissionResource,
 	selected: ReadonlySet<string>
@@ -133,7 +128,6 @@ export function iconForResource(key: string): string {
 	}
 }
 
-/** Hex tint, or undefined for `.secondary`. */
 export function colorForResource(key: string): string | undefined {
 	switch (key) {
 		case 'containers':

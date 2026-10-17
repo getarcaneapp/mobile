@@ -1,4 +1,3 @@
-/** Android rendering of `TemplateRow` (TemplateBrowserView.swift). Standalone. */
 import { Text, View } from 'react-native';
 
 import type { Template } from '@/sdk/models/template/Template';

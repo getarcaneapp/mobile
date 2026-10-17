@@ -1,4 +1,3 @@
-/** Android (Material 3) rendering of `EnvironmentDetailView` (EnvironmentDetailView.swift). */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -176,7 +175,6 @@ function NavigationRow({
 	);
 }
 
-/** Material 3 single-select segmented button. */
 function SegmentedButtons<Value extends string>({
 	options,
 	selection,

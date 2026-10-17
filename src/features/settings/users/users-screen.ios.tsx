@@ -1,4 +1,3 @@
-/** Port of `UsersView` + `UserRow` (UsersView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

@@ -1,7 +1,3 @@
-/**
- * Ports of `VolumeBrowserView`, its breadcrumb bar, `VolumeBreadcrumbChrome`,
- * `VolumeBrowserRow`, and `VolumeFileDetailView` (VolumeBrowserView.swift).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -312,7 +308,6 @@ export function VolumeBrowserScreen() {
 	);
 }
 
-/** Port of `VolumeFileDetailView`. */
 export function VolumeFileDetailScreen() {
 	const {
 		name = '',

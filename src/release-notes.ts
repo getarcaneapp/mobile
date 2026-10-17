@@ -8,13 +8,64 @@ export type ReleaseNote = {
 	fixed?: ReleaseNoteBullet[];
 };
 
-/**
- * Hardcoded changelog, newest first. Ported from `ReleaseNotes.swift`; every
- * user-facing change adds a bullet under the current version. The What's New
- * auto-show keys off `version`, which must match the app version in
- * app.config.ts.
- */
 export const releaseNotes: ReleaseNote[] = [
+	{
+		version: '0.11.0',
+		new: [
+			{
+				text: 'On Android, connection profiles back up to your Google account and saved sign-ins can go to Google Password Manager.'
+			},
+			{
+				text: 'Alternate app icons on Android, under Appearance > App Icon.'
+			}
+		],
+		changed: [
+			{
+				text: 'Long-pressing a log line opens Copy Line in an action sheet.'
+			},
+			{
+				text: 'Swarm stack compose and .env files, and new config data, are edited as plain monospaced text.'
+			},
+			{
+				text: 'Disconnecting a container keeps its network open; deleting a network closes it once the delete succeeds.'
+			},
+			{
+				text: 'Custom environment colors on iOS open a compact color-well sheet.'
+			},
+			{
+				text: 'Project deploy, redeploy, pull, and build progress shows in its log sheet, or as a progress toast while the sheet is hidden.'
+			},
+			{
+				text: 'Image pull progress shows as a progress toast.'
+			},
+			{
+				text: 'Volume workspace files open in a plain text editor without syntax highlighting.'
+			},
+			{
+				text: 'Android dialogs use Material 3 styling and your wallpaper colors.'
+			}
+		],
+		fixed: [
+			{
+				text: 'Creating a project works again on current Arcane servers.'
+			},
+			{
+				text: 'Android follows a dark mode switch right away instead of after a restart.'
+			},
+			{
+				text: 'Findings by severity on the Security screen shows every severity instead of only Medium.'
+			},
+			{
+				text: 'Tab switchers on Security, image, container, Swarm stack and service, and template preview screens blend into the navigation bar on iOS.'
+			},
+			{
+				text: 'Connection Profiles opens inside Account instead of as a separate sheet, so Preferences and Passkeys open where expected afterward.'
+			},
+			{
+				text: 'Shared log files and saved volume files are fully written before they are shared or uploaded.'
+			}
+		]
+	},
 	{
 		version: '0.10.2',
 		new: [
@@ -48,29 +99,11 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Push notifications combine into one summary per environment and type, written with Apple Intelligence when available.'
-			},
-			{
-				text: 'On Android, connection profiles back up to your Google account and saved sign-ins can go to Google Password Manager.'
-			},
-			{
-				text: 'Alternate app icons on Android, under Appearance > App Icon.'
 			}
 		],
 		changed: [
 			{
-				text: 'Long-pressing a log line opens Copy Line in an action sheet.'
-			},
-			{
 				text: 'Success and error toasts for every container, image, volume, network, project, and settings action.'
-			},
-			{
-				text: 'Swarm stack compose and .env files, and new config data, are edited as plain monospaced text.'
-			},
-			{
-				text: 'Disconnecting a container keeps its network open; deleting a network closes it once the delete succeeds.'
-			},
-			{
-				text: 'Custom environment colors on iOS open a compact color-well sheet.'
 			},
 			{
 				text: 'With Activity Toasts set to All, every server activity gets a toast and a Live Activity, including work that finishes before it is seen running.'
@@ -101,42 +134,9 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Log lines copy from a long-press menu.'
-			},
-			{
-				text: 'Project deploy, redeploy, pull, and build progress shows in its log sheet, or as a progress toast while the sheet is hidden.'
-			},
-			{
-				text: 'Project compose and file editors always use the code editor; the native Compose editor preview is not available yet.'
-			},
-			{
-				text: 'Image pull progress shows as a progress toast.'
-			},
-			{
-				text: 'Volume workspace files open in a plain text editor without syntax highlighting.'
-			},
-			{
-				text: 'Android dialogs use Material 3 styling and your wallpaper colors.'
 			}
 		],
 		fixed: [
-			{
-				text: 'Creating a project works again on current Arcane servers.'
-			},
-			{
-				text: 'Android follows a dark mode switch right away instead of after a restart.'
-			},
-			{
-				text: 'Findings by severity on the Security screen shows every severity instead of only Medium.'
-			},
-			{
-				text: 'Tab switchers on Security, image, container, Swarm stack and service, and template preview screens blend into the navigation bar on iOS.'
-			},
-			{
-				text: 'Connection Profiles opens inside Account instead of as a separate sheet, so Preferences and Passkeys open where expected afterward.'
-			},
-			{
-				text: 'Shared log files and saved volume files are fully written before they are shared or uploaded.'
-			},
 			{
 				text: 'Data is never shown from an outdated cache.'
 			},

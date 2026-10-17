@@ -1,4 +1,3 @@
-/** Data + actions for `TemplateRegistriesView` (TemplateRegistriesView.swift), shared by both platforms. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -16,7 +15,6 @@ import { showToast, Toasts } from '@/ui/toast';
 import { useTemplatePermissions } from './template-permissions';
 import { useTemplateNavigation } from './template-routes';
 
-/** The official community registry the web UI also offers one-tap setup for. */
 export const communityRegistryURL = 'https://registry.getarcane.app/registry.json';
 
 export const templateRegistryCachePaths = [
@@ -150,7 +148,6 @@ export function useTemplateRegistries() {
 
 export type TemplateRegistriesModel = ReturnType<typeof useTemplateRegistries>;
 
-/** `PressableTemplateRegistryRow.detailRows`. */
 export function templateRegistryDetails(registry: TemplateRegistry) {
 	const rows = [{ icon: 'link', label: 'URL', value: registry.url }];
 	if (registry.lastFetchError)

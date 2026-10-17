@@ -1,18 +1,14 @@
-/** Port of Models/Swarm/SwarmLifecycle.swift. */
 import { D } from '../base/decoding';
 import { SwarmNodeAgentCandidate, SwarmNodeAgentState } from './SwarmNode';
 
 export interface SwarmNodeAgentReconcileResult {
-	/** JSON key `nodeId`. */
 	nodeID: string;
 	state: SwarmNodeAgentState;
-	/** JSON key `environmentId`. */
 	environmentID?: string;
 	candidates: SwarmNodeAgentCandidate[];
 }
 
 export const SwarmNodeAgentReconcileResult = {
-	/** Swift `Identifiable.id`. */
 	id(this: void, value: SwarmNodeAgentReconcileResult): string {
 		return value.nodeID;
 	},
@@ -28,7 +24,6 @@ export const SwarmNodeAgentReconcileResult = {
 			candidates: args.candidates ?? []
 		};
 	},
-	/** Swift `init(from:)`: missing `state` → `none`, missing `candidates` → `[]`. */
 	decode(this: void, raw: unknown): SwarmNodeAgentReconcileResult {
 		const o = D.object(raw, 'SwarmNodeAgentReconcileResult');
 		return {
@@ -59,7 +54,6 @@ export const SwarmNodeAgentReconcileResponse = {
 	): SwarmNodeAgentReconcileResponse {
 		return { results: args.results ?? [] };
 	},
-	/** Swift `init(from:)`: missing `results` → `[]`. */
 	decode(this: void, raw: unknown): SwarmNodeAgentReconcileResponse {
 		const o = D.object(raw, 'SwarmNodeAgentReconcileResponse');
 		return { results: D.optArray(o, 'results', SwarmNodeAgentReconcileResult.decode) ?? [] };
@@ -70,14 +64,12 @@ export const SwarmNodeAgentReconcileResponse = {
 } as const;
 
 export interface SwarmNodeAgentBindingRequest {
-	/** JSON key `environmentId`. */
 	environmentID: string;
 	rebind: boolean;
 	replaceDeployment: boolean;
 }
 
 export const SwarmNodeAgentBindingRequest = {
-	/** Swift memberwise init (`rebind` / `replaceDeployment` default to `false`). */
 	make(
 		args: Pick<SwarmNodeAgentBindingRequest, 'environmentID'> &
 			Partial<SwarmNodeAgentBindingRequest>
@@ -106,7 +98,6 @@ export const SwarmNodeAgentBindingRequest = {
 } as const;
 
 export interface SwarmJoinCandidate {
-	/** JSON key `environmentId`. */
 	environmentID: string;
 	environmentName: string;
 	environmentType: string;
@@ -114,7 +105,6 @@ export interface SwarmJoinCandidate {
 }
 
 export const SwarmJoinCandidate = {
-	/** Swift `Identifiable.id`. */
 	id(this: void, value: SwarmJoinCandidate): string {
 		return value.environmentID;
 	},
@@ -152,7 +142,6 @@ export const SwarmJoinEnvironmentRole = {
 	rawValue(this: void, value: SwarmJoinEnvironmentRole): string {
 		return value;
 	},
-	/** Swift `init(from:)`: any string passes through (unknown values are kept). */
 	decode(this: void, raw: unknown): SwarmJoinEnvironmentRole {
 		return D.str(raw);
 	},
@@ -162,7 +151,6 @@ export const SwarmJoinEnvironmentRole = {
 } as const;
 
 export interface SwarmJoinEnvironmentTarget {
-	/** JSON key `environmentId`. */
 	environmentID: string;
 	role: SwarmJoinEnvironmentRole;
 	availability?: string;
@@ -201,7 +189,6 @@ export interface SwarmJoinEnvironmentsRequest {
 }
 
 export const SwarmJoinEnvironmentsRequest = {
-	/** Swift memberwise init (`remoteAddrs` defaults to `[]`). */
 	make(
 		args: Pick<SwarmJoinEnvironmentsRequest, 'targets'> & Partial<SwarmJoinEnvironmentsRequest>
 	): SwarmJoinEnvironmentsRequest {
@@ -244,7 +231,6 @@ export const SwarmJoinEnvironmentResultState = {
 	rawValue(this: void, value: SwarmJoinEnvironmentResultState): string {
 		return value;
 	},
-	/** Swift `init(from:)`: any string passes through (unknown values are kept). */
 	decode(this: void, raw: unknown): SwarmJoinEnvironmentResultState {
 		return D.str(raw);
 	},
@@ -254,16 +240,13 @@ export const SwarmJoinEnvironmentResultState = {
 } as const;
 
 export interface SwarmJoinEnvironmentResult {
-	/** JSON key `environmentId`. */
 	environmentID: string;
 	state: SwarmJoinEnvironmentResultState;
-	/** JSON key `nodeId`. */
 	nodeID?: string;
 	error?: string;
 }
 
 export const SwarmJoinEnvironmentResult = {
-	/** Swift `Identifiable.id`. */
 	id(this: void, value: SwarmJoinEnvironmentResult): string {
 		return value.environmentID;
 	},
@@ -297,7 +280,6 @@ export const SwarmJoinEnvironmentsResponse = {
 	): SwarmJoinEnvironmentsResponse {
 		return { results: args.results ?? [] };
 	},
-	/** Swift `init(from:)`: missing `results` → `[]`. */
 	decode(this: void, raw: unknown): SwarmJoinEnvironmentsResponse {
 		const o = D.object(raw, 'SwarmJoinEnvironmentsResponse');
 		return { results: D.optArray(o, 'results', SwarmJoinEnvironmentResult.decode) ?? [] };

@@ -1,9 +1,3 @@
-/**
- * Shared state for the Dashboard (DashboardView.swift) on both platforms:
- * wires the per-screen `DashboardViewStore` to the SwiftUI lifecycle
- * (`.task`, `.onChange`, `scenePhase`, stream leases) and exposes the
- * derived values and actions the iOS and Android screens render.
- */
 import { useFocusEffect, useNavigation, useRouter, useSegments } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -48,7 +42,6 @@ export function useDashboardModel() {
 	const router = useRouter();
 	const navigation = useNavigation();
 	const segments = useSegments() as string[];
-	/** The tab stack hosting this dashboard, e.g. `(dashboard)` or `(more)`. */
 	const group = segments[1] ?? '(dashboard)';
 
 	const unmountedRef = useRef(false);
@@ -72,7 +65,6 @@ export function useDashboardModel() {
 	const attention = useDashboardStreamStore((s) => s.attention);
 	const streamFailed = useDashboardStreamStore((s) => s.streamFailed);
 	const streamUnsupported = useDashboardStreamStore((s) => s.streamUnsupported);
-	// Re-render when shared update counts change.
 	useImageUpdateCountStore((s) => s.counts);
 	const latestClear = useActivityHistoryMutationStore((s) => s.latestClear);
 	const mutationVersions = useResourceMutationStore((s) => s.versions);
@@ -83,7 +75,6 @@ export function useDashboardModel() {
 	const isVisibleRef = useRef(false);
 	const wasBackgroundedRef = useRef(false);
 
-	// Sheets and presentation state.
 	const [showAttentionSummary, setShowAttentionSummary] = useState(false);
 	const [showAttentionCenter, setShowAttentionCenter] = useState(false);
 	const pendingAttentionAction = useRef<(() => void) | undefined>(undefined);
@@ -92,8 +83,6 @@ export function useDashboardModel() {
 	const [showCountAvailability, setShowCountAvailability] = useState(false);
 	const [isUpdateAllArmed, setUpdateAllArmed] = useState(false);
 	const disarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-	// MARK: Stream lease
 
 	const acquireStreams = useCallback(() => {
 		holdsStreamsRef.current = true;
@@ -110,7 +99,6 @@ export function useDashboardModel() {
 			.setVisible(false, consumerID, useClientManager.getState().supportsActivities());
 	}, [consumerID]);
 
-	// Destroyed while still holding the streams (a pushed screen kept them): drop the consumer.
 	useEffect(() => {
 		unmountedRef.current = false;
 		return () => {
@@ -122,12 +110,10 @@ export function useDashboardModel() {
 		};
 	}, [consumerID]);
 
-	// `.task(id: client)`: adopt the manager's client.
 	useEffect(() => {
 		useEnvironmentsStore.getState().configure(client);
 	}, [client]);
 
-	// `.onAppear` / `.task` / `.onDisappear`.
 	useFocusEffect(
 		useCallback(() => {
 			isVisibleRef.current = true;
@@ -148,7 +134,6 @@ export function useDashboardModel() {
 		}, [acquireStreams, store])
 	);
 
-	// A pushed screen keeps the streams; leaving the tab releases them.
 	useEffect(() => {
 		const tabStack = navigation.getParent();
 		if (!tabStack) return;
@@ -157,7 +142,6 @@ export function useDashboardModel() {
 			if (isVisibleRef.current && AppState.currentState !== 'background') acquireStreams();
 		});
 		const stateListener = navigation.addListener('blur', () => {
-			// Popped/replaced at the root (not covered by a push): release.
 			if (!tabStack.isFocused()) releaseStreams();
 		});
 		return () => {
@@ -167,7 +151,6 @@ export function useDashboardModel() {
 		};
 	}, [navigation, acquireStreams, releaseStreams]);
 
-	// `scenePhase`.
 	useEffect(() => {
 		const subscription = AppState.addEventListener('change', (phase) => {
 			if (phase === 'background') {
@@ -175,7 +158,6 @@ export function useDashboardModel() {
 				releaseStreams();
 				wasBackgroundedRef.current = resumes || isVisibleRef.current;
 			} else if (phase === 'active') {
-				// Only a real return from the background refreshes.
 				if (!wasBackgroundedRef.current) return;
 				wasBackgroundedRef.current = false;
 				if (!isVisibleRef.current) {
@@ -190,14 +172,12 @@ export function useDashboardModel() {
 		return () => subscription.remove();
 	}, [acquireStreams, releaseStreams, store]);
 
-	// Capabilities can resolve after authentication: start the stream once v2 is known.
 	useEffect(() => {
 		if (supportsActivities && holdsStreamsRef.current) {
 			useEnvironmentsStore.getState().setVisible(true, consumerID, true);
 		}
 	}, [supportsActivities, consumerID]);
 
-	// `.onChange(of: manager.activeEnvironmentID)`.
 	const firstActive = useRef(true);
 	useEffect(() => {
 		if (firstActive.current) {
@@ -207,22 +187,18 @@ export function useDashboardModel() {
 		store.getState().reorderForActiveEnvironment();
 	}, [activeEnvironmentID, store]);
 
-	// `.onChange(of: environmentCatalogRevision, initial: true)`.
 	useEffect(() => {
 		store.getState().updateEnvironmentCatalogFromStore();
 	}, [catalogRevision, store]);
 
-	// `.onChange(of: dockerInformationRevision, initial: true)`.
 	useEffect(() => {
 		store.getState().updateLiveStateFromStore();
 	}, [dockerRevision, store]);
 
-	// `.onChange(of: streamStore.aggregate)`: refetch docker counts when container/image totals moved.
 	const previousAggregate = useRef(aggregate);
 	useEffect(() => {
 		const previous = previousAggregate.current;
 		previousAggregate.current = aggregate;
-		// undefined → value is the stream (re)connecting, not a count change.
 		if (!previous || !aggregate || previous === aggregate) return;
 		const containersChanged =
 			previous.runningContainers !== aggregate.runningContainers ||
@@ -232,12 +208,10 @@ export function useDashboardModel() {
 		if (containersChanged) void store.getState().refreshLiveCounts();
 	}, [aggregate, store]);
 
-	// `.onChange(of: historyMutationStore.latestClear)`.
 	useEffect(() => {
 		if (latestClear) store.getState().applyHistoryClear();
 	}, [latestClear, store]);
 
-	// Mutations elsewhere change the counts this page shows; debounce bursts into one refresh.
 	const firstMutation = useRef(true);
 	useEffect(() => {
 		if (firstMutation.current) {
@@ -254,8 +228,6 @@ export function useDashboardModel() {
 	}, [mutationVersions, store]);
 
 	useEffect(() => () => clearTimeout(disarmTimer.current), []);
-
-	// MARK: Derived values
 
 	const enabledEnvironments = useMemo(
 		() => view.allEnvironments.filter((e) => e.enabled),
@@ -297,8 +269,6 @@ export function useDashboardModel() {
 	const liveStatsMessage = liveStatsLimitMessage(enabledEnvironments.length, maxStatsStreams());
 	const showsStreamFailedBanner = streamFailed && !streamUnsupported;
 
-	// MARK: Navigation
-
 	const pinned = useNavTabsStore((s) => s.pinnedTabs);
 	const canAccess = useClientManager((s) => s.canAccess);
 	const visibleTabs = useMemo(
@@ -306,7 +276,6 @@ export function useDashboardModel() {
 		[pinned, canAccess]
 	);
 
-	/** `selectedTab = tab`: switch tabs when pinned, otherwise push onto this stack. */
 	const selectTab = (tab: AppTab) => {
 		if (visibleTabs.has(tab)) router.navigate(`/(tabs)/(${tab})/${tab}` as never);
 		else router.push(`/(tabs)/${group}/${tab}` as never);
@@ -323,10 +292,8 @@ export function useDashboardModel() {
 		push('project/[id]', { id: project.id, envID: activeEnvironmentID, name: project.name });
 	const openVulnerabilities = (environmentID: string) =>
 		push('imageVulnerabilities', { envID: environmentID });
-	// Swift presents these as sheets: image updates (`image-updates-sheet`); Volumes still pushes.
 	const openVolumes = () => push('volumes');
 	const openImageUpdates = () => push('image-updates-sheet');
-	// ContentView.swift presents the Activity Center as a sheet (`activity-center`); More > Activities pushes `activities`.
 	const openActivityCenter = () => push('activity-center');
 	const openAPIKeys = () => push('apiKeys');
 	const openUpdateAll = () =>
@@ -367,10 +334,6 @@ export function useDashboardModel() {
 		}
 	};
 
-	/**
-	 * Dismisses the summary popover / center before running an item action.
-	 * Sheet presentations chain through dismissal; presenting mid-dismiss is dropped.
-	 */
 	const performAttention = (item: NeedsAttentionItem) => {
 		setShowAttentionSummary(false);
 		const action = () => runAttentionAction(item.action);
@@ -395,8 +358,6 @@ export function useDashboardModel() {
 		pendingAttentionAction.current = undefined;
 		action?.();
 	};
-
-	// MARK: Update All (two-tap)
 
 	const disarmUpdateAll = () => {
 		clearTimeout(disarmTimer.current);
@@ -453,7 +414,6 @@ export function useDashboardModel() {
 		showsSkeleton,
 		showsEmptyState,
 		hasPinnedDashboardResources,
-		/** Environments whose snapshot reports a newer Arcane release (undefined when unknown). */
 		arcaneUpgradeCount: attention.arcaneUpgradeCount,
 		isUpdateAllArmed,
 		pressUpdateAll,

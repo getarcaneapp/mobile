@@ -1,4 +1,3 @@
-/** Ports of `SwarmNodesView`, `SwarmNodeRow`, `SwarmAvailabilityMenu` and `SwarmNodeDetailView` (SwarmNodesView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Alert,

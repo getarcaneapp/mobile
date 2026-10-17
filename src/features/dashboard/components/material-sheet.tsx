@@ -1,9 +1,3 @@
-/**
- * A Material 3 modal bottom sheet (Compose `ModalBottomSheet`) hosting React
- * Native content — the Android rendering of SwiftUI `.sheet`s on the dashboard.
- *
- * Standalone. Android only (Compose); import it from `.android.tsx` files.
- */
 import { Host } from '@expo/ui';
 import { ModalBottomSheet, RNHostView } from '@expo/ui/jetpack-compose';
 import type { ReactNode } from 'react';
@@ -17,7 +11,6 @@ export function MaterialSheet({
 }: {
 	isPresented: boolean;
 	onDismiss: () => void;
-	/** Opens fully expanded (Swift `.large` first). */
 	fullHeight?: boolean;
 	children: ReactNode;
 }) {

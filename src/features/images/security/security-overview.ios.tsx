@@ -1,10 +1,3 @@
-/**
- * Port of `SecurityOverviewView` (SecurityOverviewView.swift): the risk
- * score / trend card, findings by severity, exposure, risk drivers, priority
- * findings, and riskiest images, as sections of the hosting List.
- *
- * SwiftUI-tree.
- */
 import {
 	Button,
 	Circle,
@@ -70,7 +63,6 @@ let overviewCounter = 0;
 export type SecurityOverviewProps = {
 	overview: VulnerabilityRiskOverview;
 	selectVulnerability: (id: string) => void;
-	/** "Riskiest images" → ImageVulnerabilitiesView in the overview's environment. */
 	openImage: (imageID: string, imageName: string) => void;
 };
 
@@ -250,7 +242,6 @@ function ScoreCard({
 					accessibilityLabel(p.accessibility)
 				]}
 			>
-				{/* SwiftUI strokes the 170pt circle on its path, so the 14pt ring overflows the frame by 7pt per side. */}
 				<RNHostView matchContents>
 					<View style={{ width: 184, height: 184 }}>
 						<RiskScoreRing

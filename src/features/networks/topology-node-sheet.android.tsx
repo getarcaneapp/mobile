@@ -1,4 +1,3 @@
-/** Android rendering of `TopologyNodeDetailSheet` (NetworkTopologyView.swift). */
 import { Stack, useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 

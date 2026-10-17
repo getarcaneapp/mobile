@@ -1,5 +1,3 @@
-/** Port of HTTP/ArcaneRequestOptions.swift. */
-
 export class ArcaneRequestOptionsValidationError extends Error {
 	readonly kind = 'invalidActivityBatchID' as const;
 	constructor() {
@@ -12,10 +10,8 @@ function isValidActivityBatchID(value: string): boolean {
 	return /^[A-Za-z0-9_-]{1,64}$/.test(value);
 }
 
-/** Per-request Arcane API metadata. */
 export class ArcaneRequestOptions {
 	readonly activityBatchID: string | undefined;
-	/** @internal Swift keeps this module-internal; used by passkey step-up. */
 	readonly stepUpToken: string | undefined;
 
 	private constructor(activityBatchID?: string, stepUpToken?: string) {
@@ -23,12 +19,10 @@ export class ArcaneRequestOptions {
 		this.stepUpToken = stepUpToken;
 	}
 
-	/** Swift `ArcaneRequestOptions()`. */
 	static none(): ArcaneRequestOptions {
 		return new ArcaneRequestOptions();
 	}
 
-	/** Swift `try ArcaneRequestOptions(activityBatchID:)`; throws on invalid IDs. */
 	static withActivityBatchID(activityBatchID: string): ArcaneRequestOptions {
 		if (!isValidActivityBatchID(activityBatchID)) {
 			throw new ArcaneRequestOptionsValidationError();
@@ -36,7 +30,6 @@ export class ArcaneRequestOptions {
 		return new ArcaneRequestOptions(activityBatchID);
 	}
 
-	/** @internal */
 	static withStepUpToken(stepUpToken: string): ArcaneRequestOptions {
 		return new ArcaneRequestOptions(undefined, stepUpToken);
 	}

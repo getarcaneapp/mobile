@@ -1,8 +1,3 @@
-/**
- * The model behind CreateUserView.swift: credentials + email, the global role
- * picker on v2 servers (Administrator toggle on v1), create and the follow-up
- * role assignment. Shared by both platforms.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -39,7 +34,6 @@ export function useCreateUser() {
 		!isLoading &&
 		(!supportsRoleManagement || selectedRoleId !== '');
 
-	// `.task { await loadRolesIfNeeded() }`
 	useEffect(() => {
 		const client = useClientManager.getState().client;
 		if (!supportsRoleManagement || !client) return;

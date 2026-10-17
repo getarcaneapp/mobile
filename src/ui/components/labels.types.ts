@@ -1,7 +1,3 @@
-/**
- * Shared props and copy for the small label components: `ResourceCountLabel`,
- * `SectionHeader`, `UpdateStateBadge`, `DestructiveLabel`.
- */
 import type { ReactNode } from 'react';
 
 import { systemColors } from '@/theme/colors';
@@ -14,7 +10,6 @@ export type ResourceCountProps = {
 
 const items = (count: number) => (count === 1 ? 'item' : 'items');
 
-/** Visible text and VoiceOver text for `ResourceCountLabel`. */
 export function resourceCountText({
 	loadedCount,
 	totalCount,
@@ -44,7 +39,6 @@ export type SectionHeaderProps = {
 	trailing?: ReactNode;
 };
 
-/** Port of `ImageUpdateState`. */
 export type ImageUpdateState =
 	| { kind: 'unknown' }
 	| { kind: 'upToDate' }

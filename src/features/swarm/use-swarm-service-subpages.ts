@@ -1,4 +1,3 @@
-/** The service draft's env / labels handed over by Service Detail. */
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 

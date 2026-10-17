@@ -1,4 +1,3 @@
-/** Android renderings of the swarm Configs / Secrets screens (SwarmKeyValueViews.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';

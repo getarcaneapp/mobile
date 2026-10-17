@@ -1,11 +1,9 @@
-/** Pure pieces of `BusiestContainersStore.swift` (ranking + cache naming). */
 import type {
 	ContainerResourceSample,
 	ContainerResourceSort,
 	ContainerSummary
 } from '@/sdk/models/container/ContainerSummary';
 
-/** Sort raw value → environment ID → that environment's top containers. */
 export type BusiestRankings = Readonly<
 	Record<string, Readonly<Record<string, ContainerSummary[]>>>
 >;
@@ -40,7 +38,6 @@ export function topBusiest(
 	);
 	const value = (sample: ContainerResourceSample) =>
 		sort === 'cpuUsage' ? sample.cpuPercent : sample.memoryUsageBytes;
-	// Stable sort, like Swift's `sorted` on equal keys in practice.
 	return entries
 		.map((entry, index) => ({ entry, index }))
 		.sort((a, b) => value(b.entry.sample) - value(a.entry.sample) || a.index - b.index)
@@ -48,7 +45,6 @@ export function topBusiest(
 		.map(({ entry }) => entry);
 }
 
-/** Drops environments that left the catalog from every sort's ranking. */
 export function pruneRankings(
 	rankings: BusiestRankings,
 	current: ReadonlySet<string>
@@ -61,7 +57,6 @@ export function pruneRankings(
 	);
 }
 
-/** The cache key holds a server URL; keep the file name to safe characters. */
 export function busiestCacheFileName(cacheKey: string): string {
 	return `${Array.from(cacheKey)
 		.map((c) => (/^[\p{L}\p{N}]$/u.test(c) ? c : '_'))

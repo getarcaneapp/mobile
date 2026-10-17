@@ -1,4 +1,3 @@
-/** Android rendering of `ContainerStatsView` (ContainerStatsView.swift). */
 import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 

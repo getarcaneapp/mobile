@@ -1,4 +1,3 @@
-/** Shared state for `DashboardTilesEditor` (DashboardTotalsTile.swift). */
 import { useStoredString } from '@/core/storage';
 import { DashboardTotalsTile } from '@/features/dashboard/dashboard-logic';
 
@@ -21,7 +20,6 @@ export function useDashboardTilesEditor() {
 			setStoredTiles(DashboardTotalsTile.encode(moveItems(tiles, sourceIndices, destination))),
 		remove: (indices: number[]) => {
 			const remaining = tiles.filter((_, i) => !indices.includes(i));
-			// Keep at least one tile; an empty list would fall back to the defaults.
 			if (remaining.length === 0) return;
 			setStoredTiles(DashboardTotalsTile.encode(remaining));
 		},

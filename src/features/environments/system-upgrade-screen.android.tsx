@@ -1,7 +1,3 @@
-/**
- * Android (Material 3) rendering of `SystemUpgradeView` (SystemUpgradeView.swift).
- * Presented as a modal from the Dashboard card, pushed from Environment Detail.
- */
 import { Stack } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';

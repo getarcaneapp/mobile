@@ -1,4 +1,3 @@
-/** Port of `ActivityToastScope.swift`: which activities raise toasts. */
 import type { Activity } from '@/sdk/models/activity/Activity';
 
 export type ActivityToastScope = 'userInitiated' | 'all';
@@ -31,8 +30,6 @@ export const ActivityToastScope = {
 		const startedBy = activity.startedBy;
 		if (!startedBy) return false;
 		if ((startedBy.userId?.trim() ?? '') !== '') return true;
-		// Older v2 servers may omit the user ID, so retain a username fallback
-		// while still excluding the backend's explicit system actor.
 		const username = startedBy.username.trim();
 		return (
 			username !== '' &&

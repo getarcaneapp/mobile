@@ -1,7 +1,3 @@
-/**
- * State and actions for `SystemUpgradeView` (SystemUpgradeView.swift): check
- * whether Arcane can self-upgrade on an environment, then trigger it.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -21,11 +17,6 @@ export type SystemUpgradePhase =
 
 export const systemUpgradeConfirmationHost = 'system-upgrade';
 
-/**
- * Route params: `envID`, plus `name` when pushed from Environment Detail
- * (`SystemUpgradeView(environmentID:environmentName:)`). The Dashboard card
- * presents it as a sheet with only `envID`.
- */
 export function useSystemUpgradeRoute() {
 	const params = useLocalSearchParams<{ envID?: string; name?: string }>();
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
@@ -33,7 +24,6 @@ export function useSystemUpgradeRoute() {
 	return {
 		environmentID: params.envID ?? activeEnvironmentID,
 		environmentName: name,
-		/** Swift wraps the Dashboard presentation in `NavigationStack` + Done; Environment Detail pushes it. */
 		isSheet: params.name === undefined
 	};
 }
@@ -68,9 +58,6 @@ export function useSystemUpgrade(
 		}
 		setPhase({ kind: 'triggering' });
 		try {
-			// SDK returns void here — the server may return 202 because it's
-			// mid-replacement. Show a static success message; the app will
-			// reconnect once the new container is up.
 			await client.system.triggerUpgrade({ envID: environmentID });
 			setPhase({ kind: 'triggered', message: 'Upgrade initiated. Arcane will restart shortly.' });
 		} catch (error) {
@@ -78,11 +65,9 @@ export function useSystemUpgrade(
 		}
 	};
 
-	// `.task { guard isAdmin else { return }; await checkUpgrade() }`
 	useEffect(() => {
 		if (!isAdmin) return;
 		void checkUpgrade();
-		// Runs once per appearance, like `.task` without an id.
 	}, [isAdmin]);
 
 	const confirmationMessage = environmentName

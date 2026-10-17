@@ -1,24 +1,13 @@
-/**
- * App icon options for `AppIconPickerView` (AppIconPickerView.swift).
- *
- * Swift reads `CFBundleAlternateIcons` and `UIApplication.alternateIconName`
- * synchronously. UIKit only allows those on the main thread, so the native
- * module answers asynchronously and this store caches the answer: it loads at
- * import (long before Settings opens) and updates after every change.
- */
 import { useSyncExternalStore } from 'react';
 
 import { ArcaneAppIcon } from '../../../../modules/arcane-app-icon';
 
 export type AppIconOption = {
-	/** `undefined` represents the primary / default icon. */
 	alternateName: string | undefined;
 	displayName: string;
-	/** `AppIconPreviewAsset.name(for:)` as a bundled asset module (`require`); undefined when missing. */
 	preview: number | undefined;
 };
 
-/** Thumbnails exported from the reference app's `<alternateName ?? "AppIcon">-Preview-HighContrast` image sets. */
 const previews: Record<string, number> = {
 	AppIcon: require('@/assets/app-icons/previews/AppIcon.png'),
 	'AppIcon-Blueprint': require('@/assets/app-icons/previews/AppIcon-Blueprint.png'),
@@ -32,7 +21,6 @@ const previews: Record<string, number> = {
 	'AppIcon-Terminal': require('@/assets/app-icons/previews/AppIcon-Terminal.png')
 };
 
-/** `UIImage(named:)` returns nil for a missing preview: the row shows a placeholder. */
 function previewFor(name: string | undefined): number | undefined {
 	return previews[name ?? 'AppIcon'];
 }
@@ -67,9 +55,7 @@ async function refresh() {
 			ArcaneAppIcon.getAlternateIconName()
 		]);
 		update({ supportsAlternateIcons, currentIconName });
-	} catch {
-		// Leave the section hidden, as Swift does when icons aren't supported.
-	}
+	} catch {}
 }
 
 void refresh();
@@ -79,13 +65,11 @@ const subscribe = (listener: () => void) => {
 	return () => listeners.delete(listener);
 };
 
-/** `supportsAlternateIcons` and `alternateIconName`, re-rendering on change. */
 export function useAppIconState(): IconState {
 	return useSyncExternalStore(subscribe, () => state);
 }
 
 export const AlternateAppIcons = {
-	/** The primary icon followed by each alternate in `CFBundleAlternateIcons`, sorted by name. */
 	options: [
 		{
 			alternateName: undefined,
@@ -98,12 +82,10 @@ export const AlternateAppIcons = {
 			preview: previewFor(name)
 		}))
 	] as AppIconOption[],
-	/** `UIApplication.shared.setAlternateIconName(_:)`. */
 	async setAlternateIconName(name: string | undefined): Promise<void> {
 		await ArcaneAppIcon.setAlternateIconName(name);
 		update({ currentIconName: name });
 	},
-	/** Re-read from the system (the Android launcher state can change underneath the app). */
 	refresh,
 	previewFor
 };

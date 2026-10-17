@@ -1,10 +1,8 @@
-/** Port of Models/Base/Message.swift. */
 import type { JSONValue } from '../../types/json';
 import { D } from './decoding';
 
 export interface MessageResponse {
 	message: string;
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 

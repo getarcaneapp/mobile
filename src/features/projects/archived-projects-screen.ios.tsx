@@ -1,4 +1,3 @@
-/** Port of `ArchivedProjectsView` + `ArchivedProjectRow` (ArchivedProjectsView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

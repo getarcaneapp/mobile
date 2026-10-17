@@ -1,13 +1,3 @@
-/**
- * Model behind `VolumeBackupsView` (VolumeBackupsView.swift): paginated
- * backups with warnings, policy support detection, S3 destinations, create /
- * restore / delete / upload / discover / download / import, and the 5-second
- * refresh while a backup runs.
- *
- * The Create Backup sheet is its own route; it shares the destination
- * selection and `create` through a small per-screen store handed over with
- * `routePayloads`.
- */
 import { File, Paths } from 'expo-file-system';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createStore, type StoreApi } from 'zustand/vanilla';
@@ -36,7 +26,6 @@ import {
 } from './volume-support';
 import { pickedFileName } from '@/core/picked-file-name';
 
-/** State the Create Backup sheet reads and edits (Swift: `destination`, `s3ID`, `supportsPolicies`, `destinations`). */
 export type BackupCreateState = {
 	destination: string;
 	s3ID: string;
@@ -44,17 +33,11 @@ export type BackupCreateState = {
 	destinations: S3Destination[];
 	setDestination: (value: string) => void;
 	setS3ID: (value: string) => void;
-	/** Resolves true once the create request succeeded (the sheet then closes). */
 	create: () => Promise<boolean>;
 };
 
 export type BackupCreateStore = StoreApi<BackupCreateState>;
 
-/**
- * Chunk reader over a picked file (Swift reads chunks from the file URL with a
- * `FileHandle`). `Blob.slice().arrayBuffer()` isn't available for expo-file-system
- * files under React Native, so read through a native file handle instead.
- */
 function fileUploadSource(file: File, name: string): UploadFileSource {
 	return {
 		name,
@@ -108,7 +91,6 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 	const canBackup = hasPermission('volumes:backup', environmentID);
 	const canUpload = hasPermission('volumes:upload', environmentID);
 
-	// The Create Backup sheet's shared state.
 	const createStoreRef = useRef<BackupCreateStore | null>(null);
 	const createActionRef = useRef<() => Promise<boolean>>(async () => false);
 	createStoreRef.current ??= createStore<BackupCreateState>((set) => ({
@@ -189,7 +171,6 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 		[environmentID, volumeName]
 	);
 
-	// `.task(id: clientGeneration:environment:volume)`: load, then refresh every 5 s while a backup runs.
 	useEffect(() => {
 		let cancelled = false;
 		void load();
@@ -203,10 +184,8 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 		};
 	}, [load, generation]);
 
-	// `.onDisappear`: drop the downloaded archive.
 	useEffect(() => () => removeItem(downloadRef.current), []);
 
-	/** Swift `perform(_:)`. */
 	const perform = async (operation: () => Promise<void>) => {
 		const scope = new BackupRequestScope();
 		setBusy(true);
@@ -350,7 +329,6 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 		});
 	};
 
-	/** `.fileImporter(allowedContentTypes: [.data])` + the import confirmation. */
 	const pickImport = async () => {
 		try {
 			const result = await File.pickFileAsync();
@@ -387,7 +365,6 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 		load,
 		refresh: () => load(),
 		loadMore: () => void load(true),
-		/** `backup.status == nil || backup.status == "succeeded"`. */
 		isUsable: (backup: BackupEntry) => backup.status === undefined || backup.status === 'succeeded',
 		openCreate: () =>
 			nav.openBackupCreate(environmentID, volumeName, routePayloads.put(createState)),

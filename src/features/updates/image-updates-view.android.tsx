@@ -1,10 +1,3 @@
-/**
- * Android rendering of `AllEnvironmentsImageUpdatesView`
- * (AllEnvironmentsImageUpdatesView.swift): Material 3 cards per environment
- * (or one list in All Environments mode) with the same actions, filter,
- * detail, and updater-run sheets as Compose modal bottom sheets. SwiftUI
- * context menus become long-press menus.
- */
 import { MenuView } from '@react-native-menu/menu';
 import { Stack } from 'expo-router';
 import { useState, type ReactNode } from 'react';
@@ -41,7 +34,6 @@ import {
 	type ImageUpdatesModel
 } from './use-image-updates';
 
-// Read per render: colors follow the current appearance.
 const ripple = () => ({ color: colors.separator as string });
 
 function UpdateTypeBadge({ info }: { info: ImageUpdateResponse }) {
@@ -428,8 +420,6 @@ function AllEnvironmentsUpdatesList({ model }: { model: ImageUpdatesModel }) {
 	);
 }
 
-// MARK: - Detail sheet
-
 function Panel({ children, padded = true }: { children: ReactNode; padded?: boolean }) {
 	return (
 		<View
@@ -765,13 +755,10 @@ function FilterSheet({ model }: { model: ImageUpdatesModel }) {
 	);
 }
 
-// MARK: - Screen
-
 export type ImageUpdatesViewProps = {
 	dismissOnOperationStart?: boolean;
 	onDismiss?: () => void;
 	historyAction?: ActionButtonItem;
-	/** Extra sheets (UpdatesView's updater + picker sheets). */
 	sheets?: ReactNode;
 };
 

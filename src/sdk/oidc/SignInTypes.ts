@@ -1,4 +1,3 @@
-/** Port of ArcaneOIDC/Types/SignInTypes.swift (`OIDCAuthenticator.SignInResult` / `SignInError`). */
 import type { TokenPair } from '../auth/TokenStore';
 import type { User } from '../models/user/User';
 
@@ -20,7 +19,6 @@ const descriptions: Record<SignInErrorKind, string> = {
 	sessionDidNotStart: 'The secure sign-in session could not be started.'
 };
 
-/** Swift `OIDCAuthenticator.SignInError`; `message` is the Swift `errorDescription`. */
 export class SignInError extends Error {
 	readonly kind: SignInErrorKind;
 

@@ -1,7 +1,3 @@
-/**
- * Data for `S3DestinationsView` and `S3DestinationEditor`
- * (S3DestinationsView.swift). Shared by both platforms.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -134,14 +130,12 @@ export function useS3Destinations() {
 
 export type S3DestinationsModel = ReturnType<typeof useS3Destinations>;
 
-/** `S3DestinationEditor(destination:)`; `destination` is nil when creating. */
 export function useS3DestinationEditor(destination: S3Destination | undefined) {
 	const client = useClientManager((s) => s.client);
 	const permissions = useGlobalPermissions();
 	const dismiss = useDismiss();
 	const alive = useAliveRef();
 	useBackupSessionScope();
-	// Only the create sheet reloads the list on dismiss (Swift `.sheet(onDismiss:)`).
 	useEmitOnDismiss('s3', destination === undefined);
 
 	const [name, setName] = useState(destination?.name ?? '');

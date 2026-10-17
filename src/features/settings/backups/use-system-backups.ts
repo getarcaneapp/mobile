@@ -1,4 +1,3 @@
-/** Data for `SystemBackupsView` (SystemBackupsView.swift). Shared by both platforms. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -16,13 +15,11 @@ import {
 	useSheetDismissListener
 } from './backup-scope';
 
-/** `Text(entry.createdAt, style: .date)` (long date). */
 export function backupEntryDate(entry: BackupHistoryEntry): string {
 	const date = parseArcaneDate(entry.createdAt);
 	return date ? date.toLocaleDateString(undefined, { dateStyle: 'long' }) : entry.createdAt;
 }
 
-/** `"\(status) · \(destination) · \(size)"`. */
 export function backupEntrySummary(entry: BackupHistoryEntry): string {
 	return `${entry.status} · ${entry.destination} · ${formatFileBytes(entry.size)}`;
 }
@@ -110,7 +107,6 @@ export function useSystemBackups() {
 		[alive, canRead, client]
 	);
 
-	// `.task(id: "\(clientGeneration):\(search)")`: load, then poll every 5 s while a run is in progress.
 	useEffect(() => {
 		void load();
 		const timer = setInterval(() => {

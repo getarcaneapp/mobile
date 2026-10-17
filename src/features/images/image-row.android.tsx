@@ -1,4 +1,3 @@
-/** Android port of `ImageRow` (ImagesView.swift). Standalone (RN views). */
 import { Text, View } from 'react-native';
 
 import { colors, systemColors } from '@/theme/colors';

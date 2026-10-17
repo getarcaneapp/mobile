@@ -1,8 +1,3 @@
-/**
- * Android rendering of `SecurityOverviewView`: the same risk score / trend,
- * severity, exposure, drivers, priority findings and riskiest images as
- * Material 3 groups.
- */
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 

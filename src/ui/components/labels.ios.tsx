@@ -1,11 +1,3 @@
-/**
- * Ports of `ResourceCountLabel`, `ResourceCountSectionHeader`
- * (ResourceCountLabel.swift), `SectionHeader` (SectionHeader.swift),
- * `UpdateStateBadge` (UpdateStateBadge.swift) and `DestructiveLabel`
- * (DestructiveLabel.swift).
- *
- * SwiftUI-tree.
- */
 import { HStack, Label, Spacer, Text } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -43,7 +35,6 @@ export function ResourceCountLabel(props: ResourceCountProps) {
 			modifiers={[
 				font({ textStyle: 'subheadline' }),
 				monospacedDigit(),
-				// Hierarchical: inside a Section header (already secondary) Swift's `.secondary` dims further.
 				foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
 				accessibilityElement('ignore'),
 				accessibilityLabel(accessibility)
@@ -54,7 +45,6 @@ export function ResourceCountLabel(props: ResourceCountProps) {
 	);
 }
 
-/** Pagination-aware section header: title plus a trailing count. Use as a `Section` header. */
 export function ResourceCountSectionHeader({
 	title,
 	...count
@@ -68,10 +58,6 @@ export function ResourceCountSectionHeader({
 	);
 }
 
-/**
- * Canonical section header: headline-weight secondary title with optional
- * symbol and count; trailing content renders after the title.
- */
 export function SectionHeader({ title, systemImage, count, trailing }: SectionHeaderProps) {
 	return (
 		<HStack spacing={6} modifiers={[padding({ horizontal: 4 }), accessibilityElement('combine')]}>
@@ -131,10 +117,6 @@ export function UpdateStateBadge({ state }: { state: ImageUpdateState }) {
 	);
 }
 
-/**
- * Keeps both a destructive action's symbol and title red on neutral surfaces
- * (menus, context menus). Use as a `Button` label inside a `Menu`.
- */
 export function DestructiveLabel({ text, systemImage = 'trash' }: DestructiveLabelProps) {
 	return (
 		<Label

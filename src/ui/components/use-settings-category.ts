@@ -1,8 +1,3 @@
-/**
- * Shared model for `SettingsCategoryView` (EnvironmentSettingsForm.swift):
- * loads a server-wide settings category from the local environment (by
- * default), tracks edits through an `EnvironmentSettingsDraft`, and saves.
- */
 import { useCallback, useEffect } from 'react';
 
 import { EnvironmentID } from '@/sdk/client/environment';
@@ -30,7 +25,6 @@ export function useSettingsCategory(
 		await draft.getState().load(client, categoryFields(category));
 	}, [draft, category]);
 
-	// `.task { await load() }`
 	useEffect(() => {
 		void load();
 	}, [load, clientGeneration]);

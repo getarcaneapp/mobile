@@ -1,10 +1,3 @@
-/**
- * DashboardView.swift's `@State` and data loading, as a per-screen vanilla
- * zustand store so async flows read current values the way Swift's state
- * does (`get()` instead of stale closures). `useDashboardModel` owns one per
- * mounted dashboard and wires the SwiftUI lifecycle (`.task`, `.onChange`,
- * `scenePhase`) to these actions.
- */
 import { createStore } from 'zustand/vanilla';
 
 import type { Activity } from '@/sdk/models/activity/Activity';
@@ -28,7 +21,6 @@ import {
 	type DashboardLiveCounts
 } from './dashboard-logic';
 
-/** `DashboardEnvironmentCountResult`. */
 type CountResult = {
 	total: number | undefined;
 	unavailableEnvironmentIDs: string[];
@@ -50,18 +42,14 @@ export type DashboardViewState = {
 	rawEnvironmentCount: number;
 	isLoading: boolean;
 	hasLoadedOnce: boolean;
-	/** True only after an environments fetch succeeded; gates the empty state. */
 	hasLoadedEnvironments: boolean;
-	/** Bumped on pull-to-refresh so per-environment rows and the pinned section refetch. */
 	cardRefreshToken: number;
 	visibleEnvironmentCount: number;
-	/** Something the dashboard counts changed while it was covered. */
 	needsRefreshOnAppear: boolean;
 	lastRefreshAt: number | undefined;
 
 	imageUpdatesTotal: () => number | undefined;
 	loadData: (refresh?: boolean) => Promise<void>;
-	/** Manual pull-to-refresh reconnects the live streams; automatic triggers don't. */
 	refreshDashboard: (reconnectStream?: boolean) => Promise<void>;
 	refreshLiveCounts: () => Promise<void>;
 	refreshEnvironmentDockerInfo: (environmentID: string) => Promise<void>;
@@ -82,7 +70,6 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 		const ordered = (envs: readonly Environment[]) =>
 			dashboardEnvironments(envs, manager().activeEnvironmentID, get().visibleEnvironmentCount);
 
-		/** Nil means the fetch failed (or no client yet), distinct from zero environments. */
 		const loadEnvironmentsCached = async (refresh: boolean): Promise<Environment[] | undefined> => {
 			await environmentsStore().load({ refresh });
 			if (!environmentsStore().hasLoaded) return undefined;
@@ -101,9 +88,7 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 			if (!client) return undefined;
 			try {
 				return (await client.volumes.counts({ envID: environmentID })).total;
-			} catch {
-				// Older servers may not expose the counts route; the paginated list has the same total.
-			}
+			} catch {}
 			try {
 				return (await client.volumes.list({ envID: environmentID, query: { start: 0, limit: 1 } }))
 					.pagination.totalItems;
@@ -221,7 +206,6 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 				if (refresh) set((s) => ({ cardRefreshToken: s.cardRefreshToken + 1 }));
 				if (refresh || get().allEnvironments.length === 0)
 					set({ visibleEnvironmentCount: environmentBatchSize });
-				// Keep the last successful totals visible while a refresh fetches replacements.
 				if (!refresh) {
 					set({
 						volumesTotal: undefined,
@@ -244,7 +228,6 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 						rawEnvironmentCount: envs.length,
 						allEnvironments: envs,
 						environments: ordered(envs),
-						// The catalog is primary content: publish it before awaiting any aggregate.
 						hasLoadedOnce: true,
 						isLoading: false
 					});
@@ -268,7 +251,6 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 						set({ hasLoadedEnvironmentCounts: true });
 					}
 
-					// Dashboard snapshots (action items) refresh inside the environments store's load.
 					const clearSequence = useActivityHistoryMutationStore.getState().latestClear?.sequence;
 					let activities = await loadFailedWork();
 					if (!isCancelled()) {
@@ -279,20 +261,17 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 						set({ failedActivities: activities });
 					}
 				} finally {
-					// A cancelled first load must not latch "loaded".
 					set({ isLoading: false, ...(isCancelled() ? {} : { hasLoadedOnce: true }) });
 				}
 			},
 
 			refreshDashboard: async (reconnectStream = true) => {
-				// Reconnecting invalidates the live aggregate; keep its last update total until the replacement arrives.
 				set({ supplementalImageUpdatesTotal: get().imageUpdatesTotal() });
 				if (reconnectStream) {
 					useDashboardStreamStore.getState().reconnect();
 					useSystemStatsHistoryStore.getState().reconnect();
 				}
 				await get().loadData(true);
-				// Await a fresh pass so the pull-to-refresh spinner covers the new counts.
 				const client = manager().client;
 				await environmentsStore().refreshDockerInformation(client);
 				await environmentsStore().refreshActionItems(client);
@@ -302,7 +281,6 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 			},
 
 			refreshLiveCounts: async () => {
-				// Counts changed after any pass in flight began; start a new one.
 				await environmentsStore().refreshDockerInformation(manager().client, true);
 				if (isCancelled()) return;
 				get().updateLiveStateFromStore();
@@ -342,7 +320,6 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 				const source =
 					get().allEnvironments.length === 0 ? get().environments : get().allEnvironments;
 				set({ environments: ordered(source) });
-				// The active environment moved to the front, which can change the stats-stream cap.
 				environmentsStore().prioritizeStats(manager().activeEnvironmentID);
 			},
 

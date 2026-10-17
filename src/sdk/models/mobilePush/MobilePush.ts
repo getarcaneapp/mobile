@@ -1,15 +1,9 @@
-/** Port of Models/MobilePush/MobilePush.swift. */
 import type { ISODateString } from '../base/date';
 import { parseArcaneJSON } from '../../http/json';
 import { D, DecodingError } from '../base/decoding';
 
-/**
- * Feature flag advertised in `/app-version` `enabledFeatures` when the server
- * can pair mobile devices for native push notifications.
- */
 export { mobilePushFeature } from '../../client/ServerCapabilities';
 
-/** Notification event keys accepted in `MobilePushDevice.events`. */
 export type MobilePushEvent =
 	| 'image_update'
 	| 'container_update'
@@ -32,7 +26,6 @@ export const MobilePushEvent = {
 	] as const satisfies readonly MobilePushEvent[]
 } as const;
 
-/** A device registered with the Arcane server for mobile push. */
 export interface MobilePushDevice {
 	id: string;
 	label: string;
@@ -43,7 +36,6 @@ export interface MobilePushDevice {
 }
 
 export const MobilePushDevice = {
-	/** Swift init defaults (`events = [:]`, `environmentIds = []`). */
 	make(
 		init: Omit<MobilePushDevice, 'events' | 'environmentIds'> & {
 			events?: Record<string, boolean>;
@@ -58,7 +50,6 @@ export const MobilePushDevice = {
 	}
 } as const;
 
-/** Server-wide mobile push status plus the caller's devices. */
 export interface MobilePushStatus {
 	enabled: boolean;
 	channelId?: string;
@@ -74,7 +65,6 @@ export const MobilePushStatus = {
 	}
 } as const;
 
-/** Short-lived token the app presents to the push relay's `POST /v1/pair`. */
 export interface MobilePushPairingToken {
 	token: string;
 	channelId: string;
@@ -94,7 +84,6 @@ export interface MobilePushUpdateDevice {
 	environmentIds?: string[];
 }
 
-/** Swift `MobilePushRoute.Kind`. */
 export type MobilePushRouteKind =
 	| 'tab'
 	| 'container'
@@ -128,7 +117,6 @@ export const MobilePushRouteKind = {
 	}
 } as const;
 
-/** Typed deep link carried in a push payload. */
 export interface MobilePushRoute {
 	kind: MobilePushRouteKind;
 	tab?: string;
@@ -137,7 +125,6 @@ export interface MobilePushRoute {
 }
 
 export const MobilePushRoute = {
-	/** Swift nested `MobilePushRoute.Kind`. */
 	Kind: MobilePushRouteKind,
 
 	decode(this: void, raw: unknown): MobilePushRoute {
@@ -157,7 +144,6 @@ export interface MobilePushResource {
 	name?: string;
 }
 
-/** The `arcane` dictionary inside an APNs payload delivered by the relay. */
 export interface MobilePushPayload {
 	v: number;
 	eventId: string;
@@ -172,12 +158,10 @@ export interface MobilePushPayload {
 }
 
 export const MobilePushPayload = {
-	/** Swift init defaults (`v = 1`). */
 	make(init: Omit<MobilePushPayload, 'v'> & { v?: number }): MobilePushPayload {
 		return { ...init, v: init.v ?? 1 };
 	},
 
-	/** Validating decode of the synthesized `Codable` shape. */
 	decode(raw: unknown): MobilePushPayload {
 		const o = D.object(raw, 'MobilePushPayload');
 		return {
@@ -197,15 +181,9 @@ export const MobilePushPayload = {
 		};
 	},
 
-	/**
-	 * Swift `init?(userInfo:)`: decodes the `arcane` object from a notification
-	 * payload (e.g. expo-notifications `request.content.data`). Returns
-	 * `undefined` when it is missing or malformed.
-	 */
 	fromUserInfo(userInfo: Record<string, unknown>): MobilePushPayload | undefined {
 		const arcane = userInfo['arcane'];
 		if (!D.isRecord(arcane)) return undefined;
-		// Round-trip through JSON like JSONSerialization (nulls dropped like the transport).
 		return D.attempt(() => MobilePushPayload.decode(parseArcaneJSON(JSON.stringify(arcane))));
 	}
 } as const;

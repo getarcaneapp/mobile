@@ -1,4 +1,3 @@
-/** Port of Types/Streaming/OperationStreamEvent.swift. */
 import { ArcaneError } from '../../errors/ArcaneError';
 import { D } from '../../models/base/decoding';
 import type { NDJSONStreamTerminalAction } from '../../streaming/NDJSONStream';
@@ -8,16 +7,8 @@ export interface OperationStreamEventProgressDetail {
 	total?: number;
 }
 
-/**
- * One frame from a finite project or image operation stream.
- *
- * Current servers emit an activity frame first, followed by log or progress
- * frames, then an explicit success or failure frame. The legacy fields remain
- * optional so the same type can consume v1 Docker progress streams.
- */
 export interface OperationStreamEvent {
 	type?: string;
-	/** JSON key `activityId`. */
 	activityID?: string;
 	log?: string;
 	done?: boolean;
@@ -59,7 +50,6 @@ export const OperationStreamEvent = {
 		return { ...rest, activityId: activityID };
 	},
 
-	/** @internal */
 	terminalAction(this: void, event: OperationStreamEvent): NDJSONStreamTerminalAction {
 		const error = event.error?.trim();
 		if (error !== undefined && error !== '') {

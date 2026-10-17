@@ -1,7 +1,3 @@
-/**
- * Android rendering of `JobsView` (JobsView.swift): Material 3 list linking
- * to the jobs list and the schedule settings.
- */
 import { Stack } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 

@@ -1,4 +1,3 @@
-/** Port of `PortMappingDetailView` (PortsView.swift). */
 import { Host } from '@/ui/host';
 import { LabeledContent, List, Section, Text } from '@expo/ui/swift-ui';
 import {

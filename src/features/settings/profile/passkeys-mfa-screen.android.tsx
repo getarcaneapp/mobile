@@ -1,4 +1,3 @@
-/** Android rendering of `PasskeysMFAView` (Views/Settings/PasskeysMFAView.swift). */
 import { MenuView } from '@react-native-menu/menu';
 import { Stack } from 'expo-router';
 import { useState } from 'react';

@@ -1,4 +1,3 @@
-/** Route screen for `NewWebhookTokenView` (WebhooksView.swift): the one-time webhook token reveal. */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { systemColors } from '@/theme/colors';

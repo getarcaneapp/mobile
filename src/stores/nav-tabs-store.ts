@@ -25,10 +25,6 @@ function loadPinnedTabs(): PinnableTab[] {
 	return isValidConfiguration(resolved) ? resolved : mainDefaults;
 }
 
-/**
- * Drops tabs the authenticated session cannot reach, then fills empty slots
- * with other available primary destinations. Port of `NavTabsStore.resolveTabs`.
- */
 export function resolveTabs(
 	pinned: readonly AppTab[],
 	availableTabs: ReadonlySet<AppTab>
@@ -50,7 +46,6 @@ export function resolveTabs(
 }
 
 type NavTabsState = {
-	/** The 4 swappable tabs (More is always pinned separately). */
 	pinnedTabs: PinnableTab[];
 	swap: (pinned: PinnableTab, replacement: PinnableTab) => void;
 	setPinnedTabs: (tabs: AppTab[]) => boolean;

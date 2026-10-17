@@ -1,7 +1,3 @@
-/**
- * Port of `RoleDetailView` (RolesView.swift) in its pushed modes: `.edit` for
- * custom roles and `.readOnly` for built-ins.
- */
 import { Host } from '@/ui/host';
 import { Stack } from 'expo-router';
 import { View } from 'react-native';

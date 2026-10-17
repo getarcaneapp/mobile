@@ -1,4 +1,3 @@
-/** NetworksView's Filter sheet: sort, environment, and type for the list that opened it. */
 import { Host } from '@/ui/host';
 import {
 	Button,

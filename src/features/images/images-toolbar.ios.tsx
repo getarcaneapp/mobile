@@ -1,7 +1,3 @@
-/**
- * ImagesView's toolbar (registries, filter, options menu, pull) and its
- * selection toolbar (bulk delete + Done). Native header items.
- */
 import { Stack } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
 import { ActivityIndicator } from 'react-native';
@@ -25,7 +21,6 @@ export function ImagesToolbar({ model }: { model: ImagesListModel }) {
 		<>
 			{model.isAdmin ? (
 				<AppToolbar placement="left" tintColor={accent}>
-					{/* `key.shield` is an SF Symbols 7 (iOS 26) glyph; fall back to `lock.shield` so iOS 18 doesn't render blank. */}
 					<Stack.Toolbar.Button
 						icon={isIOS26 ? 'key.shield' : 'lock.shield'}
 						accessibilityLabel="Container Registries"
@@ -71,7 +66,6 @@ export function ImagesToolbar({ model }: { model: ImagesListModel }) {
 						</Stack.Toolbar.Menu>
 						<Stack.Toolbar.Menu inline>
 							{model.allEnvironments ? (
-								// Update checks run per environment; pick which one to open.
 								EnvironmentToolbarAction({
 									title: 'Updates',
 									systemImage: 'arrow.up.arrow.down.circle',

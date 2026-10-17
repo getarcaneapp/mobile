@@ -1,10 +1,3 @@
-/**
- * Ports of `ResourceStatusBadge` and `StatusIcon` (Android): the same tint,
- * symbol and text as a Material 3 assist-chip-style capsule (card style) or
- * an inline icon + label. Transitional states pulse.
- *
- * Standalone (RN view).
- */
 import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
@@ -82,7 +75,6 @@ export function ResourceStatusBadge({
 	);
 }
 
-/** Compact, text-free status indicator for dense list rows. */
 export function StatusIcon({ status, isLive }: { status?: string; isLive?: boolean }) {
 	const config = statusIconPresentation(status, isLive);
 	return (

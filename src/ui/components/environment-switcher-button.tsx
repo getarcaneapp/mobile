@@ -1,10 +1,3 @@
-/**
- * Port of `EnvironmentSwitcherToolbarButton` (EnvironmentContextBar.swift):
- * an accent `server.rack` toolbar button with a 7pt status dot. Hidden in
- * All Environments preview or when there's only one environment.
- *
- * Standalone (`Stack.Toolbar` item, both platforms).
- */
 import { Stack } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
 import { Pressable, View } from 'react-native';
@@ -49,7 +42,6 @@ export function EnvironmentSwitcherToolbarButton({
 						<View
 							style={{
 								position: 'absolute',
-								// Swift: 7pt dot + centered 1.5pt stroke (8.5pt overall), bottomTrailing offset (2, 2).
 								right: -2.75,
 								bottom: -2.75,
 								width: 8.5,

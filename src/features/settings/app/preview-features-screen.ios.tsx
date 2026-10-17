@@ -1,4 +1,3 @@
-/** Port of `PreviewFeaturesView` (PreviewFeaturesView.swift). */
 import { Host } from '@/ui/host';
 import { Button, HStack, List, Section, Spacer, Text, Toggle } from '@expo/ui/swift-ui';
 import { foregroundStyle, listStyle } from '@expo/ui/swift-ui/modifiers';
@@ -8,7 +7,6 @@ import { DisclosureChevron } from '@/ui/settings-row';
 
 import { PreviewFeaturesCopy, usePreviewFeatures } from './use-preview-features';
 
-/** `NavigationLink("Title")` row. */
 function LinkRow({ title, onPress }: { title: string; onPress: () => void }) {
 	return (
 		<Button onPress={onPress}>

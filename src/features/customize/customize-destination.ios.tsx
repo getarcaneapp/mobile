@@ -1,4 +1,3 @@
-/** Port of `NavigationCatalogLandingView(parent: .customize)` (NavigationCatalogLandingView.swift). */
 import { Host } from '@/ui/host';
 import { Button, ContentUnavailableView, HStack, List, Section, Spacer } from '@expo/ui/swift-ui';
 import { listRowBackground, listStyle } from '@expo/ui/swift-ui/modifiers';

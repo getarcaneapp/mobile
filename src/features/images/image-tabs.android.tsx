@@ -1,4 +1,3 @@
-/** Android ports of `ImageHistoryView` and `ImageAttestationsView`. */
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 

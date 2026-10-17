@@ -1,8 +1,3 @@
-/**
- * Port of `TopologyGraphLayout` / `TopologyConnection` (NetworkTopologyView.swift):
- * networks in a left column, each followed by the containers whose first
- * network it is; isolated containers below.
- */
 import { localizedStandardCompare } from '@/core/list-sort-order';
 import type { NetworkTopology, TopologyEdge, TopologyNode } from '@/sdk/models/network/Topology';
 import { systemColors } from '@/theme/colors';
@@ -194,7 +189,6 @@ export const nodePosition = (layout: TopologyGraphLayout, node: TopologyNode): P
 		y: layout.contentSize.height / 2
 	};
 
-/** `TopologyGraphLayout.connections(for:in:)`, for the detail sheet. */
 export function topologyConnections(
 	node: TopologyNode,
 	topology: NetworkTopology
@@ -210,7 +204,6 @@ const capitalized = (value: string) =>
 		.toLowerCase()
 		.replace(/(^|\s)(\S)/g, (_m, space: string, c: string) => space + c.toUpperCase());
 
-/** `TopologyNodeCard.accent` (hex, or undefined for `.secondary`). */
 export function nodeAccent(node: TopologyNode): string | undefined {
 	if (node.type === 'network') return systemColors.teal;
 	switch (node.metadata.status?.toLowerCase()) {
@@ -226,7 +219,6 @@ export function nodeAccent(node: TopologyNode): string | undefined {
 	}
 }
 
-/** `TopologyNodeCard.addressLines`. */
 export function nodeAddressLines(node: TopologyNode, connections: TopologyConnection[]): string[] {
 	if (node.type === 'network') return [];
 	const multiple = connections.length > 1;
@@ -242,7 +234,6 @@ export function nodeAddressLines(node: TopologyNode, connections: TopologyConnec
 	return lines;
 }
 
-/** `TopologyNodeCard.networkSummary`. */
 export const networkSummary = (node: TopologyNode) =>
 	[node.metadata.driver, node.metadata.scope]
 		.filter((v): v is string => !!v)
@@ -274,7 +265,6 @@ export const TopologyScale = { minimum: 0.35, maximum: 1.75 };
 export const clampScale = (value: number) =>
 	Math.min(Math.max(value, TopologyScale.minimum), TopologyScale.maximum);
 
-/** `fitGraph(in:)` target scale. */
 export function fitScale(viewport: Size, content: Size) {
 	return clampScale(
 		Math.min((viewport.width - 32) / content.width, (viewport.height - 32) / content.height, 1)

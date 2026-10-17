@@ -68,11 +68,6 @@ import {
 	type ConnectionProfilesModel
 } from './use-connection-profiles';
 
-/**
- * Port of `ConnectionProfilesView` (Views/Settings/ConnectionProfilesView.swift).
- * `pushed`: Account's `NavigationLink`, in the tab's own stack and bar.
- * Otherwise the login sheet, which draws its own navigation bar.
- */
 export function ConnectionProfilesScreen({ pushed = false }: { pushed?: boolean }) {
 	const toolbarAccent = useAppAccentToolbarSymbol();
 	const model = useConnectionProfiles({ pushed });
@@ -282,7 +277,6 @@ function ProfileRow({
 	);
 }
 
-/** Port of `ConnectionProfileEditorView`. */
 export function ConnectionProfileEditorScreen() {
 	const toolbarAccent = useAppAccentToolbarSymbol();
 	const model = useConnectionProfileEditor();
@@ -291,8 +285,6 @@ export function ConnectionProfileEditorScreen() {
 	const usernameRef = useRef<TextFieldRef>(null);
 	const passwordRef = useRef<SecureFieldRef>(null);
 
-	// `TextField(text: $name)`: fields bind to native state so the initial
-	// values and programmatic changes (loaded / removed sign-in) always land.
 	const { name, serverURL, username, password } = model;
 	const nameText = useNativeState(name);
 	const serverText = useNativeState(serverURL);
@@ -306,7 +298,6 @@ export function ConnectionProfileEditorScreen() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [name, serverURL, username, password]);
 
-	// `.onAppear { focusedField = … }`.
 	useEffect(() => {
 		const timer = setTimeout(
 			() => (model.initialFocus === 'name' ? nameRef : serverRef).current?.focus().catch(() => {}),

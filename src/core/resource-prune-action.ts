@@ -1,4 +1,3 @@
-/** Port of Types/ResourcePruneAction.swift. */
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { ArcaneError } from '@/sdk/errors/ArcaneError';
@@ -26,7 +25,6 @@ const messages: Record<ResourcePruneAction, string> = {
 export const ResourcePruneAction = {
 	title: (action: ResourcePruneAction) => titles[action],
 	message: (action: ResourcePruneAction) => messages[action],
-	/** Confirmation text when the prune runs on every enabled environment. */
 	allEnvironmentsMessage: (action: ResourcePruneAction) =>
 		`${messages[action]} This runs on every enabled environment.`,
 	permission(action: ResourcePruneAction): string {
@@ -54,7 +52,6 @@ export const ResourcePruneAction = {
 	): Promise<void> {
 		switch (action) {
 			case 'containers': {
-				// Arcane exposes container pruning through the system endpoint; only containers are selected.
 				const result = await client.system.prune({
 					options: { containers: { mode: 'stopped' } },
 					envID: environmentID

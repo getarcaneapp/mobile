@@ -1,4 +1,3 @@
-/** Port of the volume flavour of `BackupFilesView` (Views/Settings/Backups/BackupFilesView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

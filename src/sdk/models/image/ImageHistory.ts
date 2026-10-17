@@ -1,7 +1,5 @@
-/** Port of Models/Image/ImageHistory.swift. */
 import { D } from '../base/decoding';
 
-/** One layer returned by Docker's image history endpoint. */
 export interface ImageHistoryItem {
 	id: string;
 	created: number;
@@ -20,7 +18,6 @@ export const ImageHistoryItem = {
 		return { ...init, tags: init.tags ?? [], comment: init.comment ?? '' };
 	},
 
-	/** Swift `init(from:)`: every key is optional with a default. */
 	decode(this: void, raw: unknown): ImageHistoryItem {
 		const o = D.object(raw, 'ImageHistoryItem');
 		return {

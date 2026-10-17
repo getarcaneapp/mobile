@@ -1,26 +1,18 @@
-/**
- * Public API of the Arcane TypeScript SDK (port of libarcane-swift).
- * See README.md for the Swift → TS naming rules.
- */
-// Client & transport
 export * from './client/ArcaneClient';
 export * from './client/ArcaneTransport';
 export * from './client/environment';
 export * from './client/ServerCapabilities';
 export * from './client/url';
 export * from './client/proxyRequestSupport';
-// HTTP
 export * from './http/RESTService';
 export * from './http/requestOptions';
 export * from './http/apiResponse';
 export * from './http/multipart';
 export * from './http/fetching';
 export * from './http/json';
-// Auth
 export * from './auth/AuthManager';
 export * from './auth/AuthService';
 export * from './auth/TokenStore';
-// Errors, pagination, streaming
 export * from './errors/ArcaneError';
 export * from './pagination/PaginatedResponse';
 export * from './streaming/NDJSONStream';
@@ -28,14 +20,12 @@ export * from './streaming/Streams';
 export * from './streaming/WebSocketChannel';
 export * from './streaming/TerminalSession';
 export * from './streaming/AsyncQueue';
-// Types
 export * from './types/json';
 export * from './types/proxySession';
 export * from './types/streaming';
 export * from './types/gitOps';
 export * from './types/notification';
 export * from './types/VulnerabilityRiskOverview';
-// Models
 export * from './models/activity';
 export * from './models/apiKey';
 export * from './models/auth';
@@ -75,7 +65,6 @@ export * from './models/version';
 export * from './models/volume';
 export * from './models/vulnerability';
 export * from './models/webhook';
-// Services
 export * from './services/ActivitiesService';
 export * from './services/APIKeysService';
 export * from './services/BuildsService';
@@ -110,6 +99,5 @@ export * from './services/VersionService';
 export * from './services/VolumesService';
 export * from './services/VulnerabilitiesService';
 export * from './services/WebhooksService';
-// OIDC & passkeys
 export * from './oidc';
 export * from './passkeys';

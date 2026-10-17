@@ -1,8 +1,3 @@
-/**
- * Port of `ImageRow` (ImagesView.swift).
- *
- * SwiftUI-tree.
- */
 import { HStack, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import {
 	accessibilityElement,
@@ -43,12 +38,6 @@ function ImageRowDetails({ tag, row }: { tag: string | undefined; row: ImageRowM
 	);
 }
 
-/**
- * Stand-in for Swift's `ViewThatFits(in: .horizontal) { HStack { details } VStack { details } }`
- * (@expo/ui has no ViewThatFits): estimates the one-line width from glyph metrics measured
- * against the reference app (caption-mono chip, subheadline size, badge) and the row's text
- * column (inset-grouped margins, 36pt icon + 12pt spacing, disclosure chevron).
- */
 function detailsFitOneLine(tag: string | undefined, row: ImageRowModel, windowWidth: number) {
 	const available = windowWidth - 32 - 64 - 47;
 	const chip = tag ? 12 + 7.25 * tag.length + 8 : 0;

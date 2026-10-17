@@ -8,7 +8,6 @@ export type SeverityBarProps = {
 	unknown: number;
 };
 
-/** Segments in `SeverityBar` order, counts clamped to ≥ 0. */
 export function severitySegments(props: SeverityBarProps) {
 	const nonnegative = (n: number) => (Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0);
 	const segments = [
@@ -33,6 +32,5 @@ export function severitySegments(props: SeverityBarProps) {
 	return { segments, total, summary };
 }
 
-/** Width of one segment in a bar `width` wide (each visible segment is at least 6pt). */
 export const segmentWidth = (count: number, total: number, width: number) =>
 	Math.max(6, (width * count) / total);

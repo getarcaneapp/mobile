@@ -1,7 +1,3 @@
-/**
- * ProjectsView's Filter sheet (`filterSheetContent`): sort, environment,
- * status, updates, and tags for the list that opened it.
- */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {

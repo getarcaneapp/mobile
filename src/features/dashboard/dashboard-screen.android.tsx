@@ -1,8 +1,3 @@
-/**
- * Android (Material 3) rendering of `DashboardView` (DashboardView.swift):
- * same sections, states and actions as iOS in RN views, with Compose sheets
- * and menus; pull-to-refresh via `RefreshControl`.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View, type ColorValue } from 'react-native';
@@ -230,7 +225,6 @@ function EnvironmentsSection({ model }: { model: DashboardModel }) {
 	);
 }
 
-/** Material icon button for the top app bar (`Stack.Toolbar.Button` needs image sources on Android). */
 function ToolbarIconButton({
 	icon,
 	label,

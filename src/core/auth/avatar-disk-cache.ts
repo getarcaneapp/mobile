@@ -1,12 +1,3 @@
-/**
- * Port of `AvatarDiskCache.swift`: the signed-in user's profile picture,
- * kept on disk so it shows instantly on launch. Keyed by server, user and
- * the account's `updatedAt`; entries expire after a day so a Gravatar change
- * (which doesn't touch the account) still appears.
- *
- * Views render the file directly (`currentUserAvatarURI`), so this returns
- * file URIs instead of bytes.
- */
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
 
@@ -24,7 +15,6 @@ async function fileFor(key: string): Promise<File> {
 export const AvatarDiskCache = {
 	maximumAgeMs,
 
-	/** File URI of a fresh cached avatar for `key`, if any. */
 	async load(key: string): Promise<string | undefined> {
 		try {
 			const file = await fileFor(key);
@@ -37,7 +27,6 @@ export const AvatarDiskCache = {
 		}
 	},
 
-	/** Writes `data` and returns its file URI. */
 	async save(data: Uint8Array, key: string): Promise<string | undefined> {
 		try {
 			const dir = directory();
@@ -54,9 +43,7 @@ export const AvatarDiskCache = {
 		try {
 			const dir = directory();
 			if (dir.exists) dir.delete();
-		} catch {
-			// Best effort, like `try?`.
-		}
+		} catch {}
 	},
 
 	diskBytes(): number {

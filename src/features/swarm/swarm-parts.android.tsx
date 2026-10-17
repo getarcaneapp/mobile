@@ -1,4 +1,3 @@
-/** Android renderings of the shared swarm pieces (SwarmCommon.swift). Standalone (RN views). */
 import * as Clipboard from 'expo-clipboard';
 import { Pressable, Text, View } from 'react-native';
 

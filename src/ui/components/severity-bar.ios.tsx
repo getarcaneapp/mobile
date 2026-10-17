@@ -1,9 +1,3 @@
-/**
- * Port of `SeverityBar` (SeverityBar.swift): an 8pt capsule of colored
- * severity segments with labeled counts beneath.
- *
- * SwiftUI-tree.
- */
 import { Capsule, HStack, Rectangle, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
 	accessibilityElement,
@@ -30,10 +24,6 @@ export function SeverityBar(props: SeverityBarProps) {
 
 	return (
 		<VStack spacing={8} modifiers={[accessibilityElement('ignore'), accessibilityLabel(summary)]}>
-			{/*
-        Stands in for Swift's GeometryReader: the clear rectangle's width never depends on the segments.
-        Measuring the segment HStack itself fed its overflow back into the width and blew the bar up.
-      */}
 			<ZStack
 				alignment="leading"
 				modifiers={[frame({ height: 8 }), animation(swiftAnimation(Motion.gauge), total)]}

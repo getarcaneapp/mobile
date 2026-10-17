@@ -1,18 +1,3 @@
-/**
- * Port of ArcanePasskeys/ArcanePasskeyAuthenticator.swift.
- *
- * Passkey ceremonies run in the Arcane server's mobile passkey bridge
- * (`<origin>/mobile/passkey#request=<base64url JSON>`), opened in a secure
- * browser session. The bridge performs WebAuthn on the server's origin (so
- * the RP ID matches) and redirects to `arcane-mobile://passkey-callback`
- * with the credential, a mobile-login transaction, or an error.
- *
- * Platform pieces are injected: `presentAuthSession` replaces
- * `ASWebAuthenticationSession` (e.g. `expo-web-browser`'s
- * `openAuthSessionAsync` with `preferEphemeralSession: true`), and
- * `randomBytes` / `sha256` replace `SecRandomCopyBytes` / CryptoKit
- * (e.g. `expo-crypto`).
- */
 import type { ArcaneClient } from '../client/ArcaneClient';
 import { parseURL } from '../client/url';
 import { encodeArcaneJSON, encodeUTF8, decodeUTF8 } from '../http/json';
@@ -52,13 +37,9 @@ interface BridgeRequest {
 }
 
 export interface ArcanePasskeyAuthenticatorOptions {
-	/** Presents the bridge URL; must resolve with the `arcane-mobile://` callback URL. */
 	presentAuthSession: AuthSessionPresenter;
-	/** Secure random bytes (`expo-crypto` `getRandomBytes`). */
 	randomBytes: RandomBytes;
-	/** SHA-256 digest (`expo-crypto` `digest`). */
 	sha256: SHA256;
-	/** Fetch for the bridge manifest. Defaults to the client's `fetch`, then the global one. */
 	fetch?: FetchLike;
 }
 
@@ -107,7 +88,6 @@ export class ArcanePasskeyAuthenticator {
 		}
 	}
 
-	/** Passkey sign-in via the bridge's mobile-login transaction (PKCE-bound). */
 	async authenticateLogin(): Promise<AuthenticationResult> {
 		const challenge = await this.client.passkeys.beginLogin();
 		const codeVerifier = this.makeState();
@@ -115,15 +95,10 @@ export class ArcanePasskeyAuthenticator {
 		return this.client.passkeys.exchangeMobileLogin({ transactionId, codeVerifier });
 	}
 
-	/** Throws `MFARequiredError` when the server requires a second factor. */
 	async login(): Promise<LoginResponse> {
 		return authenticatedResponse(await this.authenticateLogin());
 	}
 
-	/**
-	 * Swift's two `completeMFA` overloads: pass the `challenge` you already
-	 * have, or a `transactionId` to begin one first.
-	 */
 	async completeMFA(
 		args: { challenge: MFAChallenge } | { transactionId: string }
 	): Promise<LoginResponse> {
@@ -160,7 +135,6 @@ export class ArcanePasskeyAuthenticator {
 		return this.client.passkeys.finishStepUp({ transactionId, credential });
 	}
 
-	/** Cancels the active bridge session; the pending call rejects with `CancellationError`. */
 	cancel(): void {
 		this.activeSession?.abort();
 		this.activeSession = undefined;
@@ -255,9 +229,6 @@ export class ArcanePasskeyAuthenticator {
 		}
 	}
 
-	// MARK: - Callback parsing (Swift `static` helpers)
-
-	/** Validates a credential callback and returns the decoded WebAuthn credential JSON. */
 	static parseCallback(url: string, expectedState: string): PasskeyCredential {
 		const grouped = validatedCallbackItems(url, expectedState);
 
@@ -286,7 +257,6 @@ export class ArcanePasskeyAuthenticator {
 		return credential as PasskeyCredential;
 	}
 
-	/** Validates a mobile-login callback and returns its transaction ID. */
 	static parseMobileLoginCallback(url: string, expectedState: string): string {
 		const grouped = validatedCallbackItems(url, expectedState);
 		const transactionId = grouped.get('transaction');
@@ -301,10 +271,6 @@ export class ArcanePasskeyAuthenticator {
 		return transactionId;
 	}
 
-	/**
-	 * `scheme://host[:port]/` for HTTPS, or HTTP on a loopback host; otherwise
-	 * `undefined` (passkeys need a secure origin).
-	 */
 	static serverOrigin(baseURL: string): string | undefined {
 		const parsed = parseURL(baseURL);
 		if (!parsed || parsed.host === '') return undefined;
@@ -329,11 +295,6 @@ function isLoopbackHost(host: string): boolean {
 	);
 }
 
-/**
- * Shared structural checks: exact `arcane-mobile://passkey-callback?…` URL,
- * no duplicate items, matching state, and bridge error mapping. Returns the
- * items by name (value `undefined` for a valueless item).
- */
 function validatedCallbackItems(
 	url: string,
 	expectedState: string

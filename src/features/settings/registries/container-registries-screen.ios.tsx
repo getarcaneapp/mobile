@@ -1,4 +1,3 @@
-/** Port of `ContainerRegistriesView` + `RegistryRow` (ContainerRegistriesView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -87,9 +86,6 @@ function RegistryActionRow({
 		<ContextMenu>
 			<ContextMenu.Trigger>
 				<Button onPress={() => model.openEdit(registry)}>
-					{/* Swift's `.foregroundStyle(.primary)` is hierarchical, so inside the Button it resolves to the
-              accent tint (titles render accent, subtitles a dimmed accent); @expo/ui's Button doesn't
-              propagate that, so apply the accent directly. */}
 					<HStack modifiers={[foregroundStyle(accent), contentShape(shapes.rectangle())]}>
 						<RegistryRow registry={registry} />
 					</HStack>
@@ -108,8 +104,6 @@ function RegistryActionRow({
 			<ContextMenu.Preview>
 				<RowPreviewCard
 					icon="shippingbox.fill"
-					// Swift passes `.accentColor`; the context-menu preview is hosted outside the app's
-					// `.accentColor(_:)` environment, so it resolves to the AccentColor asset (purple).
 					iconColor={accentColorAsset}
 					title={registryName(registry)}
 					badges={[

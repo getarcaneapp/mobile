@@ -1,4 +1,3 @@
-/** Android rendering of `TemplatePreviewView` (TemplatePreviewView.swift). */
 import { Stack } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 

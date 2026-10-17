@@ -1,4 +1,3 @@
-/** Port of Models/APIKey/APIKey.swift. */
 import type { ISODateString } from '../base/date';
 
 export interface APIKey {
@@ -15,7 +14,6 @@ export interface APIKey {
 }
 
 export const APIKey = {
-	/** Swift `APIKey.init(...)`; `isStatic` defaults to `false`. */
 	make(init: Omit<APIKey, 'isStatic'> & { isStatic?: boolean }): APIKey {
 		return { ...init, isStatic: init.isStatic ?? false };
 	}
@@ -32,12 +30,10 @@ export interface APIKeyCreated {
 	lastUsedAt?: ISODateString;
 	createdAt: ISODateString;
 	updatedAt?: ISODateString;
-	/** The plain-text key; returned only on creation. */
 	key: string;
 }
 
 export const APIKeyCreated = {
-	/** Swift `APIKeyCreated.init(...)`; `isStatic` defaults to `false`. */
 	make(init: Omit<APIKeyCreated, 'isStatic'> & { isStatic?: boolean }): APIKeyCreated {
 		return { ...init, isStatic: init.isStatic ?? false };
 	}

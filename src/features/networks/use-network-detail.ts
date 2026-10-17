@@ -1,4 +1,3 @@
-/** State and actions behind `NetworkDetailView` (NetworksView.swift). */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 

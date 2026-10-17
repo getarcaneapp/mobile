@@ -1,9 +1,3 @@
-/**
- * Material top-app-bar actions for the Containers Android screens: icon
- * buttons and overflow menus hosted in a single `Stack.Toolbar.View`
- * (Android's `Stack.Toolbar.Button` / `Menu` only accept image icons and drop
- * items that can't render).
- */
 import { MenuView } from '@react-native-menu/menu';
 import { Stack } from 'expo-router';
 import { useState } from 'react';
@@ -135,10 +129,6 @@ export function AndroidToolbar({
 	);
 }
 
-/**
- * `ResourceActionsToolbar` for Android: primary action button plus an
- * overflow menu; destructive items confirm first with the same copy.
- */
 export function AndroidResourceActionsToolbar({
 	primary,
 	secondary = [],

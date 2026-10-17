@@ -1,13 +1,7 @@
-/**
- * Port of `ProjectFileWorkspaceHelpers`, `ManagedProjectFileEntry`,
- * `ProjectFilesWorkspaceDestination`, and the file-dialog models from
- * ProjectFilesWorkspaceView.swift. Pure TS.
- */
 import type { ProjectFile, ProjectFileChange } from '@/sdk/models/project/ProjectFiles';
 
 import { localizedStandardCompare } from '@/features/containers/container-model';
 
-/** `ProjectFilesWorkspaceDestination`, encoded as a string so it can travel as a route param / SwiftUI path value. */
 export type ProjectFilesDestination =
 	| { kind: 'compose' }
 	| { kind: 'env' }
@@ -38,7 +32,6 @@ export function decodeDestination(value: string | undefined): ProjectFilesDestin
 export const sameDestination = (a: ProjectFilesDestination, b: ProjectFilesDestination) =>
 	encodeDestination(a) === encodeDestination(b);
 
-/** `EditorLanguage`. */
 export type EditorLanguage = 'yaml' | 'env' | 'plaintext';
 
 export type ManagedProjectFileEntry = {
@@ -284,7 +277,6 @@ function validateFileName(
 	return trimmed;
 }
 
-/** `browserSort`: true when `lhs` sorts before `rhs`. Folders first, then Finder order. */
 function browserSort(
 	lhs: ManagedProjectFileEntry,
 	rhs: ManagedProjectFileEntry,
@@ -339,8 +331,6 @@ function remapEntries(
 	for (const [key, value] of remapped) entries.set(key, value);
 }
 
-// MARK: - File dialog (ProjectFileDialog / ProjectFileDialogResult)
-
 export type ProjectFileDialog =
 	| { kind: 'createFile'; parentPath: string }
 	| { kind: 'createFolder'; parentPath: string }
@@ -393,7 +383,6 @@ export const ProjectFileDialogInfo = {
 	namePlaceholder: (dialog: ProjectFileDialog) =>
 		({ createFile: 'config.yaml', createFolder: 'config', rename: 'name', move: '' })[dialog.kind],
 
-	/** `moveDestinationFolders`. */
 	moveDestinationFolders(
 		dialog: ProjectFileDialog,
 		folders: readonly ManagedProjectFileEntry[]
@@ -428,5 +417,4 @@ export const ProjectFileDialogInfo = {
 	}
 };
 
-/** `browserRowDetail` byte formatting: `ByteCountFormatter` `.file` style. */
 export { formatFileBytes } from '@/core/networking/remote-data-limits';

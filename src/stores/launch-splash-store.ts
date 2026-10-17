@@ -1,7 +1,3 @@
-/**
- * `\.isLaunchSplashPresented` environment value from Arcane_MobileApp.swift:
- * whether the animated launch splash still covers the app.
- */
 import { create } from 'zustand';
 
 import { Keys, storage } from '@/core/storage';

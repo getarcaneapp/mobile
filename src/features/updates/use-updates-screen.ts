@@ -1,7 +1,3 @@
-/**
- * `UpdatesView` (UpdatesView.swift): the image updates page plus the Run
- * Updater and Updater History launchers. Shared by iOS and Android.
- */
 import { useEffect, useRef, useState } from 'react';
 
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
@@ -14,7 +10,6 @@ import { showToast, Toasts } from '@/ui/toast';
 
 import { useUpdatesNavigation } from './updates-routes';
 
-/** Port of `PickerMode`. */
 export type PickerMode = 'runUpdater' | 'history';
 
 export const PickerMode = {
@@ -30,10 +25,8 @@ export function useUpdatesScreen() {
 	const [showsUpdaterSheet, setShowsUpdaterSheet] = useState(false);
 	const [initialUpdaterEnvironmentID, setInitialUpdaterEnvironmentID] = useState<string>();
 	const [presentedEnvironments, setPresentedEnvironments] = useState<Environment[]>([]);
-	/** History pushes once the picker sheet has finished dismissing. */
 	const pendingHistory = useRef<string | undefined>(undefined);
 
-	// `.task { await environmentsStore.load(manager: manager) }`
 	useEffect(() => {
 		void useEnvironmentsStore.getState().load();
 	}, [client]);
@@ -60,7 +53,6 @@ export function useUpdatesScreen() {
 		setPickerMode(undefined);
 	};
 
-	/** Call from the picker sheet's `onDismiss`. */
 	const pickerDidDismiss = () => {
 		const id = pendingHistory.current;
 		pendingHistory.current = undefined;

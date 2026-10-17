@@ -1,4 +1,3 @@
-/** Port of Models/Network/Network.swift. */
 import type { ISODateString } from '../base/date';
 import type { PaginationResponse } from '../base/pagination';
 import { D } from '../base/decoding';
@@ -7,7 +6,6 @@ import type { NetworkPeer, NetworkServiceAttachment } from './NetworkDetailTypes
 
 const jsonValue = (raw: unknown): JSONValue => (raw ?? null) as JSONValue;
 
-/** NetworkSummary is the list/summary representation of a Docker network. */
 export interface NetworkSummary {
 	id: string;
 	name: string;
@@ -50,14 +48,12 @@ export const NetworkSummary = {
 	}
 } as const;
 
-/** NetworkUsageCounts contains counts of networks by usage status. */
 export interface NetworkUsageCounts {
 	inuse: number;
 	unused: number;
 	total: number;
 }
 
-/** IPAMConfig contains a single subnet's IPAM configuration. */
 export interface IPAMConfig {
 	subnet?: string;
 	gateway?: string;
@@ -65,14 +61,12 @@ export interface IPAMConfig {
 	auxAddress?: Record<string, string>;
 }
 
-/** IPAM is the IP Address Management configuration block. */
 export interface IPAM {
 	driver?: string;
 	options?: Record<string, string>;
 	config?: IPAMConfig[];
 }
 
-/** NetworkContainerEndpoint represents one container attached to a network. */
 export interface NetworkContainerEndpoint {
 	id: string;
 	name: string;
@@ -96,7 +90,6 @@ export const NetworkContainerEndpoint = {
 	}
 } as const;
 
-/** NetworkInspect is the detailed inspect view of a Docker network. */
 export interface NetworkInspect {
 	id: string;
 	name: string;
@@ -182,7 +175,6 @@ export const NetworkInspect = {
 		};
 	},
 
-	/** Valid peer entries converted from Docker's loosely typed payload. */
 	peerList(this: void, value: NetworkInspect): NetworkPeer[] {
 		const result: NetworkPeer[] = [];
 		for (const peer of value.peers ?? []) {
@@ -195,7 +187,6 @@ export const NetworkInspect = {
 		return result;
 	},
 
-	/** Valid service entries converted from Docker's loosely typed payload. */
 	serviceList(this: void, value: NetworkInspect): NetworkServiceAttachment[] {
 		if (value.services === undefined) return [];
 		const result: NetworkServiceAttachment[] = [];
@@ -207,14 +198,12 @@ export const NetworkInspect = {
 				ports: stringArrayInternal(service, ['Ports', 'ports'])
 			});
 		}
-		// Swift `localizedStandardCompare`: case-insensitive, numeric-aware.
 		return result.sort((a, b) =>
 			a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
 		);
 	}
 } as const;
 
-/** NetworkCreateOptions configures a network create request. */
 export interface NetworkCreateOptions {
 	driver?: string;
 	checkDuplicate?: boolean;
@@ -227,7 +216,6 @@ export interface NetworkCreateOptions {
 	labels?: Record<string, string>;
 }
 
-/** NetworkCreateRequest is the body for `POST environments/{id}/networks`. */
 export interface NetworkCreateRequest {
 	name: string;
 	options: NetworkCreateOptions;
@@ -239,11 +227,9 @@ export const NetworkCreateRequest = {
 	}
 } as const;
 
-/** NetworkCreateResponse is the response of a network create request. */
 export interface NetworkCreateResponse {
 	id: string;
 	warning?: string;
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -261,11 +247,9 @@ export const NetworkCreateResponse = {
 	}
 } as const;
 
-/** NetworkPruneReport is the result of a network prune operation. */
 export interface NetworkPruneReport {
 	networksDeleted: string[];
 	spaceReclaimed: number;
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -287,7 +271,6 @@ export const NetworkPruneReport = {
 	}
 } as const;
 
-/** NetworkListPage is the page envelope returned by `GET /environments/{id}/networks`. */
 export interface NetworkListPage {
 	success: boolean;
 	data: NetworkSummary[];

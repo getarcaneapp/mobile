@@ -1,8 +1,3 @@
-/**
- * Android rendering of `LoginView` (Views/Auth/LoginView.swift) in Material 3:
- * same states and flows as iOS — setup, password, OIDC-primary with password
- * disclosure, passkey, MFA, saved sign-in offer, demo offer/expiry, errors.
- */
 import { Image } from 'expo-image';
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import {
@@ -60,7 +55,6 @@ export function LoginScreen() {
 		else for (const ref of Object.values(refs)) ref.current?.blur();
 	});
 
-	// `.alert("Use Saved Sign-In?")`.
 	const offer = model.savedSignInOffer;
 	useEffect(() => {
 		if (!offer) return;
@@ -123,13 +117,10 @@ export function LoginScreen() {
 						) : null}
 					</Pressable>
 				</Animated.ScrollView>
-				{/* No keyboard "Done" accessory: Android dismisses the IME with Back and its own action key. */}
 			</KeyboardAvoidingView>
 		</SafeAreaView>
 	);
 }
-
-// MARK: - Header
 
 function Header({ model }: { model: LoginModel }) {
 	const reduceMotion = useReduceMotion();
@@ -210,8 +201,6 @@ function Header({ model }: { model: LoginModel }) {
 		</View>
 	);
 }
-
-// MARK: - Form
 
 function Card({ children }: { children: ReactNode }) {
 	return (
@@ -406,8 +395,6 @@ function InfoBanner({ message, onDismiss }: { message: string; onDismiss: () => 
 	);
 }
 
-// MARK: - Actions
-
 function Actions({ model }: { model: LoginModel }) {
 	if (model.isSetupMode) {
 		return (
@@ -597,7 +584,6 @@ function TextButton({ title, onPress }: { title: string; onPress: () => void }) 
 	);
 }
 
-/** Pinned above the scroll content: the demo is an offer, not a peer of sign-in. */
 function DemoOfferChip({ model }: { model: LoginModel }) {
 	const dimmed = model.isLoading && !model.isStartingDemo;
 	return (

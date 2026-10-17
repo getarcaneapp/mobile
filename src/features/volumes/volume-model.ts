@@ -1,8 +1,3 @@
-/**
- * Platform-neutral logic for the Volumes screens (VolumesView.swift,
- * Types/ResourceListFilters.swift `VolumeScopeFilter`, `VolumeRename`), plus
- * the shared cache/mutation helpers every volume screen uses.
- */
 import { randomUUID } from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
 
@@ -22,7 +17,6 @@ import type { StableListSection } from '@/ui/components/stable-sectioned-list.ty
 import { showToast, Toasts } from '@/ui/toast';
 import { relativeTimeFormat } from '@/core/relative-time';
 
-/** Port of `VolumeScopeFilter` (Types/ResourceListFilters.swift). Raw values are the titles. */
 export type VolumeScopeFilter = 'All' | 'Local' | 'Global';
 export const VolumeScopeFilters: readonly VolumeScopeFilter[] = ['All', 'Local', 'Global'];
 
@@ -30,17 +24,14 @@ export type VolumeItem = EnvironmentItem<Volume>;
 export type VolumeSectionID = 'pinned' | 'used' | 'unused';
 export type VolumeSection = StableListSection<VolumeSectionID, VolumeItem>;
 
-/** `HapticsManager.light()`. */
 export function lightHaptic() {
 	void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 }
 
-/** `String.localizedCaseInsensitiveContains`. */
 export function containsCaseInsensitive(value: string, query: string) {
 	return value.toLocaleLowerCase().includes(query.toLocaleLowerCase());
 }
 
-/** `String.capitalized`: every word starts uppercase, the rest lowercase. */
 export function capitalized(value: string) {
 	return value
 		.toLocaleLowerCase()
@@ -50,10 +41,8 @@ export function capitalized(value: string) {
 		);
 }
 
-/** `Int64.byteString` (ByteCountFormatter, `.file`). */
 export const byteString = formatFileBytes;
 
-/** VolumesView `computeSections`: filter + sort once, partition into Pinned / Used / Unused. */
 export function computeVolumeSections(
 	volumes: readonly VolumeItem[],
 	filter: {
@@ -99,7 +88,6 @@ export function computeVolumeSections(
 	];
 }
 
-/** `VolumeRow.subtitleParts`. */
 export function volumeSubtitleParts(volume: Volume, size: number | undefined): string[] {
 	const parts: string[] = [];
 	if (size !== undefined && size > 0) parts.push(byteString(size));
@@ -107,7 +95,6 @@ export function volumeSubtitleParts(volume: Volume, size: number | undefined): s
 	return parts;
 }
 
-/** `VolumeRow.accessibilityDescription`. */
 export function volumeAccessibilityDescription(
 	volume: Volume,
 	size: number | undefined,
@@ -123,7 +110,6 @@ export function volumeAccessibilityDescription(
 	return parts.join(', ');
 }
 
-/** VolumesView `volumePreview` details. */
 export function volumePreviewDetails(item: VolumeItem, size: number | undefined) {
 	const volume = item.value;
 	const details: { icon: string; label: string; value: string }[] = [
@@ -139,9 +125,6 @@ export function volumePreviewDetails(item: VolumeItem, size: number | undefined)
 	return details;
 }
 
-// MARK: - Caches
-
-/** `invalidateVolumeCaches(_:)`. */
 export function invalidateVolumeCaches(environmentID: EnvironmentID) {
 	const client = useClientManager.getState().client;
 	const cached = cachedClient();
@@ -153,24 +136,16 @@ export function invalidateVolumeCaches(environmentID: EnvironmentID) {
 	]);
 }
 
-/** Invalidate + bump the volumes mutation version so every list/detail reloads. */
 export function volumesChanged(environmentID: EnvironmentID) {
 	invalidateVolumeCaches(environmentID);
 	useResourceMutationStore.getState().markChanged('volumes', environmentID);
 }
 
-// MARK: - VolumeRename
-
-/**
- * Volume rename copies the data to a new volume and removes the source, so the
- * server only allows it for volumes no container uses (v2.9+).
- */
 export const VolumeRename = {
 	footer:
 		"The data is copied to a new volume and the old one is removed. The volume can't be in use by any container.",
 	isAvailable: (volume: Volume, envID: EnvironmentID) =>
 		volume.containers.length === 0 && hasPermission('volumes:rename', envID),
-	/** Throws on failure. */
 	async perform(from: string, to: string, envID: EnvironmentID): Promise<void> {
 		const client = useClientManager.getState().client;
 		if (!client) throw ArcaneError.transport('No client');
@@ -181,12 +156,8 @@ export const VolumeRename = {
 	}
 } as const;
 
-/** `RenameContainerSheet.nameRegex`. */
 export const resourceNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_.-]+$/;
 
-// MARK: - Formatting
-
-/** `Text(date, format: .relative(presentation: .named))`. */
 export function relativeNamed(value: string | undefined): string {
 	const date = parseArcaneDate(value);
 	if (!date) return value ?? '';
@@ -213,5 +184,4 @@ export function relativeNamed(value: string | undefined): string {
 	}
 }
 
-/** A fresh `UUID().uuidString`. */
 export const uuidString = () => randomUUID().toUpperCase();

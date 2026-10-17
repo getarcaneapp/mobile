@@ -1,10 +1,5 @@
-/** Port of Models/Environment/EnvironmentModel.swift. */
 import type { ISODateString } from '../base/date';
 
-/**
- * Lightweight mTLS certificate status for an edge environment surfaced in
- * environment list/detail responses.
- */
 export interface EdgeMTLSCertificate {
 	commonName?: string;
 	expiresAt?: ISODateString;
@@ -14,13 +9,11 @@ export interface EdgeMTLSCertificate {
 }
 
 export const EdgeMTLSCertificate = {
-	/** Swift init defaults (`expired: false`, `expiringSoon: false`). */
 	make(args: Partial<EdgeMTLSCertificate> = {}): EdgeMTLSCertificate {
 		return { ...args, expired: args.expired ?? false, expiringSoon: args.expiringSoon ?? false };
 	}
 } as const;
 
-/** One Docker environment (local or edge). */
 export interface Environment {
 	id: string;
 	name?: string;
@@ -30,10 +23,6 @@ export interface Environment {
 	isEdge: boolean;
 	lastSeen?: ISODateString;
 	edgeTransport?: string;
-	/**
-	 * Most recently used tunnel transport ("grpc" | "websocket"), persisted so
-	 * it stays known while the tunnel is down or the agent is poll-only.
-	 */
 	lastEdgeTransport?: string;
 	edgeSecurityMode?: string;
 	edgeSessionId?: string;
@@ -48,7 +37,6 @@ export interface Environment {
 }
 
 export const Environment = {
-	/** Swift init defaults (`enabled: true`, `isEdge: false`). */
 	make(
 		args: Omit<Environment, 'enabled' | 'isEdge'> & { enabled?: boolean; isEdge?: boolean }
 	): Environment {
@@ -56,7 +44,6 @@ export const Environment = {
 	}
 } as const;
 
-/** Body for `POST /environments`. */
 export interface CreateEnvironment {
 	apiUrl: string;
 	name?: string;
@@ -67,7 +54,6 @@ export interface CreateEnvironment {
 	isEdge?: boolean;
 }
 
-/** Body for `PUT /environments/{id}`. */
 export interface UpdateEnvironment {
 	apiUrl?: string;
 	name?: string;
@@ -77,28 +63,23 @@ export interface UpdateEnvironment {
 	regenerateApiKey?: boolean;
 }
 
-/** Response of the test-connection endpoint. */
 export interface EnvironmentTestResult {
 	status: string;
 	message?: string;
 }
 
-/** Body for the test-connection endpoint. */
 export interface TestConnectionRequest {
 	apiUrl?: string;
 }
 
-/** Body for the local agent pairing endpoint. */
 export interface AgentPairRequest {
 	rotate?: boolean;
 }
 
-/** Response for the local agent pairing endpoint. */
 export interface AgentPairResponse {
 	token: string;
 }
 
-/** Response payload for the environment version endpoint. */
 export interface EnvironmentVersion {
 	currentVersion: string;
 	currentTag?: string;

@@ -1,8 +1,3 @@
-/**
- * Android rendering of `APIKeysView` (APIKeysView.swift): Material 3 grouped
- * list with the same search, sort menu, pagination, states and actions. The
- * context menu becomes the row's long-press menu.
- */
 import { Stack } from 'expo-router';
 import { useRef, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';

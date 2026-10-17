@@ -1,4 +1,3 @@
-/** Data for `BackupFilesView` (BackupFilesView.swift). Shared by both platforms. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -12,14 +11,12 @@ import { settingsPayloads } from '../shared/settings-routes';
 import type { BackupFilesTarget } from './backup-routes';
 import { backupRequestScope, useAliveRef, useBackupSessionScope } from './backup-scope';
 
-/** `(path as NSString).lastPathComponent`. */
 function lastPathComponent(path: string): string {
 	const trimmed = path.replace(/\/+$/, '');
 	if (trimmed === '') return path === '' ? '' : '/';
 	return trimmed.slice(trimmed.lastIndexOf('/') + 1);
 }
 
-/** `(path as NSString).deletingLastPathComponent`. */
 function deletingLastPathComponent(path: string): string {
 	const trimmed = path.replace(/\/+$/, '');
 	const index = trimmed.lastIndexOf('/');
@@ -30,14 +27,12 @@ function deletingLastPathComponent(path: string): string {
 
 export function useBackupFiles(target: BackupFilesTarget & { keyToken?: string }) {
 	const { backupID, environmentID, volumeName, canRestore } = target;
-	// Captured once: the payload is deleted when the screen goes away.
 	const [recoveryKey] = useState(target.recoveryKey ?? '');
 	const client = useClientManager((s) => s.client);
 	const clientGeneration = useClientManager((s) => s.clientGeneration);
 	const alive = useAliveRef();
 	useBackupSessionScope();
 
-	// The recovery key hand-off is single-use; drop it with the screen (Swift `.onDisappear`).
 	const keyToken = target.keyToken;
 	useEffect(() => () => settingsPayloads.delete(keyToken), [keyToken]);
 
@@ -103,7 +98,6 @@ export function useBackupFiles(target: BackupFilesTarget & { keyToken?: string }
 						});
 					} catch (error) {
 						if (!isArcaneError(error, 'notFound')) throw error;
-						// Older servers: flat file list, no folders or select-all.
 						const paths = await client.volumes.listBackupFiles({ envID: environmentID, backupID });
 						scope.check();
 						if (!isCurrent()) return;

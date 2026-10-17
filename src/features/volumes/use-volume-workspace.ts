@@ -1,8 +1,3 @@
-/**
- * Models behind `VolumeWorkspaceView` (VolumeWorkspaceView.swift): the folder
- * listing, add / upload / delete, and the rename / move / new file / new
- * folder action sheet.
- */
 import { File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -42,7 +37,6 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 	const canUpload = hasPermission(Permission.Volumes.upload, environmentID);
 	const canDelete = hasPermission(Permission.Volumes.delete, environmentID);
 
-	// `.task(id: identity)`: start over, then load.
 	const identity = `${generation}|${userID ?? ''}|${environmentID}|${volumeName}`;
 	useEffect(() => {
 		WorkspaceStore.reset(environmentID, volumeName);
@@ -123,7 +117,6 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 
 export type VolumeWorkspaceModel = ReturnType<typeof useVolumeWorkspace>;
 
-/** `action.rawValue.replacingOccurrences(of: "_", with: " ").capitalized`. */
 export function workspaceActionTitle(action: VolumeWorkspaceOperation | undefined) {
 	if (!action) return 'File';
 	return action
@@ -132,7 +125,6 @@ export function workspaceActionTitle(action: VolumeWorkspaceOperation | undefine
 		.replace(/(^|\s)(\S)/g, (_m, space: string, letter: string) => space + letter.toUpperCase());
 }
 
-/** The action sheet (Swift `.sheet(isPresented: action != nil)`). */
 export function useWorkspaceAction({
 	environmentID,
 	volumeName,
@@ -154,7 +146,6 @@ export function useWorkspaceAction({
 	const [input, setInput] = useState(() =>
 		action === 'rename' ? (relativePath?.split('/').pop() ?? '') : ''
 	);
-	// The session moved on: the sheet belongs to a workspace that's gone.
 	const [identity] = useState(() => workspaceIdentity(environmentID, volumeName));
 	const generation = useClientManager((s) => s.clientGeneration);
 	useEffect(() => {

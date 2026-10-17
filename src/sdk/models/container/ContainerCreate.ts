@@ -1,21 +1,17 @@
-/** Port of Models/Container/ContainerCreate.swift. */
 import type { JSONValue } from '../../types/json';
 import type { ContainerRegistryCredential } from '../containerRegistry/ContainerRegistry';
 import type { ContainerHealthcheckCreate, ContainerMountCreate } from './ContainerEditing';
 
-/** Restart policy options for container creation. */
 export interface ContainerRestartPolicyCreate {
 	name?: string;
 	maximumRetryCount?: number;
 }
 
-/** Host port binding for container creation. */
 export interface PortBindingCreate {
 	hostIp?: string;
 	hostPort?: string;
 }
 
-/** Host configuration for container creation. */
 export interface HostConfigCreate {
 	binds?: string[];
 	portBindings?: Record<string, PortBindingCreate[]>;
@@ -34,19 +30,16 @@ export interface HostConfigCreate {
 	mounts?: ContainerMountCreate[];
 }
 
-/** Network endpoint settings for container creation. */
 export interface EndpointSettingsCreate {
 	aliases?: string[];
 	ipv4Address?: string;
 	ipv6Address?: string;
 }
 
-/** Network configuration for container creation. */
 export interface NetworkingConfigCreate {
 	endpointsConfig?: Record<string, EndpointSettingsCreate>;
 }
 
-/** Container create request body. */
 export interface ContainerCreate {
 	name: string;
 	image: string;

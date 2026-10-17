@@ -1,7 +1,3 @@
-/**
- * Small Material 3 pieces shared by the Networks / Ports / Events / Swarm
- * Android screens. Standalone (RN views); import from `.android.tsx` files.
- */
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -12,7 +8,6 @@ import { Icon } from '@/ui/Icon';
 
 import { M3Section } from '@/features/containers/android-material';
 
-/** A form's error `Section { Label(error, systemImage: …).foregroundStyle(.red) }`. */
 export function SheetError({ message }: { message?: string }) {
 	if (!message) return null;
 	return (
@@ -25,7 +20,6 @@ export function SheetError({ message }: { message?: string }) {
 	);
 }
 
-/** Section header with optional trailing content (e.g. a resource count). */
 export function SectionTitle({ title, trailing }: { title: string; trailing?: ReactNode }) {
 	return (
 		<View
@@ -49,7 +43,6 @@ export function SectionTitle({ title, trailing }: { title: string; trailing?: Re
 	);
 }
 
-/** `LabeledContent` whose value is arbitrary content. */
 export function LabeledRow({ title, children }: { title: string; children: ReactNode }) {
 	return (
 		<View
@@ -68,7 +61,6 @@ export function LabeledRow({ title, children }: { title: string; children: React
 	);
 }
 
-/** `MonospacedValue` for Android rows. */
 export function MonoText({
 	value,
 	color,
@@ -91,7 +83,6 @@ export function MonoText({
 	);
 }
 
-/** A tappable row with a leading icon and a trailing chevron (`NavigationLink { Label(…) }`). */
 export function LinkItem({
 	title,
 	icon,
@@ -123,7 +114,6 @@ export function LinkItem({
 	);
 }
 
-/** A tappable action row (`Button { Label(…) }` in a Form). */
 export function ActionItem({
 	title,
 	icon,
@@ -162,7 +152,6 @@ export function ActionItem({
 	);
 }
 
-/** Inline "No …" / caption text inside a section. */
 export function SecondaryText({ text }: { text: string }) {
 	return (
 		<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel, padding: 16 }]}>{text}</Text>

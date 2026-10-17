@@ -1,11 +1,3 @@
-/**
- * Android ports of `EnvironmentLabel`, `EnvironmentFilterSection` (Material 3
- * radio list), `EnvironmentLoadFailuresSection` and `EnvironmentActionButton`
- * (a list item that opens a Material dropdown of environments when there are
- * several). For toolbar menus use `EnvironmentToolbarAction` from `toolbar`.
- *
- * Standalone (RN views).
- */
 import { Host } from '@expo/ui';
 import {
 	DropdownMenu,

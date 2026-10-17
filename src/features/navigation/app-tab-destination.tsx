@@ -38,10 +38,6 @@ import { WebhooksDestination } from '@/features/settings/webhooks/webhooks-scree
 
 import { NotYetPorted } from './not-yet-ported';
 
-/**
- * Port of `appTabDestination(_:manager:selectedTab:)`: renders the screen for
- * a destination. Unported destinations show a placeholder.
- */
 export function AppTabDestination({ tab }: { tab: AppTab }) {
 	switch (tab) {
 		case 'dashboard':

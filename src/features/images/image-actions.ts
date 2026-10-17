@@ -1,9 +1,3 @@
-/**
- * Shared image side effects: cache invalidation + mutation bump
- * (`invalidateImageCaches(_:)` + `mutationStore.markChanged(kind: .images, …)`),
- * the activity-batch scoped client, and the image pull started from
- * `PullImageView` (`DeploymentActivityStore.start(kind: .imagePull, …)`).
- */
 import { randomUUID } from 'expo-crypto';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -18,7 +12,6 @@ import { finishActivityToast, showActivityToast, showToast, Toasts } from '@/ui/
 
 import { parseImageNameAndTag } from './image-model';
 
-/** `invalidateImageCaches(_:)`. */
 export function invalidateImageCaches(environmentID: EnvironmentID) {
 	const client = useClientManager.getState().client;
 	const cached = cachedClient();
@@ -29,13 +22,11 @@ export function invalidateImageCaches(environmentID: EnvironmentID) {
 	]);
 }
 
-/** Invalidate + bump the images mutation version so every list/detail reloads. */
 export function imagesChanged(environmentID: EnvironmentID) {
 	invalidateImageCaches(environmentID);
 	useResourceMutationStore.getState().markChanged('images', environmentID);
 }
 
-/** `ActivityBatchID.scopedClient(_:)`. */
 export function activityBatchScopedClient(client: ArcaneClient): ArcaneClient {
 	return client.withRequestOptions(
 		ArcaneRequestOptions.withActivityBatchID(randomUUID().toLowerCase())
@@ -45,11 +36,6 @@ export function activityBatchScopedClient(client: ArcaneClient): ArcaneClient {
 let pullCounter = 0;
 let pullRunning = false;
 
-/**
- * The `.imagePull` slice of `DeploymentActivityStore`: streams the pull and
- * reports progress and the outcome as an activity toast (the Swift app's
- * floating pill + Live Activity), then refreshes images on success.
- */
 export function startImagePull(
 	environmentID: EnvironmentID,
 	reference: string,
@@ -85,7 +71,6 @@ export function startImagePull(
 			failure = isCancellation(error) ? 'Cancelled' : friendlyErrorMessage(error);
 		}
 		pullRunning = false;
-		// Session teardown while running: don't land completion effects on the new session.
 		if (useClientManager.getState().clientGeneration !== session) return;
 		if (failure === undefined) {
 			invalidateImageCaches(environmentID);

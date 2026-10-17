@@ -1,9 +1,7 @@
-/** Port of Models/Updater/Updater.swift. */
 import type { JSONValue } from '../../types/json';
 import type { ISODateString } from '../base/date';
 import { D } from '../base/decoding';
 
-/** Options passed when triggering the updater (`POST .../updater/run`). */
 export interface UpdaterOptions {
 	type?: string;
 	resourceIds?: string[];
@@ -11,7 +9,6 @@ export interface UpdaterOptions {
 	dryRun?: boolean;
 }
 
-/** Result for a single resource updated by the updater. */
 export interface UpdaterResourceResult {
 	resourceId: string;
 	resourceName?: string;
@@ -25,7 +22,6 @@ export interface UpdaterResourceResult {
 	details?: Record<string, JSONValue>;
 }
 
-/** Overall result of an updater run. */
 export interface UpdaterResult {
 	success?: boolean;
 	checked: number;
@@ -36,12 +32,10 @@ export interface UpdaterResult {
 	endTime?: string;
 	duration: string;
 	items: UpdaterResourceResult[];
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
 export const UpdaterResult = {
-	/** Swift memberwise init defaults (zero counts, empty `duration` and `items`). */
 	make(this: void, args: Partial<UpdaterResult> = {}): UpdaterResult {
 		return {
 			...args,
@@ -76,7 +70,6 @@ export const UpdaterResult = {
 	}
 } as const;
 
-/** Live status of the updater. */
 export interface UpdaterStatus {
 	updatingContainers: number;
 	updatingProjects: number;
@@ -85,7 +78,6 @@ export interface UpdaterStatus {
 }
 
 export const UpdaterStatus = {
-	/** Swift memberwise init defaults (zero counts, empty ID lists). */
 	make(args: Partial<UpdaterStatus> = {}): UpdaterStatus {
 		return {
 			updatingContainers: args.updatingContainers ?? 0,
@@ -113,7 +105,6 @@ export const AutoUpdateRecordStatus = {
 	skipped: 'skipped'
 } as const satisfies Record<string, AutoUpdateRecordStatus>;
 
-/** One row in the updater run history. */
 export interface AutoUpdateRecord {
 	id: string;
 	resourceId: string;

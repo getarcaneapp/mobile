@@ -1,11 +1,3 @@
-/**
- * Ports of `ComposeResourceDefinitionList` / `ComposeResourceDefinitionForm`
- * (ComposeResourceDefinitionList.swift) and `ComposeResourcePicker`
- * (ComposeResourcePicker.swift). Project resource definitions are distinct
- * from a service's network attachments.
- *
- * SwiftUI-tree.
- */
 import {
 	Button,
 	ContentUnavailableView,
@@ -349,11 +341,8 @@ export function ComposeResourceDefinitionForm({
 	);
 }
 
-// MARK: - ComposeResourcePicker
-
 const pageSize = 50;
 
-/** Selects an existing resource name without changing the Compose document. */
 export function ComposeResourcePicker({
 	kind,
 	selection,

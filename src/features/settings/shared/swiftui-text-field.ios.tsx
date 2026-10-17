@@ -1,9 +1,3 @@
-/**
- * A SwiftUI `TextField(_:text:)` bound to a React string (the native state is
- * mirrored both ways).
- *
- * SwiftUI-tree.
- */
 import { TextField, useNativeState } from '@expo/ui/swift-ui';
 import type { ModifierConfig } from '@expo/ui/swift-ui/modifiers';
 import { useEffect } from 'react';

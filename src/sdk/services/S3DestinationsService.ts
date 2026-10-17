@@ -1,4 +1,3 @@
-/** Port of Services/S3DestinationsService.swift. */
 import type { RESTService } from '../http/RESTService';
 import { MessageResponse } from '../models/base/message';
 import { SearchPaginationSort } from '../models/base/pagination';
@@ -36,7 +35,6 @@ export class S3DestinationsService {
 		return this.rest.requestPayload('backups/s3', { body: args.request });
 	}
 
-	/** An empty secretAccessKey preserves the stored secret. */
 	update(args: { id: string; request: UpdateS3Destination }): Promise<S3Destination> {
 		return this.rest.requestPayload(`backups/s3/${args.id}`, { method: 'PUT', body: args.request });
 	}
@@ -45,7 +43,6 @@ export class S3DestinationsService {
 		return this.rest.delete(`backups/s3/${args.id}`, { decode: MessageResponse.decode });
 	}
 
-	/** Tests an unsaved configuration. Swift overload `test(configuration:)`. */
 	testConfiguration(args: { configuration: CreateS3Destination }): Promise<MessageResponse> {
 		return this.rest.requestPayload('backups/s3/test', {
 			body: args.configuration,
@@ -53,7 +50,6 @@ export class S3DestinationsService {
 		});
 	}
 
-	/** Tests a saved destination, optionally with overrides. Swift `test(id:configuration:)`. */
 	test(args: { id: string; configuration?: UpdateS3Destination }): Promise<MessageResponse> {
 		return this.rest.requestPayload(`backups/s3/${args.id}/test`, {
 			body: args.configuration,

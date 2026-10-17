@@ -1,9 +1,3 @@
-/**
- * Header row for the Updates Material sheets: a leading text action
- * (Cancel / Done / Close) and a centered title. Android only.
- *
- * Standalone (RN view).
- */
 import { Pressable, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';

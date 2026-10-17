@@ -1,9 +1,3 @@
-/**
- * Model behind the volume flavour of `BackupFilesView`
- * (Views/Settings/Backups/BackupFilesView.swift, `volumeName != nil`):
- * paginated browse with a legacy flat-list fallback, selection, and partial
- * restore.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -21,14 +15,12 @@ import {
 	useUnmounted
 } from './volume-support';
 
-/** `NSString.lastPathComponent`. */
 export function lastPathComponent(path: string) {
 	const trimmed = path.replace(/\/+$/, '');
 	if (trimmed === '') return path.startsWith('/') ? '/' : '';
 	return trimmed.slice(trimmed.lastIndexOf('/') + 1);
 }
 
-/** `NSString.deletingLastPathComponent`. */
 export function deletingLastPathComponent(path: string) {
 	const trimmed = path.replace(/\/+$/, '');
 	const index = trimmed.lastIndexOf('/');

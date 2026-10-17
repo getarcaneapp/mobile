@@ -1,7 +1,3 @@
-/**
- * Models for `CreateVolumeView` (VolumesView.swift) and the volume flavour of
- * `RenameContainerSheet` (RenameContainerSheet.swift + `VolumeRename`).
- */
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
@@ -32,7 +28,6 @@ export function useCreateVolume(environmentID: EnvironmentID) {
 		setErrorMessage(undefined);
 		try {
 			const path = client.rest.environmentPath(environmentID, 'volumes');
-			// Same decoder bypass as listVolumes — create returns the Volume too.
 			await client.transport.rawRequest(path, { method: 'POST', body: { name, driver } });
 			volumesChanged(environmentID);
 			showToast(Toasts.success('Volume created'));
@@ -80,7 +75,6 @@ export function useRenameVolume(
 		try {
 			await VolumeRename.perform(currentName, newName, environmentID);
 			setIsSubmitting(false);
-			// From the detail screen the old volume is gone, so the detail goes too.
 			if (popsDetail) router.dismiss(2);
 			else router.back();
 		} catch (error) {

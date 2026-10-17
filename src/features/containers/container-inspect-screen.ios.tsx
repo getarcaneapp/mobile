@@ -1,4 +1,3 @@
-/** Port of `ContainerInspectView` in its sheet (`NavigationStack` + Done). */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import { Image } from '@/ui/components/swiftui-image';

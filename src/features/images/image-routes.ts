@@ -1,11 +1,3 @@
-/**
- * Navigation for the Images destinations. Every route lives once in the
- * shared tab group, so pushes stay in whichever tab stack is current
- * (Swift: `navigationDestination` / `.sheet` on the presenting view).
- *
- * Objects that can't travel as route params (a summary, an image list, an
- * attestation) go through `imageCache` / `routePayloads`.
- */
 import { useRouter, useSegments, type Href } from 'expo-router';
 import { useMemo } from 'react';
 
@@ -20,7 +12,6 @@ const imageKey = (environmentID: EnvironmentID, id: string) => `${environmentID}
 const summaries = new Map<string, ImageSummary>();
 const details = new Map<string, ImageDetailSummary>();
 
-/** Last known summary/details per image, for a pushed screen's first render. */
 export const imageCache = {
 	setSummary: (environmentID: EnvironmentID, summary: ImageSummary) =>
 		summaries.set(imageKey(environmentID, summary.id), summary),
@@ -41,7 +32,6 @@ function query(params: Params) {
 		: `?${entries.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
 }
 
-/** Routes relative to the current tab's stack. */
 export function useImageNavigation() {
 	const router = useRouter();
 	const segments = useSegments() as string[];

@@ -1,4 +1,3 @@
-/** Port of `TemplateEditorView` (TemplateEditorView.swift): create / edit / default templates sheet. */
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import {

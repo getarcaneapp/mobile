@@ -1,9 +1,3 @@
-/**
- * Port of `ContainersView` (ContainersView.swift).
- *
- * iOS: SwiftUI List with Pinned / Running / Stopped sections, swipe actions,
- * context menus with previews, edit-mode selection, and native toolbar menus.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -168,7 +162,6 @@ function ContainerLink({ model, item }: { model: ContainersListModel; item: Cont
 			<ContextMenu>
 				<ContextMenu.Trigger>
 					<Button onPress={() => model.openDetail(item)} modifiers={[buttonStyle('plain')]}>
-						{/* `NavigationLink` rows are tappable full-width, gaps included. */}
 						<HStack modifiers={[contentShape(shapes.rectangle())]}>
 							{row}
 							<DisclosureChevron />

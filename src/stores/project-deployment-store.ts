@@ -1,15 +1,3 @@
-/**
- * The project slice of `DeploymentActivityStore.swift`: the single running
- * deploy / redeploy / pull / build operation, streamed as NDJSON and owned at
- * app level so its sheet can be hidden mid-run. Completion invalidates the
- * project + container caches and bumps the projects mutation version, which
- * the project screens observe to reload.
- *
- * The Swift store also renders a floating pill and a Live Activity and
- * re-attaches to the server Activity when the stream drops; here progress
- * shows in the `InstallStreamSheet` route, or as an activity toast while that
- * sheet is hidden (tap to reopen). One operation at a time, like Swift.
- */
 import * as Haptics from 'expo-haptics';
 import { create } from 'zustand';
 
@@ -30,7 +18,6 @@ import { useResourceMutationStore } from '@/stores/resource-mutation-store';
 import type { DeploymentOperation, InstallStreamLine } from '@/ui/components/install-stream.types';
 import { finishActivityToast, showActivityToast, showToast, Toasts } from '@/ui/toast';
 
-/** Project kinds of `DeploymentActionKind`. */
 export type ProjectDeploymentKind = 'up' | 'redeploy' | 'pull' | 'build';
 
 const verb: Record<ProjectDeploymentKind, string> = {
@@ -73,12 +60,10 @@ type State = {
 		targetName: string;
 		environmentName: string;
 		deployOptions?: DeployOptions;
-		/** Opens the full-log sheet route; omitted when the caller is dismissing itself. */
 		presentSheet?: () => void;
 	}) => boolean;
 	cancel: () => void;
 	acknowledge: () => void;
-	/** The sheet route reports its visibility (Swift `isSheetPresented`). */
 	setSheetPresented: (presented: boolean) => void;
 };
 
@@ -96,7 +81,6 @@ function title(kind: ProjectDeploymentKind, targetName: string) {
 	return kind === 'pull' || kind === 'build' ? verb[kind] : `${verb[kind]} ${targetName}`;
 }
 
-/** `displayText(for:)`: the server's rendered Docker CLI line, or a v1 fallback. */
 function displayText(event: OperationStreamEvent): string | undefined {
 	if (event.log !== undefined) return event.log;
 	const error = event.error?.trim();
@@ -191,7 +175,6 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 		if (total <= 0) return;
 		const fraction = Math.min(current / total, 1);
 		const operation = get().operation;
-		// Monotonic: new layers growing the denominator mustn't make the bar jump back.
 		if (operation && fraction > (operation.progressFraction ?? 0))
 			patch({ progressFraction: fraction });
 	};
@@ -312,7 +295,6 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 						reportProgress();
 					}
 					flush();
-					// Session teardown while running: don't land completion effects on the new session.
 					if (useClientManager.getState().clientGeneration !== session) {
 						set({ operation: undefined });
 						return;

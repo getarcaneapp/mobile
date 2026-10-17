@@ -1,10 +1,3 @@
-/**
- * Android rendering of `PermissionPickerView` (PermissionPickerView.swift):
- * one expandable Material card per resource with a tri-state select-all
- * checkbox and a switch per action. A non-empty search expands every match.
- *
- * Standalone (RN views).
- */
 import { Pressable, Text, View } from 'react-native';
 
 import type { PermissionAction, PermissionResource } from '@/sdk/models/role/PermissionsManifest';

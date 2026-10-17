@@ -1,8 +1,3 @@
-/**
- * Android renderings of `VolumeWorkspaceFileView` and its "Server version"
- * review sheet (VolumeWorkspaceFileView.swift). The editor is a monospaced
- * multi-line text field until `CodeEditorView` is ported.
- */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';

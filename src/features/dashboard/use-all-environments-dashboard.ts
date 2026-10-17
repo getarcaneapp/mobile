@@ -1,8 +1,3 @@
-/**
- * Shared state for `AllEnvironmentsDashboard` (the Refreshed Dashboard
- * preview body): chosen totals tiles, the live usage chart's lines and
- * headline, the busiest-containers poll, and host rows.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
@@ -41,7 +36,6 @@ export function useAllEnvironmentsDashboard(
 ) {
 	const serverURL = useClientManager((s) => s.serverURL);
 	const userID = useClientManager((s) => s.currentUser?.id);
-	// Re-render when environment colors change.
 	useEnvironmentColorStore((s) => s.colors);
 	const seriesByID = useSystemStatsHistoryStore((s) => s.seriesByEnvironmentID);
 	const [storedTiles, setStoredTiles] = useStoredString(
@@ -56,7 +50,6 @@ export function useAllEnvironmentsDashboard(
 	const environmentIDs = environments.map((e) => e.id);
 	const idsKey = environmentIDs.join(',');
 
-	// Poll the server's shared stats collector while the dashboard is visible and active.
 	const [isActive, setIsActive] = useState(AppState.currentState === 'active');
 	useEffect(() => {
 		const subscription = AppState.addEventListener('change', (state) =>
@@ -83,7 +76,6 @@ export function useAllEnvironmentsDashboard(
 		}, [serverURL, userID, isActive, idsKey])
 	);
 
-	/** The environment's chosen color, else a stable palette slot. */
 	const colorFor = (environment: Environment, index: number): string => {
 		const hex = useEnvironmentColorStore.getState().hex(serverURL, environment.id);
 		return (
@@ -99,7 +91,6 @@ export function useAllEnvironmentsDashboard(
 
 	const tiles = DashboardTotalsTile.decode(storedTiles);
 
-	/** Streamed environments only; the rest have no live series. */
 	const usageLines: UsageLine[] = environments.flatMap((environment, index) => {
 		const series = seriesByID[environment.id];
 		if (!series?.latest) return [];
@@ -149,7 +140,6 @@ export function useAllEnvironmentsDashboard(
 	};
 }
 
-/** `Text(updatedAt, format: .relative(presentation: .named))`. */
 export function relativeNamed(ms: number, now = Date.now()): string {
 	const seconds = Math.round((ms - now) / 1000);
 	const format = relativeTimeFormat();

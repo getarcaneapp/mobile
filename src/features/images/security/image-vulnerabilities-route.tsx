@@ -2,7 +2,6 @@ import { useLocalSearchParams } from 'expo-router';
 
 import { ImageVulnerabilitiesView } from './image-vulnerabilities-view';
 
-/** Route entry for the standalone `ImageVulnerabilitiesView` (`image/[id]/vulnerabilities?envID=&name=`). */
 export function ImageVulnerabilitiesRoute() {
 	const {
 		id = '',

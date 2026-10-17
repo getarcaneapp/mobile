@@ -1,9 +1,3 @@
-/**
- * `Sparkline` for SwiftUI trees: the RN svg sparkline in an `RNHostView`,
- * framed to full width and a fixed height (@expo/ui has no Canvas).
- *
- * SwiftUI-tree.
- */
 import { HStack, RNHostView } from '@expo/ui/swift-ui';
 import { accessibilityHidden, frame } from '@expo/ui/swift-ui/modifiers';
 import { View } from 'react-native';

@@ -1,7 +1,5 @@
-/** Port of Models/JobSchedule/JobSchedule.swift. */
 import type { ISODateString } from '../base/date';
 
-/** JobScheduleConfig represents the configured intervals (in minutes) for background jobs. */
 export interface JobScheduleConfig {
 	environmentHealthInterval: string;
 	eventCleanupInterval: string;
@@ -15,7 +13,6 @@ export interface JobScheduleConfig {
 	autoHealInterval: string;
 }
 
-/** UpdateJobScheduleConfig updates job schedule intervals (in minutes). Undefined fields are ignored. */
 export interface UpdateJobScheduleConfig {
 	environmentHealthInterval?: string;
 	eventCleanupInterval?: string;
@@ -29,7 +26,6 @@ export interface UpdateJobScheduleConfig {
 	autoHealInterval?: string;
 }
 
-/** Status and metadata for a background job. */
 export interface JobStatus {
 	id: string;
 	name: string;
@@ -46,7 +42,6 @@ export interface JobStatus {
 }
 
 export const JobStatus = {
-	/** Swift init defaults (`prerequisites` defaults to `[]`). */
 	make(init: Omit<JobStatus, 'prerequisites'> & { prerequisites?: JobPrerequisite[] }): JobStatus {
 		return { ...init, prerequisites: init.prerequisites ?? [] };
 	}

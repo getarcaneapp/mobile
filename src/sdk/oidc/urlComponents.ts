@@ -1,21 +1,12 @@
-/**
- * Minimal `URLComponents` for callback URLs (custom schemes included).
- * Unlike `parseURL` in client/url it keeps the distinction between an empty
- * and an absent path, query and fragment, which callback validation needs.
- * @internal
- */
 import type { QueryItem } from '../client/url';
 
 export interface CallbackURLComponents {
-	/** As written (not lowercased). */
 	scheme: string;
 	user?: string;
 	password?: string;
 	host?: string;
 	port?: number;
-	/** Percent-encoded path; `""` when absent. */
 	path: string;
-	/** Percent-decoded items; `undefined` when the URL has no `?`. */
 	queryItems?: QueryItem[];
 	fragment?: string;
 }
@@ -27,7 +18,6 @@ function percentDecode(value: string): string {
 	return decodeURIComponent(value);
 }
 
-/** Returns `undefined` for an unparseable URL or invalid percent escapes. */
 export function urlComponents(url: string): CallbackURLComponents | undefined {
 	const match = PATTERN.exec(url);
 	if (!match) return undefined;

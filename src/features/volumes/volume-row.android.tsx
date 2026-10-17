@@ -1,9 +1,3 @@
-/**
- * Android rendering of `UsageBadge` / `VolumeRow` (VolumesView.swift) as a
- * Material 3 list item body.
- *
- * Standalone (RN views).
- */
 import { Text, View } from 'react-native';
 
 import type { Volume } from '@/sdk/models/volume/Volume';

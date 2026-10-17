@@ -1,10 +1,3 @@
-/**
- * The Form body of `RoleDetailView` (RolesView.swift): Role Info, the
- * permission picker (spinner until the manifest arrives), the mode footer and
- * the inline error. Shared by the pushed detail and the New Role sheet.
- *
- * SwiftUI-tree.
- */
 import { Form, HStack, ProgressView, Section, Spacer, Text } from '@expo/ui/swift-ui';
 import { scaleEffect, type ModifierConfig } from '@expo/ui/swift-ui/modifiers';
 

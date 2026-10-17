@@ -1,10 +1,3 @@
-/**
- * Pure logic shared by the Updates screens: ports of the private helpers in
- * AllEnvironmentsImageUpdatesView.swift (`OutdatedImage`, `splitRefTag`, ref
- * matching), UpdaterRunView.swift / UpdaterHistoryView.swift (row
- * presentation), `RemoteDataLimits.runBoundedUpdater` /
- * `loadBoundedUpdaterStatus`, and `AutoUpdateRecord.oldImageVersionsMap`.
- */
 import {
 	boundedAPIResponse,
 	boundedData,
@@ -31,9 +24,6 @@ import { systemColors } from '@/theme/colors';
 import type { JSONValue } from '@/sdk/types/json';
 import { relativeTimeFormat } from '@/core/relative-time';
 
-// MARK: - Strings
-
-/** Swift `String.capitalized`: first letter of every word upper-cased, the rest lower-cased. */
 export function capitalized(value: string): string {
 	return value
 		.toLowerCase()
@@ -43,12 +33,10 @@ export function capitalized(value: string): string {
 		);
 }
 
-/** `localizedCaseInsensitiveContains`. */
 export function containsInsensitive(haystack: string, needle: string): boolean {
 	return haystack.toLocaleLowerCase().includes(needle.toLocaleLowerCase());
 }
 
-/** `Text(date, format: .relative(presentation: .named))`. */
 export function relativeNamed(ms: number, now = Date.now()): string {
 	const seconds = Math.round((ms - now) / 1000);
 	const format = relativeTimeFormat();
@@ -62,7 +50,6 @@ export function relativeNamed(ms: number, now = Date.now()): string {
 	return format.format(Math.round(seconds / (86400 * 365)), 'year');
 }
 
-/** `DateComponentsFormatter` with hour/minute/second units, `.abbreviated` style. */
 export function abbreviatedDuration(seconds: number): string {
 	const total = Math.max(0, Math.round(seconds));
 	const hours = Math.floor(total / 3600);
@@ -75,22 +62,14 @@ export function abbreviatedDuration(seconds: number): string {
 	return parts.join(' ');
 }
 
-// MARK: - Image refs
-
-/**
- * Splits `registry/repo:tag` into repo and tag, ignoring colons that belong
- * to a registry port (`localhost:5000/foo`).
- */
 export function splitRefTag(ref: string): { repo: string; tag?: string } {
 	const colon = ref.lastIndexOf(':');
 	if (colon < 0) return { repo: ref };
 	const tail = ref.slice(colon + 1);
-	// A colon inside the registry host segment is followed by a `/`.
 	if (tail.includes('/')) return { repo: ref };
 	return { repo: ref.slice(0, colon), tag: tail };
 }
 
-/** Lowercased ref with any digest stripped and an explicit `:latest` tag. */
 export function normalizedRef(ref: string): string {
 	let value = ref.trim().toLowerCase();
 	const at = value.indexOf('@');
@@ -105,9 +84,6 @@ export function containerName(container: ContainerSummary): string {
 	return container.id.slice(0, 12);
 }
 
-// MARK: - Buckets
-
-/** Port of `EnvUpdateBucket`. */
 export interface EnvUpdateBucket {
 	id: string;
 	env: Environment;
@@ -123,7 +99,6 @@ export function makeBucket(env: Environment, loading = false): EnvUpdateBucket {
 	return { id: env.id, env, images: [], byRef: {}, totalImages: 0, loading };
 }
 
-/** Port of `OutdatedImage`. */
 export interface OutdatedImage {
 	id: string;
 	image: ImageSummary;
@@ -138,7 +113,6 @@ export const OutdatedImage = {
 	consumers(item: OutdatedImage): ImageUsedBy[] {
 		return item.image.usedBy ?? [];
 	},
-	/** `ghcr.io/foo/bar:1.2` → `bar`. */
 	repoDisplayName(item: OutdatedImage): string {
 		const repo = splitRefTag(item.ref).repo;
 		const parts = repo.split('/').filter((part) => part !== '');
@@ -181,7 +155,6 @@ export function resolvedInfo(
 	return undefined;
 }
 
-/** Images with a confirmed pending update, name-sorted for stable ordering. */
 export function outdatedImages(bucket: EnvUpdateBucket): OutdatedImage[] {
 	const items: OutdatedImage[] = [];
 	for (const image of bucket.images) {
@@ -200,8 +173,6 @@ export function outdatedImages(bucket: EnvUpdateBucket): OutdatedImage[] {
 
 export function updateCount(bucket: EnvUpdateBucket): number {
 	const rows = outdatedImages(bucket).length;
-	// While a bucket's image list is still loading, trust its summary so the
-	// headline and dashboard don't undercount mid-load.
 	if (rows === 0 && bucket.loading && bucket.summary) return bucket.summary.imagesWithUpdates;
 	return rows;
 }
@@ -228,14 +199,8 @@ export function updateTypeBadge(
 	};
 }
 
-/** Port of `DeploymentOperation.UpdateTarget`. */
 export type UpdateTarget = { id: string; name: string };
 
-/**
- * Containers to update, resolved against a fresh containers list at tap
- * time. Container consumers re-match by ID then name; project consumers
- * expand to the project's containers running this image.
- */
 export function resolveUpdateTargets(
 	consumers: ImageUsedBy[],
 	item: OutdatedImage,
@@ -252,8 +217,6 @@ export function resolveUpdateTargets(
 				(c) => (c.labels?.['com.docker.compose.project'] ?? '').toLowerCase() === projectName
 			);
 			const runningThisImage = inProject.filter(matches);
-			// If none of the project's containers still run this image, fall back
-			// to the whole project — the server reports per-container truth.
 			for (const c of runningThisImage.length === 0 ? inProject : runningThisImage) {
 				targets.push({ id: c.id, name: containerName(c) });
 			}
@@ -270,8 +233,6 @@ export function resolveUpdateTargets(
 		return true;
 	});
 }
-
-// MARK: - Updater rows (run results + history)
 
 export function resourceTypeIcon(resourceType: string): string {
 	switch (resourceType.toLowerCase()) {
@@ -315,7 +276,6 @@ export function updaterStatusText(item: StatusFields): string {
 	return capitalized(item.status);
 }
 
-/** `statusTint`; history rows don't treat `up_to_date` as skipped (Swift difference kept). */
 export function updaterStatusTint(item: StatusFields, includesUpToDate: boolean): string {
 	if (item.error !== undefined && item.error !== '') return systemColors.red;
 	if (item.updateApplied === true) return systemColors.green;
@@ -337,7 +297,6 @@ export function updaterStatusTint(item: StatusFields, includesUpToDate: boolean)
 	}
 }
 
-/** History detail badge tint (no status-specific branch). */
 export function historyBadgeTint(record: AutoUpdateRecord): string {
 	if (record.error !== undefined && record.error !== '') return systemColors.red;
 	if (record.updateApplied) return systemColors.green;
@@ -345,7 +304,6 @@ export function historyBadgeTint(record: AutoUpdateRecord): string {
 	return systemColors.blue;
 }
 
-/** First image's `old → new` change, or whichever side exists. */
 export function imageChange(
 	oldVersions: Record<string, string>,
 	newVersions: Record<string, string>
@@ -365,7 +323,6 @@ export function resultImageChange(item: UpdaterResourceResult): string | undefin
 	return imageChange(item.oldImages ?? {}, item.newImages ?? {});
 }
 
-/** `AutoUpdateRecord.oldImageVersionsMap` / `newImageVersionsMap`: string values only. */
 export function flattenVersions(
 	values: Record<string, JSONValue> | undefined
 ): Record<string, string> {
@@ -376,8 +333,6 @@ export function flattenVersions(
 	}
 	return out;
 }
-
-// MARK: - Bounded updater calls
 
 function boundedIDs(ids: string[]): string[] {
 	return ids.slice(0, RemoteDataLimits.maximumUpdaterStatusIDs).map((id) => boundedText(id, 512));
@@ -418,7 +373,6 @@ export function boundedUpdaterResult(result: UpdaterResult): UpdaterResult {
 	};
 }
 
-/** `RemoteDataLimits.runBoundedUpdater`. */
 export async function runBoundedUpdater(
 	client: ArcaneClient,
 	environmentID: EnvironmentID,
@@ -430,7 +384,6 @@ export async function runBoundedUpdater(
 	return boundedUpdaterResult(UpdaterResultModel.decode(envelope.data));
 }
 
-/** `RemoteDataLimits.loadBoundedUpdaterStatus`. */
 export async function loadBoundedUpdaterStatus(
 	client: ArcaneClient,
 	environmentID: EnvironmentID,

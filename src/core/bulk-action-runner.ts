@@ -1,4 +1,3 @@
-/** Port of Utils/BulkActionRunner.swift: runs an operation per ID sequentially, collecting failures. */
 export interface BulkResult {
 	succeeded: number;
 	failed: { id: string; error: unknown }[];

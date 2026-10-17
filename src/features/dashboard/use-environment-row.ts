@@ -1,7 +1,3 @@
-/**
- * Shared state for `EnvironmentListRow` (EnvironmentsView.swift): live values
- * from the stream/stats stores, the Sync action, and the upgrade check.
- */
 import { useEffect, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
@@ -26,7 +22,6 @@ import {
 	memoryPercentFor
 } from './dashboard-logic';
 
-/** Process-lifetime latch: rings sweep in from empty once per environment per session. */
 export const revealedEnvironmentIDs = new Set<string>();
 
 export function useEnvironmentRow(
@@ -101,6 +96,5 @@ export function useEnvironmentRow(
 	};
 }
 
-/** `"\(Int(percent.rounded()))%"`, or an em dash. */
 export const ringValueText = (percent: number | undefined) =>
 	percent === undefined ? '—' : `${Math.round(percent)}%`;

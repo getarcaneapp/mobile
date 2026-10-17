@@ -1,10 +1,3 @@
-/**
- * Port of `WhatsNewPresentationView`, `WhatsNewReleaseContent`,
- * `BadgedReleaseNote` and `WhatsNewArchiveView` (Views/WhatsNew/WhatsNewView.swift).
- *
- * Standalone screen (draws its own SwiftUI navigation bar; presented as a sheet).
- * Previous Releases is a SwiftUI sheet over it with its own NavigationStack.
- */
 import { Host } from '@/ui/host';
 import {
 	BottomSheet,
@@ -152,7 +145,6 @@ function WhatsNewReleaseContent({
 	);
 }
 
-/** `PresentationSection.feature.image`. */
 function FeatureImage({ section, width }: { section: PresentationSection; width?: number }) {
 	const tintColor = categoryTint(section.category);
 	return (
@@ -234,14 +226,9 @@ function BulletRow({ bullet }: { bullet: ReleaseNoteBullet }) {
 	);
 }
 
-/**
- * A badged release note drawn as a tinted block quote: the badge label sits
- * in the card's outline, cutting the line, and the note fills the card.
- */
 function BadgedReleaseNote({ text, badge }: { text: string; badge: ReleaseNoteBadge }) {
 	const color = badgeColor[badge];
 	const label = badgeLabel[badge];
-	// Centered vertically on the card's top edge (`alignmentGuide(.top) { $0[.center] }`), inset 10 from the corner.
 	const [legendSize, setLegendSize] = useState({ width: 0, height: 13 });
 	const legend = (
 		<Text
@@ -286,11 +273,6 @@ function BadgedReleaseNote({ text, badge }: { text: string; badge: ReleaseNoteBa
 					{text}
 				</Text>
 				<Overlay.Content>
-					{/*
-					 * The label hides the outline behind it so the text interrupts the line.
-					 * Swift cuts it with `.blendMode(.destinationOut)`; @expo/ui has no blend
-					 * modes, so the mask leaves a clear gap where the label's lower half sits.
-					 */}
 					<Mask>
 						<RoundedRectangle
 							cornerRadius={Radius.nested}

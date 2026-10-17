@@ -1,9 +1,5 @@
 import type { SystemColorName } from '@/theme/colors';
 
-/**
- * Every destination represented by the shared app navigation model.
- * Port of `AppTab.swift` — pure data, same ids, titles, symbols, and rules.
- */
 export const AppTabIDs = [
 	'dashboard',
 	'updates',
@@ -212,7 +208,6 @@ export function section(tab: AppTab): AppTabSection {
 	}
 }
 
-/** Nested destinations owned by this selectable landing page. */
 export function children(tab: AppTab): AppTab[] {
 	switch (tab) {
 		case 'images':

@@ -1,11 +1,3 @@
-/**
- * Port of `AppToolbarItem` (AppToolbarItem.swift): header toolbar items tint
- * their symbols with the app accent (`appAccentToolbarSymbol()`).
- *
- * `Stack.Toolbar`'s own `tintColor` never reaches individual header items, so
- * this wrapper hands the accent to every `Button` / `Menu` that doesn't set
- * its own `tintColor` (e.g. Prune's red trash keeps its red).
- */
 import { Stack } from 'expo-router';
 import {
 	Children,

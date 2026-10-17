@@ -1,9 +1,3 @@
-/**
- * Port of `BackupDestinationPicker` (BackupPolicyEditor.swift): a
- * `FormPicker` of S3 destinations that keeps an unknown current selection.
- *
- * SwiftUI-tree on iOS / Standalone on Android (through `FormPicker`).
- */
 import type { S3Destination } from '@/sdk/models/backup/S3Destination';
 import { FormPicker } from '@/ui/components/form-fields';
 

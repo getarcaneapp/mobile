@@ -1,4 +1,3 @@
-/** The platform-neutral model behind ImageUpdatesView.swift. */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -59,9 +58,7 @@ export function useImageUpdates() {
 			for (const [ref, info] of Object.entries(map))
 				if (info) next[ref] = ImageUpdateInfo.asUpdateResponse(info);
 			setByRef(next);
-		} catch {
-			// by-refs is a cache-read; failure isn't fatal
-		}
+		} catch {}
 	}, [environmentID, taggedRefs]);
 
 	const reload = useCallback(async () => {

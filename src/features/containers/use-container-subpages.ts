@@ -1,4 +1,3 @@
-/** Data for EnvVarsView / LabelsView / BindsView / ContainerHealthHistoryView (from the last inspect). */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
@@ -17,7 +16,6 @@ export function useCachedDetails() {
 
 export type EnvironmentVariableEntry = { id: number; variable: ParsedEnvironmentVariable };
 
-/** `EnvVarsView`: search over names (and non-secret values); revealed values re-hide when the app leaves the foreground. */
 export function useEnvironmentVariables(vars: readonly string[]) {
 	const entries = useMemo(
 		() => vars.map((raw, id) => ({ id, variable: parseEnvironmentVariable(raw) })),

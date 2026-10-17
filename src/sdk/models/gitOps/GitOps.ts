@@ -1,4 +1,3 @@
-/** Port of Models/GitOps/GitOps.swift. */
 import type { ISODateString } from '../base/date';
 
 export interface GitRepository {

@@ -1,4 +1,3 @@
-/** Android rendering of `NavigationCatalogLandingView(parent: .customize)` (NavigationCatalogLandingView.swift). */
 import { Stack } from 'expo-router';
 import { ScrollView } from 'react-native';
 

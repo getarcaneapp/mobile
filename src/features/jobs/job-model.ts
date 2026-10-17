@@ -1,8 +1,3 @@
-/**
- * Shared Jobs logic (JobsListView.swift / JobDetailView.swift): row icon and
- * tint, category grouping, search, the running-jobs set, and the manual run
- * action. Platform-neutral.
- */
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { create } from 'zustand';
@@ -19,7 +14,6 @@ import { relativeTimeFormat } from '@/core/relative-time';
 
 export type JobItem = EnvironmentItem<JobStatus>;
 
-/** `JobRow.icon` / `JobDetailView.icon`. */
 export function jobIcon(job: JobStatus, isRunning: boolean): string {
 	if (!job.enabled) return 'pause.circle.fill';
 	if (isRunning) return 'arrow.triangle.2.circlepath';
@@ -27,21 +21,18 @@ export function jobIcon(job: JobStatus, isRunning: boolean): string {
 	return 'clock.fill';
 }
 
-/** `JobRow.tint` / `JobDetailView.tint`. */
 export function jobTint(job: JobStatus, isRunning: boolean): string {
 	if (!job.enabled) return systemColors.gray;
 	if (isRunning) return systemColors.blue;
 	return systemColors.indigo;
 }
 
-/** `JobRow.statusBadge`: OFF for disabled jobs, CONT for continuous ones. */
 export function jobBadge(job: JobStatus): { text: string; tint: string } | undefined {
 	if (!job.enabled) return { text: 'OFF', tint: systemColors.gray };
 	if (job.isContinuous) return { text: 'CONT', tint: systemColors.purple };
 	return undefined;
 }
 
-/** Swift `String.capitalized`. */
 export function capitalized(value: string): string {
 	return value.replace(
 		/[\p{L}\p{N}]+/gu,
@@ -49,7 +40,6 @@ export function capitalized(value: string): string {
 	);
 }
 
-/** `localizedStandardCompare`. */
 const standardCompare = (a: string, b: string) =>
 	a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 
@@ -58,7 +48,6 @@ const containsInsensitive = (haystack: string, needle: string) =>
 
 export type JobGroup = { category: string; jobs: JobItem[] };
 
-/** `filteredJobs()` + `rebuildGroups()`: search, then group by category (empty → "Other"). */
 export function jobGroups(
 	jobs: readonly JobItem[],
 	searchText: string
@@ -93,7 +82,6 @@ export function jobGroups(
 	return { groups, filteredCount: filtered.length };
 }
 
-/** `Text(next, format: .relative(presentation: .named))`. */
 export function relativeNamed(value: string | undefined, now = Date.now()): string | undefined {
 	const date = value ? parseArcaneDate(value) : undefined;
 	if (!date) return undefined;
@@ -109,9 +97,6 @@ export function relativeNamed(value: string | undefined, now = Date.now()): stri
 	return format.format(Math.round(seconds / (86400 * 365)), 'year');
 }
 
-// MARK: - Running jobs + run action
-
-/** `runningJobs` (keyed by `EnvironmentItem.id`), shared by the list and a pushed detail. */
 export const useRunningJobs = create<{ ids: ReadonlySet<string> }>(() => ({
 	ids: new Set<string>()
 }));
@@ -123,7 +108,6 @@ function setRunning(id: string, running: boolean) {
 	useRunningJobs.setState({ ids: next });
 }
 
-/** `JobsListView.run(_:)`. */
 export async function runJob(job: JobItem): Promise<void> {
 	const client = useClientManager.getState().client;
 	if (!client || useRunningJobs.getState().ids.has(job.id)) return;
@@ -149,8 +133,6 @@ export function copyJobSchedule(job: JobStatus) {
 	void Clipboard.setStringAsync(job.schedule);
 	showToast(Toasts.copied('Schedule copied'));
 }
-
-// MARK: - Pushed detail hand-off
 
 const jobCache = new Map<string, JobItem>();
 const cacheKey = (environmentID: EnvironmentID, jobID: string) => `${environmentID}/${jobID}`;

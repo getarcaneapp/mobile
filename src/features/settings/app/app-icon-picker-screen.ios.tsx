@@ -1,4 +1,3 @@
-/** Port of `AppIconPickerView` (AppIconPickerView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -32,12 +31,10 @@ import { Image as SwiftImage } from '@/ui/components/swiftui-image';
 import { ActionErrorAlert } from '../shared/action-error-alert';
 import { useAppIconPicker } from './use-app-icon-picker';
 
-/** `Color(uiColor: .separator).opacity(0.4)`. */
 function useSeparatorStroke(): string {
 	return useIsDark() ? withOpacity('#545458', 0.6 * 0.4) : withOpacity('#3C3C43', 0.29 * 0.4);
 }
 
-/** `Color(uiColor: .tertiarySystemFill)`. */
 function useTertiaryFill(): string {
 	return useIsDark() ? withOpacity('#767680', 0.24) : withOpacity('#767680', 0.12);
 }
@@ -124,7 +121,6 @@ export function AppIconPickerScreen() {
 						))}
 					</Section>
 				</List>
-				{/* Outside the List: inside it, the alert's anchor renders as an empty row. */}
 				<ActionErrorAlert
 					title="Couldn't change icon"
 					message={model.errorMessage}

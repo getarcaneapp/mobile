@@ -1,7 +1,3 @@
-/**
- * Ports of `PullImageView` (ImagesView.swift), `UploadImageView`,
- * `ImagePruneView`, and `ImageTagView`.
- */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {

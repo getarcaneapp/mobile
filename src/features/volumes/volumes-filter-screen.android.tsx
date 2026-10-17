@@ -1,4 +1,3 @@
-/** Android rendering of VolumesView's Filter sheet. */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView } from 'react-native';
 

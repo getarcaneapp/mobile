@@ -1,10 +1,3 @@
-/**
- * Material 3 rows for the App Settings Android screens: a list item whose
- * value opens an exposed dropdown (SwiftUI `Picker` with `.menu` style) and a
- * switch row with a tinted leading icon (SwiftUI `Toggle` + `SettingsRow`).
- *
- * Standalone (RN + Compose `DropdownMenu`). Android only; import from `.android.tsx` files.
- */
 import { Host } from '@expo/ui';
 import { DropdownMenu, DropdownMenuItem, Text as ComposeText } from '@expo/ui/jetpack-compose';
 import { useState } from 'react';

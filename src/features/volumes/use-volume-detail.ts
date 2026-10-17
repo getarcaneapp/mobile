@@ -1,7 +1,3 @@
-/**
- * Model behind `VolumeDetailView` (VolumesView.swift): size, consumer
- * container resolution, toolbar actions, delete, and rename.
- */
 import { useCallback, useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -39,7 +35,6 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 	>({});
 	useClientManager((s) => s.accessGeneration);
 
-	// A cold push (no cached Volume) fetches it once.
 	useEffect(() => {
 		if (volumeCache.volume(environmentID, name)) return;
 		const client = useClientManager.getState().client;
@@ -67,7 +62,6 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 			const sizes = await client.rest.get<VolumeSizeInfo[]>(path);
 			setSizeBytes(sizes.find((s) => s.name === name)?.size ?? 0);
 		} catch {
-			// Slow / unsupported on some hosts — leave as `—`.
 		} finally {
 			setLoadingSize(false);
 		}
@@ -94,9 +88,7 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 			const byID: Record<string, ContainerSummary> = {};
 			for (const container of containers) byID[container.id] = container;
 			setResolvedContainersByID(byID);
-		} catch {
-			// Preserve stable container IDs as fallbacks when resolution fails.
-		}
+		} catch {}
 	}, [environmentID, containerIDs]);
 
 	useEffect(() => {
@@ -119,7 +111,6 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 			await client.volumes.remove({ envID: environmentID, name: volume.name });
 			volumesChanged(environmentID);
 			showToast(Toasts.success('Volume deleted'));
-			// The confirmation card already dismissed this screen.
 		} catch (error) {
 			showErrorAlert('Error', friendlyErrorMessage(error));
 		}

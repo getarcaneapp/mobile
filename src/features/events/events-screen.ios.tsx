@@ -1,4 +1,3 @@
-/** Port of `EventsView`, `EventSeveritySummary`, `EventSeverityChip`, `EventRow` (EventsView.swift). */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {

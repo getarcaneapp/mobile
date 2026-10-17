@@ -1,9 +1,3 @@
-/**
- * Ports of `LogStatusBar`, `LogOptionsMenu` and `LogConnectionIndicator`
- * (LogsView.swift).
- *
- * Standalone (Host).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

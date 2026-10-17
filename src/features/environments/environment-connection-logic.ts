@@ -1,7 +1,3 @@
-/**
- * Pure presentation logic for `EnvironmentConnectionView`
- * (EnvironmentConnectionView.swift), shared by the iOS and Android renderings.
- */
 import { parseArcaneDate } from '@/sdk/models/base/date';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { systemColors } from '@/theme/colors';
@@ -16,11 +12,9 @@ export type EnvironmentConnectionProps = {
 	isAvailable?: boolean;
 };
 
-/** Swift `Motion.edgePacketDuration` / `Motion.directPacketDuration` (seconds). */
 export const edgePacketDuration = 2.4;
 export const directPacketDuration = 4.8;
 
-/** `URL(string:)?.scheme` / `.host` without relying on the RN URL polyfill. */
 function urlParts(value: string): { scheme?: string; host?: string } {
 	const match = /^([A-Za-z][A-Za-z0-9+.-]*):(?:\/\/(?:[^@/?#]*@)?(\[[^\]]*\]|[^:/?#]*))?/.exec(
 		value.trim()
@@ -57,7 +51,6 @@ export function connectionPresentation({
 		}
 	})();
 
-	/** Hex, or undefined for `.secondary`. */
 	const statusTint: string | undefined = live
 		? systemColors.green
 		: environment.status === 'standby'
@@ -169,7 +162,6 @@ function parseDate(value: string | undefined): Date | undefined {
 	return value ? parseArcaneDate(value) : undefined;
 }
 
-/** Whether the heartbeat is older than 90 seconds at `now`. */
 export const isHeartbeatStale = (heartbeat: Date, now: Date) =>
 	(now.getTime() - heartbeat.getTime()) / 1000 > 90;
 
@@ -182,7 +174,6 @@ export function certificateStatus(certificate: { expired: boolean; expiringSoon:
 	return { text: 'Valid', tint: systemColors.green };
 }
 
-/** `.dateTime.month().day().hour().minute()`. */
 export const connectedSinceText = (date: Date) =>
 	date.toLocaleString(undefined, {
 		month: 'short',
@@ -191,11 +182,9 @@ export const connectedSinceText = (date: Date) =>
 		minute: '2-digit'
 	});
 
-/** `.dateTime.year().month().day()`. */
 export const expiryText = (date: Date) =>
 	date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
-/** Android stand-in for SwiftUI `Text(date, style: .relative)`: "2 min, 5 sec". */
 export function relativeText(date: Date, now: Date): string {
 	let seconds = Math.max(0, Math.round(Math.abs(now.getTime() - date.getTime()) / 1000));
 	const units: [number, string][] = [
@@ -218,7 +207,6 @@ export function relativeText(date: Date, now: Date): string {
 	return parts.join(', ');
 }
 
-/** Android stand-in for SwiftUI `Text(date, style: .timer)`: "1:02:03" / "2:03". */
 export function timerText(date: Date, now: Date): string {
 	const total = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 1000));
 	const hours = Math.floor(total / 3600);
@@ -228,5 +216,4 @@ export function timerText(date: Date, now: Date): string {
 	return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
 }
 
-/** SwiftUI `dynamicTypeSize.isAccessibilitySize` (AX1 and up). */
 export const isAccessibilityFontScale = (fontScale: number) => fontScale >= 1.6;

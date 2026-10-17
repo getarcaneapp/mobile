@@ -1,4 +1,3 @@
-/** Android rendering of `NetworkDetailView` (NetworksView.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native';

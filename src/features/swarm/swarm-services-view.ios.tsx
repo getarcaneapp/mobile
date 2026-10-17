@@ -1,4 +1,3 @@
-/** Ports of `SwarmServicesView`, `SwarmServiceRow` and `SwarmScaleSheet` (SwarmServicesView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -165,7 +164,6 @@ function ServiceLink({
 	);
 }
 
-/** The list body; render inside a `Host`. */
 export function SwarmServicesList({ model }: { model: SwarmServicesModel }) {
 	const { snapshot, items } = model;
 	return (
@@ -209,7 +207,6 @@ export function SwarmServicesList({ model }: { model: SwarmServicesModel }) {
 	);
 }
 
-/** `SwarmServicesView(environmentID:stackName:)` embedded in a stack's detail. */
 export function EmbeddedSwarmServices({
 	environmentID,
 	stackName
@@ -259,7 +256,6 @@ export function SwarmServicesScreen() {
 	);
 }
 
-/** `Stepper(value:in: 0...1_000) { LabeledContent("Replicas") { Text(replicas).monospacedDigit() } }`. */
 export function ReplicaStepper({
 	value,
 	onValueChange

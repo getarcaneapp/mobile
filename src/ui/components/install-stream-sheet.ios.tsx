@@ -1,12 +1,3 @@
-/**
- * Port of `InstallStreamSheet` (InstallStreamSheet.swift): the full-log sheet
- * styled as an install console — one dark monospaced surface, a 2pt state
- * rule under the header, flat actions below. Deliberately dark in both
- * appearances. Present as a sheet (grabber visible, `#0D0D11` background);
- * hiding it keeps the operation running.
- *
- * Standalone (Host; render as the sheet's content).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -66,7 +57,6 @@ import { hashKey, motionAwareAnimation, swiftAnimation } from './swiftui-motion'
 const mono = (textStyle: 'subheadline' | 'caption' | 'caption2', weight?: 'semibold') =>
 	font({ textStyle, design: 'monospaced', weight });
 
-/** Repeating pulse; SwiftUI has no repeatForever here, so this many laps outlasts any operation. */
 const breathing = Animation.easeInOut({ duration: 0.9 }).repeat({
 	repeatCount: 100_000,
 	autoreverses: true
@@ -108,7 +98,6 @@ export function InstallStreamSheet({
 	const [cursorOn, setCursorOn] = useState(false);
 	const [ruleWidth, setRuleWidth] = useState(0);
 
-	// Drives both the status-dot pulse and the cursor blink from one repeating value.
 	useEffect(() => {
 		setCursorOn(!terminal && !reduceMotion);
 	}, [terminal, reduceMotion]);
@@ -144,7 +133,6 @@ export function InstallStreamSheet({
 					environment({ key: 'colorScheme', value: 'dark' })
 				]}
 			>
-				{/* Header */}
 				<HStack spacing={10} modifiers={[padding({ horizontal: 20, top: 22, bottom: 14 })]}>
 					<Circle
 						modifiers={[
@@ -188,7 +176,6 @@ export function InstallStreamSheet({
 					</Text>
 				</HStack>
 
-				{/* Progress rule: determinate fill for pulls, a quiet hairline otherwise. */}
 				<ZStack
 					alignment="leading"
 					modifiers={[
@@ -210,7 +197,6 @@ export function InstallStreamSheet({
 					) : null}
 				</ZStack>
 
-				{/* Console */}
 				<ScrollView
 					modifiers={[
 						frame({ maxWidth: Infinity, maxHeight: Infinity }),
@@ -245,7 +231,6 @@ export function InstallStreamSheet({
 					</VStack>
 				</ScrollView>
 
-				{/* Actions */}
 				<VStack spacing={8} modifiers={[padding({ horizontal: 20, top: 12, bottom: 16 })]}>
 					<HStack spacing={10}>
 						<Button

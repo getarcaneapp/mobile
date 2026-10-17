@@ -1,8 +1,3 @@
-/**
- * Android rendering of `JobScheduleConfigView` (JobScheduleConfigView.swift):
- * one cron field per background job in a Material 3 grouped list, with
- * refresh and save top-app-bar actions.
- */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -167,7 +162,6 @@ export function JobScheduleConfigView({
 	);
 }
 
-/** Route screen: `job-schedules?envID=…&envName=…`. */
 export function JobScheduleConfigScreen() {
 	const { envID = '0', envName } = useLocalSearchParams<{ envID?: string; envName?: string }>();
 	return <JobScheduleConfigView key={envID} environmentID={envID} environmentName={envName} />;

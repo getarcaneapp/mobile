@@ -1,9 +1,3 @@
-/**
- * Port of `VolumesView` (VolumesView.swift).
- *
- * iOS: SwiftUI List with Pinned / Used / Unused sections, swipe actions,
- * context menus with previews, edit-mode selection, and native toolbar menus.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import { Button, ContextMenu, HStack, List, Spacer, SwipeActions, VStack } from '@expo/ui/swift-ui';

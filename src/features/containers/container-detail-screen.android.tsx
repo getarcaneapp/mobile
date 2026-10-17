@@ -1,4 +1,3 @@
-/** Android rendering of `ContainerDetailView` (ContainerDetailView.swift). */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

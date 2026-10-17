@@ -1,4 +1,3 @@
-/** Port of Services/PortsService.swift. */
 import type { EnvironmentID } from '../client/environment';
 import type { RESTService } from '../http/RESTService';
 import { SearchPaginationSort } from '../models/base/pagination';
@@ -12,7 +11,6 @@ export class PortsService {
 		this.rest = rest;
 	}
 
-	/** Paginated list of port mappings across containers in an environment. */
 	list(
 		args: { envID?: EnvironmentID; query?: SearchPaginationSort } = {}
 	): Promise<PaginatedResponse<PortMapping>> {

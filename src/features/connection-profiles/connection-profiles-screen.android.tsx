@@ -1,8 +1,3 @@
-/**
- * Android rendering of `ConnectionProfilesView` / `ConnectionProfileEditorView`
- * (Views/Settings/ConnectionProfilesView.swift) in Material 3. Swipe actions
- * and the context menu become a long-press menu.
- */
 import { Stack } from 'expo-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -124,13 +119,8 @@ function Footer({ children }: { children: ReactNode }) {
 	return <View style={{ paddingHorizontal: 32, paddingTop: 8, gap: 6 }}>{children}</View>;
 }
 
-// Read per render: colors follow the current appearance.
 const footerText = () => [m3Type.bodySmall, { color: colors.secondaryLabel }];
 
-/**
- * `pushed`: Account → Connection Profiles in the tab's own stack, under its
- * top app bar. Otherwise the login sheet, which draws its own bar.
- */
 export function ConnectionProfilesScreen({ pushed = false }: { pushed?: boolean }) {
 	const model = useConnectionProfiles({ pushed });
 	if (pushed) {
@@ -295,7 +285,6 @@ function ProfileRow({
 	profile: ConnectionProfile;
 }) {
 	const current = model.isCurrent(profile);
-	// SwiftUI's context menu / swipe actions → a long-press menu.
 	const showMenu = () =>
 		Alert.alert(profile.name, profile.serverURL, [
 			{ text: 'Edit Profile', onPress: () => model.editProfile(profile) },
@@ -327,8 +316,6 @@ function ProfileRow({
 		/>
 	);
 }
-
-// MARK: - Editor
 
 function OutlinedField({
 	label,

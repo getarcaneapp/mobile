@@ -1,10 +1,8 @@
-/** Port of Auth/TokenStore.swift. */
 import type { ISODateString } from '../models/base/date';
 
 export interface TokenPair {
 	accessToken: string;
 	refreshToken: string;
-	/** ISO-8601 timestamp (Swift `Date`). */
 	expiresAt: ISODateString;
 }
 
@@ -19,11 +17,6 @@ export const TokenPair = {
 	}
 } as const;
 
-/**
- * App-provided credential storage (e.g. expo-secure-store / shared keychain).
- * Must be the single source of truth shared with any other process (widgets,
- * intents), because refresh tokens are single-use.
- */
 export interface TokenStore {
 	loadTokens(): Promise<TokenPair | undefined>;
 	saveTokens(tokens: TokenPair): Promise<void>;

@@ -1,18 +1,7 @@
-/**
- * In-flight request deduplication for API GET responses. Port of
- * `ResponseCache.swift`: concurrent callers for the same key share one
- * network request; every call that starts after the previous one finished
- * gets a fresh response. Nothing is stored after a request completes, so a
- * stale value can never be served.
- */
 export type CacheKey = {
-	/** Canonical scheme + host + effective port + base path. */
 	serverIdentity: string;
-	/** `currentUser?.id ?? "anon"` (multi-account safety). */
 	userID: string;
-	/** Rotates for every authenticated session. */
 	sessionIdentity: string;
-	/** Active environment raw value. */
 	envID: string;
 	pathWithQuery: string;
 };
@@ -24,7 +13,6 @@ export class CancellationError extends Error {
 	}
 }
 
-/** A shared validity lease; callers can check freshness before applying a result. */
 export class CacheGeneration {
 	private valid = true;
 	get isValid() {
@@ -51,15 +39,10 @@ class ResponseCacheImpl {
 	private inFlight = new Map<string, { key: CacheKey; request: InFlight }>();
 	private nextID = 0;
 
-	/** The lease of the request currently in flight for `key`, or a new one. */
 	generation(key: CacheKey): CacheGeneration {
 		return this.inFlight.get(keyString(key))?.request.generation ?? new CacheGeneration();
 	}
 
-	/**
-	 * Cancels matching in-flight requests so the next caller starts a fresh one
-	 * instead of joining a request that predates a mutation.
-	 */
 	invalidate(predicate: (key: CacheKey) => boolean) {
 		for (const [id, entry] of this.inFlight) {
 			if (!predicate(entry.key)) continue;
@@ -77,7 +60,6 @@ class ResponseCacheImpl {
 		this.invalidate(() => true);
 	}
 
-	/** `work` receives an AbortSignal that fires when the request is invalidated. */
 	async coalesce<T>(
 		key: CacheKey,
 		work: (signal: AbortSignal) => Promise<T>,

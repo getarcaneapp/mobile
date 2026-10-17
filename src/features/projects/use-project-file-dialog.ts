@@ -1,4 +1,3 @@
-/** `ProjectFileDialogView` state (ProjectFilesWorkspaceView.swift): name + destination for create / rename / move. */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 

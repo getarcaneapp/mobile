@@ -1,9 +1,3 @@
-/**
- * App-side `TokenStore` over expo-secure-store, keyed per canonical server
- * origin. Port of `MigratingTokenStore` + `CredentialLease` +
- * `CredentialPersistenceCoordinator` (Networking/*.swift) without the App
- * Group / legacy-keychain migration, which this build never had.
- */
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 
@@ -12,10 +6,8 @@ import { TokenPair, type TokenStore } from '@/sdk/auth/TokenStore';
 import { CancellationError } from '@/sdk/errors/ArcaneError';
 
 const service = 'com.arcane.mobile.tokens';
-/** Swift `AppGroup.Keys.credentialOrigin`: the origin the stored session belongs to. */
 const credentialOriginKey = 'arcane.credentialOrigin';
 
-/** Port of `SharedKeychain.credentialOrigin` / `bind` / `unbind`. */
 export const CredentialBinding = {
 	get origin(): string | undefined {
 		return storage.string(credentialOriginKey);
@@ -29,7 +21,6 @@ export const CredentialBinding = {
 	}
 } as const;
 
-/** A synchronous retirement fence shared by every client in an authentication attempt. */
 export class CredentialLease {
 	private active = true;
 	private allowsClear = true;
@@ -52,10 +43,6 @@ export class CredentialLease {
 	}
 }
 
-/**
- * Serializes mutations from retired and replacement clients. A suspended old
- * write is removed before a replacement write can persist its credentials.
- */
 export class CredentialPersistenceCoordinator {
 	private tail: Promise<unknown> = Promise.resolve();
 
@@ -109,7 +96,6 @@ export class CredentialPersistenceCoordinator {
 
 const serviceKeys = new Map<string, Promise<string>>();
 
-/** `SharedKeychain.originService(_:)`: the service name hashed per origin. */
 function originServiceKey(origin: string): Promise<string> {
 	let key = serviceKeys.get(origin);
 	if (!key) {
@@ -125,7 +111,6 @@ const secureOptions: SecureStore.SecureStoreOptions = {
 	keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK
 };
 
-/** Raw secure-store item for one origin (Swift `KeychainTokenStore`). */
 export class SecureStoreTokenStore implements TokenStore {
 	constructor(private readonly origin: string) {}
 
@@ -160,11 +145,6 @@ export class SecureStoreTokenStore implements TokenStore {
 	}
 }
 
-/**
- * Port of `MigratingTokenStore`: origin-bound, lease-fenced, and persisted
- * through the shared coordinator so a retired client can never resurrect a
- * session after sign-out or a server switch.
- */
 export class OriginTokenStore implements TokenStore {
 	private readonly originStore: TokenStore;
 

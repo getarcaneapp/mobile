@@ -1,7 +1,3 @@
-/**
- * Data for the embedded image detail tabs: `ImageHistoryView` and
- * `ImageAttestationsView` (+ `ImageAttestationDetailView`'s statement load).
- */
 import * as Clipboard from 'expo-clipboard';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -14,11 +10,8 @@ import { showToast, Toasts } from '@/ui/toast';
 
 import { prettySortedJSON } from './image-model';
 
-// MARK: - ImageHistoryView
-
 export const layerID = (id: string) => (id === '<missing>' ? 'Metadata-only layer' : id);
 
-/** `Text(Date(timeIntervalSince1970:), format: .dateTime.year().month().day())`. */
 export const historyDate = (created: number) =>
 	new Date(created * 1000).toLocaleDateString(undefined, {
 		year: 'numeric',
@@ -55,9 +48,6 @@ export function useImageHistory(environmentID: EnvironmentID, imageID: string) {
 	return { items, isLoading, errorMessage, load };
 }
 
-// MARK: - ImageAttestationsView
-
-/** `active` mirrors the embedded view's `.task`: it loads each time its tab appears. */
 export function useImageAttestations(
 	environmentID: EnvironmentID,
 	imageID: string,
@@ -106,8 +96,6 @@ export function useImageAttestations(
 }
 
 export type ImageAttestationsModel = ReturnType<typeof useImageAttestations>;
-
-// MARK: - ImageAttestationDetailView
 
 export function useAttestationStatement(
 	environmentID: EnvironmentID,

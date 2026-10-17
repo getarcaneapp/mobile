@@ -1,4 +1,3 @@
-/** Port of Services/VariablesService.swift. Manager-level global-variable management. */
 import type { RESTService } from '../http/RESTService';
 import type { ArcaneRequestOptions } from '../http/requestOptions';
 import { decodeArray } from '../models/base/decoding';
@@ -13,7 +12,6 @@ import {
 export class VariablesService {
 	private readonly rest: RESTService;
 
-	/** @internal */
 	constructor(rest: RESTService) {
 		this.rest = rest;
 	}

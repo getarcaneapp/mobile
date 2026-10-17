@@ -1,10 +1,3 @@
-/**
- * Material 3 building blocks for the Android native Compose editor: a
- * full-screen dialog (SwiftUI `.sheet` with Cancel/confirm), list rows,
- * inline text inputs, choice menus, and the error line every Swift form shows.
- *
- * Standalone (RN views). Android only.
- */
 import { MenuView } from '@react-native-menu/menu';
 import type { ReactNode } from 'react';
 import {
@@ -25,7 +18,6 @@ import { Icon } from '@/ui/Icon';
 
 export const ripple = { color: colors.separator as string };
 
-/** A Material full-screen dialog: close icon, title, and a confirm text button. */
 export function FullScreenDialog({
 	visible,
 	title,
@@ -107,7 +99,6 @@ export function FullScreenDialog({
 	);
 }
 
-/** A tappable list row with optional supporting text and a trailing value or chevron. */
 export function NavRow({
 	title,
 	subtitle,
@@ -172,7 +163,6 @@ export function NavRow({
 	);
 }
 
-/** `LabeledContent(title) { TextField(...) }`: title left, input right. */
 export function InlineInput({
 	title,
 	value,
@@ -240,7 +230,6 @@ export function InlineInput({
 
 export type Choice = { value: string; label: string };
 
-/** `Picker(title, selection:)` in a Form: a row showing the current label that opens a menu. */
 export function ChoiceRow({
 	title,
 	selection,
@@ -355,7 +344,6 @@ export function TextAction({
 	);
 }
 
-/** `ContentUnavailableView` inside a list. */
 export function EmptyRow({
 	icon,
 	title,

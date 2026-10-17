@@ -1,4 +1,3 @@
-/** Ports of `SwarmKeyValueListView`, `SwarmKeyValueDetailView`, `SwarmKeyValueCreateView` (SwarmKeyValueViews.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

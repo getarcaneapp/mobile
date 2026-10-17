@@ -1,12 +1,3 @@
-/**
- * Port of `ImageVulnerabilitiesView` (ImageVulnerabilitiesView.swift): scan
- * summary, severity filter chips with the ignored toggle, re-scan, and the
- * paginated findings with admin ignore / unignore context menus.
- *
- * Embedded in the image detail screen it renders only its content (the host
- * screen owns the toolbar, including the Patch image link); standalone it
- * sets the "Vulnerabilities" title and its own toolbar.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {

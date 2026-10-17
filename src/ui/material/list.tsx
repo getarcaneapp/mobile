@@ -4,7 +4,6 @@ import { Pressable, Text, View, type ColorValue } from 'react-native';
 import { colors } from '@/theme/colors';
 import { Icon } from '@/ui/Icon';
 
-/** Material 3 section header for grouped lists. */
 export function MaterialSectionHeader({ title }: { title: string }) {
 	return (
 		<Text
@@ -27,7 +26,6 @@ export function MaterialSectionHeader({ title }: { title: string }) {
 type ListItemProps = {
 	headline: string;
 	supporting?: string;
-	/** SF Symbol name; rendered as the mapped Material Symbol. */
 	icon?: string;
 	iconColor?: ColorValue;
 	leading?: ReactNode;
@@ -38,7 +36,6 @@ type ListItemProps = {
 	destructive?: boolean;
 };
 
-/** Material 3 one/two-line list item with ripple. */
 export function MaterialListItem({
 	headline,
 	supporting,
@@ -92,7 +89,6 @@ export function MaterialListItem({
 	);
 }
 
-/** Rounded tonal container grouping list items (Material 3 "list in a card"). */
 export function MaterialListGroup({ children }: { children: ReactNode }) {
 	return (
 		<View

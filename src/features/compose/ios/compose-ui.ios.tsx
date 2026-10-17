@@ -1,7 +1,3 @@
-/**
- * Small SwiftUI-tree building blocks shared by the native Compose editor
- * screens (Views/Compose). SwiftUI-tree; import only from `.ios.tsx` files.
- */
 import {
 	BottomSheet,
 	Button,
@@ -57,13 +53,11 @@ import type { ComposeMenuAction } from '../compose-session';
 
 export const secondaryStyle = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
 export const tertiaryStyle = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
-/** `.textInputAutocapitalization(.never).autocorrectionDisabled()`. */
 export const plainTextInput: ModifierConfig[] = [
 	textInputAutocapitalization('never'),
 	autocorrectionDisabled(true)
 ];
 
-/** `Text(error).foregroundStyle(.red)` (optionally `.font(.caption)`). */
 export function ErrorText({ error, caption = false }: { error?: string; caption?: boolean }) {
 	if (error === undefined) return null;
 	return (
@@ -78,7 +72,6 @@ export function ErrorText({ error, caption = false }: { error?: string; caption?
 	);
 }
 
-/** A SwiftUI `TextField` bound to a controlled string (`TextField(text: $value)`). */
 export function BoundField({
 	placeholder,
 	value,
@@ -95,9 +88,6 @@ export function BoundField({
 	modifiers?: ModifierConfig[];
 }) {
 	const state = useNativeState(value);
-	// Values this field emitted that the document hasn't echoed back yet. A
-	// document edit per keystroke (Swift's `Binding` setter) re-renders with
-	// each value in turn; writing a stale echo back would clobber fast typing.
 	const pending = useRef<string[]>([]);
 	useEffect(() => {
 		const index = pending.current.indexOf(value);
@@ -155,7 +145,6 @@ function SecureBoundField({
 	);
 }
 
-/** `LabeledContent(title) { TextField(...).textFieldStyle(.plain).multilineTextAlignment(.trailing) }`. */
 export function TrailingField({
 	title,
 	placeholder,
@@ -192,7 +181,6 @@ export function TrailingField({
 	);
 }
 
-/** `NavigationLink { destination } label: { ... }` with a value-based push. */
 export function ComposeLink({
 	destination,
 	children,
@@ -209,7 +197,6 @@ export function ComposeLink({
 	);
 }
 
-/** `NavigationLink("Title") { destination }`. */
 export function TitleLink({
 	title,
 	destination
@@ -224,7 +211,6 @@ export function TitleLink({
 	);
 }
 
-/** `DynamicNavigationRow(title:subtitle:systemImage:)` as a navigation link. */
 export function DynamicLinkRow({
 	title,
 	subtitle,
@@ -258,7 +244,6 @@ export function DynamicLinkRow({
 	);
 }
 
-/** The host's editor menu items (`menuActions`). */
 export function MenuActionItems({ actions }: { actions?: ComposeMenuAction[] }) {
 	if (!actions) return null;
 	return (
@@ -283,7 +268,6 @@ function MenuActionItem({ action }: { action: ComposeMenuAction }) {
 	);
 }
 
-/** `Menu { ... } label: { Image(systemName: "ellipsis") }`. */
 export function EllipsisMenu({
 	label,
 	children,
@@ -303,7 +287,6 @@ export function EllipsisMenu({
 	);
 }
 
-/** `.sheet(isPresented:)`. */
 export function Sheet({
 	isPresented,
 	onDismiss,
@@ -325,12 +308,10 @@ export function Sheet({
 	);
 }
 
-/** `Text(value).foregroundStyle(.secondary)`. */
 export const SecondaryText = ({ children }: { children: string }) => (
 	<Text modifiers={[secondaryStyle]}>{children}</Text>
 );
 
-/** `LabeledContent(title, value:)`. */
 export function ValueRow({ title, value }: { title: string; value: string }) {
 	return (
 		<LabeledContent label={title}>
@@ -348,16 +329,10 @@ export const chevron = () => (
 
 export { HStack };
 
-/** SwiftUI's default `Picker` style inside a `Form` (a menu row with the value trailing). */
 export function MenuPicker<T extends string>(props: ComponentProps<typeof Picker<T>>) {
 	return <Picker {...props} modifiers={[pickerStyle('menu'), ...(props.modifiers ?? [])]} />;
 }
 
-/**
- * `ForEach(rows).onDelete(perform:)`. Rows go through `List.ForEach`'s keyed
- * `data` form (recycling): the element-children and static forms give every
- * row the same SwiftUI identity, so a swipe deletes the first row.
- */
 export function RowsForEach({
 	onDelete,
 	children
@@ -377,10 +352,6 @@ export function RowsForEach({
 	);
 }
 
-/**
- * `Section(title) { row }.contextMenu { Delete }` inside a `ForEach … .onDelete`:
- * the row keeps the context menu and gets the same trailing swipe-to-delete.
- */
 export function DeletableSection({
 	title,
 	readOnly,

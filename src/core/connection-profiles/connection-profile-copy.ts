@@ -1,8 +1,3 @@
-/**
- * User-facing wording for where profiles and sign-ins live. iOS matches the
- * reference app (iCloud Keychain); Android describes Google backup and
- * Google Password Manager.
- */
 import { Platform } from 'react-native';
 
 const ios = Platform.OS === 'ios';

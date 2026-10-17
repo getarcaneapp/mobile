@@ -1,4 +1,3 @@
-/** `EventDetailView` reads the event handed over by the list row. */
 import { useLocalSearchParams } from 'expo-router';
 
 import { parseArcaneDate } from '@/sdk/models/base/date';
@@ -16,8 +15,6 @@ export function useEventDetail() {
 	return {
 		event,
 		occurred: formattedEventDate(event.timestamp),
-		// Swift compares decoded Dates (ISO8601DateFormatter: millisecond precision); the wire
-		// strings differ in the nanoseconds, so compare parsed dates, not strings.
 		recorded:
 			parseArcaneDate(event.createdAt)?.getTime() !== parseArcaneDate(event.timestamp)?.getTime()
 				? formattedEventDate(event.createdAt)

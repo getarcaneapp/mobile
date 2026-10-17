@@ -1,7 +1,3 @@
-/**
- * State behind `CreateNetworkView` and `ConnectNetworkContainerSheet`
- * (NetworksView.swift).
- */
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -97,7 +93,6 @@ export function useCreateNetwork(environmentID: EnvironmentID) {
 	};
 }
 
-/** Route payload for the Connect sheet. */
 export type ConnectSheetPayload = {
 	excludedContainerIDs: Set<string>;
 	onConnected: () => Promise<void> | void;

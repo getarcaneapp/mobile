@@ -1,10 +1,3 @@
-/**
- * Android rendering of `UpdaterRunSheet` / `UpdaterRunView` / `UpdaterRunItemRow`
- * (UpdaterRunView.swift): Material 3 sheet content with the same phases,
- * counters, and result list. Present inside a `MaterialSheet`.
- *
- * Standalone (RN views).
- */
 import { useEffect, useState } from 'react';
 import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
@@ -393,7 +386,6 @@ export function UpdaterRunView({
 	const model = useUpdaterRun(environmentID);
 	const { phase, liveStatus } = model;
 
-	// `interactiveDismissDisabled(phase == .starting)`: swallow Back while starting.
 	useEffect(() => {
 		if (phase.kind !== 'starting') return;
 		const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);

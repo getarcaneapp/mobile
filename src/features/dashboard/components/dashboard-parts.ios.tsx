@@ -1,11 +1,3 @@
-/**
- * Small SwiftUI pieces of DashboardView.swift: `DashboardStatTile`,
- * `DashboardSectionTitle`, `DashboardRowChevron`, the stream-failed banner,
- * the two-tap Update All capsule, the count-availability footnote and
- * popover, `DashboardGreeting`, and the first-load skeleton.
- *
- * SwiftUI-tree.
- */
 import { Button, HStack, Popover, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -47,7 +39,6 @@ import { cardRowLinkStyle, motionAwareAnimation, hashKey } from '@/ui/components
 
 import { greetingFor, typedGreetings, type DashboardCountIssue } from '../dashboard-logic';
 
-/** One overview stat: rounded number over a caption with a tiny tinted glyph. */
 export function DashboardStatTile({
 	title,
 	value,
@@ -60,7 +51,6 @@ export function DashboardStatTile({
 	icon: string;
 	tint: string;
 	onPress?: () => void;
-	/** Android only; on iOS the card's `ContextMenu` handles long presses. */
 	onLongPress?: () => void;
 }) {
 	const reduceMotion = useReduceMotion();
@@ -138,7 +128,6 @@ export function DashboardStatTile({
 	);
 }
 
-/** Section heading for dashboard groups (Pinned, Environments). */
 export function DashboardSectionTitle({ title }: { title: string }) {
 	return (
 		<Text
@@ -149,7 +138,6 @@ export function DashboardSectionTitle({ title }: { title: string }) {
 	);
 }
 
-/** Trailing disclosure chevron for button rows that act like navigation links. */
 export function DashboardRowChevron() {
 	return (
 		<Image
@@ -163,7 +151,6 @@ export function DashboardRowChevron() {
 	);
 }
 
-/** Shown when the aggregated stream burned its reconnect budget. */
 export function StreamFailedBanner({ onRetry }: { onRetry: () => void }) {
 	return (
 		<HStack
@@ -208,11 +195,6 @@ export function StreamFailedBanner({ onRetry }: { onRetry: () => void }) {
 	);
 }
 
-/**
- * Two-tap Update All: a compact capsule with the upgrade count; armed, it
- * grows into a red "Confirm Update" capsule. Disabled once every environment
- * is known to be current.
- */
 export function UpdateAllButton({
 	upgrades,
 	armed,
@@ -268,7 +250,6 @@ export function UpdateAllButton({
 	);
 }
 
-/** Footnote under the overview panel: all-clear label, or a tappable warning with a popover. */
 export function CountAvailabilityNote({
 	issues,
 	allEnvironmentsPreview,
@@ -386,10 +367,6 @@ export function CountAvailabilityNote({
 	);
 }
 
-/**
- * A greeting with the user's first name in place of the large title. Types
- * itself in the first time it appears each launch; Reduce Motion fades it in.
- */
 export function DashboardGreeting({ userName }: { userName: string | undefined }) {
 	const reduceMotion = useReduceMotion();
 	const isSplashPresented = useLaunchSplash((s) => s.isPresented);
@@ -399,7 +376,6 @@ export function DashboardGreeting({ userName }: { userName: string | undefined }
 	);
 	const [faded, setFaded] = useState(false);
 
-	// Wait for the launch splash to clear so the typing is visible.
 	useEffect(() => {
 		if (isSplashPresented || !name) return;
 		if (typedGreetings.has(name)) {
@@ -435,7 +411,6 @@ export function DashboardGreeting({ userName }: { userName: string | undefined }
 				accessibilityAddTraits(['isHeader'])
 			]}
 		>
-			{/* The hidden full name reserves the final size so nothing shifts while typing. */}
 			<ZStack
 				alignment="leading"
 				modifiers={[
@@ -512,7 +487,6 @@ function SkeletonEnvironmentCard() {
 	);
 }
 
-/** First load with no data yet: placeholder cards instead of content. */
 export function DashboardSkeleton() {
 	return (
 		<SkeletonShimmer>

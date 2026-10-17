@@ -1,4 +1,3 @@
-/** State behind `SwarmClusterView` (SwarmClusterView.swift). */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -111,7 +110,6 @@ export function useSwarmCluster() {
 			await current.swarm.leave({ force, envID: environmentID });
 			swarmChanged(environmentID);
 			showToast(Toasts.success('Left the swarm'));
-			// The confirmation already dismissed this screen.
 		} catch (error) {
 			showToast(Toasts.error(friendlyErrorMessage(error)));
 		} finally {

@@ -1,9 +1,3 @@
-/**
- * Small Material 3 rows for the Volumes Android screens (SwiftUI
- * `NavigationLink` / `Button` / `Label` / `Text` list rows).
- *
- * Standalone (RN views). Import from `.android.tsx` screens.
- */
 import type { ReactNode } from 'react';
 import { Pressable, Text, View, type ColorValue } from 'react-native';
 
@@ -12,7 +6,6 @@ import { m3 } from '@/ui/components/material-colors';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
 
-/** `NavigationLink { Label(title, systemImage:) }`. */
 export function LinkItem({
 	title,
 	icon,
@@ -46,7 +39,6 @@ export function LinkItem({
 	);
 }
 
-/** A tappable row with a leading icon (`Button { Label(...) }`). */
 export function IconRow({
 	title,
 	icon,
@@ -92,7 +84,6 @@ export function IconRow({
 	);
 }
 
-/** Plain list text (`Text(...)` row), optionally colored. */
 export function TextRow({
 	text,
 	color,

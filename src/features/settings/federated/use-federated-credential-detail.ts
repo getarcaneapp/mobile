@@ -1,4 +1,3 @@
-/** `FederatedCredentialDetailView` model (FederatedCredentialsView.swift). */
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -16,7 +15,6 @@ import type {
 } from './federated-credential-form';
 import { useCanManageFederated } from './use-federated-credentials';
 
-/** `date.formatted()`. */
 const formatted = (value: string) => {
 	const date = parseArcaneDate(value);
 	return date ? formatDate(date, 'numeric', 'shortened') : value;
@@ -63,7 +61,6 @@ export function useFederatedCredentialDetail() {
 	const clientGeneration = useClientManager((s) => s.clientGeneration);
 	const initialGeneration = useRef(clientGeneration);
 
-	// `.onChange(of: manager.clientGeneration) { dismiss() }`.
 	useEffect(() => {
 		if (clientGeneration !== initialGeneration.current && stack.canGoBack()) stack.goBack();
 	}, [clientGeneration, stack]);

@@ -1,10 +1,3 @@
-/**
- * Port of Types/ContainerConfigurationDraft.swift: the editable form state for
- * creating or editing (recreating) a container, plus its validation and the
- * create/edit request builders.
- *
- * Pure TS.
- */
 import type {
 	ContainerCreate,
 	EndpointSettingsCreate,
@@ -73,7 +66,6 @@ export const newNetworkDraft = (
 });
 
 export interface ContainerConfigurationDraft {
-	/** The loaded config (edit mode); not user-editable. */
 	sourceConfig?: ContainerEditConfig;
 	name: string;
 	image: string;
@@ -157,7 +149,6 @@ const labelText = (labels: Record<string, string>) =>
 		.map(([key, value]) => `${key}=${value}`)
 		.join('\n');
 
-/** `ContainerConfigurationDraft(_ config:)`. */
 export function draftFromConfig(config: ContainerEditConfig): ContainerConfigurationDraft {
 	const host = config.hostConfig;
 	const health = config.healthcheck;
@@ -220,7 +211,6 @@ export function draftFromConfig(config: ContainerEditConfig): ContainerConfigura
 	};
 }
 
-/** `components(separatedBy: .newlines).filter { !$0.isEmpty }`. */
 export function lines(value: string): string[] {
 	// oxlint-disable-next-line no-control-regex -- VT/FF are part of Swift CharacterSet.newlines.
 	return value.split(/\r\n|[\n\r\u000B\u000C\u0085\u2028\u2029]/).filter((line) => line !== '');
@@ -243,7 +233,6 @@ function integer(value: string, label: string, allowMinusOne = false): number {
 
 const isWholeNumber = (value: string) => /^[+-]?\d+$/.test(value);
 
-/** Structural equality with order-independent object keys (Swift `Equatable`). */
 export function deepEqual(a: unknown, b: unknown): boolean {
 	if (a === b) return true;
 	if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') return false;
@@ -260,7 +249,6 @@ export function deepEqual(a: unknown, b: unknown): boolean {
 	return true;
 }
 
-/** `draft == original`. */
 export const draftsEqual = (a: ContainerConfigurationDraft, b: ContainerConfigurationDraft) =>
 	deepEqual(a, b);
 
@@ -391,7 +379,6 @@ export function createRequest(draft: ContainerConfigurationDraft): ContainerCrea
 	};
 }
 
-/** Only the fields that changed from `original`; undefined fields are preserved server-side. */
 export function editRequest(
 	draft: ContainerConfigurationDraft,
 	original: ContainerConfigurationDraft

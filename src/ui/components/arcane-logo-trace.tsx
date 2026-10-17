@@ -1,12 +1,3 @@
-/**
- * Port of `ArcaneLogoTrace` (ArcaneLoadingView.swift): the Arcane logo tracing
- * itself on. Each piece's outline draws in, then its fill seeps in while the
- * outline fades, later pieces starting `stagger` after earlier ones. When
- * `loops`, the finished logo holds, fades, and starts over. Drawn with
- * react-native-svg and driven per frame on the UI thread by Reanimated.
- *
- * Standalone (RN view, both platforms). Embed in SwiftUI with `RNHostView`.
- */
 import { useEffect } from 'react';
 import Animated, {
 	useAnimatedProps,
@@ -42,7 +33,6 @@ const traceDuration = LogoTrace.duration(pieceCount);
 const cycleDuration = LogoTrace.cycleDuration(pieceCount);
 const fadeStart = traceDuration + LogoTrace.holdDuration;
 
-/** Outline finishes at the halfway point; the fill seeps in over the second half. */
 function fillOpacity(progress: number) {
 	'worklet';
 	if (progress < 0.5) return 0;
@@ -58,13 +48,11 @@ function strokeOpacity(progress: number) {
 	return 0.6 - ((progress - 0.88) / 0.12) * 0.6;
 }
 
-/** Fast start, long settle. */
 function ease(x: number) {
 	'worklet';
 	return 1 - Math.pow(1 - x, 2.6);
 }
 
-/** Loop-local time, or -1 while the looping logo is in its rest gap. */
 function loopTime(time: number, loops: boolean) {
 	'worklet';
 	if (!loops || time <= 0) return time;
@@ -72,11 +60,6 @@ function loopTime(time: number, loops: boolean) {
 	return local >= fadeStart + LogoTrace.fadeDuration ? -1 : local;
 }
 
-/**
- * A clock in seconds for the trace. `"shared"` follows one app-wide clock so
- * every looping loader stays in step (Swift used the reference date);
- * `"elapsed"` starts at the first drawn frame, minus `delay`.
- */
 export function useTraceClock(
 	mode: 'shared' | 'elapsed',
 	delay = 0,
@@ -135,13 +118,10 @@ function TracePiece({
 }
 
 export type ArcaneLogoTraceProps = {
-	/** Rendered width; height follows the logo's aspect ratio. */
 	width: number;
 	accent: string;
-	/** Seconds since the trace began; negative while waiting to start. */
 	time: SharedValue<number>;
 	loops?: boolean;
-	/** Faint silhouette opacity drawn under the trace (0 for none). */
 	silhouetteOpacity?: number;
 };
 
@@ -154,7 +134,6 @@ export function ArcaneLogoTrace({
 }: ArcaneLogoTraceProps) {
 	const height = (width * ArcaneLogoPaths.height) / ArcaneLogoPaths.width;
 	const scale = width / ArcaneLogoPaths.width;
-	// Keep the outline the same on-screen thickness at any size (in logo units).
 	const strokeWidth = (2 / scale) * 0.83;
 	const groupProps = useAnimatedProps(() => {
 		if (!loops || time.value <= 0) return { opacity: 1 };
@@ -198,7 +177,6 @@ export function ArcaneLogoTrace({
 	);
 }
 
-/** The finished logo as a plain filled drawing. */
 export function ArcaneLogoStatic({ width, color }: { width: number; color: string }) {
 	const height = (width * ArcaneLogoPaths.height) / ArcaneLogoPaths.width;
 	return (

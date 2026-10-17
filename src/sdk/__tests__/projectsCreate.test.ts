@@ -109,7 +109,6 @@ describe('ProjectsService.create', () => {
 		});
 		expect(JSON.parse(form.get('manifest') as string)).toEqual({ fileChanges: [] });
 		expect(form.getAll('files')).toEqual([]);
-		// fetch must set the multipart boundary itself.
 		const contentType = Object.entries(request.headers).find(
 			([name]) => name.toLowerCase() === 'content-type'
 		);

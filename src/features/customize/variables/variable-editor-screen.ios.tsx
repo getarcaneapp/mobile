@@ -1,4 +1,3 @@
-/** Port of `VariableEditorView` (VariablesView.swift). Presented as a large sheet. */
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import {
@@ -37,7 +36,6 @@ import { ToastHost } from '@/ui/toast';
 
 import { useVariableEditor } from './use-variable-editor';
 
-/** A SwiftUI `SecureField` bound to a React string. */
 function BoundSecureField({
 	placeholder,
 	value,

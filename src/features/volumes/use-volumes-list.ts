@@ -1,9 +1,3 @@
-/**
- * The platform-neutral model behind VolumesView.swift: loading and pagination
- * (one or all environments), per-environment sizes, search/filter/sort,
- * Pinned / Used / Unused sections, pins, selection + bulk delete, prune,
- * rename, and every confirmation. The `.ios` / `.android` screens only render it.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -54,7 +48,6 @@ import {
 
 const pageSize = 50;
 
-/** Swift `VolumeDestructive`. */
 export type VolumeDestructive =
 	| { kind: 'prune' }
 	| { kind: 'delete'; volume: VolumeItem }
@@ -65,7 +58,6 @@ let listCounter = 0;
 export type VolumesListProps = {
 	environmentID: EnvironmentID;
 	environmentName: string;
-	/** All Environments preview: list and act on resources from every enabled environment. */
 	allEnvironments?: boolean;
 };
 
@@ -82,7 +74,6 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 
 	const [list, snapshot] = useEnvironmentPagedList<Volume>(pageSize);
 	const volumes = snapshot.items;
-	/** Volume sizes by environment, then by volume name — names repeat across environments. */
 	const [sizes, setSizes] = useState<Record<EnvironmentID, Record<string, number>>>({});
 	const sizesRef = useRef(sizes);
 	sizesRef.current = sizes;
@@ -101,8 +92,6 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		updateFilter(listKey, { environments: snapshot.environments });
 	}, [listKey, snapshot.environments, updateFilter]);
 
-	// MARK: Loading
-
 	const volumesPage = useCallback((): EnvironmentFetch<Volume> | undefined => {
 		const current = useClientManager.getState().client;
 		if (!current) return undefined;
@@ -112,7 +101,6 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		};
 	}, []);
 
-	/** Sizes come per environment (`volumes/sizes` isn't paginated), so each environment loads its own map. */
 	const loadSizesFor = useCallback(async (environmentID: EnvironmentID) => {
 		const current = useClientManager.getState().client;
 		const cached = cachedClient();
@@ -123,9 +111,7 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 			const map: Record<string, number> = {};
 			for (const entry of entries) map[entry.name] = entry.size;
 			setSizes((s) => ({ ...s, [environmentID]: map }));
-		} catch {
-			// Slow / unsupported on some hosts — leave sizes blank silently.
-		}
+		} catch {}
 	}, []);
 
 	const loadSizes = useCallback(
@@ -140,7 +126,6 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 			const environments = await useEnvironmentsStore
 				.getState()
 				.listEnvironments(environmentID, allEnvironments);
-			// Sizes load alongside the rows rather than after the slowest environment's page.
 			const sizesLoad = loadSizes(environments.map((e) => e.id));
 			await list.reload(environments, fetch, { preservingLoadedRange });
 			await sizesLoad;
@@ -159,7 +144,6 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		if (missing.length > 0) await loadSizes(missing);
 	}, [volumesPage, list, loadSizes]);
 
-	// Reappearing (back from a detail) refreshes every loaded page in place; the first appear loads page one.
 	useFocusEffect(
 		useCallback(() => {
 			void loadVolumes(true);
@@ -174,8 +158,6 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 	);
 	useOnChange(mutationVersion, () => void loadVolumes(true));
 	useOnChange(client, () => void loadVolumes());
-
-	// MARK: Sections
 
 	const pinnedIDs = useMemo(() => {
 		void pinVersion;
@@ -204,7 +186,6 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		]
 	);
 
-	// Selection only keeps rows that still exist.
 	useEffect(() => {
 		const valid = new Set(volumes.map((v) => v.id));
 		setSelection((current) => {
@@ -218,19 +199,14 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		[sizes]
 	);
 
-	// MARK: Permissions + environments
-
 	useClientManager((s) => s.accessGeneration);
 	const listEnvironments: ListEnvironment[] = allEnvironments
 		? snapshot.environments
 		: [{ id: environmentID }];
-	/** Environments offered by Create Volume. */
 	const createEnvironments = allEnvironments
 		? listEnvironments.filter((e) => hasPermission(Permission.Volumes.create, e.id))
 		: listEnvironments;
 	const enabledEnvironments = allEnvironmentsList.filter((e) => e.enabled);
-
-	// MARK: Actions
 
 	const togglePin = useCallback((item: VolumeItem) => toggleEnvironmentItemPin(item, 'volume'), []);
 	const togglePinAfterSwipe = useCallback(
@@ -333,8 +309,6 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		}
 	};
 
-	// MARK: Confirmations
-
 	useItemDeleteConfirmation(
 		pendingDestructive,
 		setPendingDestructive,
@@ -399,19 +373,16 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		loadVolumes,
 		loadMore,
 		refresh: () => loadVolumes(),
-		// Row
 		openDetail: (item: VolumeItem) => nav.openDetail(item.environmentID, item.value),
 		togglePin,
 		togglePinAfterSwipe,
 		canRename: (item: VolumeItem) => VolumeRename.isAvailable(item.value, item.environmentID),
 		rename: (item: VolumeItem) => nav.openRename(item.environmentID, item.value.name, false),
 		requestDelete: (item: VolumeItem) => setPendingDestructive({ kind: 'delete', volume: item }),
-		// Toolbar
 		createEnvironments,
 		presentCreate: (envID: EnvironmentID) => nav.openCreate(envID),
 		requestPrune: () => setPendingDestructive({ kind: 'prune' }),
 		isOperationRunning,
-		// Selection
 		isSelecting,
 		selection,
 		enterSelectionMode,

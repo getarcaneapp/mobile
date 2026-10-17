@@ -1,6 +1,3 @@
-/** Port of Models/Project/ProjectTag.swift. */
-
-/** A project's effective tag, including its UI and Compose sources. */
 export interface ProjectTag {
 	name: string;
 	color: string;

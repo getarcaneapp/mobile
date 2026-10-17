@@ -1,4 +1,3 @@
-/** Android rendering of VolumeBackupsView's Create Backup sheet. */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 

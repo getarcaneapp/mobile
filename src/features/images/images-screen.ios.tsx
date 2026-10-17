@@ -1,9 +1,3 @@
-/**
- * Port of `ImagesView` (ImagesView.swift).
- *
- * iOS: SwiftUI List with Used / Unused sections, swipe-to-delete, context
- * menus with previews, edit-mode selection, and native toolbar menus.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import { Button, ContextMenu, HStack, List, SwipeActions, VStack } from '@expo/ui/swift-ui';

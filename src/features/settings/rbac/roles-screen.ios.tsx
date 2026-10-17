@@ -1,4 +1,3 @@
-/** Port of `RolesView` + `RoleRow` (RolesView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

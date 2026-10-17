@@ -1,4 +1,3 @@
-/** Port of `DynamicResourceDetailView` + `DynamicValueRow` (DynamicResourceViews.swift). */
 import { Host } from '@/ui/host';
 import { DisclosureGroup, Label, LabeledContent, List, Section, Text } from '@expo/ui/swift-ui';
 import { foregroundStyle, listStyle } from '@expo/ui/swift-ui/modifiers';
@@ -18,7 +17,6 @@ import {
 } from './dynamic-resource';
 import { useDynamicResourceDetail } from './use-dynamic-resource-detail';
 
-/** Port of `DynamicValueRow`. SwiftUI-tree. */
 export function DynamicValueRow({ name, value }: { name: string; value: JSONValue }) {
 	if (isJSONObject(value)) {
 		return (

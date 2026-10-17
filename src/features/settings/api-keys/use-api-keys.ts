@@ -1,7 +1,3 @@
-/**
- * `APIKeysView` model (APIKeysView.swift): paginated, searchable, sortable
- * API-key list with owner lookup, create sheet, and one-time key reveal.
- */
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -39,18 +35,10 @@ async function fetchAssignedUsers(client: ArcaneClient, enabled: boolean): Promi
 			return { items: response.data, pagination: response.pagination };
 		});
 	} catch {
-		// API-key access and user-list access are separate v2 permissions.
-		// Keep the keys usable even when owner profiles cannot be fetched.
 		return [];
 	}
 }
 
-/**
- * Presents the one-time secret sheet (Swift `.sheet(item: $revealedKey)`).
- * A presentation requested while another sheet is still on top waits until
- * this screen is focused again, like SwiftUI presenting after the create
- * sheet dismisses. `onDismissed` is the sheet's `onDismiss`.
- */
 export function useSecretPresentation(onDismissed?: () => void) {
 	const navigation = useSettingsNavigation();
 	const pending = useRef<APIKeySecretPresentation | undefined>(undefined);
@@ -75,7 +63,6 @@ export function useSecretPresentation(onDismissed?: () => void) {
 				presented.current = false;
 				latestDismissed.current?.();
 			}
-			// Let a dismissing sheet finish before presenting the next one.
 			const timer = setTimeout(presentPending, 350);
 			return () => {
 				isFocused.current = false;
@@ -109,7 +96,6 @@ export function useAPIKeys() {
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
 	const [loadMoreError, setLoadMoreError] = useState<string>();
 
-	// Async continuations read the latest values (Swift reads `@State` live).
 	const paginationRef = useRef(pagination);
 	const apiKeysRef = useRef(apiKeys);
 	const isLoadingMoreRef = useRef(false);
@@ -225,7 +211,6 @@ export function useAPIKeys() {
 	latestLoad.current = loadKeys;
 	const reload = useCallback(() => latestLoad.current(), []);
 
-	// `.task { await loadKeys() }` + `.onChange(of: debouncedSearchText / sortField / sortOrder)`.
 	useEffect(() => {
 		void reload();
 	}, [reload, client]);

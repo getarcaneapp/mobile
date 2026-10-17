@@ -1,4 +1,3 @@
-/** Port of Types/GitOps/GitOpsSyncAndBackup.swift. */
 import type { ISODateString } from '../../models/base/date';
 
 export interface GitRepositorySync {
@@ -38,8 +37,6 @@ export interface ImportGitOpsSyncResponse {
 	failedCount: number;
 	errors: string[];
 }
-
-// MARK: - Git backup mode
 
 export interface GitBackupFileChange {
 	path: string;

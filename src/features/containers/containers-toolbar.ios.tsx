@@ -1,7 +1,3 @@
-/**
- * ContainersView's toolbar (filter, options menu, create) and its selection
- * toolbar (bulk actions + Done). Native header items on both platforms.
- */
 import { Stack } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
 import { ActivityIndicator } from 'react-native';

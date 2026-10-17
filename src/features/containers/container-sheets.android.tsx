@@ -1,4 +1,3 @@
-/** Android renderings of the rename, commit, and generated-compose sheets. */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Share, Text, TextInput, View } from 'react-native';
 

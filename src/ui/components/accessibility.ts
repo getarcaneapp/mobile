@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo, useColorScheme } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
-/** `@Environment(\.accessibilityReduceMotion)`. */
 export function useReduceMotion(): boolean {
 	return useReducedMotion();
 }
 
-/** `@Environment(\.accessibilityReduceTransparency)`. */
 export function useReduceTransparency(): boolean {
 	const [enabled, setEnabled] = useState(false);
 	useEffect(() => {
@@ -27,15 +25,10 @@ export function useReduceTransparency(): boolean {
 	return enabled;
 }
 
-/** `@Environment(\.colorScheme)`, defaulting to light. */
 export function useIsDark(): boolean {
 	return useColorScheme() === 'dark';
 }
 
-/**
- * UIKit grouped-background colors as hex, per appearance, for places that need
- * them mixed with opacity (PlatformColor can't be faded in JS).
- */
 export const groupedHex = {
 	light: {
 		systemBackground: '#FFFFFF',
@@ -51,5 +44,4 @@ export const groupedHex = {
 	}
 } as const;
 
-/** `.secondary` foreground as hex (UIKit secondaryLabel without its alpha). */
 export const secondaryHex = { light: '#3C3C43', dark: '#EBEBF5' } as const;

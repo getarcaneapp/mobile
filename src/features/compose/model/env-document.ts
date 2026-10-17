@@ -1,4 +1,3 @@
-/** Port of `EnvDocument` (Types/EnvDocument.swift) and EnvSourceEditing.swift: source-preserving `.env` edits. */
 import { ComposeFormError } from './compose-errors';
 
 type Range = { location: number; length: number };
@@ -6,7 +5,6 @@ export type EnvEntry = { line: number; name: string; value: string; range: Range
 
 const assignmentPattern = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/;
 
-/** `NSString.lineRange(for:)`: the full line(s) containing `range`, including the terminator. */
 function lineRange(source: string, range: Range): Range {
 	let start = range.location;
 	while (start > 0 && source[start - 1] !== '\n' && source[start - 1] !== '\r') start -= 1;

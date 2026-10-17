@@ -1,4 +1,3 @@
-/** Android rendering of ImagesView's toolbar and selection toolbar. */
 import {
 	AndroidToolbar,
 	type AndroidMenuItem,
@@ -13,7 +12,6 @@ import {
 
 import type { ImagesListModel } from './use-images-list';
 
-/** `EnvironmentActionButton` flattened into an overflow menu: one entry, or one per environment. */
 function environmentEntries(
 	id: string,
 	title: string,

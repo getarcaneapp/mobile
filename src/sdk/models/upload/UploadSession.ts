@@ -1,4 +1,3 @@
-/** Port of Models/Upload/UploadSession.swift. */
 import type { ISODateString } from '../base/date';
 
 export type UploadKind = 'image' | 'volume-backup' | 'build-workspace';

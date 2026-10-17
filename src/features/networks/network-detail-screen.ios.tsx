@@ -1,4 +1,3 @@
-/** Port of `NetworkDetailView` (NetworksView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

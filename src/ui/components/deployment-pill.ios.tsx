@@ -1,14 +1,3 @@
-/**
- * Port of `DeploymentPillView` (DeploymentPill.swift): the floating in-app
- * indicator for the active deployment, modeled on the toast capsule. A fixed
- * 50pt glass capsule; progress runs around its edge; a finished pill can be
- * flicked down to dismiss. Tap reopens the full-log sheet.
- *
- * Position it where `DeploymentPillHost` did: bottom-anchored above the tab
- * bar (60pt on iOS 26, 56 on 18), one slot higher while a toast shows.
- *
- * Standalone (RN wrapper + SwiftUI content + RN svg progress border).
- */
 import { Host } from '@/ui/host';
 import { Button, HStack, Spacer, Text, VStack, useNativeState } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
@@ -58,7 +47,6 @@ export function DeploymentPill({ operation, onTap, onDismiss }: DeploymentPillPr
 		pulsing.value = status.kind === 'running';
 	}, [pulsing, status.kind]);
 
-	// Only a finished pill can be flicked away; a running indicator shouldn't vanish by accident.
 	const terminal = isTerminal(status);
 	const swipe = Gesture.Pan().onEnd((event) => {
 		if (terminal && event.translationY > 30) scheduleOnRN(onDismiss);

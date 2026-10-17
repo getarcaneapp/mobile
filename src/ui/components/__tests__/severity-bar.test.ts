@@ -4,12 +4,10 @@ import { describe, it, vi } from 'vite-plus/test';
 import type { VulnerabilityRiskOverview } from '../../../sdk/types/VulnerabilityRiskOverview';
 import { segmentWidth, severitySegments } from '../severity-bar.types';
 
-// `@/theme/colors` resolves UIKit colors through React Native; the bar only needs stable names here.
 vi.mock('@/theme/colors', () => ({
 	systemColors: { red: 'red', orange: 'orange', yellow: 'yellow', blue: 'blue', gray: 'gray' }
 }));
 
-/** `/vulnerabilities/overview` as a real server returns it (trimmed to the fields the bar reads). */
 const payload = `{
   "riskScore": 70,
   "riskBand": "high",
@@ -52,7 +50,7 @@ describe('severitySegments', () => {
 		const widths = result.segments.map((segment) =>
 			segmentWidth(segment.count, result.total, width)
 		);
-		assert.equal(widths[0], 6); // 52 / 5636 of the bar is under the 6pt minimum.
+		assert.equal(widths[0], 6);
 		assert.ok(Math.abs((widths[2] ?? 0) - (width * 3660) / 5636) < 1e-9);
 		assert.ok(widths.every((w) => w < width));
 	});

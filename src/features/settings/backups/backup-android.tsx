@@ -1,10 +1,3 @@
-/**
- * Material 3 pieces shared by the Backups Android screens: inline error +
- * Retry, red form error text, navigation rows, and the form screen chrome
- * (top app bar title + confirm action).
- *
- * Standalone (RN views).
- */
 import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -69,10 +62,6 @@ export function NavItem({
 	);
 }
 
-/**
- * Form screen chrome: title, optional confirm action (check icon) and an
- * optional Cancel (close icon) for sheets.
- */
 export function AndroidFormScreen({
 	title,
 	confirm,

@@ -1,4 +1,3 @@
-/** Port of Services/VulnerabilitiesService.swift. */
 import type { ArcaneAuthorizedRequest } from '../client/ArcaneTransport';
 import type { EnvironmentID } from '../client/environment';
 import { boolString, q, type QueryItem } from '../client/url';
@@ -52,12 +51,6 @@ export class VulnerabilitiesService {
 		this.rest = rest;
 	}
 
-	// MARK: - Scans (per-image)
-
-	/**
-	 * Initiate a new Trivy scan for an image. Returns the resulting scan record
-	 * once the scan completes.
-	 */
 	scanImage(args: { envID?: EnvironmentID; imageId: string }): Promise<VulnerabilityScanResult> {
 		return this.rest.post(
 			this.rest.environmentPath(args.envID, `images/${args.imageId}/vulnerabilities/scan`),
@@ -65,7 +58,6 @@ export class VulnerabilitiesService {
 		);
 	}
 
-	/** Most recent full scan result for an image. */
 	scanResult(args: { envID?: EnvironmentID; imageId: string }): Promise<VulnerabilityScanResult> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `images/${args.imageId}/vulnerabilities`),
@@ -75,14 +67,12 @@ export class VulnerabilitiesService {
 		);
 	}
 
-	/** Compact severity summary for an image. Suitable for list views. */
 	scanSummary(args: { envID?: EnvironmentID; imageId: string }): Promise<VulnerabilityScanSummary> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `images/${args.imageId}/vulnerabilities/summary`)
 		);
 	}
 
-	/** Batch lookup of scan summaries keyed by image ID. */
 	scanSummaries(args: {
 		envID?: EnvironmentID;
 		imageIds: string[];
@@ -94,7 +84,6 @@ export class VulnerabilitiesService {
 		);
 	}
 
-	/** Paginated list of vulnerabilities for a specific image. */
 	listForImage(args: {
 		envID?: EnvironmentID;
 		imageId: string;
@@ -110,26 +99,20 @@ export class VulnerabilitiesService {
 		);
 	}
 
-	// MARK: - Environment-wide
-
-	/** Status of the bundled Trivy scanner. */
 	scannerStatus(args: { envID?: EnvironmentID } = {}): Promise<VulnerabilityScannerStatus> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'vulnerabilities/scanner-status'));
 	}
 
-	/** Aggregated vulnerability counts across all images in the environment. */
 	environmentSummary(
 		args: { envID?: EnvironmentID } = {}
 	): Promise<EnvironmentVulnerabilitySummary> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'vulnerabilities/summary'));
 	}
 
-	/** Environment patch priority, trend, drivers, and ranked findings and images. */
 	riskOverview(args: { envID?: EnvironmentID } = {}): Promise<VulnerabilityRiskOverview> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'vulnerabilities/overview'));
 	}
 
-	/** Paginated list of vulnerabilities across all scanned images in the environment. */
 	listAll(
 		args: {
 			envID?: EnvironmentID;
@@ -154,7 +137,6 @@ export class VulnerabilitiesService {
 		});
 	}
 
-	/** Download every vulnerability matching the filters as CSV raw bytes. */
 	exportAll(args: ExportAllArgs = {}): Promise<Uint8Array> {
 		return this.rest.transport.downloadRaw(
 			this.rest.environmentPath(args.envID, 'vulnerabilities/export'),
@@ -164,10 +146,6 @@ export class VulnerabilitiesService {
 		);
 	}
 
-	/**
-	 * Replacement for Swift `exportAll(..., to:)`: the authenticated request
-	 * for streaming the CSV export to disk with expo-file-system.
-	 */
 	exportAllDownloadRequest(args: ExportAllArgs = {}): Promise<ArcaneAuthorizedRequest> {
 		return this.rest.transport.downloadRequest(
 			this.rest.environmentPath(args.envID, 'vulnerabilities/export'),
@@ -175,7 +153,6 @@ export class VulnerabilitiesService {
 		);
 	}
 
-	/** Distinct image names available for vulnerability filtering. */
 	imageOptions(args: { envID?: EnvironmentID; severity?: string } = {}): Promise<string[]> {
 		const items: QueryItem[] = [];
 		if (args.severity !== undefined) items.push(q('severity', args.severity));
@@ -185,9 +162,6 @@ export class VulnerabilitiesService {
 		});
 	}
 
-	// MARK: - Ignore records
-
-	/** Create an ignore record for a specific vulnerability finding. */
 	ignore(args: {
 		envID?: EnvironmentID;
 		payload: VulnerabilityIgnorePayload;
@@ -197,15 +171,12 @@ export class VulnerabilitiesService {
 		});
 	}
 
-	/** Remove an existing ignore record. */
 	async unignore(args: { envID?: EnvironmentID; ignoreId: string }): Promise<void> {
-		// Swift decodes the envelope into an empty `Decodable` struct and discards it.
 		await this.rest.delete<unknown>(
 			this.rest.environmentPath(args.envID, `vulnerabilities/ignore/${args.ignoreId}`)
 		);
 	}
 
-	/** Paginated list of currently ignored vulnerabilities. */
 	listIgnored(
 		args: { envID?: EnvironmentID; query?: SearchPaginationSort } = {}
 	): Promise<PaginatedResponse<IgnoredVulnerability>> {

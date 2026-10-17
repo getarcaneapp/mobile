@@ -1,4 +1,3 @@
-/** `appTabDestination(.timeouts)`: `SettingsCategoryView(category: timeoutSettings)`. */
 import { SettingsCategoryView } from '@/ui/components/settings-form';
 import { timeoutSettings } from '@/ui/components/settings-form.types';
 

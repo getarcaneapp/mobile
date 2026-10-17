@@ -1,11 +1,3 @@
-/**
- * Port of `AllEnvironmentsDashboard` (AllEnvironmentsDashboard.swift), the
- * Refreshed Dashboard preview body: chosen totals, a live usage chart, the
- * busiest containers, and one inventory row per host. Also
- * `DashboardTilesEditor` (DashboardTotalsTile.swift).
- *
- * SwiftUI-tree.
- */
 import {
 	BottomSheet,
 	Button,
@@ -93,7 +85,6 @@ import { MetricRing } from './metric-ring';
 import { UsageChart } from './usage-chart';
 
 export type AllEnvironmentsDashboardProps = {
-	/** Enabled environments in dashboard order. */
 	environments: Environment[];
 	dockerInfo: Readonly<Record<string, DockerInfo>>;
 	counts: AllEnvironmentsCounts;
@@ -105,7 +96,6 @@ export type AllEnvironmentsDashboardProps = {
 	hostsAccessory: ReactNode;
 };
 
-/** Proportional capsule meter (SwiftUI GeometryReader equivalent via RN layout). */
 function Meter({ fraction, fill }: { fraction: number; fill: string | undefined }) {
 	return (
 		<HStack
@@ -138,10 +128,6 @@ function Meter({ fraction, fill }: { fraction: number; fill: string | undefined 
 	);
 }
 
-/**
- * One host figure: label and value, with an optional thin capsule meter. A
- * meter past `warnsAbove` turns orange.
- */
 function HostStatColumn({
 	title,
 	value,
@@ -184,7 +170,6 @@ function HostStatColumn({
 			>
 				{value ?? '—'}
 			</Text>
-			{/* Columns without a meter keep its space so every value in a row lines up. */}
 			<VStack modifiers={[opacity(meter ? 1 : 0)]}>
 				<Meter fraction={fraction} fill={fill} />
 			</VStack>
@@ -192,7 +177,6 @@ function HostStatColumn({
 	);
 }
 
-/** `ContainerRow` with live resource metrics, as the busiest-containers card uses it. */
 function BusiestContainerRow({
 	entry,
 	environmentName
@@ -281,7 +265,6 @@ function BusiestContainerRow({
 	);
 }
 
-/** Picks and orders the Refreshed Dashboard's top tiles. */
 function DashboardTilesEditorSheet({
 	isPresented,
 	storedTiles,
@@ -341,7 +324,6 @@ function DashboardTilesEditorSheet({
 								}}
 								onDelete={(indices) => {
 									const remaining = tiles.filter((_, i) => !indices.includes(i));
-									// Keep at least one tile; an empty list would fall back to the defaults.
 									if (remaining.length === 0) return;
 									setStoredTiles(DashboardTotalsTile.encode(remaining));
 								}}
@@ -517,7 +499,6 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 										</Text>
 									</HStack>
 								))}
-								{/* `LazyVGrid(.adaptive(minimum: 140))` keeps two columns on iPhone: a lone item stays half-width. */}
 								{pair.length === 1 ? <Spacer modifiers={[frame({ maxWidth: Infinity })]} /> : null}
 							</Grid.Row>
 						))}
@@ -702,7 +683,6 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 											) : null}
 											<DashboardRowChevron />
 										</HStack>
-										{/* Inventory and disk only: live CPU and memory are the chart's job. */}
 										<HStack alignment="top" spacing={14}>
 											<HostStatColumn
 												title="Running"

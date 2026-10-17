@@ -1,10 +1,3 @@
-/**
- * Port of NotificationProviderModels.swift (provider presentation,
- * `EventSubscriptions`, `NotificationProviderFormState`) plus
- * `notificationProviders(supportsPost26Features:)` (NotificationSettingsView.swift),
- * `NotificationTestType.displayName` (NotificationProviderFormView.swift) and
- * `StableStringRow` / `StableHeaderRow` (Types/StableFormRows.swift). Pure TS.
- */
 import { systemColors } from '@/theme/colors';
 import {
 	EmailAuthMode,
@@ -15,8 +8,6 @@ import {
 	type NotificationSettings,
 	type NotificationTestType
 } from '@/sdk/models/notification/Notification';
-
-// MARK: - NotificationProvider presentation
 
 export const providerDisplayName: Record<NotificationProvider, string> = {
 	discord: 'Discord',
@@ -60,7 +51,6 @@ export const providerIconColor: Record<NotificationProvider, string> = {
 	generic: systemColors.gray
 };
 
-/** `notificationProviders(supportsPost26Features:)`: Google Chat needs a post-2.6 server. */
 export function notificationProviders(supportsPost26Features: boolean): NotificationProvider[] {
 	return NotificationProvider.allCases.filter(
 		(provider) => provider !== 'googlechat' || supportsPost26Features
@@ -75,8 +65,6 @@ export const testTypeDisplayName: Record<NotificationTestType, string> = {
 	'prune-report': 'Prune Report',
 	'auto-heal': 'Auto-Heal'
 };
-
-// MARK: - Stable rows
 
 let nextRowID = 0;
 const makeRowID = () => `row-${nextRowID++}`;
@@ -96,11 +84,7 @@ export const StableHeaderRow = {
 	})
 };
 
-// MARK: - EventSubscriptions
-
 export type EventSubscriptions = NotificationEvents;
-
-// MARK: - Form state
 
 export type NotificationProviderFormState = {
 	enabled: boolean;
@@ -215,21 +199,17 @@ const eventsOf = (events: NotificationEvents | undefined): EventSubscriptions =>
 const rowsOf = (values: string[] | undefined) =>
 	(values ?? []).map((value) => StableStringRow.make(value));
 
-/** Swift `String.nilIfEmpty`: trimmed, or undefined when blank. */
 function nilIfEmpty(value: string): string | undefined {
 	const trimmed = value.trim();
 	return trimmed === '' ? undefined : trimmed;
 }
 
-/** Swift `Array.nilIfEmpty`. */
 const listOrNil = (values: string[]) => (values.length === 0 ? undefined : values);
 
-/** `[StableStringRow].values`: trimmed, non-blank values. */
 export function rowValues(rows: StableStringRow[]): string[] {
 	return rows.map((row) => row.value.trim()).filter((value) => value !== '');
 }
 
-/** `[StableHeaderRow].dictionary`: rows with a non-blank (trimmed) name. */
 function headerDictionary(rows: StableHeaderRow[]): Record<string, string> {
 	const result: Record<string, string> = {};
 	for (const row of rows) {
@@ -240,7 +220,6 @@ function headerDictionary(rows: StableHeaderRow[]): Record<string, string> {
 	return result;
 }
 
-/** Swift `Int(_:)`: optional sign and digits only. */
 function swiftInt(raw: string): number | undefined {
 	return /^[+-]?\d+$/.test(raw) ? Number(raw) : undefined;
 }
@@ -249,7 +228,6 @@ const localizedStandardCompare = (lhs: string, rhs: string) =>
 	lhs.localeCompare(rhs, undefined, { numeric: true, sensitivity: 'base' });
 
 export const NotificationProviderFormState = {
-	/** `init(provider:existing:)`. */
 	make(
 		provider: NotificationProvider,
 		existing: NotificationSettings | undefined
@@ -416,7 +394,6 @@ export const NotificationProviderFormState = {
 		return state;
 	},
 
-	/** `configuration(for:supportsPost26Features:)`. */
 	configuration(
 		state: NotificationProviderFormState,
 		provider: NotificationProvider,
@@ -555,7 +532,6 @@ export const NotificationProviderFormState = {
 		}
 	},
 
-	/** `isValid(for:)`. */
 	isValid(state: NotificationProviderFormState, provider: NotificationProvider): boolean {
 		const hasPort = swiftInt(state.port) !== undefined;
 		switch (provider) {
@@ -593,7 +569,6 @@ export const NotificationProviderFormState = {
 		}
 	},
 
-	/** Swift synthesized `Equatable`. */
 	equals(lhs: NotificationProviderFormState, rhs: NotificationProviderFormState): boolean {
 		return JSON.stringify(lhs) === JSON.stringify(rhs);
 	}

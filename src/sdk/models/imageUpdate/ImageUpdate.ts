@@ -1,9 +1,7 @@
-/** Port of Models/ImageUpdate/ImageUpdate.swift. */
 import type { ISODateString } from '../base/date';
 import { D, mapRecord } from '../base/decoding';
 import type { ContainerRegistryCredential } from '../containerRegistry/ContainerRegistry';
 
-/** Result of an image update check. */
 export interface ImageUpdateResponse {
 	hasUpdate: boolean;
 	updateType: string;
@@ -11,7 +9,6 @@ export interface ImageUpdateResponse {
 	latestVersion?: string;
 	currentDigest?: string;
 	latestDigest?: string;
-	/** Optional so responses from servers that omit the timestamp still decode. */
 	checkTime?: ISODateString;
 	responseTimeMs: number;
 	error?: string;
@@ -19,7 +16,6 @@ export interface ImageUpdateResponse {
 	authUsername?: string;
 	authRegistry?: string;
 	usedCredential?: boolean;
-	/** Background activity that tracked this check (v2 servers). JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -60,7 +56,6 @@ export const ImageUpdateResponse = {
 	}
 } as const;
 
-/** Aggregate summary of image update status across an environment. */
 export interface ImageUpdateSummary {
 	totalImages: number;
 	imagesWithUpdates: number;
@@ -79,23 +74,15 @@ export const ImageUpdateSummary = {
 	}
 } as const;
 
-/** Request body for the batch image update check endpoint. */
 export interface BatchImageUpdateRequest {
 	imageRefs: string[];
 	credentials?: ContainerRegistryCredential[];
 }
 
-/** Request body for the "check all images" endpoint. */
 export interface CheckAllImagesRequest {
 	credentials?: ContainerRegistryCredential[];
 }
 
-/**
- * Map keyed by image reference. Values may be undefined if the check failed.
- * Note: the transport strips `null` object properties, so references whose
- * check failed (`null` on the wire) are absent from the map rather than
- * present with an `undefined` value.
- */
 export type ImageUpdateBatchResponse = Record<string, ImageUpdateResponse | undefined>;
 
 export const ImageUpdateBatchResponse = {

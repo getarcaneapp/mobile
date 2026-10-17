@@ -1,4 +1,3 @@
-/** Port of `AppearanceSettingsView` (AppearanceSettingsView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -26,7 +25,7 @@ import { AppearanceCopy, useAppearanceSettings } from './use-appearance-settings
 
 export function AppearanceSettingsScreen() {
 	const model = useAppearanceSettings();
-	useColorScheme(); // re-render on appearance change (systemColors resolve per appearance)
+	useColorScheme();
 	const selectedOption = selectedAccentOption(model.accentPickerSelection);
 	return (
 		<>
@@ -35,7 +34,6 @@ export function AppearanceSettingsScreen() {
 				<Form>
 					<Section footer={<Text>{AppearanceCopy.accentFooter}</Text>}>
 						<HStack spacing={12}>
-							{/* Swift: `selectedOption?.color`, the dynamic SwiftUI system color. */}
 							<SettingsRow
 								title="Accent Color"
 								systemImage="paintpalette.fill"

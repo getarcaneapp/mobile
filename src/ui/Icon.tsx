@@ -4,12 +4,10 @@ import type { ColorValue } from 'react-native';
 import { materialSymbol } from './symbols';
 
 type Props = Omit<SymbolViewProps, 'name' | 'tintColor'> & {
-	/** SF Symbol name; Android renders the mapped Material Symbol. */
 	name: string;
 	color?: ColorValue;
 };
 
-/** `Image(systemName:)` for React Native trees on both platforms. */
 export function Icon({ name, color, size = 17, ...rest }: Props) {
 	return (
 		<SymbolView

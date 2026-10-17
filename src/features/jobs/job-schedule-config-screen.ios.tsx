@@ -1,7 +1,3 @@
-/**
- * Port of `JobScheduleConfigView` (JobScheduleConfigView.swift): one cron
- * field per background job, saved to the environment's settings.
- */
 import { Host } from '@/ui/host';
 import { Button, Form, HStack, Label, Section, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
@@ -90,9 +86,6 @@ export function JobScheduleConfigView({
 						<ActivityIndicator accessibilityLabel="Saving" />
 					</Stack.Toolbar.View>
 				) : (
-					// Swift: a plain `.confirmationAction` text item sharing the refresh button's glass group.
-					// AppToolbarItem's explicit accent wins over disabled dimming, so Save stays accent
-					// and just doesn't respond until there are changes.
 					<Stack.Toolbar.Button onPress={() => (model.hasChanges ? model.save() : undefined)}>
 						Save
 					</Stack.Toolbar.Button>
@@ -145,7 +138,6 @@ export function JobScheduleConfigView({
 	);
 }
 
-/** Route screen: `job-schedules?envID=…&envName=…`. */
 export function JobScheduleConfigScreen() {
 	const { envID = '0', envName } = useLocalSearchParams<{ envID?: string; envName?: string }>();
 	return <JobScheduleConfigView key={envID} environmentID={envID} environmentName={envName} />;

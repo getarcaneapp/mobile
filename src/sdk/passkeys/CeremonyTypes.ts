@@ -1,5 +1,3 @@
-/** Port of ArcanePasskeys/Types/CeremonyTypes.swift (`ArcanePasskeyAuthenticator.CeremonyError` / `BridgeManifest`). */
-
 export type CeremonyErrorKind =
 	| 'unsupportedOrigin'
 	| 'bridgeUnavailable'
@@ -43,10 +41,6 @@ function describe(kind: CeremonyErrorKind, code: string | undefined): string {
 	}
 }
 
-/**
- * Swift `ArcanePasskeyAuthenticator.CeremonyError`; `message` is the Swift
- * `errorDescription`. `code` carries the `bridgeFailure(String)` payload.
- */
 export class CeremonyError extends Error {
 	readonly kind: CeremonyErrorKind;
 	readonly code: string | undefined;
@@ -104,7 +98,6 @@ export class CeremonyError extends Error {
 	}
 }
 
-/** `GET /arcane-mobile-passkey.json` on the server origin. */
 export interface BridgeManifest {
 	version: number;
 	path: string;
@@ -113,7 +106,6 @@ export interface BridgeManifest {
 }
 
 export const BridgeManifest = {
-	/** Strict decode (Swift synthesized `Decodable`); throws on a wrong shape. */
 	decode(raw: unknown): BridgeManifest {
 		if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
 			throw new TypeError('Expected a bridge manifest object');

@@ -1,4 +1,3 @@
-/** Android rendering of `AppIconPickerView` (AppIconPickerView.swift): Material 3 radio list. */
 import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import { ScrollView, View } from 'react-native';

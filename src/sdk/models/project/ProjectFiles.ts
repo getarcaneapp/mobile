@@ -1,8 +1,6 @@
-/** Port of Models/Project/ProjectFiles.swift. */
 import { D } from '../base/decoding';
 import type { ISODateString } from '../base/date';
 
-/** ProjectFile represents an editable file or folder within a project directory. */
 export interface ProjectFile {
 	path: string;
 	relativePath: string;
@@ -23,12 +21,10 @@ export const ProjectFile = {
 	}
 } as const;
 
-/** ProjectWorkspace is the file tree returned by Arcane's project workspace API. */
 export interface ProjectWorkspace {
 	files: ProjectFile[];
 	fileTreeRevision: string;
 	fileTreeTruncated: boolean;
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -70,7 +66,6 @@ export const ProjectWorkspace = {
 	}
 } as const;
 
-/** ProjectWorkspaceFileContent is the text payload returned for one workspace file. */
 export interface ProjectWorkspaceFileContent {
 	path: string;
 	relativePath: string;
@@ -90,7 +85,6 @@ export const ProjectWorkspaceFileContent = {
 	}
 } as const;
 
-/** ProjectFileDraft is staged when creating a project with custom files. */
 export interface ProjectFileDraft {
 	relativePath: string;
 	isDirectory: boolean;
@@ -107,7 +101,6 @@ export const ProjectFileDraft = {
 	}
 } as const;
 
-/** Operations accepted by Arcane's project file management API. */
 export type ProjectFileChangeOperation =
 	| 'create_file'
 	| 'create_folder'
@@ -125,7 +118,6 @@ export const ProjectFileChangeOperation = {
 	delete: 'delete'
 } as const satisfies Record<string, ProjectFileChangeOperation>;
 
-/** ProjectFileChange describes one staged file-tree operation for project update. */
 export interface ProjectFileChange {
 	operation: ProjectFileChangeOperation;
 	relativePath: string;

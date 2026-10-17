@@ -1,7 +1,3 @@
-/**
- * ProjectsView's Filter sheet state: edits the list that opened it and loads
- * the tag catalog across the list's environments (`loadTagOptions()`).
- */
 import { useEffect } from 'react';
 
 import { useClientManager } from '@/stores/client-manager';
@@ -20,7 +16,6 @@ export function useProjectsFilterScreen(key: string) {
 	const update = (patch: Partial<ProjectsFilterState>) =>
 		useProjectsFilterStore.getState().update(key, patch);
 
-	// `.task { await loadTagOptions() }`: tags are unavailable on older servers.
 	useEffect(() => {
 		let cancelled = false;
 		void (async () => {

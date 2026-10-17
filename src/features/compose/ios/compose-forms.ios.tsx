@@ -1,14 +1,3 @@
-/**
- * Ports of the field and collection forms in ComposePreviewEditor.swift and
- * ComposeServiceOptions.swift: `ComposeMappingForm`, `ComposeCollectionForm`
- * (+ `ComposeEntrySheet`), `ComposeNameSheet`, `ComposeScalarField`,
- * `ComposeBooleanField`, `ComposeValuePicker`, `ComposeStringListForm`,
- * `ComposeHealthcheckForm`, `ComposeNetworkAttachmentsForm` and
- * `ComposeEnvironmentFileEntry`. Native fields write only the selected source
- * node, preserving neighboring YAML.
- *
- * SwiftUI-tree.
- */
 import {
 	Button,
 	ContentUnavailableView,
@@ -101,7 +90,6 @@ import {
 	ValueRow
 } from './compose-ui.ios';
 
-/** `.toolbar { ToolbarItem(placement: .primaryAction) { Menu { Add configuration } } }`. */
 function AddConfigurationToolbar({
 	readOnly,
 	onAdd,
@@ -127,7 +115,6 @@ function AddConfigurationToolbar({
 	);
 }
 
-/** `.toolbar { ToolbarItem { Button("Add", systemImage: "plus") } }`. */
 function AddToolbar({
 	show,
 	onAdd,
@@ -160,9 +147,6 @@ function DeleteItems({ readOnly, onDelete }: { readOnly: boolean; onDelete: () =
 	);
 }
 
-// MARK: - ComposeValuePicker (ComposeValuePicker.swift)
-
-/** Shared choice control for new settings and existing values. */
 export function ComposeValuePicker({
 	title,
 	options,
@@ -207,8 +191,6 @@ export function ComposeValuePicker({
 		</>
 	);
 }
-
-// MARK: - ComposeScalarField / ComposeBooleanField (ComposeServiceOptions.swift)
 
 export function ComposeScalarField({
 	bindingRef,
@@ -296,8 +278,6 @@ export function ComposeBooleanField({
 	);
 }
 
-// MARK: - ComposeNameSheet
-
 export function ComposeNameSheet({
 	isPresented,
 	onDismiss,
@@ -359,8 +339,6 @@ function NameSheetContent({
 		</NavigationStack>
 	);
 }
-
-// MARK: - ComposeMappingForm
 
 export function ComposeMappingForm({
 	destination
@@ -489,8 +467,6 @@ export function ComposeMappingForm({
 		</AddToolbar>
 	);
 }
-
-// MARK: - ComposeCollectionForm
 
 let nextSelection = 0;
 
@@ -878,8 +854,6 @@ function ComposeEntrySheet({
 	);
 }
 
-// MARK: - ComposeStringListForm
-
 export function ComposeStringListForm({
 	destination
 }: {
@@ -1042,8 +1016,6 @@ export function ComposeStringListForm({
 	);
 }
 
-// MARK: - ComposeHealthcheckForm
-
 export function ComposeHealthcheckForm({
 	destination
 }: {
@@ -1137,8 +1109,6 @@ export function ComposeHealthcheckForm({
 	);
 }
 
-// MARK: - ComposeNetworkAttachmentsForm
-
 export function ComposeNetworkAttachmentsForm({
 	destination
 }: {
@@ -1153,7 +1123,6 @@ export function ComposeNetworkAttachmentsForm({
 	const [externalResource, setExternalResource] = useState<string>();
 	const [error, setError] = useState<string>();
 	const names = attachmentNames(ComposeDocument.tryParse(binding.text), path);
-	// Render short attachments as mappings without changing the bound document until an edit.
 	const attachmentRef = withTransform(bindingRef, { kind: 'attachments', path });
 
 	const change = (action: (document: ComposeDocument) => string) => {
@@ -1278,7 +1247,6 @@ export function ComposeNetworkAttachmentsForm({
 	);
 }
 
-/** `ComposeNetworkAttachmentsForm.detail(_:)`; the binding carries the attachment conversion. */
 export function ComposeNetworkAttachmentDetail({
 	destination
 }: {
@@ -1356,8 +1324,6 @@ export function ComposeNetworkAttachmentDetail({
 		</AddConfigurationToolbar>
 	);
 }
-
-// MARK: - ComposeEnvironmentFileEntry
 
 export function ComposeEnvironmentFileEntry({
 	destination

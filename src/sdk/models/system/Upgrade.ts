@@ -1,18 +1,12 @@
-/** Port of Models/System/Upgrade.swift. */
 import type { ISODateString } from '../base/date';
 import { D } from '../base/decoding';
 
-/** Result of the system upgrade-availability check. */
 export interface UpgradeCheckResult {
 	canUpgrade: boolean;
 	error: boolean;
 	message: string;
 }
 
-/**
- * Status of a fleet-wide update-all job. Unrecognised server values decode
- * to `"unknown"` (Swift's `.unknown` fallback case).
- */
 export type EnvironmentUpdateJobStatus =
 	| 'running'
 	| 'pending_restart'
@@ -25,10 +19,8 @@ export const EnvironmentUpdateJobStatus = {
 	pendingRestart: 'pending_restart',
 	completed: 'completed',
 	failed: 'failed',
-	/** Fallback for status values introduced by newer servers. */
 	unknown: 'unknown',
 
-	/** Swift `init(from:)`: unrecognised values become `"unknown"`. */
 	decode(this: void, raw: unknown): EnvironmentUpdateJobStatus {
 		const value = D.str(raw);
 		switch (value) {
@@ -44,10 +36,6 @@ export const EnvironmentUpdateJobStatus = {
 	}
 } as const;
 
-/**
- * Per-environment status within a fleet-wide update-all job. Unrecognised
- * server values decode to `"unknown"`.
- */
 export type EnvironmentUpdateResultStatus =
 	| 'pending'
 	| 'updating'
@@ -66,10 +54,8 @@ export const EnvironmentUpdateResultStatus = {
 	triggered: 'triggered',
 	skippedOffline: 'skipped_offline',
 	failed: 'failed',
-	/** Fallback for status values introduced by newer servers. */
 	unknown: 'unknown',
 
-	/** Swift `init(from:)`: unrecognised values become `"unknown"`. */
 	decode(this: void, raw: unknown): EnvironmentUpdateResultStatus {
 		const value = D.str(raw);
 		switch (value) {
@@ -88,10 +74,6 @@ export const EnvironmentUpdateResultStatus = {
 	}
 } as const;
 
-/**
- * Outcome of one environment inside a fleet-wide update-all job. The manager
- * itself appears as `environmentId == "0"` and is upgraded last.
- */
 export interface EnvironmentUpdateResult {
 	environmentId: string;
 	environmentName: string;
@@ -102,7 +84,6 @@ export interface EnvironmentUpdateResult {
 }
 
 export const EnvironmentUpdateResult = {
-	/** Swift `Identifiable.id`. */
 	id(this: void, value: EnvironmentUpdateResult): string {
 		return value.environmentId;
 	},
@@ -120,10 +101,6 @@ export const EnvironmentUpdateResult = {
 	}
 } as const;
 
-/**
- * A fleet-wide Arcane update-all job: agents are upgraded first, then the
- * manager restarts (`pending_restart`) and the job is finalized on next boot.
- */
 export interface EnvironmentUpdateJob {
 	id: string;
 	createdAt?: ISODateString;
@@ -140,7 +117,6 @@ export interface EnvironmentUpdateJob {
 }
 
 export const EnvironmentUpdateJob = {
-	/** The manager's own row (`environmentId == "0"`), if present. */
 	managerResult(this: void, value: EnvironmentUpdateJob): EnvironmentUpdateResult | undefined {
 		return value.results?.find((result) => result.environmentId === '0');
 	},
@@ -168,19 +144,16 @@ export const EnvironmentUpdateJob = {
 	}
 } as const;
 
-/** Result of a system-level container batch action (start/stop/etc.). */
 export interface SystemContainerActionResult {
 	started?: string[];
 	stopped?: string[];
 	failed?: string[];
 	success: boolean;
 	errors?: string[];
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
 export const SystemContainerActionResult = {
-	/** Swift memberwise init defaults (`success: false`). */
 	make(this: void, args: Partial<SystemContainerActionResult> = {}): SystemContainerActionResult {
 		return { ...args, success: args.success ?? false };
 	},

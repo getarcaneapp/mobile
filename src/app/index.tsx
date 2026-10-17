@@ -8,10 +8,6 @@ import { useLaunchSplash } from '@/stores/launch-splash-store';
 import { resolveTabs, useNavTabsStore } from '@/stores/nav-tabs-store';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 
-/**
- * The tab `MainTabView` opens on: the last selected one when
- * `arcane.rememberLastTab` is on (default), if it's still visible.
- */
 function initialTabHref(): Href {
 	const manager = useClientManager.getState();
 	const available = new Set<AppTab>(AppTabIDs.filter(manager.canAccess));
@@ -25,19 +21,16 @@ function initialTabHref(): Href {
 	) as Href;
 }
 
-/** Cold-start entry (ContentView's switch): routes to the signed-in shell or login. */
 export default function Index() {
 	const authState = useClientManager((s) => s.authState);
 	const showsLaunchSplash = useLaunchSplash((s) => s.isPresented);
 	if (authState === 'authenticating') {
-		// Hidden under the opaque launch splash; don't animate it there.
 		return showsLaunchSplash ? null : (
 			<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
 				<ArcaneLoadingView />
 			</View>
 		);
 	}
-	// Two returns: a ternary over the full typed-routes union overflows tsc (TS2590).
 	if (authState === 'authenticated') return <Redirect href={initialTabHref()} />;
 	return <Redirect href="/login" />;
 }

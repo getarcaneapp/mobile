@@ -1,11 +1,3 @@
-/**
- * Ports of `ComposeNativeFieldsForm` + `ComposeNativeValueSheet`
- * (ComposeNativeFieldsForm.swift), `ComposeAddFieldsSheet`
- * (ComposeAddFieldsSheet.swift) and `ComposeSettingEditor` +
- * `ComposeSettingFields` (ComposeSettingEditor.swift).
- *
- * SwiftUI-tree.
- */
 import {
 	Button,
 	ContextMenu,
@@ -86,9 +78,6 @@ import {
 
 type NativeFieldsDestination = Extract<ComposeDestination, { screen: 'nativeFields' }>;
 
-// MARK: - ComposeNativeFieldsForm
-
-/** Native access to ordinary Compose fields, including nested objects and lists. */
 export function ComposeNativeFieldsForm({ destination }: { destination: NativeFieldsDestination }) {
 	const { binding: bindingRef, fieldPath, schemaPath, title, readOnly } = destination;
 	const binding = useComposeBinding(bindingRef);
@@ -451,8 +440,6 @@ function ComposeNativeValueSheet({
 	);
 }
 
-// MARK: - ComposeAddFieldsSheet
-
 export function ComposeAddFieldsSheet({
 	isPresented,
 	onDismiss,
@@ -625,8 +612,6 @@ function AddFieldsContent({
 		</NavigationStack>
 	);
 }
-
-// MARK: - ComposeSettingEditor
 
 export function ComposeSettingEditor({
 	draft: initial,

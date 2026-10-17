@@ -1,10 +1,3 @@
-/**
- * Port of `EnvironmentPagedList.swift` + `EnvironmentItem`: progressive
- * pagination for a resource list that loads from one environment, or from
- * every enabled environment with the All Environments preview. Each
- * environment keeps its own cursor; Load More fetches the next page of every
- * environment that still has more.
- */
 import { useRef, useSyncExternalStore } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -19,19 +12,10 @@ import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ListEnvironment } from '@/stores/environments-store';
 import { usePinnedItemsStore, type PinnedItemKind } from '@/stores/pinned-items-store';
 
-/**
- * A resource paired with the environment it came from, so rows and actions
- * always target the item's own environment, including in mixed lists.
- */
 export interface EnvironmentItem<Value extends Identifiable> {
 	environmentID: EnvironmentID;
-	/** Set only in All Environments lists. */
 	environmentName?: string;
 	value: Value;
-	/**
-	 * Single-environment lists keep the resource's own ID; All Environments
-	 * lists prefix it so the same name in two environments stays two rows.
-	 */
 	id: string;
 }
 
@@ -67,19 +51,15 @@ type PageResult<Value> = {
 
 export interface EnvironmentPagedListSnapshot<Value extends Identifiable> {
 	items: EnvironmentItem<Value>[];
-	/** Bumped on every change to `items`, including each environment's rows arriving mid-reload. */
 	revision: number;
 	environments: ListEnvironment[];
 	isLoading: boolean;
 	isLoadingMore: boolean;
-	/** Set when no environment could be loaded. */
 	errorMessage: string | undefined;
 	loadMoreError: string | undefined;
-	/** Environments that failed while others loaded. All Environments only. */
 	failedEnvironments: EnvironmentLoadFailure[];
 	showsAllEnvironments: boolean;
 	hasMore: boolean;
-	/** Sum of every environment's reported total, or undefined while any is unknown. */
 	totalItems: number | undefined;
 }
 
@@ -121,8 +101,6 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 
 	constructor(readonly pageSize: number = PaginationLoader.defaultPageSize) {}
 
-	// MARK: - External store
-
 	subscribe = (listener: () => void) => {
 		this.listeners.add(listener);
 		return () => {
@@ -151,14 +129,6 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 		for (const listener of this.listeners) listener();
 	}
 
-	// MARK: - Loading
-
-	/**
-	 * Loads the first page of every environment at once, publishing each
-	 * environment's rows as they arrive. `preservingLoadedRange` refetches as
-	 * many rows as each environment already shows (returning from a detail
-	 * screen) instead of collapsing the list back to one page.
-	 */
 	async reload(
 		environments: ListEnvironment[],
 		fetch: EnvironmentFetch<Value>,
@@ -217,7 +187,6 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 							);
 						} else {
 							if (isCancellation(result.outcome.error)) continue;
-							// A failed environment keeps the rows it already showed, alongside its listed failure.
 							arrived.set(result.environment.id, previousItems.get(result.environment.id) ?? []);
 							failures.push({
 								environment: result.environment,
@@ -225,7 +194,6 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 							});
 						}
 					}
-					// Environments still loading keep their rows until they answer.
 					const merged = environments.flatMap(
 						(environment) => arrived.get(environment.id) ?? previousItems.get(environment.id) ?? []
 					);
@@ -295,13 +263,11 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 		}
 	}
 
-	/** Local edits after an action, before the follow-up reload lands. */
 	updateItems(body: (items: EnvironmentItem<Value>[]) => EnvironmentItem<Value>[]) {
 		this.update({ items: body([...this.state.items]) });
 	}
 }
 
-/** One `EnvironmentPagedList` per component, plus its live snapshot. */
 export function useEnvironmentPagedList<Value extends Identifiable>(
 	pageSize?: number
 ): [EnvironmentPagedList<Value>, EnvironmentPagedListSnapshot<Value>] {
@@ -312,7 +278,6 @@ export function useEnvironmentPagedList<Value extends Identifiable>(
 	return [list, snapshot];
 }
 
-/** Pinned item IDs (see `EnvironmentItem.id`) for a list that may mix environments. */
 export function pinnedEnvironmentItemIDs<Value extends Identifiable>(
 	kind: PinnedItemKind,
 	items: readonly EnvironmentItem<Value>[]

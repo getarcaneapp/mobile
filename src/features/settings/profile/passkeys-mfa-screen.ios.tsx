@@ -1,4 +1,3 @@
-/** Port of `PasskeysMFAView` (Views/Settings/PasskeysMFAView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Alert,

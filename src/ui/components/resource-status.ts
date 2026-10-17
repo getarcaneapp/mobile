@@ -1,15 +1,9 @@
-/**
- * Status → tint / symbol / label logic shared by `ResourceStatusBadge` and
- * `StatusIcon` (ResourceStatusBadge.swift) on both platforms.
- */
 import { systemColors } from '@/theme/colors';
 
-/** `undefined` tint means `.secondary`. */
 export type StatusTint = string | undefined;
 
 const normalize = (status?: string) => status?.trim().toLowerCase() ?? '';
 
-/** `String.capitalized`: first letter of each word upper-cased, the rest lower. */
 export function capitalized(text: string): string {
 	return text
 		.toLowerCase()
@@ -20,7 +14,6 @@ export type ResourceStatusBadgeProps = {
 	status?: string;
 	isLive?: boolean;
 	usesCardStyle?: boolean;
-	/** Overrides the displayed text while `status` still drives tint and icon. */
 	label?: string;
 };
 
@@ -75,7 +68,6 @@ export function badgePresentation({ status, isLive, label }: ResourceStatusBadge
 		}
 	}
 
-	/** In-flight states breathe until they settle. */
 	const isTransitional = [
 		'partial',
 		'partially running',
@@ -88,7 +80,6 @@ export function badgePresentation({ status, isLive, label }: ResourceStatusBadge
 	return { displayText, live, tint, icon, isTransitional, animationKey: `${normalized}|${live}` };
 }
 
-/** Compact, text-free status indicator config (`StatusIcon`). */
 export function statusIconPresentation(status?: string, isLive?: boolean) {
 	const normalized = normalize(status);
 	const live = isLive ?? (normalized === 'running' || normalized === 'online');
@@ -129,7 +120,6 @@ export function statusIconPresentation(status?: string, isLive?: boolean) {
 	}
 }
 
-/** Environment status → dot tint (`EnvironmentSwitcherToolbarButton.statusTint`). */
 export function environmentStatusTint(status?: string): StatusTint {
 	switch (normalize(status)) {
 		case 'online':

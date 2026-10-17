@@ -1,9 +1,7 @@
-/** Port of Models/Template/Template.swift. */
 import { D } from '../base/decoding';
 import type { EnvVariable } from '../env/Env';
 import type { TemplateMetadata } from '../meta/Metadata';
 
-/** Source of templates returned by the merged template list. */
 export type TemplateSourceFilter = 'all' | 'local' | 'remote';
 
 export const TemplateSourceFilter = {
@@ -11,7 +9,6 @@ export const TemplateSourceFilter = {
 	local: 'local',
 	remote: 'remote',
 
-	/** @internal Value of the `type` query item; `undefined` for `all`. */
 	queryValue(filter: TemplateSourceFilter): string | undefined {
 		switch (filter) {
 			case 'all':
@@ -43,11 +40,8 @@ export interface RemoteTemplate {
 	description: string;
 	version: string;
 	author: string;
-	/** JSON key `compose_url`. */
 	composeUrl: string;
-	/** JSON key `env_url`. */
 	envUrl: string;
-	/** JSON key `documentation_url`. */
 	documentationUrl: string;
 	tags: string[];
 }
@@ -93,7 +87,6 @@ export interface TemplateRegistry {
 }
 
 export interface RemoteTemplateRegistry {
-	/** JSON key `$schema`. */
 	schema?: string;
 	name: string;
 	description: string;

@@ -1,9 +1,3 @@
-/**
- * Port of `StatsChartCard`'s chart and `MemoryChart` (ContainerStatsView.swift):
- * monotone line series over a hidden X axis with a leading Y axis, optionally
- * with an area fill. RN svg so both platforms share it (SwiftUI trees host it
- * in an `RNHostView`; @expo/ui's `Chart` can't draw several series on one axis).
- */
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import Svg, { G, Line, Path } from 'react-native-svg';
@@ -12,7 +6,6 @@ import { colors } from '@/theme/colors';
 
 export type ChartSeries = { values: number[]; color: string; fillOpacity?: number };
 
-/** Swift Charts-style "nice" tick values from 0 to the series maximum. */
 export function niceTicks(maximum: number, count = 4): number[] {
 	if (!(maximum > 0) || !Number.isFinite(maximum)) return [0, 1];
 	const rough = maximum / count;
@@ -25,7 +18,6 @@ export function niceTicks(maximum: number, count = 4): number[] {
 	return ticks;
 }
 
-/** Swift Charts labels show as many decimals as the tick step needs (0.01, 0.02 …; 0.5, 1, 1.5). */
 function tickLabel(value: number, step: number) {
 	if (value >= 1_000_000_000) return `${+(value / 1_000_000_000).toFixed(1)}B`;
 	if (value >= 1_000_000) return `${+(value / 1_000_000).toFixed(1)}M`;
@@ -34,7 +26,6 @@ function tickLabel(value: number, step: number) {
 	return `${+value.toFixed(decimals)}`;
 }
 
-/** Fritsch–Carlson monotone cubic (`.interpolationMethod(.monotone)`). */
 function monotonePath(points: [number, number][]): string {
 	if (points.length === 0) return '';
 	if (points.length === 1) return `M${points[0]![0]},${points[0]![1]}`;
@@ -79,7 +70,6 @@ export function StatsLineChart({
 	const ticks = niceTicks(maximum);
 	const top = ticks[ticks.length - 1] || 1;
 	const labels = ticks.map((tick) => tickLabel(tick, ticks[1] ?? 0));
-	// Swift Charts widens the leading axis to fit its longest label.
 	const axisWidth = Math.max(34, Math.max(...labels.map((label) => label.length)) * 6 + 10);
 	const plotWidth = Math.max(width - axisWidth, 0);
 	const y = (value: number) =>

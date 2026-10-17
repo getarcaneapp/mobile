@@ -1,10 +1,3 @@
-/**
- * `ArcaneLoadingView` for SwiftUI trees: hosts the RN logo trace in an
- * `RNHostView` (@expo/ui has no Canvas/TimelineView to draw it natively).
- * Reduce Motion uses a real SwiftUI `ProgressView(label)`.
- *
- * SwiftUI-tree.
- */
 import { HStack, ProgressView, RNHostView, Text } from '@expo/ui/swift-ui';
 import { accessibilityLabel, frame } from '@expo/ui/swift-ui/modifiers';
 

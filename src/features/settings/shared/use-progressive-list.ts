@@ -1,9 +1,3 @@
-/**
- * The progressive-pagination list state the Settings resource lists share
- * (UsersView / RolesView): `ProgressivePaginationState` + `PaginationLoader.merge`,
- * first-page reload with generation guards, and `loadMore` for the
- * `PaginatedListFooter`. Platform-neutral.
- */
 import { useCallback, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -27,11 +21,8 @@ export function useProgressiveList<Item extends Identifiable>({
 	beforeFirstPage
 }: {
 	pageSize: number;
-	/** The debounced search text; empty means no `search` query. */
 	search: string;
-	/** Undefined when the list can't load (no client, feature unavailable): `guard … else { return }`. */
 	fetchPage: ProgressivePageFetch<Item> | undefined;
-	/** Extra work joined with the first page (`async let`), e.g. RolesView's permission manifest. */
 	beforeFirstPage?: () => Promise<void>;
 }) {
 	const [items, setItemsState] = useState<Item[]>([]);

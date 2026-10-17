@@ -1,10 +1,3 @@
-/**
- * The platform-neutral model behind `AllVulnerabilitiesView`
- * (AllVulnerabilitiesView.swift): the Overview (risk overview or environment
- * summary) and Findings sections, Findings across one or every enabled
- * environment, the Filters sheet state, focusing one CVE from the overview,
- * CSV export, and the patch-targets toolbar action.
- */
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -48,10 +41,6 @@ export type FindingItem = EnvironmentItem<VulnerabilityFinding>;
 
 export type AllVulnerabilitiesProps = {
 	environmentID: EnvironmentID;
-	/**
-	 * All Environments preview: Findings lists vulnerabilities from every
-	 * enabled environment; Overview shows the environment chosen in the toolbar.
-	 */
 	allEnvironments?: boolean;
 };
 
@@ -86,7 +75,6 @@ export function useAllVulnerabilities({
 	const [chosenEnvironmentID, setChosenEnvironmentIDState] = useState<EnvironmentID>();
 	const [cleared, setCleared] = useState(false);
 
-	// Values async work reads synchronously (Swift reads `@State` live).
 	const live = useRef({
 		focusedVulnerabilityID: undefined as string | undefined,
 		chosenEnvironmentID: undefined as EnvironmentID | undefined
@@ -101,7 +89,6 @@ export function useAllVulnerabilities({
 		? (chosenEnvironmentID ?? environmentID)
 		: environmentID;
 
-	/** The environments this list covers, known before the first load finishes. */
 	const listEnvironments: ListEnvironment[] = allEnvironments
 		? snapshot.environments
 		: [{ id: environmentID }];
@@ -112,7 +99,6 @@ export function useAllVulnerabilities({
 		(filter.onlyFixAvailable ? 1 : 0) +
 		(filter.environmentFilter === undefined ? 0 : 1);
 
-	/** `displayedItems`. */
 	const displayedItems = useMemo(
 		() =>
 			cleared
@@ -125,14 +111,11 @@ export function useAllVulnerabilities({
 		[cleared, items, filter.environmentFilter]
 	);
 
-	// Keep the Filters sheet's Environment section in sync with the list.
 	useEffect(() => {
 		updateFilter(listKey, { environments: snapshot.environments });
 	}, [listKey, snapshot.environments, updateFilter]);
 
 	const showError = (message: string) => Alert.alert('Error', message, [{ text: 'OK' }]);
-
-	// MARK: Loading
 
 	const findingsPage = (): EnvironmentFetch<VulnerabilityFinding> | undefined => {
 		const client = useClientManager.getState().client;
@@ -200,16 +183,13 @@ export function useAllVulnerabilities({
 			const response = await client.vulnerabilities.environmentSummary({ envID: target });
 			if (target !== currentOverviewEnvironmentID()) return;
 			setSummary(response);
-		} catch {
-			// Best effort.
-		}
+		} catch {}
 	};
 
 	const loadOverviewSection = async () => {
 		await Promise.all([loadOverview(), loadSummary()]);
 	};
 
-	/** All Environments merges every environment's image names. */
 	const loadImageOptions = async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
@@ -235,7 +215,6 @@ export function useAllVulnerabilities({
 	};
 
 	const loadInitial = async () => {
-		// Overview, summary, filter options, and findings are independent.
 		await Promise.all([loadOverviewSection(), loadImageOptions(), reload()]);
 	};
 
@@ -245,12 +224,10 @@ export function useAllVulnerabilities({
 	};
 
 	useEffect(() => {
-		// `.task(id: environmentID)`; the destination re-keys on environment.
 		void loadInitial();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	// The Filters sheet's Done button.
 	const doneRevision = filter.doneRevision;
 	const lastDone = useRef(doneRevision);
 	useEffect(() => {
@@ -259,8 +236,6 @@ export function useAllVulnerabilities({
 		void reload();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [doneRevision]);
-
-	// MARK: Actions
 
 	const selectOverviewEnvironment = (id: EnvironmentID) => {
 		if (id === currentOverviewEnvironmentID()) return;
@@ -314,9 +289,7 @@ export function useAllVulnerabilities({
 				try {
 					const old = new File(exportURI);
 					if (old.exists) old.delete();
-				} catch {
-					// Best effort.
-				}
+				} catch {}
 			}
 			setExportURI(file.uri);
 			showToast(Toasts.success('Vulnerabilities exported'));
@@ -327,7 +300,6 @@ export function useAllVulnerabilities({
 		}
 	};
 
-	/** `ShareLink("Share exported CSV", item: exportURL)`. */
 	const shareExport = () => {
 		if (exportURI === undefined) return;
 		void Sharing.shareAsync(exportURI, {
@@ -341,8 +313,6 @@ export function useAllVulnerabilities({
 		{ value: 'findings', title: 'Findings', systemImage: 'list.bullet', tint: systemColors.orange }
 	];
 
-	// MARK: Toolbar
-
 	const patchEnvironments = listEnvironments.filter((environment) =>
 		hasPermission('vulnerabilities:read', environment.id)
 	);
@@ -350,9 +320,7 @@ export function useAllVulnerabilities({
 		items.some((item) => item.environmentID === environment.id)
 	);
 	const toolbar = {
-		/** All Environments: the "Patch images" environment action. */
 		showsPatchEnvironmentAction: allEnvironments && supportsActivities,
-		/** Single environment: the "Patch images" link. */
 		showsPatchLink:
 			!allEnvironments &&
 			hasPermission('vulnerabilities:read', environmentID) &&

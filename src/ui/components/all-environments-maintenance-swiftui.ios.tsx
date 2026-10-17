@@ -1,9 +1,3 @@
-/**
- * `AllEnvironmentsMaintenanceButtons` as SwiftUI `Button`s for an in-tree
- * `Menu`. Pair with `useAllEnvironmentsMaintenanceConfirmation`.
- *
- * SwiftUI-tree (place inside a `Menu`).
- */
 import { Button } from '@expo/ui/swift-ui';
 import { disabled } from '@expo/ui/swift-ui/modifiers';
 

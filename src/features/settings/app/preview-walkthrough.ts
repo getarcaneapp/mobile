@@ -1,8 +1,3 @@
-/**
- * Shared model for `PreviewWalkthrough` (PreviewWalkthrough.swift) and its two
- * users, `AllEnvironmentsIntroductionView` and
- * `RefreshedDashboardIntroductionView` (Views/WhatsNew/).
- */
 import { useEffect, useState } from 'react';
 
 import { storage } from '@/core/storage';
@@ -15,11 +10,9 @@ export type WalkthroughPage = { title: string; message: string };
 export type WalkthroughContent = {
 	pages: readonly WalkthroughPage[];
 	seenKey: string;
-	/** Shown on the last page above the enable button. */
 	footnote: string;
 };
 
-/** Port of `AllEnvironmentsIntroduction` / `RefreshedDashboardIntroduction` (AllEnvironmentsIntroduction.swift). */
 export const AllEnvironmentsIntroduction = {
 	seenKey: 'arcane.introduction.allEnvironments.v1.seen'
 } as const;
@@ -84,14 +77,12 @@ export function useRefreshedDashboardPreviewToggle() {
 	return { isEnabled, enable: () => setEnabled(true) };
 }
 
-/** Pager state plus the seen-marking `Done` / `onDisappear` behavior. */
 export function usePreviewWalkthrough(content: WalkthroughContent, enable: () => void) {
 	const navigation = useSettingsNavigation();
 	const [page, setPage] = useState(0);
 	const lastPage = content.pages.length - 1;
 	const { seenKey } = content;
 
-	// `.onDisappear { markSeen() }`
 	useEffect(() => () => storage.set(seenKey, true), [seenKey]);
 
 	const finish = () => {

@@ -1,8 +1,3 @@
-/**
- * Port of `CreateProjectView` (ProjectDetailView.swift). With the native
- * Compose editor preview the drafts open in the native editors (pushed in this
- * sheet's `NavigationStack`), and Create becomes Review.
- */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {
@@ -80,7 +75,6 @@ function EditorRow({
 	);
 }
 
-/** `Section("Compose · Preview")`. */
 function ComposePreviewSection({
 	model,
 	composeSession,
@@ -126,7 +120,6 @@ function ComposePreviewSection({
 	);
 }
 
-/** The "Import Command" sheet. */
 function DockerRunSheet({ model }: { model: CreateProjectModel }) {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	return (
@@ -177,7 +170,6 @@ export function CreateProjectScreen() {
 
 	return (
 		<View style={{ flex: 1 }}>
-			{/* `.interactiveDismissDisabled(previewEnabled && hasDraftChanges)`. */}
 			<Stack.Screen options={{ gestureEnabled: !model.dismissDisabled }} />
 			<Host style={{ flex: 1 }}>
 				<NavigationStack path={path} onPathChange={setPath}>

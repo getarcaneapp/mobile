@@ -1,8 +1,3 @@
-/**
- * Material rendering of `PermissionPickerView` (RBAC/PermissionPickerView.swift):
- * one expandable card per resource with a tri-state select-all checkbox and a
- * switch per permission. Standalone.
- */
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 

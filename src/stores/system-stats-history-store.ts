@@ -1,10 +1,3 @@
-/**
- * Port of `SystemStatsHistoryStore.swift`: owns the per-environment
- * `system/stats` WebSocket streams for the dashboard and keeps a rolling
- * sample window per environment, so sparklines and the usage chart survive
- * view updates without restarting their history. Same lifecycle as
- * `DashboardStreamStore`; owned by `EnvironmentsStore`.
- */
 import { create } from 'zustand';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -22,7 +15,6 @@ import {
 	type StatsSeries
 } from './dashboard-stream-logic';
 
-/** Streams are opened for at most this many environments (dashboard order, active first). */
 export function maxStatsStreams(): number {
 	return LiveStatsLimit.maxStreams(storage.number(LiveStatsLimit.preferenceKey));
 }
@@ -35,7 +27,6 @@ type SystemStatsHistoryState = {
 	reconcile: (environments: Environment[]) => void;
 	start: () => void;
 	stop: () => void;
-	/** Re-applies the stream cap after the App Settings limit changes. */
 	applyStreamLimit: () => void;
 	reconnect: () => void;
 };
@@ -56,7 +47,6 @@ const sleep = (ms: number, signal: AbortSignal) =>
 export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, get) => {
 	let client: ArcaneClient | undefined;
 	let clientIdentity: object | undefined;
-	/** Dashboard-ordered enabled environment IDs; the first `maxStatsStreams()` stream. */
 	let trackedIDs: string[] = [];
 	const tasks = new Map<string, AbortController>();
 	let generation = 0;
@@ -82,7 +72,6 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 		controller: AbortController
 	) => {
 		const signal = controller.signal;
-		// Brief stagger so a dashboard full of cards doesn't open every stream at once.
 		await sleep(150, signal);
 		if (signal.aborted || forGeneration !== generation) return;
 		const scoped = streamClient.withSignal(signal);
@@ -92,7 +81,6 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 				const connectedAt = Date.now();
 				let receivedFirstFrame = false;
 				try {
-					// Each iteration opens a fresh WebSocket channel.
 					for await (const frame of scoped.system.statsStream({ envID: environmentID })) {
 						if (forGeneration !== generation || signal.aborted) return;
 						if (!receivedFirstFrame) {
@@ -107,10 +95,7 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 					if (isCancellation(error)) {
 						setError(environmentID, 'Live stats unavailable: Connection interrupted');
 					} else {
-						// Keep the last-known series; flag the error while backing off.
 						setError(environmentID, `Live stats unavailable: ${friendlyErrorMessage(error)}`);
-						// A rejected handshake (expired bearer, connection cap) never reaches the
-						// HTTP 401-refresh path; force a refresh so the next attempt carries a live token.
 						const handshakeFailed =
 							!receivedFirstFrame &&
 							isArcaneError(error, 'transport') &&
@@ -197,7 +182,6 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 			generation += 1;
 			for (const controller of tasks.values()) controller.abort();
 			tasks.clear();
-			// Series are intentionally kept: last-known data keeps rendering.
 		},
 
 		applyStreamLimit: () => {
@@ -206,8 +190,6 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 
 		reconnect: () => {
 			if (!isRunning) return;
-			// Rapid pull-to-refresh would stack still-closing sockets against the
-			// server's per-IP connection cap; ignore reconnects inside 2s.
 			if (lastReconnectAt !== undefined && Date.now() - lastReconnectAt < 2000) return;
 			lastReconnectAt = Date.now();
 			get().stop();
@@ -216,7 +198,6 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 	};
 });
 
-/** Reactive series for one environment. */
 export function useStatsSeries(environmentID: string): StatsSeries | undefined {
 	return useSystemStatsHistoryStore((s) => s.seriesByEnvironmentID[environmentID]);
 }

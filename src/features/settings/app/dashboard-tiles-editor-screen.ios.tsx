@@ -1,4 +1,3 @@
-/** Port of `DashboardTilesEditor` (DashboardTotalsTile.swift), pushed from Preview Features. */
 import { Host } from '@/ui/host';
 import { Button, HStack, List, Section, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
@@ -51,7 +50,6 @@ export function DashboardTilesEditorScreen() {
 						footer={<Text>{DashboardTilesCopy.shownFooter}</Text>}
 					>
 						<List.ForEach onMove={model.move} onDelete={model.remove}>
-							{/* Section-scoped keys: a tile moving between sections must become a new row. */}
 							{model.tiles.map((tile) => (
 								<HStack key={`shown.${tile}`}>
 									<TileRow tile={tile} />

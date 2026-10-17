@@ -1,4 +1,3 @@
-/** Port of Models/Notification/Notification.swift. */
 import type { JSONValue } from '../../types/json';
 import {
 	DiscordNotificationConfiguration,
@@ -15,7 +14,6 @@ import {
 } from '../../types/notification/NotificationProviderConfigurations';
 import { D, DecodingError } from '../base/decoding';
 
-/** Swift `RawRepresentable` enum decoding: unknown raw values are an error. */
 function strictEnumDecoder<T extends string>(
 	cases: readonly T[],
 	name: string
@@ -29,9 +27,6 @@ function strictEnumDecoder<T extends string>(
 	};
 }
 
-// MARK: - NotificationProvider
-
-/** Identifiers for notification providers. */
 export type NotificationProvider =
 	| 'discord'
 	| 'email'
@@ -75,8 +70,6 @@ export const NotificationProvider = {
 	decode: strictEnumDecoder<NotificationProvider>(notificationProviderCases, 'NotificationProvider')
 } as const;
 
-// MARK: - NotificationEvents
-
 export interface NotificationEvents {
 	imageUpdate: boolean;
 	containerUpdate: boolean;
@@ -96,12 +89,10 @@ function makeNotificationEvents(init: Partial<NotificationEvents> = {}): Notific
 }
 
 export const NotificationEvents = {
-	/** Swift init defaults: update/vulnerability events on, prune/auto-heal off. */
 	make: makeNotificationEvents,
 	defaults: makeNotificationEvents(),
 	allEnabled: makeNotificationEvents({ pruneReport: true, autoHeal: true }),
 
-	/** Swift `init(from:)`: snake_case keys, missing keys fall back to the defaults. */
 	decode(this: void, raw: unknown): NotificationEvents {
 		const o = D.object(raw, 'NotificationEvents');
 		return {
@@ -123,8 +114,6 @@ export const NotificationEvents = {
 		};
 	}
 } as const;
-
-// MARK: - Email enums
 
 export type EmailTLSMode = 'none' | 'starttls' | 'ssl';
 
@@ -158,8 +147,6 @@ export const EmailAuthMode = {
 	decode: strictEnumDecoder<EmailAuthMode>(emailAuthModeCases, 'EmailAuthMode')
 } as const;
 
-// MARK: - NotificationConfiguration
-
 export type NotificationConfiguration =
 	| { kind: 'discord'; value: DiscordNotificationConfiguration }
 	| { kind: 'email'; value: EmailNotificationConfiguration }
@@ -173,11 +160,6 @@ export type NotificationConfiguration =
 	| { kind: 'googlechat'; value: GoogleChatNotificationConfiguration }
 	| { kind: 'generic'; value: GenericNotificationConfiguration };
 
-/**
- * Port of the private `sanitizedNotificationSecret`: drops blank, `redacted`,
- * and masked (`***` / `•••`) secrets so an update never writes the server's
- * redaction placeholder back as the real secret.
- */
 function sanitizedNotificationSecret(value: string | undefined): string | undefined {
 	if (value === undefined) return undefined;
 	const trimmed = value.trim();
@@ -241,7 +223,6 @@ export const NotificationConfiguration = {
 		return config.kind;
 	},
 
-	/** Swift `NotificationProvider.decodeConfiguration`: decodes `raw` as the provider's configuration. */
 	decode(provider: NotificationProvider, raw: unknown): NotificationConfiguration {
 		switch (provider) {
 			case 'discord':
@@ -269,7 +250,6 @@ export const NotificationConfiguration = {
 		}
 	},
 
-	/** Swift `encodedValue`: the provider configuration's JSON object. */
 	encode(config: NotificationConfiguration): Record<string, unknown> {
 		switch (config.kind) {
 			case 'discord':
@@ -297,7 +277,6 @@ export const NotificationConfiguration = {
 		}
 	},
 
-	/** @internal Swift `sanitizedForUpdate`: strips redacted placeholder secrets. */
 	sanitizedForUpdate(config: NotificationConfiguration): NotificationConfiguration {
 		switch (config.kind) {
 			case 'discord':
@@ -366,8 +345,6 @@ export const NotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Settings
-
 export interface NotificationSettings {
 	id: number;
 	enabled: boolean;
@@ -379,7 +356,6 @@ export const NotificationSettings = {
 		return NotificationConfiguration.provider(settings.config);
 	},
 
-	/** Swift `init(from:)`: `config` is decoded according to the `provider` key. */
 	decode(this: void, raw: unknown): NotificationSettings {
 		const o = D.object(raw, 'NotificationSettings');
 		const id = D.int(o, 'id');
@@ -423,7 +399,6 @@ export const UpdateNotificationSettings = {
 		};
 	},
 
-	/** Swift `encode(to:)`: redacted placeholder secrets are stripped from `config`. */
 	encode(settings: UpdateNotificationSettings): Record<string, unknown> {
 		return {
 			provider: UpdateNotificationSettings.provider(settings),
@@ -454,8 +429,6 @@ export interface UpdateAppriseSettings {
 	imageUpdateTag: string;
 	containerUpdateTag: string;
 }
-
-// MARK: - Test / dispatch
 
 export type NotificationTestType =
 	| 'simple'

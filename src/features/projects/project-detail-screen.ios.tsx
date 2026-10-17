@@ -1,8 +1,3 @@
-/**
- * Port of `ProjectDetailView` (ProjectDetailView.swift): Services / Logs
- * workspace (side by side on regular width, a section bar on compact), with
- * state-aware actions in the toolbar.
- */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -74,7 +69,6 @@ import {
 	type ServiceAction
 } from './use-project-detail';
 
-/** `horizontalSizeClass == .regular`. */
 function useIsRegularWidth() {
 	const { width } = useWindowDimensions();
 	return Platform.OS === 'ios' && Platform.isPad && width >= 600;

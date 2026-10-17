@@ -1,4 +1,3 @@
-/** `ComposeDocumentError` and `ComposeFormError` (ComposeDocument.swift, ComposeEntryDraft.swift). */
 export class ComposeDocumentError extends Error {
 	readonly kind: 'invalid' | 'unsupported' | 'missing';
 	private constructor(kind: 'invalid' | 'unsupported' | 'missing', message: string) {
@@ -39,7 +38,6 @@ export class ComposeFormError extends Error {
 	}
 }
 
-/** `error.localizedDescription`. */
 export function composeErrorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
 }

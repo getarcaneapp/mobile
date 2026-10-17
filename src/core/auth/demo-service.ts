@@ -1,20 +1,9 @@
-/**
- * Port of `DemoService.swift`: provisions a throwaway instance on the public
- * demo server, keeps it alive with a heartbeat while the app is active, and
- * ends it on sign-out or expiry.
- *
- * Swift stores the `session-id` cookie in `HTTPCookieStorage.shared`, which
- * every URLSession picks up. React Native has no API to write the cookie jar,
- * so the cookie travels as an explicit `Cookie` header instead (see
- * `DemoService.cookieHeader`, which the client manager adds to the client).
- */
 import { AppState, type NativeEventSubscription } from 'react-native';
 
 export const demoBaseURL = 'https://demo.getarcane.app';
 
 export interface DemoSession {
 	sessionID: string;
-	/** Milliseconds since 1970. */
 	endsAt: number;
 	username: string;
 	password: string;
@@ -59,7 +48,6 @@ async function post(
 			signal: controller.signal
 		});
 	} catch (error) {
-		// URLSession's wording for `timeoutInterval` expiring.
 		if (controller.signal.aborted) throw new Error('The request timed out.');
 		throw error;
 	} finally {
@@ -76,12 +64,9 @@ class DemoServiceImpl {
 	private appStateSubscription: NativeEventSubscription | undefined;
 	private sessionID: string | undefined;
 
-	/** The demo proxy routes every request to this session's instance by cookie. */
 	get cookieHeader(): Record<string, string> | undefined {
 		return this.sessionID ? { Cookie: `session-id=${this.sessionID}` } : undefined;
 	}
-
-	// MARK: - Provisioning
 
 	async startInstance(): Promise<DemoSession> {
 		let response: Response;
@@ -115,8 +100,6 @@ class DemoServiceImpl {
 		}
 		if (!payload.ok) throw new DemoError('provisioningFailed');
 
-		// The current demo server sets the session cookie itself instead of
-		// returning `sessionID`; the platform cookie jar then carries it.
 		const sessionID = payload.sessionID ?? sessionCookie(response.headers.get('set-cookie'));
 		this.sessionID = sessionID;
 		return {
@@ -126,8 +109,6 @@ class DemoServiceImpl {
 			password: payload.credentials.password
 		};
 	}
-
-	// MARK: - Heartbeat
 
 	startHeartbeat() {
 		this.stopHeartbeat();
@@ -149,24 +130,16 @@ class DemoServiceImpl {
 	private async sendHeartbeat() {
 		try {
 			await post('demo-kuma/heartbeat', 10_000, this.cookieHeader);
-		} catch {
-			// Best effort, like `try?` in Swift.
-		}
+		} catch {}
 	}
-
-	// MARK: - End session
 
 	async endSession() {
 		this.stopHeartbeat();
 		try {
 			await post('demo-kuma/end-session', 10_000, this.cookieHeader);
-		} catch {
-			// Best effort.
-		}
+		} catch {}
 		this.sessionID = undefined;
 	}
-
-	// MARK: - Lifecycle (pause heartbeat in background)
 
 	private installLifecycleObservers() {
 		this.appStateSubscription?.remove();

@@ -1,7 +1,3 @@
-/**
- * Android ports of `JobRow` and `JobBadge` (JobsListView.swift). Standalone
- * (RN views); the icon spins while the job is running.
- */
 import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {

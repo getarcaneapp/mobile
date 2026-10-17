@@ -1,4 +1,3 @@
-/** Ports of `SwarmView` (SwarmView.swift) and `SwarmSetupView` (SwarmClusterView.swift). */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {

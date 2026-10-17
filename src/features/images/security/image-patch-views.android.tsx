@@ -1,4 +1,3 @@
-/** Android renderings of `ImagePatchTargetsView` and `ImagePatchView`. */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

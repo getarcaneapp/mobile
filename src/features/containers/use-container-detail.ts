@@ -1,8 +1,3 @@
-/**
- * The platform-neutral model behind ContainerDetailView.swift: inspect
- * loading, lifecycle actions, auto-update, rename, logs download, the
- * Overview metadata, and the resource-actions toolbar items.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
@@ -109,7 +104,6 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 			setDetails(loaded.details);
 			setAutoUpdateEnabled(loaded.autoUpdateEnabled);
 		} catch {
-			// Ignore inspect errors — show what we have.
 		} finally {
 			setIsLoading(false);
 		}
@@ -127,8 +121,6 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 		firstVersion.current = mutationVersion;
 		void loadDetails();
 	}, [mutationVersion, loadDetails]);
-
-	// MARK: Derived state
 
 	const statusString = details?.state.status ?? container.status;
 	const isRunning = details?.state.running ?? containerIsRunning(container);
@@ -157,8 +149,6 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 		useEnvironmentsStore((s) => s.displayName(environmentID)) ??
 		useClientManager.getState().activeEnvironmentName;
 
-	// MARK: Actions
-
 	const performAction = async (action: ContainerLifecycleAction, actionID?: string) => {
 		if (!useClientManager.getState().client) return;
 		setIsActioning(true);
@@ -186,7 +176,6 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 			);
 			containersChanged(environmentID);
 			showToast(Toasts.success('Container removed'));
-			// The confirmation card already dismissed this screen.
 		} catch (error) {
 			showError(error);
 		} finally {
@@ -236,7 +225,6 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 			updateTargets: kind === 'containerUpdate' ? [{ id: container.id, name: displayedName }] : []
 		});
 
-	/** ContainerConfigurationView `onSaved`: the edit recreated the container with a new ID. */
 	const openEdit = () =>
 		nav.openConfiguration(environmentID, container.id, (id) => {
 			setContainer(placeholderSummary(id));
@@ -245,8 +233,6 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 			containerRef.current = placeholderSummary(id);
 			void loadDetails();
 		});
-
-	// MARK: Toolbar items
 
 	const actionPrimary: ActionButtonItem = isPaused
 		? {
@@ -392,8 +378,6 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 			action: () => void deleteContainer()
 		}
 	];
-
-	// MARK: Overview content
 
 	const metadata: ResourceMetadataItem[] = details
 		? (() => {

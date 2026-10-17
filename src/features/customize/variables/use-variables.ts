@@ -1,4 +1,3 @@
-/** The platform-neutral model behind `VariablesView` (VariablesView.swift). */
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
@@ -25,20 +24,17 @@ export const VariablesRoutes = {
 	delete: 'settings/customize/variable-delete'
 } as const;
 
-/** What `VariableEditorView` is initialised with. */
 export interface VariableEditorPayload {
 	variable?: GlobalVariable;
 	environments: Environment[];
 	onSave: (request: VariableSaveRequest) => Promise<void>;
 }
 
-/** What `DeleteVariableView` is initialised with. */
 export interface DeleteVariablePayload {
 	variable: GlobalVariable;
 	onDelete: () => Promise<void>;
 }
 
-/** `manager.permissions.has(_, in: nil)` for every Variables permission, re-evaluated when access changes. */
 function useVariablePermissions() {
 	useClientManager((s) => s.accessGeneration);
 	useClientManager((s) => s.currentUser);
@@ -74,7 +70,6 @@ export function useVariables() {
 		await store.load(client);
 	};
 
-	// `.task(id: manager.serverURL)`.
 	useEffect(() => {
 		if (!canRead) return;
 		store.reset();
@@ -82,7 +77,6 @@ export function useVariables() {
 		if (client) void store.load(client);
 	}, [store, serverURL, canRead]);
 
-	// `.task(id: "\(serverURL)#\(clientGeneration)#\(pollingRevision)")`.
 	const pollingRevision = snapshot.pollingRevision;
 	useEffect(() => {
 		const client = useClientManager.getState().client;

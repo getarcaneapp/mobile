@@ -1,12 +1,3 @@
-/**
- * Pure container helpers shared by the Containers screens: the
- * `ContainerSummary` extensions from Models.swift, `ImageUpdateState(info:)`,
- * `ContainerStateFilter` / `ContainerListSort` (ResourceListFilters.swift),
- * `ResourceUpdateFilter`, `ContainerDetails.navigationSummary`
- * (ContainerNavigation.swift) and the ContainersView section/bulk logic.
- *
- * No React Native imports so it stays unit-testable.
- */
 import { parseArcaneDate } from '@/sdk/models/base/date';
 import type { ContainerDetails } from '@/sdk/models/container/ContainerDetails';
 import {
@@ -15,8 +6,6 @@ import {
 	type ContainerResourceSort
 } from '@/sdk/models/container/ContainerSummary';
 import { ImageUpdateInfo } from '@/sdk/models/image/ImageUpdateInfo';
-
-// MARK: - ContainerSummary extensions (Models.swift)
 
 export function containerDisplayName(container: Pick<ContainerSummary, 'names' | 'id'>): string {
 	const first = trimSlashes(container.names[0] ?? '');
@@ -43,7 +32,6 @@ function isDirectURL(value: string): boolean {
 	return scheme === 'http' || scheme === 'https';
 }
 
-/** `ThemedIconURL.firstUsableURL`. */
 export function firstUsableURL(...values: (string | undefined)[]): string | undefined {
 	for (const value of values) {
 		const trimmed = value?.trim();
@@ -52,7 +40,6 @@ export function firstUsableURL(...values: (string | undefined)[]): string | unde
 	return undefined;
 }
 
-/** `themedIconUrl(for:)`: light mode prefers the dark-artwork URL (Swift's ordering). */
 export function themedIconUrl(
 	value: { iconLightUrl?: string; iconDarkUrl?: string; labels?: Record<string, string> },
 	isDark: boolean
@@ -63,13 +50,10 @@ export function themedIconUrl(
 		: firstUsableURL(value.iconDarkUrl, value.iconLightUrl, fallback);
 }
 
-// MARK: - Status parsing (ContainerRow)
-
 const healthTokens = ['(healthy)', '(unhealthy)', '(health: starting)'];
 
 export type ContainerRowHealth = { icon: string; color: 'red' | 'yellow' | 'green'; label: string };
 
-/** Docker reports health inside the status string, e.g. "Up 3 hours (healthy)". */
 export function containerHealth(status: string): ContainerRowHealth | undefined {
 	const lower = status.toLowerCase();
 	if (lower.includes('unhealthy'))
@@ -80,7 +64,6 @@ export function containerHealth(status: string): ContainerRowHealth | undefined 
 	return undefined;
 }
 
-/** The status string with the health parenthetical stripped ("Up 3 hours"). */
 export function containerStatusText(status: string): string {
 	let result = status;
 	for (const token of healthTokens) {
@@ -88,8 +71,6 @@ export function containerStatusText(status: string): string {
 	}
 	return result.replace(/^[ \t]+|[ \t]+$/g, '');
 }
-
-// MARK: - ImageUpdateState(info:)
 
 export type ImageUpdateState =
 	| { kind: 'unknown' }
@@ -119,8 +100,6 @@ export function imageUpdateAccessibility(state: ImageUpdateState): string {
 	}
 }
 
-// MARK: - Filters and sort
-
 export type ContainerStateFilter = 'All' | 'Running' | 'Stopped';
 export const ContainerStateFilters: ContainerStateFilter[] = ['All', 'Running', 'Stopped'];
 
@@ -133,7 +112,6 @@ export const ResourceUpdateFilters: { id: ResourceUpdateFilter; title: string }[
 export const resourceUpdateFilterMatches = (filter: ResourceUpdateFilter, hasUpdate: boolean) =>
 	filter === 'all' || hasUpdate;
 
-/** `String.localizedStandardCompare` (Finder-style, numeric-aware, case-insensitive). */
 export function localizedStandardCompare(lhs: string, rhs: string): number {
 	return lhs.localeCompare(rhs, undefined, { numeric: true, sensitivity: 'base' });
 }
@@ -153,10 +131,6 @@ export function resourceSortFor(sort: ContainerListSort): ContainerResourceSort 
 
 type SortKey = { name: string; sample?: ContainerResourceSample };
 
-/**
- * `ContainerListSort.areInIncreasingOrder` as a comparator. Resource sorts put
- * the heaviest first and unsampled containers last, falling back to name.
- */
 export function compareContainers(sort: ContainerListSort, lhs: SortKey, rhs: SortKey): number {
 	switch (sort) {
 		case 'nameAscending':
@@ -183,8 +157,6 @@ export function compareContainers(sort: ContainerListSort, lhs: SortKey, rhs: So
 	}
 }
 
-// MARK: - Sections
-
 export interface ContainerListItem {
 	id: string;
 	environmentID: string;
@@ -210,10 +182,6 @@ export type ContainerSection<Item> = {
 const containsCaseInsensitive = (haystack: string, needle: string) =>
 	haystack.toLowerCase().includes(needle.toLowerCase());
 
-/**
- * `ContainersView.computeSections(pinned:)`: filters + sorts once and
- * partitions into Pinned / Running / Stopped in a single pass.
- */
 export function computeContainerSections<Item extends ContainerListItem>(
 	containers: readonly Item[],
 	filters: ContainerFilters,
@@ -244,7 +212,6 @@ export function computeContainerSections<Item extends ContainerListItem>(
 			const matchesHidden = filters.showHidden || container.value.hidden !== true;
 			return matchesSearch && matchesState && matchesUpdate && matchesHidden;
 		})
-		// displayName trims on every access; compute it once per item.
 		.map((item) => ({
 			key: { name: containerDisplayName(item.value), sample: resourceSample(item) },
 			item
@@ -277,8 +244,6 @@ export function activeFilterCount(
 	if (filters.labelFilter.trim() !== '') count += 1;
 	return count;
 }
-
-// MARK: - Bulk actions
 
 export type ContainerBulkAction = 'start' | 'stop' | 'restart';
 
@@ -341,8 +306,6 @@ export function bulkInlineActions(
 
 export const pluralContainers = (count: number) => `${count} container${count === 1 ? '' : 's'}`;
 
-// MARK: - Navigation summary (ContainerNavigation.swift)
-
 export function navigationSummary(details: ContainerDetails): ContainerSummary {
 	const created = parseArcaneDate(details.created);
 	return ContainerSummary.make({
@@ -365,23 +328,16 @@ export function navigationSummary(details: ContainerDetails): ContainerSummary {
 	});
 }
 
-/** `ContainerSummary(id:image:imageId:state:status:)` placeholder used after create/edit. */
 export const placeholderSummary = (id: string) =>
 	ContainerSummary.make({ id, image: '', imageId: '', state: '', status: '' });
 
-// MARK: - Formatting
-
-/** `String(format: "%.1f%%", value)`. */
 export const percentText = (value: number) => `${value.toFixed(1)}%`;
 
-/** Swift `String.capitalized`: first letter of every word uppercased, the rest lowercased. */
 export function capitalized(value: string): string {
 	return value
 		.toLowerCase()
 		.replace(/(^|[^\p{L}\p{N}'])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
 }
-
-// MARK: - Processes (ContainerProcessesView.swift)
 
 export interface ContainerProcessList {
 	titles: string[];
@@ -400,7 +356,6 @@ const pidTitles = new Set(['PID']);
 const userTitles = new Set(['USER', 'UID']);
 const commandTitles = new Set(['CMD', 'COMMAND', 'ARGS']);
 
-/** `docker top` columns vary by host: pull PID / user / command out when present. */
 export function processRow(
 	id: number,
 	titles: readonly string[],

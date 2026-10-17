@@ -1,6 +1,3 @@
-/** Port of Models/Category/Category.swift. */
-
-/** Category metadata used by the settings UI. */
 export interface SettingCategory {
 	id: string;
 	title: string;
@@ -14,7 +11,6 @@ export interface SettingCategory {
 }
 
 export const SettingCategory = {
-	/** Swift init defaults (`keywords` / `settings` default to `[]`). */
 	make(
 		init: Omit<SettingCategory, 'keywords' | 'settings'> & {
 			keywords?: string[];
@@ -25,7 +21,6 @@ export const SettingCategory = {
 	}
 } as const;
 
-/** Setting-level metadata used by the settings UI. */
 export interface SettingMetadata {
 	key: string;
 	label: string;

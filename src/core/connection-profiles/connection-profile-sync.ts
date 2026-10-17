@@ -1,21 +1,9 @@
-/**
- * Pure profile validation and merge rules. Port of `ConnectionProfileSync`,
- * `ConnectionProfileRecord`/`Payload`, and the credential record types in
- * ConnectionProfileStore.swift / ConnectionCredentialStore.swift.
- *
- * Records are merged independently so concurrent edits do not replace
- * unrelated profiles. Deleted records remain as tombstones. This build keeps
- * profiles on-device (no iCloud Keychain), but the payload and merge rules are
- * unchanged so a future sync backend can reuse them.
- */
 import { parseURL } from '@/sdk/client/url';
 
 export interface ConnectionProfile {
-	/** Uppercase UUID string (Swift `UUID.uuidString`). */
 	id: string;
 	name: string;
 	serverURL: string;
-	/** Milliseconds since 1970 (the Swift keychain encoding). */
 	modifiedAt: number;
 }
 
@@ -88,14 +76,12 @@ export class ConnectionProfileValidationError extends Error {
 	}
 }
 
-// Characters `URLComponents(string:)` refuses without percent-encoding.
 const illegalURLCharacters = /[\s<>"{}|\\^`]/;
 
 function compareIDs(a: string, b: string): number {
 	return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** Swift `localizedCaseInsensitiveCompare`. */
 function localizedCaseInsensitiveCompare(a: string, b: string): number {
 	return a.localeCompare(b, undefined, { sensitivity: 'accent' });
 }
@@ -163,8 +149,6 @@ export const ConnectionProfileSync = {
 			recordsByID.set(record.id, existing ? preferred(existing, record) : record);
 		}
 
-		// Canonicalize old payloads and retire malformed records without ever
-		// exposing unsafe URL components.
 		for (const [id, record] of recordsByID) {
 			if (record.isDeleted) continue;
 			let normalized: string;
@@ -180,8 +164,6 @@ export const ConnectionProfileSync = {
 			}
 		}
 
-		// Two devices can add the same server with different IDs. Keep the newest
-		// and tombstone its duplicate so it can't reappear later.
 		const active = [...recordsByID.values()].filter((r) => !r.isDeleted).sort(byNewest);
 		const winnerByURL = new Map<string, ConnectionProfileRecord>();
 		for (const record of active) {
@@ -242,7 +224,6 @@ function preferred(
 	return lhs.id <= rhs.id ? lhs : rhs;
 }
 
-/** Defensive decode of a stored payload (unknown JSON). */
 export function decodeConnectionProfilePayload(raw: unknown): ConnectionProfilePayload {
 	if (typeof raw !== 'object' || raw === null) return ConnectionProfilePayload.empty;
 	const object = raw as { version?: unknown; records?: unknown };
@@ -277,8 +258,6 @@ export function decodeConnectionProfilePayload(raw: unknown): ConnectionProfileP
 	};
 }
 
-// MARK: - Credentials
-
 export type ConnectionCredentialValidationErrorKind =
 	| 'emptyUsername'
 	| 'emptyPassword'
@@ -305,7 +284,6 @@ export class ConnectionCredentialValidationError extends Error {
 
 const utf8Length = (value: string) => new TextEncoder().encode(value).byteLength;
 
-/** Port of `SyncedConnectionCredential` (kept on-device in this build). */
 export interface SavedConnectionCredential {
 	readonly username: string;
 	readonly password: string;
@@ -324,7 +302,6 @@ export const SavedConnectionCredential = {
 		return { username, password };
 	},
 
-	/** Empty fields mean a connection-only profile; a partial sign-in is rejected. */
 	optional(username: string, password: string): SavedConnectionCredential | undefined {
 		if (!username && !password) return undefined;
 		return SavedConnectionCredential.make(username, password);
@@ -379,7 +356,6 @@ export const ConnectionCredentialRecord = {
 		}
 	},
 
-	/** Port of `ConnectionCredentialKeychainStore.decode` validation. Throws on bad data. */
 	decode(raw: unknown): ConnectionCredentialRecord {
 		const r = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
 		const valid =

@@ -1,4 +1,3 @@
-/** Port of `BackupPolicyEditor` (BackupPolicyEditor.swift). */
 import { Button, Section, Stepper, Toggle } from '@expo/ui/swift-ui';
 
 import { FormPicker, FormTextField } from '@/ui/components/form-fields';

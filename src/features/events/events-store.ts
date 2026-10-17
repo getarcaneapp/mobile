@@ -1,9 +1,3 @@
-/**
- * Port of `EventsStore` + `EventSeverityFilter` (Services/EventsStore.swift)
- * and `EventHistory` (Utils/EventHistory.swift). One instance per Events
- * screen (`@State private var store = EventsStore()`), exposed as an external
- * store for `useSyncExternalStore`.
- */
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { PaginationLoader, ProgressivePaginationState } from '@/core/networking/pagination-loader';
 import type { ArcaneClient } from '@/sdk';
@@ -29,7 +23,6 @@ export const EventSeverityFilter = {
 
 const timestampMs = (event: Event) => parseArcaneDate(event.timestamp)?.getTime() ?? 0;
 
-/** `EventHistory.merged(current:incoming:limit:)`. */
 export function mergedEventHistory(current: Event[], incoming: Event[], limit: number): Event[] {
 	if (limit <= 0) return [];
 	const byID = new Map<string, Event>();
@@ -270,7 +263,6 @@ export class EventsStore {
 				if (client !== this.client) return;
 				this.set({ supportsSeverityCounts: false, severityCounts: undefined });
 			}
-			// Summary counts are supplemental; the event list remains usable.
 		}
 	}
 
@@ -290,7 +282,6 @@ export class EventsStore {
 			) {
 				return;
 			}
-			// Polls every few seconds; only publish what changed so an idle event list doesn't re-render on every tick.
 			const patch: Partial<EventsSnapshot> = {};
 			const merged = mergedEventHistory(
 				events,
@@ -317,7 +308,6 @@ export class EventsStore {
 		}
 	}
 
-	/** Throws on failure. */
 	async delete(event: Event) {
 		if (!this.client) return;
 		this.set({ deletingEventIDs: new Set([...this.state.deletingEventIDs, event.id]) });

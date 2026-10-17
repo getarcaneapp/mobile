@@ -1,7 +1,3 @@
-/**
- * Pure helpers behind NetworksView.swift: built-in vs custom partition,
- * filters, row preview content, and the connected-container rows.
- */
 import { formattedISO8601 } from '@/core/date-formatting';
 import { ListSortOrder } from '@/core/list-sort-order';
 import type { JSONValue } from '@/sdk/types/json';
@@ -13,14 +9,9 @@ import type { ResourceMetadataItem } from '@/ui/components/resource-detail.types
 
 export type NetworkItem = EnvironmentItem<NetworkSummary>;
 
-/** `NetworkTypeFilter` (ResourceListFilters.swift). */
 export type NetworkTypeFilter = 'All' | 'Standard' | 'Internal';
 export const NetworkTypeFilters: NetworkTypeFilter[] = ['All', 'Standard', 'Internal'];
 
-/**
- * `NetworkSummary.isInternal` / `containerCount` (Models.swift): the summary
- * endpoint doesn't carry them, so the reference app stubs false / 0.
- */
 export const networkIsInternal = (_network: NetworkSummary) => false;
 export const networkContainerCount = (_network: NetworkSummary) => 0;
 
@@ -28,13 +19,11 @@ const systemNetworkNames = new Set(['host', 'bridge', 'none']);
 
 export const isSystemNetworkName = (name: string) => systemNetworkNames.has(name.toLowerCase());
 
-/** Docker doesn't allow attaching containers to the host or none networks. */
 export const allowsConnect = (name: string) => !['host', 'none'].includes(name.toLowerCase());
 
 const contains = (value: string, query: string) =>
 	value.toLocaleLowerCase().includes(query.toLocaleLowerCase());
 
-/** `computePartition()`: filter + sort, then split into built-in and custom networks. */
 export function partitionNetworks(
 	networks: NetworkItem[],
 	options: {
@@ -77,7 +66,6 @@ const capitalized = (value: string) =>
 
 export { capitalized };
 
-/** `networkPreview(_:)`. */
 export function networkPreview(network: NetworkItem): {
 	title: string;
 	badges: PreviewBadge[];
@@ -98,7 +86,6 @@ export function networkPreview(network: NetworkItem): {
 	return { title: value.name === '' ? value.id : value.name, badges, details };
 }
 
-/** `networkMetadata` in NetworkDetailView. */
 export function networkMetadata(network: NetworkSummary): ResourceMetadataItem[] {
 	return [
 		{ label: 'Driver', value: network.driver, systemImage: 'gearshape' },
@@ -117,7 +104,6 @@ export function networkMetadata(network: NetworkSummary): ResourceMetadataItem[]
 	];
 }
 
-/** `NetworkContainerRow` data. */
 export type NetworkContainerRowData = { id: string; name?: string; ipv4?: string; ipv6?: string };
 
 export function containerRowDisplayName(row: NetworkContainerRowData) {
@@ -134,7 +120,6 @@ export function containerRowDisplayIP(row: NetworkContainerRowData) {
 const stringValue = (value: JSONValue | undefined) =>
 	typeof value === 'string' ? value : undefined;
 
-/** `connectedContainersSection`: the structured list when present, else the raw `Containers` map. */
 export function connectedContainerRows(
 	endpoints: NetworkContainerEndpoint[],
 	raw: Record<string, JSONValue>
@@ -161,7 +146,6 @@ export function connectedContainerRows(
 	return rows;
 }
 
-/** IPAM rows (Subnet / Gateway / IP Range) for each config, skipping empty values. */
 export function ipamRows(
 	ipam:
 		| { driver?: string; config?: { subnet?: string; gateway?: string; ipRange?: string }[] }

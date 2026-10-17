@@ -1,15 +1,9 @@
-/**
- * Navigation for the Updates destinations. Routes live once in the shared
- * tab group, so pushes stay in whichever tab stack is current
- * (Swift: `navigationDestination` / `NavigationLink` on the presenting stack).
- */
 import { useRouter, useSegments, type Href } from 'expo-router';
 import { useMemo } from 'react';
 
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { AutoUpdateRecord } from '@/sdk/models/updater/Updater';
 
-/** History records handed to the pushed detail screen (not serializable as params). */
 const records = new Map<string, AutoUpdateRecord>();
 
 export const updaterHistoryRecords = {

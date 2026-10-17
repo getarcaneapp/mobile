@@ -1,4 +1,3 @@
-/** Pure presentation helpers for ContainerDetailView and its sections. */
 import { formattedISO8601 } from '@/core/date-formatting';
 import { formatFileBytes } from '@/core/networking/remote-data-limits';
 import type { ContainerMount, ContainerPort } from '@/sdk/models/container/Container';
@@ -6,7 +5,6 @@ import type { ContainerDetails } from '@/sdk/models/container/ContainerDetails';
 
 import { capitalized } from './container-model';
 
-/** `ContainerPortsSection`: by private port, then protocol. */
 export function sortedPorts(ports: readonly ContainerPort[]): ContainerPort[] {
 	return [...ports].sort((a, b) =>
 		a.privatePort !== b.privatePort
@@ -19,7 +17,6 @@ export function sortedPorts(ports: readonly ContainerPort[]): ContainerPort[] {
 	);
 }
 
-/** `ContainerHealthSection` status text, symbol, and color name. */
 export function healthPresentation(status: string) {
 	const trimmed = status.trim();
 	const displayStatus = trimmed === '' ? 'Unknown' : capitalized(trimmed);
@@ -48,7 +45,6 @@ export type ConfigRow =
 	| { kind: 'monospaced'; title: string; value: string }
 	| { kind: 'link'; title: string; systemImage: string; page: 'env' | 'labels' };
 
-/** `configSection(_:)` rows ("Execution"). */
 export function configRows(details: ContainerDetails): ConfigRow[] {
 	const rows: ConfigRow[] = [];
 	const config = details.config;
@@ -77,7 +73,6 @@ export function configRows(details: ContainerDetails): ConfigRow[] {
 	return rows;
 }
 
-/** `hostConfigSection(_:mounts:)` rows. */
 export function hostConfigRows(details: ContainerDetails) {
 	const host = details.hostConfig;
 	const rows: { title: string; value: string; monospacedDigit?: boolean }[] = [];
@@ -98,7 +93,6 @@ export function hostConfigRows(details: ContainerDetails) {
 	};
 }
 
-/** `stateSection(_:)` rows ("Runtime"). */
 export function runtimeRows(details: ContainerDetails, isRunning: boolean) {
 	const state = details.state;
 	const rows: { title: string; value: string; monospacedDigit?: boolean }[] = [
@@ -113,7 +107,6 @@ export function runtimeRows(details: ContainerDetails, isRunning: boolean) {
 	return rows;
 }
 
-/** Networks sorted by name, with their non-empty IP / MAC. */
 export function networkRows(details: ContainerDetails) {
 	return Object.keys(details.networkSettings.networks)
 		.sort()
@@ -123,7 +116,6 @@ export function networkRows(details: ContainerDetails) {
 		});
 }
 
-/** `BindsView` rows for one mount. */
 export function mountRows(mount: ContainerMount) {
 	const rows: { title: string; value: string; monospaced?: boolean }[] = [
 		{ title: 'Type', value: mount.type }

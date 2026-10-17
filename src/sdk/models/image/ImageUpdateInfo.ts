@@ -1,8 +1,6 @@
-/** Port of Models/Image/ImageUpdateInfo.swift. */
 import type { ISODateString } from '../base/date';
 import type { ImageUpdateResponse } from '../imageUpdate/ImageUpdate';
 
-/** Image update availability info attached to image and container summaries. */
 export interface ImageUpdateInfo {
 	hasUpdate: boolean;
 	updateType: string;
@@ -10,7 +8,6 @@ export interface ImageUpdateInfo {
 	latestVersion: string;
 	currentDigest: string;
 	latestDigest: string;
-	/** Optional so responses from servers that omit the timestamp still decode. */
 	checkTime?: ISODateString;
 	responseTimeMs: number;
 	error: string;
@@ -35,12 +32,6 @@ export const ImageUpdateInfo = {
 		};
 	},
 
-	/**
-	 * True when this inline info carries an actual check result — not just
-	 * struct zero-values. Servers attach a default-initialized `updateInfo`
-	 * to images that simply haven't been scanned yet; use this to avoid
-	 * treating those as "up to date".
-	 */
 	hasCheckResult(value: ImageUpdateInfo): boolean {
 		return (
 			value.hasUpdate ||
@@ -51,11 +42,6 @@ export const ImageUpdateInfo = {
 		);
 	},
 
-	/**
-	 * Bridges the inline/persisted info shape into the check-endpoint
-	 * response shape (`ImageUpdateResponse`) so clients can consume a single
-	 * model regardless of which endpoint produced the data.
-	 */
 	asUpdateResponse(value: ImageUpdateInfo): ImageUpdateResponse {
 		return {
 			hasUpdate: value.hasUpdate,

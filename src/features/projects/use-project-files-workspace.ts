@@ -1,13 +1,3 @@
-/**
- * `ProjectFilesWorkspaceView` state (ProjectFilesWorkspaceView.swift): the
- * compose / .env drafts, the staged file-tree changes, lazily loaded managed
- * file contents, the file dialogs, and save (compose + .env through the
- * project update, everything else through the workspace manifest).
- *
- * With the native Compose editor preview (`ComposePreviewSession`, captured
- * once per sheet) Save opens Review Changes (with Save and deploy), YAML
- * syntax is checked before saving, and the menus offer Deploy Saved Project.
- */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -101,7 +91,6 @@ export function useProjectFilesWorkspace() {
 	const [showDiscard, setShowDiscard] = useState(false);
 	const [showReloadConfirmation, setShowReloadConfirmation] = useState(false);
 	const [pendingDelete, setPendingDelete] = useState<ManagedProjectFileEntry>();
-	// `@State private var previewSession = ComposePreviewSession()`.
 	const [previewSession] = useState(() => makeComposePreviewSession(storage.bool));
 	const previewEnabled = previewSession.isEnabled;
 	const [requestedDeployOptions, setRequestedDeployOptions] = useState<DeployOptions>();
@@ -144,8 +133,6 @@ export function useProjectFilesWorkspace() {
 	const dismiss = () => {
 		if (router.canGoBack()) router.back();
 	};
-
-	// MARK: Loading
 
 	const loadFiles = useCallback(async () => {
 		const client = useClientManager.getState().client;
@@ -234,8 +221,6 @@ export function useProjectFilesWorkspace() {
 		[envID, projectID]
 	);
 
-	// MARK: Save
-
 	const isDeleted = (path: string, changes: ProjectFileChange[]) =>
 		changes.some(
 			(change) =>
@@ -276,7 +261,6 @@ export function useProjectFilesWorkspace() {
 		]);
 	};
 
-	/** This project's environment, which can differ from the active one in All Environments lists. */
 	const environmentName = () =>
 		useEnvironmentsStore.getState().displayName(envID) ??
 		useClientManager.getState().activeEnvironmentName;
@@ -298,7 +282,6 @@ export function useProjectFilesWorkspace() {
 					}
 				}
 			}
-			// Core files lack an atomic revision token: refetch before any write.
 			const latestCompose = await client.projects.compose({ envID, projectID });
 			if (!sessionIsCurrent()) return;
 			if (latestCompose.isArchived || latestCompose.gitOpsManagedBy !== undefined) {
@@ -372,8 +355,6 @@ export function useProjectFilesWorkspace() {
 			setIsSaving(false);
 		}
 	};
-
-	// MARK: Staging
 
 	const remapManagedState = (oldPath: string, newPath: string) => {
 		setManagedFileContents((current) =>
@@ -508,8 +489,6 @@ export function useProjectFilesWorkspace() {
 			onSubmit: submitFileDialog
 		});
 
-	// MARK: Confirmations
-
 	useDeleteConfirmation(
 		showDiscard,
 		setShowDiscard,
@@ -545,8 +524,6 @@ export function useProjectFilesWorkspace() {
 		projectFilesConfirmationHost
 	);
 
-	// MARK: Browser helpers
-
 	const childEntries = (folderPath: string) =>
 		displayedFiles.filter(
 			(entry) => ProjectFileWorkspaceHelpers.parentPath(entry.relativePath) === folderPath
@@ -556,7 +533,6 @@ export function useProjectFilesWorkspace() {
 		managedFileContents[path] !== undefined &&
 		managedFileContents[path] !== originalManagedFileContents[path];
 
-	/** Files-app-style subtitle: item count for folders, size for files. */
 	const browserRowDetail = (entry: ManagedProjectFileEntry): string | undefined => {
 		if (entry.isDirectory) {
 			const count = childEntries(entry.relativePath).length;
@@ -606,7 +582,6 @@ export function useProjectFilesWorkspace() {
 		emptyStateMessage: canEdit
 			? 'Add files or folders here with the + button.'
 			: 'This folder is empty.',
-		// Actions
 		done: () => (hasChanges ? setShowDiscard(true) : dismiss()),
 		reload: () => (hasChanges ? setShowReloadConfirmation(true) : void loadFiles()),
 		refresh: async () => {
@@ -615,7 +590,6 @@ export function useProjectFilesWorkspace() {
 		},
 		previewEnabled,
 		canDeploy: hasPermission(Permission.Projects.deploy, envID),
-		/** `saveButton`: Review Changes with the preview, a direct save without it. */
 		save: () => {
 			if (!previewEnabled) {
 				void saveChanges();
@@ -644,7 +618,6 @@ export function useProjectFilesWorkspace() {
 				}
 			});
 		},
-		/** "Deploy Saved Project" (preview menus). */
 		deploySaved: () => {
 			if (!sessionIsCurrent()) return;
 			useProjectDeploymentStore.getState().start({
@@ -675,7 +648,6 @@ export function useProjectFilesWorkspace() {
 
 export type ProjectFilesWorkspaceModel = ReturnType<typeof useProjectFilesWorkspace>;
 
-/** Title for a destination (`workspaceContent(for:)` navigation titles). */
 export function destinationTitle(
 	model: ProjectFilesWorkspaceModel,
 	destination: ProjectFilesDestination
@@ -693,7 +665,6 @@ export function destinationTitle(
 	}
 }
 
-/** Parent folder whose New File / New Folder actions an editor's menu targets. */
 export function destinationFolderPath(destination: ProjectFilesDestination): string {
 	switch (destination.kind) {
 		case 'folder':

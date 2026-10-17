@@ -1,8 +1,3 @@
-/**
- * Port of `ContainerDetailView` (ContainerDetailView.swift): a scrollable
- * section bar (Overview / Stats / Logs / Processes) above the selected tab,
- * with state-aware actions in the toolbar.
- */
 import { Host } from '@/ui/host';
 import {
 	List,
@@ -270,7 +265,6 @@ export function ContainerDetailScreen() {
 
 	return (
 		<>
-			{/* The embedded `ContainerStatsView` sets `.navigationTitle("Stats")`, which wins over the detail title. */}
 			<Stack.Screen
 				options={{
 					title: model.selectedTab === 'stats' ? 'Stats' : model.displayedName,

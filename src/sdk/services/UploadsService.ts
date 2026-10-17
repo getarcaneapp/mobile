@@ -1,4 +1,3 @@
-/** Port of Services/UploadsService.swift. */
 import type { EnvironmentID } from '../client/environment';
 import { ArcaneError, CancellationError } from '../errors/ArcaneError';
 import { decodeUTF8 } from '../http/json';
@@ -10,18 +9,9 @@ import type {
 	UploadSession
 } from '../models/upload/UploadSession';
 
-/**
- * Replacement for the Swift `fileURL` + `FileHandle` pair used by
- * `uploadFile`: the SDK has no file system, so the app supplies a random-access
- * reader (e.g. over an expo-file-system `File`). Use `UploadFileSource.fromBlob`
- * for any `Blob`.
- */
 export interface UploadFileSource {
-	/** Swift `fileURL.lastPathComponent`; sent as the session filename. */
 	name: string;
-	/** Total file size in bytes (Swift `file.seekToEnd()`). */
 	size: number;
-	/** Reads up to `count` bytes starting at `offset`. */
 	read(offset: number, count: number): Promise<Uint8Array>;
 }
 
@@ -81,11 +71,6 @@ export class UploadsService {
 		return this.rest.transport.decodeEnvelope<UploadSession>(decodeUTF8(response));
 	}
 
-	/**
-	 * Reads one server-sized chunk at a time and returns the upload session ID.
-	 * The completed session is consumed by a domain endpoint. The Swift
-	 * `fileURL` argument is `file` (see `UploadFileSource`).
-	 */
 	async uploadFile(args: {
 		envID?: EnvironmentID;
 		kind: UploadKind;
@@ -134,8 +119,6 @@ export class UploadsService {
 			return session.id;
 		} finally {
 			if (!completed) {
-				// Swift `withCancellationRecovery`: clean up even when the caller's
-				// signal was aborted, using a transport detached from that signal.
 				await this.rest.transport
 					.withSignal(new AbortController().signal)
 					.rawRequest(this.rest.environmentPath(envID, `uploads/${kind}/${session.id}`), {

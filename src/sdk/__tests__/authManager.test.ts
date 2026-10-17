@@ -52,8 +52,8 @@ describe('AuthManager refresh', () => {
 		const store = new InMemoryTokenStore(pair('a'));
 		const { fetch, requests } = mockFetch(() => refreshReply('c'));
 		const auth = new AuthManager({ baseURL: BASE, tokenStore: store, fetch });
-		await auth.authenticationHeaders(); // caches pair a
-		await store.saveTokens(pair('b')); // widget extension rotated a → b
+		await auth.authenticationHeaders();
+		await store.saveTokens(pair('b'));
 
 		await auth.refreshTokens();
 
@@ -65,7 +65,6 @@ describe('AuthManager refresh', () => {
 		const { fetch, requests } = mockFetch(async (request) => {
 			const body = request.body as { refreshToken: string };
 			if (body.refreshToken === 'refresh-a') {
-				// The other process spent "a" and stored "b" while our request was in flight.
 				await store.saveTokens(pair('b'));
 				return { status: 401, body: { success: false, error: 'invalid refresh token' } };
 			}

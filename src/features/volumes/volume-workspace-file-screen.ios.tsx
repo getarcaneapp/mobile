@@ -1,10 +1,3 @@
-/**
- * Ports of `VolumeWorkspaceFileView` and its "Server version" review sheet
- * (VolumeWorkspaceFileView.swift).
- *
- * `CodeEditorView` isn't ported yet, so the editor is a monospaced multi-line
- * SwiftUI `TextField` (plain text, like the reference's `.plaintext` language).
- */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {
@@ -120,7 +113,6 @@ export function VolumeWorkspaceFileScreen() {
 									modifiers={toolbarSymbol}
 								/>
 							</ToolbarItem>
-							{/* @expo/ui renders same-placement items in reverse: Save declared first lands rightmost, as in Swift. */}
 							{model.canEdit ? (
 								<ToolbarItem placement="primaryAction">
 									<Button
@@ -156,7 +148,6 @@ export function VolumeWorkspaceFileScreen() {
 	);
 }
 
-/** The "Server version" sheet (`.sheet(isPresented: $reviewing)`). */
 export function VolumeWorkspaceReviewScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const router = useRouter();

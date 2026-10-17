@@ -1,4 +1,3 @@
-/** Port of `ActivityHistoryMutationStore.swift`. */
 import { create } from 'zustand';
 
 export type ActivityHistoryClearEvent = {

@@ -1,8 +1,3 @@
-/**
- * Port of `ActivityDetailView` + `ActivityMessageRow`
- * (Views/Activities/ActivitiesView.swift): header, progress, details,
- * message log, live updates and Cancel Activity.
- */
 import { Host } from '@/ui/host';
 import {
 	Alert,

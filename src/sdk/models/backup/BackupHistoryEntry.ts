@@ -1,4 +1,3 @@
-/** Port of Models/Backup/BackupHistoryEntry.swift. */
 import type { ISODateString } from '../base/date';
 
 export interface BackupHistoryEntry {

@@ -1,7 +1,3 @@
-/**
- * Port of `JobsListView` (JobsListView.swift): jobs grouped by category with
- * search, run/copy swipe actions and context menus, and a refresh button.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -185,7 +181,6 @@ export function JobsListView(props: JobsListProps) {
 	);
 }
 
-/** Route screen: `jobs-list?envID=…&all=1`. */
 export function JobsListScreen() {
 	const { envID = '0', all } = useLocalSearchParams<{ envID?: string; all?: string }>();
 	return (

@@ -1,9 +1,3 @@
-/**
- * Route entry for `ActivityDetailView`: resolves the activity (and the
- * optional shared store) handed over by `useActivityNavigation().openActivity`.
- * Without a payload (e.g. a deep link), a placeholder keyed by `id` + `envID`
- * is shown and filled in by the detail request.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 

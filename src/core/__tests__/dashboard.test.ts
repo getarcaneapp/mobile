@@ -118,7 +118,6 @@ describe('dashboard stream reducers', () => {
 			totalImages: 5,
 			imageUpdates: 3
 		});
-		// Errors and reconnects drop the live total.
 		assert.equal(resolvedAggregate(applyError(states, '1', 'boom', 'unreachable')), undefined);
 		assert.equal(resolvedAggregate(invalidateSnapshots(states)), undefined);
 	});

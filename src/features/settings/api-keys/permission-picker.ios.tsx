@@ -1,10 +1,3 @@
-/**
- * Port of `PermissionPickerView` (RBAC/PermissionPickerView.swift): one
- * Section + DisclosureGroup per resource, composed into the surrounding Form.
- * Matching resources auto-expand while searching.
- *
- * SwiftUI-tree.
- */
 import {
 	Button,
 	DisclosureGroup,

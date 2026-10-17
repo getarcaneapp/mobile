@@ -1,9 +1,3 @@
-/**
- * Navigation for the Templates screens (TemplateBrowserView's NavigationLinks
- * and sheets). Routes live under `settings/templates/` in the shared tab group,
- * so pushes stay in the current tab stack; callbacks and loaded models travel
- * through `settingsPayloads`.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -11,7 +5,6 @@ import type { Template, TemplateRegistry } from '@/sdk/models/template/Template'
 
 import { settingsPayloads, useSettingsNavigation } from '../shared/settings-routes';
 
-/** Port of `TemplateEditorMode`. */
 export type TemplateEditorMode =
 	| { kind: 'create' }
 	| { kind: 'edit'; template: Template }
@@ -51,7 +44,6 @@ export function useTemplateNavigation() {
 	);
 }
 
-/** Reads (once) and later releases the payload a templates route was pushed with. */
 export function useRoutePayload<T>(): {
 	payload: T | undefined;
 	params: Record<string, string | undefined>;

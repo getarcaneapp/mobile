@@ -1,4 +1,3 @@
-/** Route screen for `NewAPIKeyView` (CreateAPIKeyView.swift): the one-time API key reveal. */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { systemColors } from '@/theme/colors';

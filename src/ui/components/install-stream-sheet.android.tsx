@@ -1,10 +1,3 @@
-/**
- * Port of `InstallStreamSheet` (Android): the same always-dark install
- * console (it's a terminal on every platform), with Material ripple buttons.
- * Present in a ModalBottomSheet or a sheet route.
- *
- * Standalone (RN view).
- */
 import * as Clipboard from 'expo-clipboard';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';

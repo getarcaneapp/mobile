@@ -1,8 +1,3 @@
-/**
- * Route model for `JobDetailView`: the pushed job (handed over by the list),
- * its live running state, and the run action. When the hand-off is missing
- * (a restored route), the job is looked up from its environment's list.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 

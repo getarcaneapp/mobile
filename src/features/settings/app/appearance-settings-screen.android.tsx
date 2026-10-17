@@ -1,4 +1,3 @@
-/** Android rendering of `AppearanceSettingsView` (AppearanceSettingsView.swift). */
 import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';

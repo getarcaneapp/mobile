@@ -1,6 +1,3 @@
-/** Port of Models/Settings/Settings.swift. */
-
-/** A publicly accessible setting value. */
 export interface PublicSetting {
 	key: string;
 	type: string;
@@ -8,13 +5,11 @@ export interface PublicSetting {
 }
 
 export const PublicSetting = {
-	/** Swift `Identifiable.id`. */
 	id(value: PublicSetting): string {
 		return value.key;
 	}
 } as const;
 
-/** A setting value with visibility metadata. */
 export interface SettingDto {
 	key: string;
 	type: string;
@@ -23,17 +18,11 @@ export interface SettingDto {
 }
 
 export const SettingDto = {
-	/** Swift `Identifiable.id`. */
 	id(value: SettingDto): string {
 		return value.key;
 	}
 } as const;
 
-/**
- * Request body for `PUT /environments/{id}/settings`.
- *
- * All fields are optional strings — only the fields you set are updated.
- */
 export interface UpdateSettings {
 	projectsDirectory?: string;
 	followProjectSymlinks?: string;

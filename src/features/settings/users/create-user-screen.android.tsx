@@ -1,4 +1,3 @@
-/** Android rendering of `CreateUserView` (CreateUserView.swift). Presented as a modal. */
 import { Stack } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 

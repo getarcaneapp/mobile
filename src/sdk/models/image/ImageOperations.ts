@@ -1,4 +1,3 @@
-/** Port of Models/Image/ImageOperations.swift. */
 import type { ISODateString } from '../base/date';
 
 export interface ImageSearchResult {
@@ -10,7 +9,6 @@ export interface ImageSearchResult {
 }
 
 export const ImageSearchResult = {
-	/** Swift `Identifiable.id`. */
 	id(value: ImageSearchResult): string {
 		return value.name;
 	}
@@ -65,7 +63,6 @@ export interface ImagePatchTarget {
 }
 
 export const ImagePatchTarget = {
-	/** Swift `Identifiable.id`. */
 	id(value: ImagePatchTarget): string {
 		return value.imageId;
 	}

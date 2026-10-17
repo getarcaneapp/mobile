@@ -1,9 +1,3 @@
-/**
- * The model behind RolesView.swift: progressive pagination with debounced
- * search, the permission manifest loaded alongside the first page, built-in vs
- * custom sections, delete confirmation + failure alert, and the pushes to the
- * role detail, create sheet and OIDC mappings. v2 servers only.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 

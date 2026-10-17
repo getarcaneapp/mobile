@@ -1,7 +1,3 @@
-/**
- * Ports of `EnvVarsView`, `LabelsView`, `BindsView` (ContainerDetailView.swift)
- * and `ContainerHealthHistoryView` (ContainerHealthSection.swift).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

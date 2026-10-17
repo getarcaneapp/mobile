@@ -1,6 +1,3 @@
-/** Port of Models/Container/ContainerState.swift. */
-
-/** A single probe result from the healthcheck log. */
 export interface ContainerHealthLogEntry {
 	start?: string;
 	end?: string;
@@ -14,7 +11,6 @@ export const ContainerHealthLogEntry = {
 	}
 } as const;
 
-/** Current healthcheck state of a container. */
 export interface ContainerHealth {
 	status: string;
 	failingStreak: number;
@@ -27,7 +23,6 @@ export const ContainerHealth = {
 	}
 } as const;
 
-/** Container healthcheck configuration. Duration values are expressed in nanoseconds. */
 export interface ContainerHealthcheck {
 	test?: string[];
 	interval?: number;
@@ -37,7 +32,6 @@ export interface ContainerHealthcheck {
 	retries?: number;
 }
 
-/** State of a container. */
 export interface ContainerState {
 	status: string;
 	running: boolean;
@@ -47,7 +41,6 @@ export interface ContainerState {
 	health?: ContainerHealth;
 }
 
-/** Configuration details for a container. */
 export interface ContainerConfig {
 	env?: string[];
 	cmd?: string[];
@@ -57,7 +50,6 @@ export interface ContainerConfig {
 	healthcheck?: ContainerHealthcheck;
 }
 
-/** Docker Compose project information extracted from container labels. */
 export interface ContainerComposeInfo {
 	projectName: string;
 	serviceName: string;

@@ -1,4 +1,3 @@
-/** State behind `SwarmServicesView` and `SwarmScaleSheet` (SwarmServicesView.swift). */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 
@@ -17,7 +16,6 @@ import { capitalized, swarmChanged, useCan } from './swarm-common';
 import { swarmKeys, useSwarmNavigation } from './swarm-routes';
 import { useSwarmPagedList } from './use-swarm-list';
 
-/** `SwarmServiceRow.isHealthy`. */
 export const serviceIsHealthy = (
 	service: Pick<SwarmServiceSummary, 'mode' | 'runningReplicas' | 'replicas'>
 ) => service.mode !== 'replicated' || service.runningReplicas >= service.replicas;

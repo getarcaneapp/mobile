@@ -1,5 +1,3 @@
-/** Port of Models/Backup/UpdateBackupPolicy.swift. */
-
 export interface UpdateBackupPolicy {
 	id?: string;
 	enabled: boolean;

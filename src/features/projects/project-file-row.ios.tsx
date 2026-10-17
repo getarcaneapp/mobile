@@ -1,8 +1,3 @@
-/**
- * Port of `ProjectFileBrowserRow` (ProjectFilesWorkspaceView.swift).
- *
- * SwiftUI-tree.
- */
 import { HStack, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {

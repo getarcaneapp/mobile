@@ -1,7 +1,3 @@
-/**
- * Shared state and intents for `ConnectionProfilesView` and
- * `ConnectionProfileEditorView` (Views/Settings/ConnectionProfilesView.swift).
- */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
@@ -18,17 +14,11 @@ import { syncStateDescription, useConnectionProfileStore } from '@/stores/connec
 import { presentDeleteConfirmation } from '@/ui/components/delete-confirmation';
 import { showToast, Toasts } from '@/ui/toast';
 
-/** The sheet hosts its own confirmation overlay on iOS (the root one sits under the native sheet). */
 export const connectionProfilesConfirmationHost =
 	Platform.OS === 'ios' ? 'connection-profiles' : 'root';
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-/**
- * `pushed`: Account → Connection Profiles, a `NavigationLink` in the tab's
- * stack (ProfileView.swift). Otherwise the login sheet route, which draws its
- * own bar and hosts its own confirmation overlay.
- */
 export function useConnectionProfiles({ pushed = false }: { pushed?: boolean } = {}) {
 	const router = useRouter();
 	const confirmationHost = pushed ? undefined : connectionProfilesConfirmationHost;
@@ -42,7 +32,6 @@ export function useConnectionProfiles({ pushed = false }: { pushed?: boolean } =
 	const serverURL = useClientManager((s) => s.serverURL);
 	const isDemoActive = useClientManager((s) => s.isDemoActive);
 
-	// The presenter's `onSelect` lives only as long as the sheet.
 	useEffect(() => () => useConnectionProfileSelection.getState().end(), []);
 
 	const store = useConnectionProfileStore.getState();
@@ -151,7 +140,6 @@ export type ConnectionProfilesModel = ReturnType<typeof useConnectionProfiles>;
 
 type CredentialLoadState = 'loading' | 'ready' | 'failed';
 
-/** Port of `ConnectionProfileEditorView`'s state and intents. */
 export function useConnectionProfileEditor() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ id?: string; suggested?: string }>();
@@ -170,7 +158,6 @@ export function useConnectionProfileEditor() {
 	const [hasExistingCredential, setHasExistingCredential] = useState(false);
 	const [signInNotice, setSignInNotice] = useState<string>();
 	const [validationMessage, setValidationMessage] = useState<string>();
-	/** Bumped when credential fields change programmatically (uncontrolled SwiftUI fields resync). */
 	const [fieldsRevision, setFieldsRevision] = useState(0);
 
 	const loadCredential = () => {
@@ -203,7 +190,6 @@ export function useConnectionProfileEditor() {
 		}
 	};
 
-	// `.task { loadCredential() }`
 	useEffect(loadCredential, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const clearCredential = (notice: string) => {

@@ -1,9 +1,3 @@
-/**
- * `NavigationLink { … } label: { Label(title, systemImage:) }` row: the
- * accent-tinted label icon plus a trailing disclosure chevron.
- *
- * SwiftUI-tree.
- */
 import { Button, HStack, Label, Spacer } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import { buttonStyle, contentShape, foregroundStyle, shapes } from '@expo/ui/swift-ui/modifiers';

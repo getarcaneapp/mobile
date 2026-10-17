@@ -1,4 +1,3 @@
-/** Port of `EnvironmentColorsView` + `EnvironmentColorPicker` (EnvironmentColorsView.swift). */
 import { Host } from '@/ui/host';
 import {
 	BottomSheet,
@@ -69,7 +68,6 @@ export function EnvironmentColorsScreen() {
 	const model = useEnvironmentColors();
 	return (
 		<>
-			{/* `.automatic` title mode inherits Preview Features' inline bar. */}
 			<Stack.Screen options={{ title: 'Environment Colors', headerLargeTitleEnabled: false }} />
 			<Host style={{ flex: 1 }}>
 				<List>

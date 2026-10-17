@@ -1,4 +1,3 @@
-/** Ports of `CreateNetworkView` and `ConnectNetworkContainerSheet` (NetworksView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

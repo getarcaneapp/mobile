@@ -1,9 +1,3 @@
-/**
- * Port of `DemoBanner` (DemoBanner.swift): glass banner with a live
- * countdown (orange under a minute) and an End button.
- *
- * Standalone (Host).
- */
 import { Host } from '@/ui/host';
 import { Button, HStack, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
@@ -78,7 +72,6 @@ export function DemoBanner({ endsAt, onEnd }: DemoBannerProps) {
 				</VStack>
 				<Spacer minLength={8} />
 				<Button onPress={onEnd} modifiers={[buttonStyle('plain')]}>
-					{/* The glass capsule sits on the text; the frame provides a 44pt hit target. */}
 					<Text
 						modifiers={[
 							font({ textStyle: 'subheadline', weight: 'semibold' }),

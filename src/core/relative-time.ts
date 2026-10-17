@@ -1,13 +1,7 @@
-/**
- * `Intl.RelativeTimeFormat(locale, { numeric: "auto" })`, which Hermes on iOS
- * doesn't ship: `new Intl.RelativeTimeFormat` throws there. Uses the real
- * formatter when present, else an English fallback with the same output.
- */
 type Unit = 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
 
 export type RelativeTimeFormatter = { format: (value: number, unit: Unit) => string };
 
-/** `numeric: "auto"` names for -1, 0, +1. */
 const named: Record<Unit, [string, string, string]> = {
 	second: ['', 'now', ''],
 	minute: ['', 'this minute', ''],

@@ -1,7 +1,3 @@
-/**
- * Port of `NetworksView` (NetworksView.swift): Built-in / Custom sections,
- * context menus with previews, swipe-to-delete, filter sheet, create, prune.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -60,7 +56,6 @@ import {
 	type NetworksListProps
 } from './use-networks-list';
 
-/** `NetworkRow`. */
 export function NetworkRow({
 	network,
 	environmentName,
@@ -150,7 +145,6 @@ function NetworkLink({
 				</Button>
 			</ContextMenu.Trigger>
 			<ContextMenu.Items>
-				{/* No actions for built-in networks — they cannot be deleted. */}
 				{deletable ? (
 					<Button
 						role="destructive"
@@ -194,7 +188,6 @@ function NetworksToolbar({ model }: { model: NetworksListModel }) {
 		model.allEnvironments && (environments.length > 1 || environments[0]?.name !== undefined);
 	return (
 		<AppToolbar placement="right" tintColor={accent}>
-			{/* Swift: ToolbarSpacer(.fixed) after Filter — Filter sits alone, + and Prune share a group. */}
 			<Stack.Toolbar.Button
 				icon={icon(filterIcon)}
 				separateBackground

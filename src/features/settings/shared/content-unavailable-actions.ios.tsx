@@ -1,9 +1,3 @@
-/**
- * `ContentUnavailableView { Label } description: { } actions: { Button… }`.
- * Thin alias of `UnavailableView` (same measured layout).
- *
- * SwiftUI-tree.
- */
 import { UnavailableView } from '@/ui/components/unavailable-view';
 
 export type UnavailableAction = { title: string; onPress: () => void };

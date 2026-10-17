@@ -1,15 +1,3 @@
-/**
- * Toolbar ports built on expo-router's `Stack.Toolbar` (native UIBarButtonItems
- * on iOS, Material top app bar actions on Android), so one tree serves both:
- *
- * - `AppToolbar` — `AppToolbarItem`: toolbar content tinted with the app accent.
- * - `ResourceActionsToolbar` — `.resourceActionsToolbar(...)` (ResourceActionToolbar.swift):
- *   a primary button plus an `ellipsis.circle` overflow menu; destructive items
- *   confirm through the delete-confirmation card first.
- * - `EnvironmentToolbarAction` — `EnvironmentActionButton` for toolbar menus.
- *
- * Standalone (render inside a screen component; `Stack.Toolbar` hoists into the header).
- */
 import { Stack } from 'expo-router';
 import { AppToolbar as AccentToolbar } from '@/ui/app-toolbar';
 import { useState, type ReactNode } from 'react';
@@ -29,7 +17,6 @@ import {
 
 type Placement = 'left' | 'right' | 'bottom';
 
-/** Port of `AppToolbarItem`: applies the app accent to the toolbar's items. Explicit tints win. */
 export function AppToolbar({
 	placement = 'right',
 	children
@@ -40,12 +27,10 @@ export function AppToolbar({
 	return <AccentToolbar placement={placement}>{children}</AccentToolbar>;
 }
 
-/** Port of `ActionButtonItem`. */
 export type ActionButtonItem = {
 	id: string;
 	title: string;
 	systemImage: string;
-	/** Hex. */
 	tint: string;
 	role?: 'destructive';
 	confirmationMessage?: string;
@@ -76,7 +61,6 @@ export function ResourceActionsToolbar({
 }: ResourceActionsToolbarProps) {
 	const [pendingDestructive, setPendingDestructive] = useState<ActionButtonItem>();
 	const menuItems = [...secondary, ...overflow];
-	// Android's toolbar only draws image icons.
 	const icon = useToolbarIcons([primary?.systemImage ?? '', 'ellipsis.circle']);
 
 	useItemDeleteConfirmation(pendingDestructive, setPendingDestructive, (item) => ({
@@ -138,11 +122,6 @@ export function ResourceActionsToolbar({
 	);
 }
 
-/**
- * `EnvironmentActionButton` inside a `Stack.Toolbar.Menu`: a submenu in All Environments lists.
- * `Stack.Toolbar.Menu` keeps only direct `MenuAction`/`Menu` children (by element type) and silently
- * drops wrapper components, so call this as a function — `{EnvironmentToolbarAction({ … })}`.
- */
 export function EnvironmentToolbarAction({
 	title,
 	systemImage,

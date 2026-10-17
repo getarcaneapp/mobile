@@ -1,4 +1,3 @@
-/** Port of `ProjectDraftReviewView` (ProjectDraftReviewView.swift). */
 import {
 	Button,
 	DisclosureGroup,

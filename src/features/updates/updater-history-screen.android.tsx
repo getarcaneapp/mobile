@@ -1,8 +1,3 @@
-/**
- * Android rendering of `UpdaterHistoryView` and `UpdaterHistoryDetailView`
- * (UpdaterHistoryView.swift): Material 3 list with search, pull-to-refresh,
- * pagination, and a pushed detail page.
- */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

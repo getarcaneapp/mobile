@@ -1,4 +1,3 @@
-/** Port of Models/Dashboard/Dashboard.swift. */
 import type { JSONValue } from '../../types/json';
 import { D, DecodingError } from '../base/decoding';
 import type { PaginationResponse } from '../base/pagination';
@@ -6,11 +5,6 @@ import { ContainerSummary, type ContainerStatusCounts } from '../container/Conta
 import type { ImageUsageCounts } from '../image/ImageSummary';
 import type { VersionInfo } from '../version/VersionInfo';
 
-/**
- * Kinds of dashboard action items. Unknown kinds from newer servers pass
- * through instead of failing the whole snapshot — the dashboard stream dies
- * wholesale on any undecodable line, so action items must never poison it.
- */
 export type ActionItemKind =
 	| 'stopped_containers'
 	| 'image_updates'
@@ -43,7 +37,6 @@ export const ActionItemKind = {
 	}
 } as const;
 
-/** Severity of a dashboard action item; unknown severities pass through. */
 export type ActionItemSeverity = 'warning' | 'critical' | (string & {});
 
 export const ActionItemSeverity = {
@@ -64,7 +57,6 @@ export const ActionItemSeverity = {
 	}
 } as const;
 
-/** A single attention item rendered on the dashboard. */
 export interface ActionItem {
 	kind: ActionItemKind;
 	count: number;
@@ -82,13 +74,11 @@ export const ActionItem = {
 	}
 } as const;
 
-/** Collection of dashboard action items. */
 export interface ActionItems {
 	items: ActionItem[];
 }
 
 export const ActionItems = {
-	/** Swift init default: `items: []`. */
 	make(this: void, items: ActionItem[] = []): ActionItems {
 		return { items };
 	},
@@ -98,17 +88,12 @@ export const ActionItems = {
 	}
 } as const;
 
-/**
- * Settings payload carried in dashboard snapshots. Currently empty
- * server-side; Swift models it as a field-less struct.
- */
 export type DashboardSnapshotSettings = Record<string, never>;
 
 export const DashboardSnapshotSettings = {
 	make(this: void): DashboardSnapshotSettings {
 		return {};
 	},
-	/** Swift decodes no fields: any payload becomes an empty value. */
 	decode(this: void, _raw: unknown): DashboardSnapshotSettings {
 		return {};
 	}
@@ -120,7 +105,6 @@ export const EnvironmentSnapshotState = {
 	ready: 'ready',
 	skipped: 'skipped',
 	error: 'error',
-	/** Synthesized Swift decoding: unknown raw values fail. */
 	decode(this: void, raw: unknown): EnvironmentSnapshotState {
 		const value = D.str(raw);
 		if (value === 'ready' || value === 'skipped' || value === 'error') return value;
@@ -128,10 +112,6 @@ export const EnvironmentSnapshotState = {
 	}
 } as const;
 
-/**
- * Dashboard environment-overview row, one per visible environment. The full
- * `environment` blob is preserved as JSON.
- */
 export interface DashboardEnvironmentOverview {
 	environment: JSONValue;
 	containers: ContainerStatusCounts;
@@ -147,7 +127,6 @@ export const DashboardEnvironmentOverview = {
 	decode(this: void, raw: unknown): DashboardEnvironmentOverview {
 		const o = D.object(raw, 'DashboardEnvironmentOverview');
 		return {
-			// JSON `null` is stripped by the transport, so a missing key is `null`.
 			environment: (o['environment'] ?? null) as JSONValue,
 			containers: D.nested(o, 'containers', D.cast<ContainerStatusCounts>),
 			imageUsageCounts: D.nested(o, 'imageUsageCounts', D.cast<ImageUsageCounts>),
@@ -174,7 +153,6 @@ export interface DashboardEnvironmentsSummary {
 }
 
 export const DashboardEnvironmentsSummary = {
-	/** Swift init defaults: zero counts. */
 	make(args: Partial<DashboardEnvironmentsSummary> = {}): DashboardEnvironmentsSummary {
 		return {
 			totalEnvironments: args.totalEnvironments ?? 0,
@@ -215,7 +193,6 @@ export const DashboardEnvironmentsOverview = {
 	}
 } as const;
 
-/** Container table payload on the dashboard. */
 export interface DashboardSnapshotContainers {
 	data: ContainerSummary[];
 	counts: ContainerStatusCounts;
@@ -223,10 +200,6 @@ export interface DashboardSnapshotContainers {
 }
 
 export const DashboardSnapshotContainers = {
-	/**
-	 * Swift `init(from:)`. Stream events trim the table rows to JSON null
-	 * (`"data": null`) — only the aggregate counts are meaningful there.
-	 */
 	decode(this: void, raw: unknown): DashboardSnapshotContainers {
 		const o = D.object(raw, 'DashboardSnapshotContainers');
 		return {
@@ -237,14 +210,12 @@ export const DashboardSnapshotContainers = {
 	}
 } as const;
 
-/** Image table payload on the dashboard. Images are kept as opaque JSON. */
 export interface DashboardSnapshotImages {
 	data: JSONValue[];
 	pagination: PaginationResponse;
 }
 
 export const DashboardSnapshotImages = {
-	/** Swift `init(from:)`. Stream events trim the table rows to JSON null. */
 	decode(this: void, raw: unknown): DashboardSnapshotImages {
 		const o = D.object(raw, 'DashboardSnapshotImages');
 		return {
@@ -254,14 +225,12 @@ export const DashboardSnapshotImages = {
 	}
 } as const;
 
-/** Top-level dashboard first-paint snapshot. */
 export interface DashboardSnapshot {
 	containers: DashboardSnapshotContainers;
 	images: DashboardSnapshotImages;
 	imageUsageCounts: ImageUsageCounts;
 	actionItems: ActionItems;
 	settings: DashboardSnapshotSettings;
-	/** Application version metadata for the environment, when available. */
 	versionInfo?: VersionInfo;
 }
 

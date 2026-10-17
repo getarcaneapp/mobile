@@ -1,11 +1,8 @@
-/** Port of Models/Swarm/SwarmServices.swift. */
 import type { JSONValue } from '../../types/json';
 import type { ISODateString } from '../base/date';
 import { D } from '../base/decoding';
 
-/** A published port mapping for a swarm service endpoint. */
 export interface SwarmServicePort {
-	/** JSON key `protocol`. */
 	protocolName: string;
 	targetPort: number;
 	publishedPort?: number;
@@ -32,7 +29,6 @@ export const SwarmServicePort = {
 	}
 } as const;
 
-/** A mount configured on a swarm service task. */
 export interface SwarmServiceMount {
 	type: string;
 	source?: string;
@@ -43,12 +39,6 @@ export interface SwarmServiceMount {
 	devicePath?: string;
 }
 
-/**
- * Lightweight summary of a swarm service used in list views.
- *
- * Named `SwarmServiceSummary` to avoid collision with the `SwarmService`
- * facade in `services/SwarmService.ts`.
- */
 export interface SwarmServiceSummary {
 	id: string;
 	name: string;
@@ -67,7 +57,6 @@ export interface SwarmServiceSummary {
 }
 
 export const SwarmServiceSummary = {
-	/** Swift memberwise init (list fields default to `[]`). */
 	make(
 		this: void,
 		args: Pick<
@@ -93,7 +82,6 @@ export const SwarmServiceSummary = {
 			mounts: args.mounts ?? []
 		};
 	},
-	/** Synthesized Swift decoding (every non-optional key is required). */
 	decode(this: void, raw: unknown): SwarmServiceSummary {
 		const o = D.object(raw, 'SwarmServiceSummary');
 		return {
@@ -118,14 +106,12 @@ export const SwarmServiceSummary = {
 	}
 } as const;
 
-/** A single IPAM configuration entry for a service-attached network. */
 export interface SwarmServiceNetworkIPAMConfig {
 	subnet?: string;
 	gateway?: string;
 	ipRange?: string;
 }
 
-/** Details about a config-only network referenced by `configFrom`. */
 export interface SwarmServiceNetworkConfigDetail {
 	name: string;
 	driver: string;
@@ -137,13 +123,11 @@ export interface SwarmServiceNetworkConfigDetail {
 	ipv6Configs?: SwarmServiceNetworkIPAMConfig[];
 }
 
-/** Enriched network info for a service's attached network. */
 export interface SwarmServiceNetworkDetail {
 	id: string;
 	name: string;
 	driver: string;
 	scope: string;
-	/** JSON key `internal`. */
 	internalNetwork: boolean;
 	attachable: boolean;
 	ingress: boolean;
@@ -182,10 +166,6 @@ export const SwarmServiceNetworkDetail = {
 	}
 } as const;
 
-/**
- * Full inspect payload for a swarm service. Docker SDK sub-blobs (spec,
- * endpoint, version, updateStatus) are preserved verbatim as JSON.
- */
 export interface SwarmServiceInspect {
 	id: string;
 	version: JSONValue;
@@ -232,13 +212,11 @@ export const SwarmServiceInspect = {
 	}
 } as const;
 
-/** Extra options used when creating a swarm service. */
 export interface SwarmServiceCreateOptions {
 	encodedRegistryAuth?: string;
 	queryRegistry?: boolean;
 }
 
-/** Extra options used when updating a swarm service. */
 export interface SwarmServiceUpdateOptions {
 	encodedRegistryAuth?: string;
 	registryAuthFrom?: string;
@@ -246,31 +224,26 @@ export interface SwarmServiceUpdateOptions {
 	queryRegistry?: boolean;
 }
 
-/** Body for creating a swarm service. `spec` is the raw Docker ServiceSpec JSON. */
 export interface SwarmServiceCreateRequest {
 	spec: JSONValue;
 	options?: SwarmServiceCreateOptions;
 }
 
-/** Body for updating a swarm service. */
 export interface SwarmServiceUpdateRequest {
 	version: number;
 	spec: JSONValue;
 	options?: SwarmServiceUpdateOptions;
 }
 
-/** Response for swarm service create. */
 export interface SwarmServiceCreateResponse {
 	id: string;
 	warnings?: string[];
 }
 
-/** Response for swarm service update / rollback / scale. */
 export interface SwarmServiceUpdateResponse {
 	warnings?: string[];
 }
 
-/** Body for scaling a replicated swarm service. */
 export interface SwarmServiceScaleRequest {
 	replicas: number;
 }

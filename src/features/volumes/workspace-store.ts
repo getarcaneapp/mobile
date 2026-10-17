@@ -1,9 +1,3 @@
-/**
- * `VolumeWorkspaceView`'s workspace state (VolumeWorkspaceView.swift:
- * `workspace`, `loading`, `errorMessage`, `unsupported`, `load()`,
- * `apply(_:files:)`), kept per volume so the workspace screen and its sheets
- * (file action, file editor) share one source of truth.
- */
 import { create } from 'zustand';
 
 import { hasPermission } from '@/core/auth/permissions';
@@ -39,7 +33,6 @@ export const useWorkspaceStore = create<Store>(() => ({ entries: {} }));
 export const workspaceKey = (environmentID: EnvironmentID, volumeName: string) =>
 	`${environmentID}|${volumeName}`;
 
-/** Swift `identity`: session generation, server, user, environment, and volume. */
 export function workspaceIdentity(environmentID: EnvironmentID, volumeName: string) {
 	const s = useClientManager.getState();
 	return `${s.clientGeneration}|${s.client?.configuration.baseURL ?? ''}|${s.currentUser?.id ?? ''}|${environmentID}|${volumeName}`;
@@ -68,7 +61,6 @@ export function useWorkspaceEntry(
 }
 
 export const WorkspaceStore = {
-	/** `.task(id: identity)`: starts over for a new identity (workspace = nil). */
 	reset(environmentID: EnvironmentID, volumeName: string) {
 		const key = workspaceKey(environmentID, volumeName);
 		const identity = workspaceIdentity(environmentID, volumeName);
@@ -107,7 +99,6 @@ export const WorkspaceStore = {
 		}
 	},
 
-	/** Swift `apply(_:files:)`. `files` are local file URIs. Resolves whether the change was applied. */
 	async apply(
 		environmentID: EnvironmentID,
 		volumeName: string,

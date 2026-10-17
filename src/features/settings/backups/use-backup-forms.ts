@@ -1,8 +1,3 @@
-/**
- * Data for the small Backups forms in SystemBackupsView.swift:
- * `SystemBackupCreateView` (create / discover), `SystemVolumeRunView` and
- * `BackupRecoveryKeyView`. Shared by both platforms.
- */
 import * as Clipboard from 'expo-clipboard';
 import { useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -21,7 +16,6 @@ import {
 	useGlobalPermissions
 } from './backup-scope';
 
-/** `dismiss()` for the presenting screen. */
 export function useDismiss() {
 	const navigation = useNavigation();
 	return useCallback(() => {
@@ -29,7 +23,6 @@ export function useDismiss() {
 	}, [navigation]);
 }
 
-/** `.task(id: clientGeneration)` loading `s3Destinations.options()` when allowed. */
 function useDestinationOptions(onError: (message: string) => void, enabled = true) {
 	const client = useClientManager((s) => s.client);
 	const clientGeneration = useClientManager((s) => s.clientGeneration);
@@ -55,7 +48,6 @@ function useDestinationOptions(onError: (message: string) => void, enabled = tru
 	return destinations;
 }
 
-/** `SystemBackupCreateView(discover:)`. */
 export function useSystemBackupCreate(discover: boolean) {
 	const client = useClientManager((s) => s.client);
 	const dismiss = useDismiss();
@@ -121,7 +113,6 @@ export function useSystemBackupCreate(discover: boolean) {
 
 export type SystemBackupCreateModel = ReturnType<typeof useSystemBackupCreate>;
 
-/** `SystemVolumeRunView`. */
 export function useSystemVolumeRun() {
 	const client = useClientManager((s) => s.client);
 	const clientGeneration = useClientManager((s) => s.clientGeneration);
@@ -156,7 +147,6 @@ export function useSystemVolumeRun() {
 					setDestinations(list);
 				}
 			} catch (error) {
-				// Swift reports every failure here, including cancellation.
 				if (alive.current) setErrorMessage(friendlyErrorMessage(error));
 			}
 		})();
@@ -231,7 +221,6 @@ export const volumeSelectionOptions = [
 	{ label: 'Except selected', value: 'blocklist' }
 ];
 
-/** `BackupRecoveryKeyView`. */
 export function useBackupRecoveryKey() {
 	const client = useClientManager((s) => s.client);
 	const alive = useAliveRef();
@@ -272,10 +261,6 @@ export function useBackupRecoveryKey() {
 		}
 	};
 
-	/**
-	 * Swift copies with `.localOnly` and a 60 s expiry. expo-clipboard has no
-	 * such options, so the key is cleared after 60 s if it is still on the pasteboard.
-	 */
 	const copy = () => {
 		const copied = key;
 		void Clipboard.setStringAsync(copied);

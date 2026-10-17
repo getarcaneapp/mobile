@@ -4,7 +4,6 @@ import { ScrollView, Text, View } from 'react-native';
 import { colors } from '@/theme/colors';
 import { Icon } from '@/ui/Icon';
 
-/** Placeholder for destinations that later phases will port. */
 export function NotYetPorted({ title }: { title: string }) {
 	return (
 		<>

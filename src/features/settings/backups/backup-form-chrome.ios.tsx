@@ -1,10 +1,3 @@
-/**
- * Hosts a SwiftUI `Form` for the Backups screens in either presentation:
- * - `push`: native stack title + `Stack.Toolbar` confirmation button
- *   (Swift `NavigationLink` destination with `.toolbar { confirmationAction }`).
- * - `sheet`: its own `NavigationStack` with Cancel / confirm toolbar items
- *   (Swift `.sheet { NavigationStack { … }.toolbar { cancellationAction } }`).
- */
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Button, Form, NavigationStack, Toolbar, ToolbarItem } from '@expo/ui/swift-ui';
@@ -50,7 +43,6 @@ export function BackupFormChrome({
 				<Stack.Screen options={{ title }} />
 				{confirm ? (
 					<AppToolbar placement="right" tintColor={accent}>
-						{/* Swift's pushed `.confirmationAction` renders as a plain accent-text glass button, not prominent. */}
 						<Stack.Toolbar.Button
 							variant="plain"
 							style={{ fontWeight: '600' }}

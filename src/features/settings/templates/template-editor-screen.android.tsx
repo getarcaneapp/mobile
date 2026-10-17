@@ -1,8 +1,3 @@
-/**
- * Android rendering of `TemplateEditorView` (TemplateEditorView.swift). The
- * file editors open in place (the sheet's own navigation stack on iOS); back
- * returns to the form, and leaving with unsaved changes asks first.
- */
 import { Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
@@ -51,7 +46,6 @@ export function TemplateEditorScreen() {
 	const model = useTemplateEditor();
 	const [openFile, setOpenFile] = useState<OpenFile>();
 
-	// Hardware back: close an open file first; otherwise behave like Cancel while dismissal is blocked.
 	const latest = useRef({ openFile, model });
 	latest.current = { openFile, model };
 	useEffect(() => {

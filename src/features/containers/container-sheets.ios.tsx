@@ -1,7 +1,3 @@
-/**
- * Ports of `RenameContainerSheet`, `ContainerCommitView`, and
- * `ContainerComposeView` (RenameContainerSheet.swift, ContainerImageActionsView.swift).
- */
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import {

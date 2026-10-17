@@ -1,8 +1,3 @@
-/**
- * Material 3 pieces shared by the Android Activity screens:
- * `ActivityProgressView` (ActivityProgressView.swift), `ActivityIcon`, empty
- * states, and a top-app-bar action row with (sub)menus.
- */
 import { MenuView, type MenuAction } from '@react-native-menu/menu';
 import { Stack } from 'expo-router';
 import { ActivityIndicator, Pressable, Text, View, type ColorValue } from 'react-native';
@@ -88,7 +83,6 @@ export function ActivityIcon({ activity }: { activity: Activity }) {
 	);
 }
 
-/** `ContentUnavailableView` (+ optional action). */
 export function EmptyState({
 	icon,
 	title,
@@ -126,7 +120,6 @@ export type ToolbarMenuEntry = {
 	checked?: boolean;
 	destructive?: boolean;
 	onPress?: () => void;
-	/** A nested popup (SwiftUI `Picker` inside a `Menu`). */
 	children?: ToolbarMenuEntry[];
 };
 
@@ -186,7 +179,6 @@ function Glyph({
 	);
 }
 
-/** Material top-app-bar actions (icon buttons and popup menus). */
 export function ActivityToolbar({ items }: { items: ActivityToolbarItem[] }) {
 	if (items.length === 0) return null;
 	return (

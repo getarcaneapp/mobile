@@ -1,8 +1,3 @@
-/**
- * Port of `ComposeSchema` (pkg/utils/compose/ComposeSchema.swift) and
- * `ComposeSchemaField` (Types/ComposeSchemaField.swift): field suggestions from
- * the bundled upstream Compose schema, never a serialization format.
- */
 import arcaneMetadata from '../../../../assets/ComposeSchema/arcane-metadata.json';
 import composeSpec from '../../../../assets/ComposeSchema/compose-spec.json';
 import {
@@ -46,7 +41,6 @@ export type ComposeSchemaField = {
 const sameKinds = (a: readonly ComposeNativeKind[], b: readonly ComposeNativeKind[]) =>
 	a.length === b.length && a.every((kind, i) => kind === b[i]);
 
-/** `ComposeSchemaField.preferredKind`: prefer native controls; text remains available for interpolation. */
 export function preferredKind(field: ComposeSchemaField): ComposeNativeKind {
 	if (sameKinds(field.kinds, editableNativeKinds)) return 'string';
 	if (field.enumValues.length > 0 && field.kinds.includes('string')) return 'string';
@@ -211,7 +205,6 @@ export const ComposeSchema = (() => {
 			valueCache.set(id, result ?? null);
 			return result;
 		},
-		/** The merged root (`snapshot()` in the Swift tests). */
 		rootSnapshot: () => composeSpec as unknown
 	};
 })();

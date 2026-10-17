@@ -1,8 +1,3 @@
-/**
- * Ports of `ProjectRow` and `ProjectTagChips` (ProjectsView.swift).
- *
- * SwiftUI-tree.
- */
 import { HStack, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -32,7 +27,6 @@ import {
 
 const visibleCount = 3;
 
-/** Compact tag list for project rows. */
 export function ProjectTagChips({ tags }: { tags: ProjectTag[] }) {
 	return (
 		<HStack

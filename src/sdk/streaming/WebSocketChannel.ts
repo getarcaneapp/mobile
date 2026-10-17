@@ -1,25 +1,11 @@
-/**
- * Port of Streaming/WebSocketChannel.swift on top of the React Native global
- * `WebSocket` (`new WebSocket(url, protocols, { headers })`).
- *
- * Differences (platform limits, see README):
- * - JS cannot send protocol-level pings. Instead an optional idle watchdog
- *   (`idleTimeoutMs`) fails the stream when nothing arrives for that long,
- *   which surfaces dead connections the same way Swift's ping failure does.
- * - Handshake HTTP status is not observable; a rejected upgrade surfaces as
- *   `ArcaneError.transport`.
- * - A normal close (1000/1001) finishes the stream; other closes throw.
- */
 import { ArcaneError, CancellationError } from '../errors/ArcaneError';
 import type { ArcaneAuthorizedRequest } from '../client/ArcaneTransport';
 import { AsyncQueue, BufferingPolicy } from './AsyncQueue';
 
-/** Swift `URLSessionWebSocketTask.Message`. */
 export type WebSocketMessage =
 	| { kind: 'string'; value: string }
 	| { kind: 'data'; value: Uint8Array };
 
-/** Minimal surface of the RN/DOM `WebSocket`. */
 export interface WebSocketLike {
 	binaryType: string;
 	readonly readyState: number;
@@ -37,7 +23,6 @@ export type WebSocketFactory = (
 	options: { headers: Record<string, string> }
 ) => WebSocketLike;
 
-/** Uses the React Native global `WebSocket`, which accepts a headers option. */
 export const defaultWebSocketFactory: WebSocketFactory = (url, protocols, options) => {
 	const Ctor = (
 		globalThis as unknown as {
@@ -52,7 +37,6 @@ export const defaultWebSocketFactory: WebSocketFactory = (url, protocols, option
 	return new Ctor(url, protocols, options);
 };
 
-/** Swift `arcaneWebSocketDefaultPingInterval` (25s); used as the idle-watchdog default when enabled. */
 export const arcaneWebSocketDefaultPingIntervalMs = 25_000;
 
 const OPEN = 1;
@@ -65,7 +49,6 @@ export interface WebSocketChannelInit<Outbound, Inbound> {
 	decodeInbound: (message: WebSocketMessage) => Inbound;
 	factory?: WebSocketFactory;
 	protocols?: string[];
-	/** Fail the stream if no frame arrives for this long. Off by default. */
 	idleTimeoutMs?: number;
 	signal?: AbortSignal;
 }
@@ -171,12 +154,6 @@ export class WebSocketChannel<Outbound, Inbound> {
 		}
 	}
 
-	/**
-	 * A single-consumer stream for this connection. Access it once per
-	 * channel; when iteration ends the socket is closed. Logs and terminal
-	 * output use the default unbounded policy so bytes are never dropped;
-	 * snapshot streams use `BufferingPolicy.bufferingNewest(1)`.
-	 */
 	messages(bufferingPolicy: BufferingPolicy = BufferingPolicy.unbounded): AsyncIterable<Inbound> {
 		if (this.queue) throw new Error('WebSocketChannel.messages may only be consumed once');
 		this.queue = new AsyncQueue<Inbound>(bufferingPolicy, () => this.closeImmediately());
@@ -199,7 +176,6 @@ export class WebSocketChannel<Outbound, Inbound> {
 		this.closeImmediately(code, reason);
 	}
 
-	/** @internal */
 	closeImmediately(code = 1000, reason?: string): void {
 		if (this.closed) return;
 		this.closed = true;
@@ -208,9 +184,7 @@ export class WebSocketChannel<Outbound, Inbound> {
 		if (this.socket.readyState !== CLOSING && this.socket.readyState !== CLOSED) {
 			try {
 				this.socket.close(code, reason);
-			} catch {
-				// Already closing.
-			}
+			} catch {}
 		}
 		this.queue?.finish();
 	}

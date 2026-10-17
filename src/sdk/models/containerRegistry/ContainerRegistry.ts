@@ -1,4 +1,3 @@
-/** Port of Models/ContainerRegistry/ContainerRegistry.swift. */
 import type { ISODateString } from '../base/date';
 import { D } from '../base/decoding';
 
@@ -18,7 +17,6 @@ export interface ContainerRegistry {
 }
 
 export const ContainerRegistry = {
-	/** Swift `ContainerRegistry.init(...)`; `repositoryNames` defaults to `[]`. */
 	make(
 		this: void,
 		init: Omit<ContainerRegistry, 'repositoryNames'> & { repositoryNames?: string[] }
@@ -26,7 +24,6 @@ export const ContainerRegistry = {
 		return { ...init, repositoryNames: init.repositoryNames ?? [] };
 	},
 
-	/** Swift `ContainerRegistry.init(from:)`: missing `repositoryNames` → `[]`. */
 	decode(this: void, raw: unknown): ContainerRegistry {
 		const o = D.object(raw, 'ContainerRegistry');
 		return {
@@ -96,15 +93,6 @@ export interface ContainerRegistryPullUsage {
 	error?: string;
 }
 
-/**
- * Registry payload synced from a manager to an agent.
- *
- * Swift keeps `repositoryNames: [String]` plus a private
- * `encodesRepositoryNames` flag (set when the key was decoded, passed to
- * `init`, or assigned). In TS that flag is the field's presence:
- * `repositoryNames` is `undefined` when it would not be encoded (Swift would
- * read `[]`), and any assigned array is encoded.
- */
 export interface ContainerRegistrySync {
 	id: string;
 	url: string;
@@ -123,7 +111,6 @@ export interface ContainerRegistrySync {
 }
 
 export const ContainerRegistrySync = {
-	/** Swift `ContainerRegistrySync.init(from:)`. */
 	decode(this: void, raw: unknown): ContainerRegistrySync {
 		const o = D.object(raw, 'ContainerRegistrySync');
 		return {
@@ -146,7 +133,6 @@ export const ContainerRegistrySync = {
 		};
 	},
 
-	/** Swift `encode(to:)`: `repositoryNames` only when set. */
 	encode(this: void, value: ContainerRegistrySync): Record<string, unknown> {
 		return {
 			id: value.id,

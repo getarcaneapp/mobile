@@ -1,8 +1,3 @@
-/**
- * State and actions of `NotificationProviderFormView`
- * (NotificationProviderFormView.swift): editing one provider's configuration,
- * saving it, and sending test notifications.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -207,7 +202,6 @@ export function useNotificationProviderForm() {
 
 export type NotificationProviderFormModel = ReturnType<typeof useNotificationProviderForm>;
 
-/** `secureField` placeholder: required for a new provider, otherwise the stored secret is kept. */
 export const secretPlaceholder = (model: NotificationProviderFormModel) =>
 	model.isNew ? 'Required' : 'Keep current value';
 

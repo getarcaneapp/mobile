@@ -1,8 +1,3 @@
-/**
- * Port of `SeverityBar` (Android): the same proportional 8dp bar and counts.
- *
- * Standalone (RN view).
- */
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 

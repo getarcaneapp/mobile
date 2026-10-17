@@ -1,9 +1,3 @@
-/**
- * Android rendering of `DynamicResourceListView` (DynamicResourceViews.swift):
- * Material 3 grouped list with the same states, search, pull-to-refresh,
- * pagination and actions. The SwiftUI context menu becomes the row's
- * long-press menu; the confirmation alert is a Material dialog.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -38,7 +32,6 @@ import {
 	type PendingAction
 } from './use-dynamic-resource-list';
 
-/** The `.alert` confirmation before a backend action runs. */
 export function confirmBackendAction(
 	model: Pick<DynamicResourceListModel, 'run'>,
 	pending: PendingAction
@@ -56,7 +49,6 @@ export function confirmBackendAction(
 	]);
 }
 
-/** Port of `DynamicResourceRow`. Standalone. */
 export function DynamicResourceRow({
 	item,
 	systemImage,
@@ -192,7 +184,6 @@ function toolbarItems(model: DynamicResourceListModel): AndroidToolbarItem[] {
 	return items;
 }
 
-/** Port of `DynamicResourceListView`. */
 export function DynamicResourceListView(config: DynamicResourceListConfig) {
 	const model = useDynamicResourceList(config);
 	const { snapshot, items } = model;

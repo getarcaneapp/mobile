@@ -1,7 +1,3 @@
-/**
- * `ArchivedProjectsView` state: the environment's archived projects, newest
- * archive first, with progressive pagination and Unarchive.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 

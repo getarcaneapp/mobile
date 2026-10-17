@@ -1,7 +1,3 @@
-/**
- * Material rendering of `NewAPIKeyView` / `NewWebhookTokenView`: the one-time
- * secret with a filled copy button; Done sits in the top app bar.
- */
 import * as Clipboard from 'expo-clipboard';
 import { Stack } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';

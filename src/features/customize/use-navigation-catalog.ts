@@ -1,4 +1,3 @@
-/** Shared state for `NavigationCatalogLandingView` (NavigationCatalogLandingView.swift). */
 import { children, type AppTab } from '@/core/app-tab';
 import { useSettingsNavigation } from '@/features/settings/shared/settings-routes';
 import { useClientManager } from '@/stores/client-manager';
@@ -9,7 +8,6 @@ export function useNavigationCatalog(parent: AppTab) {
 	useClientManager((s) => s.accessGeneration);
 	return {
 		children: children(parent).filter(canAccess),
-		/** Pushes the child destination onto the current tab's stack. */
 		open: (child: AppTab) => navigation.push(child)
 	};
 }

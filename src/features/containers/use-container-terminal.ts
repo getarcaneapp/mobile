@@ -1,8 +1,3 @@
-/**
- * The ContainerTerminalView.swift model: one bounded exec session, output
- * decoded by `TerminalOutputProcessor` and published at most every 50 ms,
- * DSR (cursor position) replies, and follow-the-bottom state.
- */
 import * as Clipboard from 'expo-clipboard';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -64,7 +59,6 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 						publish();
 						lastFlush = now;
 					} else if (pendingTimer === undefined) {
-						// Swift flushes on the next chunk; a trailing timer keeps the tail of a burst visible too.
 						pendingTimer = setTimeout(() => {
 							pendingTimer = undefined;
 							if (isCurrent()) publish();
@@ -116,7 +110,6 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 	useEffect(() => {
 		void connect();
 		return () => void teardown();
-		// Connect once on appear; shell changes are only allowed while disconnected.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 

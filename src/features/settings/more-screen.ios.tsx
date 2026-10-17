@@ -30,7 +30,6 @@ import { DisclosureChevron, SettingsRow } from '@/ui/settings-row';
 import { UserAccountLabel } from './user-account-label';
 import { useMoreDestinations } from './use-more-destinations';
 
-/** Port of `SettingsView` (the More tab). */
 export function MoreScreen() {
 	const router = useRouter();
 	const [search, setSearch] = useState('');
@@ -49,7 +48,6 @@ export function MoreScreen() {
 				}}
 			/>
 			<Host style={{ flex: 1 }}>
-				{/* Swift: the List (account section included) stays; `ContentUnavailableView.search` overlays it. */}
 				<ZStack>
 					<List modifiers={[listStyle('insetGrouped')]}>
 						<Section>

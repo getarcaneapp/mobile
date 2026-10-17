@@ -1,4 +1,3 @@
-/** Android rendering of `BackupSettingsView` (BackupSettingsView.swift). */
 import { M3Section } from '../shared/android-material';
 import { AndroidFormScreen, NavItem } from './backup-android';
 import { useBackupSettings } from './use-backup-settings';

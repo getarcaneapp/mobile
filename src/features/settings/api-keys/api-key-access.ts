@@ -1,7 +1,3 @@
-/**
- * The API-key permission checks APIKeysView / APIKeyDetailView / CreateAPIKeyView
- * share: v1 servers gate everything on admin, v2 on global `apikeys:*` grants.
- */
 import { hasPermission } from '@/core/auth/permissions';
 import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import { Permission } from '@/sdk/models/role/Permission';

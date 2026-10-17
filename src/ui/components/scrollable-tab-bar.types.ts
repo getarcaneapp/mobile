@@ -1,9 +1,7 @@
-/** Port of `ScrollableTabOption`. */
 export type ScrollableTabOption<Selection extends string> = {
 	value: Selection;
 	title: string;
 	systemImage: string;
-	/** Hex; defaults to the app accent. */
 	tint?: string;
 };
 

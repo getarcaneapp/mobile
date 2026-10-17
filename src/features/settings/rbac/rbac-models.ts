@@ -1,9 +1,3 @@
-/**
- * Port of RBACModels.swift (Role display helpers, assignment identity, scope
- * labels, validation formatting) plus the `Permissions.canManageRoles` /
- * `canManageOIDCMappings` checks (PermissionsHelper.swift) and the shared
- * "collect every role / environment" loaders the RBAC screens use.
- */
 import { PaginationLoader } from '@/core/networking/pagination-loader';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
@@ -16,12 +10,10 @@ import { User } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
 import { systemColors } from '@/theme/colors';
 
-/** `Role.displayName`: falls back to the role ID. */
 export function roleDisplayName(role: Role): string {
 	return role.name === '' ? role.id : role.name;
 }
 
-/** `Role.systemImage`: built-ins get distinctive icons; custom roles a generic badge. */
 export function roleSystemImage(role: Role): string {
 	switch (role.id) {
 		case Role.BuiltIn.admin:
@@ -40,7 +32,6 @@ export function roleSystemImage(role: Role): string {
 	}
 }
 
-/** `Role.iconColor`. */
 export function roleIconColor(role: Role): string {
 	switch (role.id) {
 		case Role.BuiltIn.admin:
@@ -59,7 +50,6 @@ export function roleIconColor(role: Role): string {
 	}
 }
 
-/** `RoleAssignmentSummary.id`: roleId + scope is unique per user. */
 export function assignmentKey(assignment: { roleId: string; environmentId?: string }): string {
 	return `${assignment.roleId}#${assignment.environmentId ?? 'global'}`;
 }
@@ -68,7 +58,6 @@ export function isManualAssignment(assignment: RoleAssignment): boolean {
 	return RoleAssignment.sourceKind(assignment) === RoleAssignmentSource.manual;
 }
 
-/** `displayScopeLabel(for:environments:)`. */
 export function displayScopeLabel(
 	environmentId: string | undefined,
 	environments: Environment[]
@@ -79,12 +68,10 @@ export function displayScopeLabel(
 	return `Environment ${environmentId}`;
 }
 
-/** `Text(env.name ?? "Environment \(env.id)")` in the environment pickers. */
 export function environmentPickerName(environment: Environment): string {
 	return environment.name ?? `Environment ${environment.id}`;
 }
 
-/** `formatValidationFields(_:)`: "field: message, message" lines sorted by field. */
 export function formatValidationFields(fields: Record<string, string[]>): string {
 	return Object.entries(fields)
 		.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
@@ -92,23 +79,19 @@ export function formatValidationFields(fields: Record<string, string[]>): string
 		.join('\n');
 }
 
-/** `catch let ArcaneError.validation(fields)`. */
 export function validationFields(error: unknown): Record<string, string[]> | undefined {
 	return error instanceof ArcaneValidationError ? error.fields : undefined;
 }
 
-/** `catch let ArcaneError.conflict(message)`; `message` is undefined when the server sent none. */
 export function conflictMessage(error: unknown): { message: string | undefined } | undefined {
 	return error instanceof ArcaneConflictError ? { message: error.conflictMessage } : undefined;
 }
 
-/** `manager.serverCapabilities?.supportsRoleManagement == true`. */
 export function useSupportsRoleManagement(): boolean {
 	const capabilities = useClientManager((s) => s.serverCapabilities);
 	return capabilities !== undefined && ServerCapabilities.supportsRoleManagement(capabilities);
 }
 
-/** `manager.permissions.canManageRoles`. */
 export function useCanManageRoles(): boolean {
 	const user = useClientManager((s) => s.currentUser);
 	const supportsRBAC = useSupportsRoleManagement();
@@ -117,7 +100,6 @@ export function useCanManageRoles(): boolean {
 	return User.isGlobalAdmin(user) || User.hasPermission(user, Permission.Roles.list);
 }
 
-/** `manager.permissions.canManageOIDCMappings`: reserved for global admins. */
 export function useCanManageOIDCMappings(): boolean {
 	const user = useClientManager((s) => s.currentUser);
 	const supportsRBAC = useSupportsRoleManagement();
@@ -126,7 +108,6 @@ export function useCanManageOIDCMappings(): boolean {
 	return User.isGlobalAdmin(user);
 }
 
-/** `PaginationLoader.collect { client.roles.listPaginated(start:limit:) }`. */
 export function collectAllRoles(client: ArcaneClient): Promise<Role[]> {
 	return PaginationLoader.collect(async (start, limit) => {
 		const response = await client.roles.listPaginated({ start, limit });
@@ -134,7 +115,6 @@ export function collectAllRoles(client: ArcaneClient): Promise<Role[]> {
 	});
 }
 
-/** Every environment sorted by name (`sortBy: "name", sortOrder: .ascending`). */
 export function collectAllEnvironments(client: ArcaneClient): Promise<Environment[]> {
 	return PaginationLoader.collect(async (start, limit) => {
 		const response = await client.environments.list({
@@ -144,7 +124,6 @@ export function collectAllEnvironments(client: ArcaneClient): Promise<Environmen
 	});
 }
 
-/** The `Scope` picker in the assignment / mapping sheets. */
 export type AssignmentScope = 'global' | 'environment';
 
 export const assignmentScopeOptions: { value: AssignmentScope; label: string }[] = [

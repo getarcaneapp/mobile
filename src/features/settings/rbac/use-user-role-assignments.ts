@@ -1,8 +1,3 @@
-/**
- * The model behind UserRoleAssignmentsView.swift: a user's role assignments
- * grouped Global first then per environment, swipe-to-remove for manual
- * assignments, and the Add Assignment sheet. v2 servers only.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -68,7 +63,6 @@ export function useUserRoleAssignments() {
 		}
 	}, [userId]);
 
-	// `.task { await load() }`
 	useEffect(() => {
 		void load();
 	}, [load]);

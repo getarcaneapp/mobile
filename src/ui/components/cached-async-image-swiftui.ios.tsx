@@ -1,10 +1,3 @@
-/**
- * `CachedAsyncImage` for SwiftUI trees: the SwiftUI `fallback` shows until
- * the expo-image (hosted in an `RNHostView`) has loaded, then the image
- * replaces it at the same `size` frame.
- *
- * SwiftUI-tree.
- */
 import { RNHostView, ZStack } from '@expo/ui/swift-ui';
 import { background, frame, shapes } from '@expo/ui/swift-ui/modifiers';
 import { Image } from 'expo-image';
@@ -45,8 +38,6 @@ export function CachedAsyncImageSwiftUI({
 				<ZStack modifiers={[frame({ width: size, height: size })]}>{fallback}</ZStack>
 			) : null}
 			{source ? (
-				// A fixed SwiftUI frame keeps the RN host centered in the tile instead of
-				// filling it with the image pinned to the top-left.
 				<ZStack modifiers={[frame({ width: inner, height: inner })]}>
 					<RNHostView matchContents>
 						<View style={{ width: inner, height: inner }}>

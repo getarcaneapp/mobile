@@ -1,10 +1,3 @@
-/**
- * Port of `LogConsole`, `LogLineView` and `LogViewerEmptyState`
- * (LogsView.swift). A virtualized RN list on both platforms: up to 5,000
- * streaming lines would be too many native SwiftUI rows for @expo/ui's
- * non-lazy List. Follows the bottom until the user scrolls away; long-press a
- * line to copy it.
- */
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -257,8 +250,6 @@ export const LogConsole = forwardRef<LogConsoleHandle, { model: LogViewerModel }
 					windowSize={11}
 					maxToRenderPerBatch={60}
 					removeClippedSubviews
-					// SwiftUI lists scroll clear of the tab bar / home indicator (the inset includes the tab bar in tab
-					// stacks). A footer, not padding: `scrollToEnd` counts the footer but ignores container padding.
 					ListFooterComponent={
 						Platform.OS === 'ios' ? <View style={{ height: safeArea.bottom }} /> : undefined
 					}

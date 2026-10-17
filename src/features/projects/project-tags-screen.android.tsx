@@ -1,4 +1,3 @@
-/** Android rendering of `ProjectTagsSheet` (ProjectTagsSheet.swift). */
 import { Stack } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 

@@ -1,8 +1,6 @@
-/** Port of Models/Swarm/SwarmNode.swift. */
 import { D } from '../base/decoding';
 import type { ISODateString } from '../base/date';
 
-/** State of the Arcane node-agent reporting back from a swarm node. */
 export type SwarmNodeAgentState =
 	| 'none'
 	| 'pending'
@@ -29,7 +27,6 @@ export const SwarmNodeAgentState = {
 	rawValue(this: void, value: SwarmNodeAgentState): string {
 		return value;
 	},
-	/** Swift `init(from:)`: any string passes through (unknown values are kept). */
 	decode(this: void, raw: unknown): SwarmNodeAgentState {
 		return D.str(raw);
 	},
@@ -54,7 +51,6 @@ export const SwarmNodeAgentBindingKind = {
 	rawValue(this: void, value: SwarmNodeAgentBindingKind): string {
 		return value;
 	},
-	/** Swift `init(from:)`: any string passes through (unknown values are kept). */
 	decode(this: void, raw: unknown): SwarmNodeAgentBindingKind {
 		return D.str(raw);
 	},
@@ -64,14 +60,12 @@ export const SwarmNodeAgentBindingKind = {
 } as const;
 
 export interface SwarmNodeAgentCandidate {
-	/** JSON key `environmentId`. */
 	environmentID: string;
 	environmentName: string;
 	environmentType: string;
 }
 
 export const SwarmNodeAgentCandidate = {
-	/** Swift `Identifiable.id`. */
 	id(this: void, value: SwarmNodeAgentCandidate): string {
 		return value.environmentID;
 	},
@@ -92,7 +86,6 @@ export const SwarmNodeAgentCandidate = {
 	}
 } as const;
 
-/** Coverage info for a swarm node from Arcane's node-agent perspective. */
 export interface SwarmNodeAgentStatus {
 	state: SwarmNodeAgentState;
 	bindingKind?: SwarmNodeAgentBindingKind;
@@ -108,7 +101,6 @@ export interface SwarmNodeAgentStatus {
 }
 
 export const SwarmNodeAgentStatus = {
-	/** Swift memberwise init (`candidates` defaults to `[]`). */
 	make(
 		this: void,
 		args: Pick<SwarmNodeAgentStatus, 'state'> & Partial<SwarmNodeAgentStatus>
@@ -127,7 +119,6 @@ export const SwarmNodeAgentStatus = {
 			candidates: args.candidates ?? []
 		};
 	},
-	/** Swift `init(from:)`: missing `state` → `none`, missing `candidates` → `[]`. */
 	decode(this: void, raw: unknown): SwarmNodeAgentStatus {
 		const o = D.object(raw, 'SwarmNodeAgentStatus');
 		return {
@@ -149,7 +140,6 @@ export const SwarmNodeAgentStatus = {
 	}
 } as const;
 
-/** A swarm node summary as returned by the list/get endpoints. */
 export interface SwarmNode {
 	id: string;
 	hostname: string;
@@ -170,7 +160,6 @@ export interface SwarmNode {
 }
 
 export const SwarmNode = {
-	/** Swift memberwise init (`agent` defaults to `.init(state: .none)`). */
 	make(
 		this: void,
 		args: Pick<
@@ -198,7 +187,6 @@ export const SwarmNode = {
 			agent: args.agent ?? SwarmNodeAgentStatus.make({ state: 'none' })
 		};
 	},
-	/** Swift `init(from:)`: missing `agent` → `SwarmNodeAgentStatus(state: .none)`. */
 	decode(this: void, raw: unknown): SwarmNode {
 		const o = D.object(raw, 'SwarmNode');
 		return {
@@ -227,7 +215,6 @@ export const SwarmNode = {
 	}
 } as const;
 
-/** Request payload for updating a swarm node's spec. */
 export interface SwarmNodeUpdateRequest {
 	version?: number;
 	name?: string;
@@ -236,7 +223,6 @@ export interface SwarmNodeUpdateRequest {
 	availability?: string;
 }
 
-/** Request for the swarm node agent deployment-snippet endpoint. */
 export interface SwarmNodeAgentDeploymentRequest {
 	rotate: boolean;
 }
@@ -247,10 +233,6 @@ export const SwarmNodeAgentDeploymentRequest = {
 	}
 } as const;
 
-/**
- * File payload returned alongside deployment snippets (re-stated here so the
- * swarm module is self-contained).
- */
 export interface SwarmDeploymentSnippetFile {
 	name: string;
 	content?: string;
@@ -268,7 +250,6 @@ export interface SwarmDeploymentSnippetMTLS {
 }
 
 export const SwarmDeploymentSnippetMTLS = {
-	/** Swift memberwise init (`files` defaults to `[]`). */
 	make(
 		args: Pick<SwarmDeploymentSnippetMTLS, 'dockerRun' | 'dockerCompose' | 'hostDirHint'> &
 			Partial<SwarmDeploymentSnippetMTLS>
@@ -282,7 +263,6 @@ export const SwarmDeploymentSnippetMTLS = {
 	}
 } as const;
 
-/** Bundle of docker-run / docker-compose deployment snippets for a swarm node. */
 export interface SwarmNodeAgentDeployment {
 	dockerRun: string;
 	dockerCompose: string;
@@ -307,7 +287,6 @@ export const SwarmNodeAgentDeployment = {
 	}
 } as const;
 
-/** Identifies the local swarm node (used by the cross-environment node identity endpoint). */
 export interface SwarmNodeIdentity {
 	swarmNodeId: string;
 	hostname: string;

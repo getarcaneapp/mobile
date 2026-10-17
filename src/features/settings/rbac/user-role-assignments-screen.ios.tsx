@@ -1,4 +1,3 @@
-/** Port of `UserRoleAssignmentsView` + `AssignmentRow` (UserRoleAssignmentsView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

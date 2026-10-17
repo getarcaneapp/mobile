@@ -1,4 +1,3 @@
-/** Data + actions for `TemplateBrowserView` (TemplateBrowserView.swift), shared by both platforms. */
 import { useCallback, useEffect, useState } from 'react';
 import { useStore } from 'zustand';
 
@@ -36,7 +35,6 @@ export const templateSourceOptions: ScrollableTabOption<TemplateSourceSelection>
 		tint: templateSourceTint(source)
 	}));
 
-/** `groupedTemplates`: by registry name (else Remote / Local), groups sorted by name. */
 export function groupTemplates(templates: Template[]): TemplateGroup[] {
 	const groups = new Map<string, Template[]>();
 	for (const template of templates) {
@@ -59,7 +57,6 @@ export function useTemplateBrowser({ embedded = false }: { embedded?: boolean } 
 	const queryKey = templateBrowserQueryKey(state);
 	const canListTemplates = permissions.canList;
 
-	// `.task(id: queryTaskKey)`: debounce 350 ms, then reload from scratch.
 	useEffect(() => {
 		if (!canListTemplates) return;
 		store.getState().configure(client);

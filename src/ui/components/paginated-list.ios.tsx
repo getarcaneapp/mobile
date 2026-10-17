@@ -1,9 +1,3 @@
-/**
- * Ports of `PaginatedListFooter`, `ResourceListContainer`, `ListUX` and
- * `SafeExternalLink` (PaginatedListScaffold.swift).
- *
- * SwiftUI-tree.
- */
 import { Button, ContentUnavailableView, Group, Link, Text } from '@expo/ui/swift-ui';
 import { frame, onAppear } from '@expo/ui/swift-ui/modifiers';
 import type { ReactElement } from 'react';
@@ -17,7 +11,6 @@ import {
 
 export { ListUX } from './paginated-list.types';
 
-/** Native pagination progress and explicit retry, as the last row of a resource list. */
 export function PaginatedListFooter({
 	hasMore,
 	loadMoreError,
@@ -39,7 +32,6 @@ export function PaginatedListFooter({
 	);
 }
 
-/** Loading / error / empty / content branching for a list screen. The caller owns the list style. */
 export function ResourceListContainer({
 	isLoading,
 	isEmpty,
@@ -65,7 +57,6 @@ export function ResourceListContainer({
 	return <>{children}</>;
 }
 
-/** Renders a `Link` only when the URL parses; otherwise no row. */
 export function SafeExternalLink({
 	urlString,
 	children

@@ -1,7 +1,3 @@
-/**
- * Ports of `SystemBackupCreateView`, `SystemVolumeRunView` and
- * `BackupRecoveryKeyView` (SystemBackupsView.swift).
- */
 import { Button, Label, Section, ShareLink, Text, Toggle } from '@expo/ui/swift-ui';
 import { disabled } from '@expo/ui/swift-ui/modifiers';
 
@@ -18,7 +14,6 @@ import {
 	volumeSelectionOptions
 } from './use-backup-forms';
 
-/** `BackupDestinationPicker`. SwiftUI-tree. */
 export function BackupDestinationPicker({
 	selection,
 	onSelectionChange,
@@ -107,17 +102,14 @@ function SystemBackupCreateForm({
 	);
 }
 
-/** `SystemBackupCreateView()` in a sheet with Cancel. */
 export function SystemBackupCreateScreen() {
 	return <SystemBackupCreateForm discover={false} presentation="sheet" />;
 }
 
-/** `SystemBackupCreateView(discover: true)` pushed from Backup Settings. */
 export function SystemBackupDiscoverScreen() {
 	return <SystemBackupCreateForm discover presentation="push" />;
 }
 
-/** `SystemVolumeRunView` in a sheet with Cancel. */
 export function SystemVolumeRunScreen() {
 	const model = useSystemVolumeRun();
 	return (
@@ -173,7 +165,6 @@ export function SystemVolumeRunScreen() {
 	);
 }
 
-/** `BackupRecoveryKeyView`. */
 export function BackupRecoveryKeyScreen() {
 	const model = useBackupRecoveryKey();
 	return (

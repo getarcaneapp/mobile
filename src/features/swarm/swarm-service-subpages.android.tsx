@@ -1,4 +1,3 @@
-/** Android renderings of the swarm service Environment / Labels pages. */
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';

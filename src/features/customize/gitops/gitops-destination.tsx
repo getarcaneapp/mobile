@@ -1,4 +1,3 @@
-/** Port of `GitOpsSyncsView` (GitOpsSyncsView.swift): `appTabDestination(.gitOps)`. */
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { useClientManager } from '@/stores/client-manager';
@@ -58,11 +57,6 @@ export function GitOpsSyncsView({
 	);
 }
 
-/**
- * `appTabDestination(.gitOps)`: the active environment's syncs, or every
- * enabled environment's with the All Environments preview. Re-keyed on the
- * environment so switching starts a fresh list.
- */
 export function GitOpsDestination() {
 	const environmentID = useClientManager((s) => s.activeEnvironmentID);
 	const allEnvironments = useClientManager((s) => s.allEnvironmentsPreview);

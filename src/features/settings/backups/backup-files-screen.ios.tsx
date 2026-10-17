@@ -1,4 +1,3 @@
-/** Port of `BackupFilesView` (BackupFilesView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

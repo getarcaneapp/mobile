@@ -1,7 +1,3 @@
-/**
- * VolumesView's filter/sort `@State`, keyed per list instance so the Filter
- * sheet (a separate route here) edits the list that opened it.
- */
 import { create } from 'zustand';
 
 import type { ListSortOrder } from '@/core/list-sort-order';
@@ -13,7 +9,6 @@ export type VolumesFilterState = {
 	environmentFilter?: string;
 	scopeFilter: VolumeScopeFilter;
 	sortOrder: ListSortOrder;
-	/** The list's environments, for the Environment filter section. */
 	environments: ListEnvironment[];
 };
 

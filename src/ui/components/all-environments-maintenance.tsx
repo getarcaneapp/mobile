@@ -1,21 +1,9 @@
-/**
- * Port of `AllEnvironmentsMaintenanceButtons` +
- * `.allEnvironmentsMaintenanceConfirmation(action:environments:)`
- * (AllEnvironmentsMaintenanceConfirmation.swift): Update All / Check All for
- * an All Environments list's toolbar menu, confirmed with an accent-tinted
- * card that keeps the screen open. The caller performs the operation
- * (`AllEnvironmentsOperationStore.performMaintenance` in Swift).
- *
- * Standalone (toolbar items, both platforms). SwiftUI-tree menu buttons:
- * `all-environments-maintenance-swiftui`.
- */
 import { Stack } from 'expo-router';
 
 import { useAccentColor } from '@/theme/accent';
 
 import { useItemDeleteConfirmation } from './delete-confirmation';
 
-/** Port of `AllEnvironmentsMaintenanceAction`. */
 export type AllEnvironmentsMaintenanceAction = 'update' | 'checkImages';
 
 export const maintenanceActionInfo: Record<
@@ -49,7 +37,6 @@ export const maintenanceActionInfo: Record<
 	}
 };
 
-/** Confirms the pending action, then calls `perform`. Pair with the toolbar actions below. */
 export function useAllEnvironmentsMaintenanceConfirmation(
 	action: AllEnvironmentsMaintenanceAction | undefined,
 	setAction: (action: AllEnvironmentsMaintenanceAction | undefined) => void,
@@ -70,11 +57,6 @@ export function useAllEnvironmentsMaintenanceConfirmation(
 	});
 }
 
-/**
- * Update All and Check All as `Stack.Toolbar.MenuAction`s. Disabled while an operation runs.
- * `Stack.Toolbar.Menu` keeps only direct `MenuAction`/`Menu` children (by element type), so call this
- * as a function inside the menu — `{AllEnvironmentsMaintenanceToolbarActions({ … })}` — not as `<… />`.
- */
 export function AllEnvironmentsMaintenanceToolbarActions({
 	onSelect,
 	isRunning

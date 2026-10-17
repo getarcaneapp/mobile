@@ -1,7 +1,3 @@
-/**
- * Carries `ConnectionProfilesView`'s `onSelect` closure across the sheet
- * route: the presenter registers a handler, the sheet calls it on selection.
- */
 import { create } from 'zustand';
 
 import type { ConnectionProfile } from '@/core/connection-profiles/connection-profile-sync';

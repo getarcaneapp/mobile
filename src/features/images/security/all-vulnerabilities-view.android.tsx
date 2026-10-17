@@ -1,8 +1,3 @@
-/**
- * Android rendering of `AllVulnerabilitiesView` (AllVulnerabilitiesView.swift):
- * the same Overview / Findings sections, filter sheet, CSV export and patch
- * targets, as a Material 3 grouped list with top-app-bar actions.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -196,7 +191,6 @@ function FindingsContent({ model }: { model: AllVulnerabilitiesModel }) {
 	);
 }
 
-/** `EnvironmentActionButton` in the top app bar: a menu of environments in All Environments lists. */
 function environmentItem(
 	id: string,
 	title: string,

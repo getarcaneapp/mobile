@@ -1,4 +1,3 @@
-/** Android rendering of `DynamicResourceDetailView` + `DynamicValueRow` (DynamicResourceViews.swift). */
 import { Stack } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -56,7 +55,6 @@ function Disclosure({
 	);
 }
 
-/** Port of `DynamicValueRow`. Standalone. */
 export function DynamicValueRow({
 	name,
 	value,

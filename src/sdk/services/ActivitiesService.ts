@@ -1,9 +1,3 @@
-/**
- * Port of Services/ActivitiesService.swift.
- *
- * ActivitiesService manages v2 background activity lists, details, streams,
- * cancellation, and history cleanup. Gate on `ServerCapabilities.supportsActivities`.
- */
 import type { EnvironmentID } from '../client/environment';
 import type { QueryItem } from '../client/url';
 import type { RESTService } from '../http/RESTService';
@@ -19,7 +13,6 @@ import type { SortOrder } from '../models/base/pagination';
 import type { PaginatedResponse } from '../pagination/PaginatedResponse';
 import { NDJSONStream } from '../streaming/NDJSONStream';
 
-/** Swift private `ActivityListFilters.queryItems`. */
 function activityListFilterQueryItems(filters: {
 	search?: string;
 	sort?: string;
@@ -41,12 +34,10 @@ function activityListFilterQueryItems(filters: {
 export class ActivitiesService {
 	private readonly rest: RESTService;
 
-	/** @internal */
 	constructor(rest: RESTService) {
 		this.rest = rest;
 	}
 
-	/** List current and recent background activities for an environment. */
 	listPaginated(
 		args: {
 			envID?: EnvironmentID;
@@ -68,7 +59,6 @@ export class ActivitiesService {
 		});
 	}
 
-	/** Get a background activity with its recent output messages. */
 	detail(args: {
 		envID?: EnvironmentID;
 		activityID: string;
@@ -80,10 +70,6 @@ export class ActivitiesService {
 		});
 	}
 
-	/**
-	 * Stream activity snapshots and updates as NDJSON. Uses the multiplexed
-	 * activities channel, falling back to the older v2 endpoint only on HTTP 404.
-	 */
 	stream(args: { limit?: number } = {}): NDJSONStream<ActivityStreamEvent> {
 		const limit = args.limit ?? 50;
 		return new NDJSONStream<ActivityStreamEvent>(this.rest.transport, {
@@ -103,7 +89,6 @@ export class ActivitiesService {
 		});
 	}
 
-	/** Request cancellation for a running or queued activity. */
 	cancel(args: {
 		envID?: EnvironmentID;
 		activityID: string;
@@ -120,7 +105,6 @@ export class ActivitiesService {
 		);
 	}
 
-	/** Clear completed activity history for an environment. */
 	clearHistory(args: { envID?: EnvironmentID } = {}): Promise<ClearActivityHistoryResult> {
 		return this.rest.delete(this.rest.environmentPath(args.envID, 'activities/history'));
 	}

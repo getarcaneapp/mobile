@@ -1,4 +1,3 @@
-/** Android rendering of `ProjectFileBrowserRow` (ProjectFilesWorkspaceView.swift). */
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { colors, systemColors } from '@/theme/colors';

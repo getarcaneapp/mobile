@@ -1,4 +1,3 @@
-/** Port of `APIKeyDetailView` (APIKeyDetailView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

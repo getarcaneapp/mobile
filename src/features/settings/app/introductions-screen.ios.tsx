@@ -1,8 +1,3 @@
-/**
- * Ports of `AllEnvironmentsIntroductionView` and
- * `RefreshedDashboardIntroductionView` (Views/WhatsNew/), presented as sheets
- * from Preview Features.
- */
 import { Divider, HStack, Label, RNHostView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import { font, foregroundStyle, frame, monospacedDigit } from '@expo/ui/swift-ui/modifiers';

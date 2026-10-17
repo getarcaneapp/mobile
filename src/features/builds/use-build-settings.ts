@@ -1,8 +1,3 @@
-/**
- * State and actions for `BuildSettingsView` (BuildSettingsView.swift): the
- * flat build settings (workspace dir, provider, timeout, Depot credentials)
- * for one environment, with dirty tracking for the floating save bar.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -42,7 +37,6 @@ function sameState(a: BuildSettingsFormState, b: BuildSettingsFormState) {
 	);
 }
 
-/** Swift `trimmingCharacters(in: .whitespaces)` (spaces and tabs, not newlines). */
 const trimWhitespace = (value: string) => value.replace(/^[ \t]+|[ \t]+$/g, '');
 
 export function useBuildSettings(environmentID: EnvironmentID = EnvironmentID.localDocker) {
@@ -52,7 +46,6 @@ export function useBuildSettings(environmentID: EnvironmentID = EnvironmentID.lo
 	const [isSaving, setIsSaving] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | undefined>();
 	const [originalState, setOriginalState] = useState<BuildSettingsFormState | undefined>();
-	/** Stands in for Swift's `Task.isCancelled`: a newer load or an unmount cancels older work. */
 	const generation = useRef(0);
 
 	useEffect(
@@ -118,8 +111,6 @@ export function useBuildSettings(environmentID: EnvironmentID = EnvironmentID.lo
 		setIsSaving(true);
 		setErrorMessage(undefined);
 		try {
-			// Settings are flat string key/values server-side; send a raw dict instead of
-			// the SDK's UpdateSettings struct.
 			const body: Record<string, string> = {
 				buildProvider: snapshot.buildProvider,
 				buildTimeout: snapshot.buildTimeout

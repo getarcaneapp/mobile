@@ -1,9 +1,3 @@
-/**
- * Android (Material 3) rendering of `DashboardPinnedSection`: pinned
- * containers and projects with a start/stop quick action per row.
- *
- * Standalone (RN view).
- */
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';

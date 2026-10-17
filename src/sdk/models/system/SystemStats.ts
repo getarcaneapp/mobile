@@ -1,6 +1,3 @@
-/** Port of Models/System/SystemStats.swift. */
-
-/** Resource statistics for a single GPU. */
 export interface GPUStats {
 	name: string;
 	index: number;
@@ -8,10 +5,6 @@ export interface GPUStats {
 	memoryTotal: number;
 }
 
-/**
- * System resource statistics for WebSocket streaming over
- * `/environments/{id}/ws/system/stats`.
- */
 export interface SystemStats {
 	cpuUsage: number;
 	memoryUsage: number;

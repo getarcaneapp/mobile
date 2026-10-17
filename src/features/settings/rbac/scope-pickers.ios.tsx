@@ -1,9 +1,3 @@
-/**
- * The Role / Scope / Environment pickers shared by `AddRoleAssignmentSheet`
- * and `OIDCMappingFormSheet`, with "Choose…" placeholders tagged "".
- *
- * SwiftUI-tree (place inside a `Form`).
- */
 import { Picker, Section, Text } from '@expo/ui/swift-ui';
 import { tag } from '@expo/ui/swift-ui/modifiers';
 

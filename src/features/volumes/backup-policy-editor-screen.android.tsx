@@ -1,4 +1,3 @@
-/** Android rendering of the volume flavour of `BackupPolicyEditor` (BackupPolicyEditor.swift). */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 

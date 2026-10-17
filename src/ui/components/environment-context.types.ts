@@ -1,4 +1,3 @@
-/** Minimal environment shape for the switcher (subset of the SDK `Environment`). */
 export type PickerEnvironment = {
 	id: string;
 	displayName: string;
@@ -14,7 +13,6 @@ export type EnvironmentContextPickerProps = {
 	onCancel: () => void;
 };
 
-/** Enabled environments plus the active one, sorted like Finder (`localizedStandardCompare`). */
 export function selectableEnvironments(
 	environments: PickerEnvironment[],
 	activeEnvironmentID: string
@@ -36,7 +34,6 @@ export function filterEnvironments(environments: PickerEnvironment[], search: st
 	);
 }
 
-/** Navigation subtitle under a resource screen's title (`environmentSubtitle`). */
 export function environmentSubtitle({
 	allEnvironmentsPreview,
 	active,
@@ -57,8 +54,6 @@ export type EnvironmentSwitcherButtonProps = {
 	activeEnvironmentID: string;
 	activeEnvironmentName: string;
 	allEnvironmentsPreview: boolean;
-	/** Present `EnvironmentContextPicker` (a medium/large sheet). */
 	onPress: () => void;
-	/** Toolbar side; the Dashboard puts it on the leading side. Defaults to "right". */
 	placement?: 'left' | 'right';
 };

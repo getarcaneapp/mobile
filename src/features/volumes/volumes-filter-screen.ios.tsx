@@ -1,4 +1,3 @@
-/** VolumesView's Filter sheet: sort, environment, and scope for the list that opened it. */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {

@@ -1,8 +1,3 @@
-/**
- * Global (`in: nil`) template permission checks the Templates screens share
- * (`manager.permissions.has(Permission.Templates.x, in: nil)`), re-evaluated
- * whenever the session's access changes.
- */
 import { hasPermission } from '@/core/auth/permissions';
 import { Permission } from '@/sdk/models/role/Permission';
 import { useClientManager } from '@/stores/client-manager';
@@ -22,9 +17,7 @@ export function useTemplatePermissions() {
 		canCreate,
 		canUpdate,
 		canDelete,
-		/** `canEditDefaults`: read + update. */
 		canEditDefaults: canRead && canUpdate,
-		/** `canManageRegistries`: list + any of create / update / delete. */
 		canManageRegistries: canList && (canCreate || canUpdate || canDelete)
 	};
 }

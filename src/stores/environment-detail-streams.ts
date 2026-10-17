@@ -1,9 +1,3 @@
-/**
- * Plugs the dashboard stream and stats history stores into `EnvironmentsStore`
- * (Swift keeps them as `environmentsStore.dashboardStream` / `.statsHistory`).
- * Imported for its side effect by the dashboard; it also syncs the stores
- * with any client and catalog the environments store already holds.
- */
 import { useClientManager } from '@/stores/client-manager';
 import {
 	registerEnvironmentDetailStreams,
@@ -40,8 +34,6 @@ registerEnvironmentDetailStreams({
 	}
 });
 
-// The environments store may have configured itself (and loaded a catalog)
-// before this module registered; bring the new stores up to date.
 {
 	const environments = useEnvironmentsStore.getState();
 	const client = useClientManager.getState().client;

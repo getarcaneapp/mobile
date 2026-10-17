@@ -1,9 +1,3 @@
-/**
- * Ports of `AccentColorMenu` and `CustomAccentColorPicker`
- * (AccentColorMenu.swift).
- *
- * SwiftUI-tree.
- */
 import {
 	Button,
 	Circle,
@@ -46,7 +40,6 @@ export function AccentColorMenu({
 	onCustom
 }: AccentColorMenuProps) {
 	const selected = selectedAccentOption(selection);
-	// Swift: `selectedOption?.color` (the dynamic SwiftUI system color) or the custom hex.
 	const scheme = useColorScheme() === 'light' ? 'light' : 'dark';
 	const color = selected ? systemColors[selected.id] : accentMenuColor(selection);
 	const dots = scheme === 'light' ? accentMenuDotsLight : accentMenuDotsDark;
@@ -103,11 +96,6 @@ export function AccentColorMenu({
 	);
 }
 
-/**
- * `CustomAccentColorPicker`. Swift embeds `UIColorPickerViewController`;
- * @expo/ui exposes SwiftUI's `ColorPicker`, which opens the same system
- * picker from a color well. Opacity is off, as in Swift.
- */
 export function CustomAccentColorPicker({
 	selection,
 	onSelectionChange

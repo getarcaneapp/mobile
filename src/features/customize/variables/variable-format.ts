@@ -1,6 +1,3 @@
-/** Formatting shared by the Variables screens. Pure TS. */
-
-/** `Text(date, style: .relative)`: the two largest units, e.g. "2 hours, 5 minutes". */
 export function relativeDuration(date: Date, now = Date.now()): string {
 	const total = Math.floor(Math.abs(now - date.getTime()) / 1000);
 	const units: [string, number][] = [
@@ -22,5 +19,4 @@ export function relativeDuration(date: Date, now = Date.now()): string {
 	return parts.join(', ');
 }
 
-/** A secret's value is never shown. */
 export const maskedSecret = '••••••••';

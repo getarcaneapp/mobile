@@ -1,13 +1,3 @@
-/**
- * SwiftUI `Image` that behaves like SwiftUI's: with no `font` modifier it
- * inherits the surrounding font (e.g. `HStack { Image; Text }.font(.subheadline)`).
- *
- * `@expo/ui`'s `Image` instead appends `font(size: 24)` whenever the image has
- * no font modifier of its own, so every inherited symbol rendered at 24pt.
- * Same native view and props; only `size` must now be passed explicitly.
- *
- * SwiftUI-tree.
- */
 import type { ImageProps } from '@expo/ui/swift-ui';
 import { font, foregroundStyle } from '@expo/ui/swift-ui/modifiers';
 import { requireNativeView } from 'expo';
@@ -22,7 +12,6 @@ type NativeImageProps = Omit<ImageProps, 'onPress' | 'size' | 'color'> & {
 
 const ImageNativeView = requireNativeView<NativeImageProps>('ExpoUI', 'ImageView');
 
-/** `createViewModifierEventListener` from @expo/ui (not exported publicly). */
 function modifierEvents(modifiers: ModifierList): Pick<NativeImageProps, 'onGlobalEvent'> {
 	const listeners: Record<string, (args: unknown) => void> = {};
 	for (const modifier of modifiers) {

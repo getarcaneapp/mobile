@@ -1,4 +1,3 @@
-/** `CreateWebhookView` model (WebhooksView.swift). */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -38,7 +37,6 @@ export function useCreateWebhook() {
 		if (router.canGoBack()) router.back();
 	};
 
-	// `.onChange(of: targetType)`: reset the action and target.
 	const setTargetType = (next: WebhookTargetType) => {
 		if (next === targetType) return;
 		setTargetTypeState(next);
@@ -46,7 +44,6 @@ export function useCreateWebhook() {
 		setTargetId('');
 	};
 
-	// `.task { await loadTargets() }`.
 	useEffect(() => {
 		const manager = useClientManager.getState();
 		const client = manager.client;

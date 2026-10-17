@@ -1,4 +1,3 @@
-/** Port of Models/Auth/Login.swift. */
 import type { JSONValue } from '../../types/json';
 import type { ISODateString } from '../base/date';
 import { D, DecodingError } from '../base/decoding';
@@ -30,7 +29,6 @@ export const LoginResponse = {
 
 export interface MFAChallenge {
 	transactionId: string;
-	/** Defaults to `"passkey"`. */
 	method: string;
 	options: Record<string, JSONValue>;
 	expiresAt: ISODateString;
@@ -48,10 +46,6 @@ export const MFAChallenge = {
 	}
 } as const;
 
-/**
- * Swift `enum AuthenticationResult { case authenticated(LoginResponse); case mfaRequired(MFAChallenge) }`.
- * Associated-value enums map to `{ kind: <case name>, <label or "value">: payload }`.
- */
 export type AuthenticationResult =
 	| { kind: 'authenticated'; value: LoginResponse }
 	| { kind: 'mfaRequired'; value: MFAChallenge };
@@ -94,7 +88,6 @@ export const AuthenticationResult = {
 	}
 } as const;
 
-/** Thrown by `login`/`oidcCallback` when the server requires a second factor. */
 export class MFARequiredError extends Error {
 	readonly challenge: MFAChallenge;
 	constructor(challenge: MFAChallenge) {

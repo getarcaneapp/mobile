@@ -1,8 +1,3 @@
-/**
- * The Activity History destination (Swift: `case .activityHistory:
- * SettingsCategoryView(category: activityHistorySettings)`), saved on the
- * local environment.
- */
 import { SettingsCategoryView } from '@/ui/components/settings-form';
 import { activityHistorySettings } from '@/ui/components/settings-form.types';
 

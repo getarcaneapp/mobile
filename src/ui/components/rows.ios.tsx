@@ -1,9 +1,3 @@
-/**
- * Ports of `RunEndpointButton` (RunEndpointButton.swift) and
- * `DynamicNavigationRow` (DynamicNavigationRow.swift).
- *
- * SwiftUI-tree.
- */
 import { Button, HStack, Label, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import { buttonStyle, disabled, font, foregroundStyle } from '@expo/ui/swift-ui/modifiers';
@@ -20,7 +14,6 @@ import {
 import { isIOS26 } from './swiftui-surfaces';
 import { symbolRenderingMode } from '../../../modules/arcane-swiftui-extras';
 
-/** Runs a POST endpoint; shows "Running..." while in flight and the outcome underneath. */
 export function RunEndpointButton({
 	title,
 	systemImage,
@@ -69,7 +62,6 @@ export function RunEndpointButton({
 	);
 }
 
-/** A row that pushes a destination: title + secondary subtitle with a hierarchical icon. */
 export function DynamicNavigationRow({
 	title,
 	subtitle,

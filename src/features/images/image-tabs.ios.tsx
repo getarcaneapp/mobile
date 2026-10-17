@@ -1,8 +1,3 @@
-/**
- * Ports of `ImageHistoryView` (ImageHistoryView.swift) and
- * `ImageAttestationsView` (ImageAttestationsView.swift), embedded below the
- * image detail section bar. Each draws its own `Host`.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import { Button, HStack, List, Spacer, Text, VStack } from '@expo/ui/swift-ui';
@@ -130,7 +125,6 @@ export function ImageHistoryView({
 	return <Host style={{ flex: 1 }}>{content}</Host>;
 }
 
-// Swift labels this row inside a default-style Button, so `.secondary` is the tint at secondary level.
 const hierarchicalSecondary = { type: 'hierarchical', style: 'secondary' } as const;
 
 function AttestationRow({ attestation }: { attestation: ImageAttestation }) {

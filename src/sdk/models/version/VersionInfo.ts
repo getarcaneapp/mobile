@@ -1,10 +1,5 @@
-/** Port of Models/Version/VersionInfo.swift. */
 import { mobilePushFeature } from '../../client/ServerCapabilities';
 
-/**
- * Detailed application version information returned by `/app-version` and
- * `/environments/{id}/version`.
- */
 export interface VersionInfo {
 	currentVersion: string;
 	currentTag?: string;
@@ -30,11 +25,6 @@ interface SemanticVersion {
 	patch: number;
 }
 
-/**
- * Swift `value.split(separator:maxSplits: 1)[0]` (empty subsequences omitted):
- * the text before the first separator after any leading separators;
- * `undefined` where Swift would trap on an empty result.
- */
 function firstSplit(value: string, separator: string): string | undefined {
 	let start = 0;
 	while (value.startsWith(separator, start)) start += separator.length;
@@ -44,7 +34,6 @@ function firstSplit(value: string, separator: string): string | undefined {
 	return index < 0 ? rest : rest.slice(0, index);
 }
 
-/** Swift `Int(String)`: optional sign followed by decimal digits. */
 function parseSwiftInt(value: string): number | undefined {
 	return /^[+-]?\d+$/.test(value) ? Number(value) : undefined;
 }
@@ -71,14 +60,12 @@ function compareSemanticVersion(lhs: SemanticVersion, rhs: SemanticVersion): num
 }
 
 export const VersionInfo = {
-	/** True iff `enabledFeatures` advertises `mobile-push-v1`. */
 	supportsMobilePush(value: VersionInfo): boolean {
 		return (value.enabledFeatures ?? []).some(
 			(feature) => feature.toLowerCase() === mobilePushFeature
 		);
 	},
 
-	/** True iff the server is a semver release at or above 2.7.0. */
 	supportsPost26MobileFeatures(value: VersionInfo): boolean {
 		if (!value.isSemverVersion) return false;
 		const version = parseSemanticVersion(value.currentVersion);
@@ -87,7 +74,6 @@ export const VersionInfo = {
 	}
 } as const;
 
-/** Simplified version-check response from `/version`. */
 export interface VersionCheck {
 	currentVersion: string;
 	newestVersion?: string;

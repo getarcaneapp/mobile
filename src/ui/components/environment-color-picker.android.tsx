@@ -1,10 +1,3 @@
-/**
- * Android rendering of `EnvironmentColorPicker` (EnvironmentColorsView.swift):
- * a list row with the environment's name and the accent color dropdown; Custom…
- * opens a Material 3 bottom sheet with the swatch/hex picker.
- *
- * Standalone (RN row + Compose `ModalBottomSheet`).
- */
 import { Host } from '@expo/ui';
 import { ModalBottomSheet, RNHostView } from '@expo/ui/jetpack-compose';
 import { useState } from 'react';

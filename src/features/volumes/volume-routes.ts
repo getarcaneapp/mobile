@@ -1,12 +1,3 @@
-/**
- * Navigation for the Volumes destinations. Every route lives once in the
- * shared tab group, so pushes stay in whichever tab stack is current
- * (Swift: `navigationDestination` / `.sheet` on the presenting view).
- *
- * Objects that can't travel as route params (the Volume, a FileEntry, a
- * workspace file, callbacks) are handed over through `volumeCache` /
- * `routePayloads`.
- */
 import { useRouter, useSegments, type Href } from 'expo-router';
 import { useMemo } from 'react';
 
@@ -23,7 +14,6 @@ const volumes = new Map<string, Volume>();
 const fileEntries = new Map<string, FileEntry>();
 const workspaceFiles = new Map<string, ProjectFile>();
 
-/** Last known values per volume, for a pushed screen's first render. */
 export const volumeCache = {
 	setVolume: (environmentID: EnvironmentID, volume: Volume) =>
 		volumes.set(key(environmentID, volume.name), volume),
@@ -64,7 +54,6 @@ export type VolumeSubpage =
 	| 'workspace-action'
 	| 'workspace-review';
 
-/** Routes relative to the current tab's stack. */
 export function useVolumeNavigation() {
 	const router = useRouter();
 	const segments = useSegments() as string[];
@@ -122,7 +111,6 @@ export function useVolumeNavigation() {
 				open('backup-policies', environmentID, name),
 			openBackupCreate: (environmentID: EnvironmentID, name: string, token: string) =>
 				open('backup-create', environmentID, name, { token }),
-			/** `popsDetail`: the detail screen goes away with the sheet once the rename succeeds. */
 			openRename: (environmentID: EnvironmentID, name: string, popsDetail: boolean) =>
 				open('rename', environmentID, name, { popsDetail: popsDetail ? '1' : undefined }),
 			openCreate: (environmentID: EnvironmentID) =>

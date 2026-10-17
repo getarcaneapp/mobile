@@ -1,4 +1,3 @@
-/** Port of `TemplatePreviewView` + `TemplateContentSummary` (TemplatePreviewView.swift). */
 import { Host } from '@/ui/host';
 import { HStack, Label, ScrollView, Text, VStack } from '@expo/ui/swift-ui';
 import {

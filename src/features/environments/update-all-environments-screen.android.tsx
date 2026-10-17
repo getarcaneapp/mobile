@@ -1,7 +1,3 @@
-/**
- * Android (Material 3) rendering of `UpdateAllEnvironmentsView`
- * (Views/Environments/UpdateAllEnvironmentsView.swift). Presented as a modal route.
- */
 import { Stack, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
@@ -36,7 +32,6 @@ export function UpdateAllEnvironmentsScreen({
 		startsImmediately
 	});
 
-	// `.interactiveDismissDisabled(phase == .triggering)`.
 	const blocksDismiss = model.interactiveDismissDisabled;
 	useEffect(() => {
 		if (!blocksDismiss) return;

@@ -1,8 +1,3 @@
-/**
- * Ports of `CreateVolumeView` (VolumesView.swift) and the volume flavour of
- * `RenameContainerSheet` (RenameContainerSheet.swift, `resourceKind: "Volume"`,
- * `footer: VolumeRename.footer`).
- */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {

@@ -1,4 +1,3 @@
-/** Port of `EventDetailView` (EventsView.swift). */
 import { Host } from '@/ui/host';
 import { HStack, LabeledContent, List, Section, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';

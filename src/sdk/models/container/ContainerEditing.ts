@@ -1,4 +1,3 @@
-/** Port of Models/Container/ContainerEditing.swift. */
 import type { ContainerRegistryCredential } from '../containerRegistry/ContainerRegistry';
 import type {
 	ContainerRestartPolicyCreate,
@@ -8,7 +7,6 @@ import type {
 	PortBindingCreate
 } from './ContainerCreate';
 
-/** Typed bind or volume mount. */
 export interface ContainerMountCreate {
 	type: string;
 	source: string;
@@ -16,7 +14,6 @@ export interface ContainerMountCreate {
 	readOnly?: boolean;
 }
 
-/** Healthcheck for create/edit. All durations are in seconds, unlike inspect durations. */
 export interface ContainerHealthcheckCreate {
 	test?: string[];
 	interval?: number;
@@ -26,7 +23,6 @@ export interface ContainerHealthcheckCreate {
 	retries?: number;
 }
 
-/** Host edits: undefined preserves a field; empty collections, zero, and false replace it. */
 export interface HostConfigEdit {
 	binds?: string[];
 	mounts?: ContainerMountCreate[];
@@ -43,7 +39,6 @@ export interface HostConfigEdit {
 	cpuShares?: number;
 }
 
-/** Configuration changes applied by recreating a container. Undefined fields are omitted and preserved. */
 export interface ContainerEdit {
 	name?: string;
 	image?: string;
@@ -60,7 +55,6 @@ export interface ContainerEdit {
 	credentials?: ContainerRegistryCredential[];
 }
 
-/** Editable snapshot. Omitted boolean flags from the server have false semantics. */
 export interface ContainerEditConfig {
 	id: string;
 	name: string;
@@ -80,7 +74,6 @@ export interface ContainerEditConfig {
 	editDisabled?: boolean;
 }
 
-/** Options for creating an image from a container filesystem. */
 export interface ContainerCommitRequest {
 	repository?: string;
 	tag?: string;
@@ -90,17 +83,14 @@ export interface ContainerCommitRequest {
 	noPause?: boolean;
 }
 
-/** Committed image identifier. */
 export interface ContainerCommitResult {
 	id: string;
 }
 
-/** Containers to convert to a Compose document. */
 export interface ContainerGenerateComposeRequest {
 	containerIds: string[];
 }
 
-/** Generated Compose document. */
 export interface ContainerGenerateComposeResponse {
 	composeContent: string;
 }

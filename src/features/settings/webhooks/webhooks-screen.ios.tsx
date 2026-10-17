@@ -1,4 +1,3 @@
-/** Port of `WebhooksView` + `WebhookRow` (WebhooksView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -123,8 +122,6 @@ function WebhookPreview({ webhook }: { webhook: Webhook }) {
 	return (
 		<RowPreviewCard
 			icon={webhookIcon(webhook.targetType)}
-			// Swift passes `.accentColor`; the context-menu preview is hosted outside the app's
-			// `.accentColor(_:)` environment, so it resolves to the AccentColor asset (purple).
 			iconColor={accentColorAsset}
 			title={webhook.name}
 			badges={[

@@ -1,9 +1,3 @@
-/**
- * Ports of `FormTextField`, `FormSecureField`, `FormNumberField`,
- * `FormValueRow` and `FormPicker` (FormFieldRows.swift).
- *
- * SwiftUI-tree (place inside a `Form` / `List` section).
- */
 import {
 	LabeledContent,
 	Picker,
@@ -47,7 +41,6 @@ import {
 	type FormValueRowProps
 } from './form-fields.types';
 
-/** A native text state mirrored from a controlled React string. */
 function useSyncedText(text: string) {
 	const state = useNativeState(text);
 	useEffect(() => {
@@ -91,7 +84,6 @@ export function FormTextField(props: FormTextFieldProps) {
 		disabled = false
 	} = props;
 	const state = useSyncedText(text);
-	// LabeledContent dims its content; editable values must read primary unless disabled.
 	const valueColor = disabled ? 'secondary' : 'primary';
 	const inputModifiers: ModifierConfig[] = [
 		foregroundStyle(valueColor),
@@ -170,7 +162,6 @@ export function FormSecureField({
 	);
 }
 
-/** Inline numeric row: right-aligned number field plus a −/+ stepper clamped to min/max. */
 export function FormNumberField({
 	title,
 	placeholder,
@@ -236,7 +227,6 @@ export function FormValueRow({ title, value, helper, monospaced }: FormValueRowP
 	);
 }
 
-/** A menu picker row (title left, value + chevron right), with an optional helper caption. */
 export function FormPicker<Value extends string | number>({
 	title,
 	selection,

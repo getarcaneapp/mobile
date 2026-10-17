@@ -1,10 +1,3 @@
-/**
- * Port of Services/SystemBackupsService.swift.
- *
- * Global, administrator-only system recovery and centralized volume backup
- * operations. Most endpoints answer with either an API envelope or a bare
- * payload (`rest.requestPayload`).
- */
 import { q } from '../client/url';
 import type { RESTService } from '../http/RESTService';
 import { D } from '../models/base/decoding';
@@ -86,7 +79,6 @@ export class SystemBackupsService {
 		return this.rest.requestPayload('backups/volumes/options', { method: 'GET' });
 	}
 
-	/** Acceptance does not mean the backups have completed. Track the returned activity. */
 	runVolumeBackups(
 		args: { request?: RunSystemVolumeBackupsRequest } = {}
 	): Promise<BackupRunAccepted> {
@@ -103,7 +95,6 @@ export class SystemBackupsService {
 		return this.rest.requestPayload('backups/recovery-key', { method: 'PUT', body: args.request });
 	}
 
-	/** Returns the initial run, which may still be running. */
 	create(args: { request?: CreateSystemBackupRequest } = {}): Promise<SystemBackupRun> {
 		return this.rest.requestPayload('backups', { body: args.request ?? {} });
 	}
@@ -127,7 +118,6 @@ export class SystemBackupsService {
 		start?: number;
 		limit?: number;
 	}): Promise<PaginatedResponse<BackupFileEntry>> {
-		// This read uses POST so the recovery key never appears in the URL.
 		return this.rest.requestPayload(`backups/${args.id}/files/browse`, {
 			body: { recoveryKey: args.recoveryKey } satisfies SystemBackupRecoveryKey,
 			query: [

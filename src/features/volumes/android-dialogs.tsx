@@ -1,9 +1,3 @@
-/**
- * Material 3 text-input dialog for Android (SwiftUI `.alert` with a
- * `TextField`, e.g. VolumeBrowserView's "Go to Path").
- *
- * Standalone (RN Modal). Import from `.android.tsx` screens.
- */
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 

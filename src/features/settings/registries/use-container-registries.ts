@@ -1,7 +1,3 @@
-/**
- * Data + actions for `ContainerRegistriesView` (ContainerRegistriesView.swift),
- * shared by both platforms.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -23,7 +19,6 @@ const pageSize = 50;
 
 export const registryCachePaths = ['container-registries', 'container-registries/*'];
 
-/** Swift `ContainerRegistry.name` (Models.swift): description, else the URL host, else the URL. */
 export function registryName(registry: ContainerRegistry): string {
 	if (registry.description) return registry.description;
 	try {
@@ -34,7 +29,6 @@ export function registryName(registry: ContainerRegistry): string {
 	}
 }
 
-/** `RegistryRow.title`: prefer a friendly name; fall back to the URL. */
 export function registryRowTitle(registry: ContainerRegistry): string {
 	const name = registryName(registry).trim();
 	if (name !== '' && name !== registry.url) return name;
@@ -42,7 +36,6 @@ export function registryRowTitle(registry: ContainerRegistry): string {
 	return name === '' ? registry.id : name;
 }
 
-/** `RegistryRow.subtitle`: the URL, or the type when the title already is the URL. */
 export function registryRowSubtitle(registry: ContainerRegistry): string {
 	const title = registryRowTitle(registry);
 	if (title !== registry.url && registry.url !== '') return registry.url;
@@ -150,7 +143,6 @@ export function useContainerRegistries() {
 		}
 	}, [client, applyPage]);
 
-	// `.task` + `.onChange(of: debouncedSearchText)`.
 	useEffect(() => {
 		void loadRegistries();
 	}, [loadRegistries, debouncedSearchText]);

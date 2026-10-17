@@ -1,9 +1,3 @@
-/**
- * Pure helpers behind the Projects screens: the `ProjectDetails` app
- * extensions (Models.swift), `ProjectTag+Display.swift`, `ProjectStatusFilter`
- * (ResourceListFilters.swift), `ProjectsView.computeSections`, and the small
- * view helpers of ProjectDetailView.swift / RenderComposeView.swift.
- */
 import { formattedISO8601 } from '@/core/date-formatting';
 import type { ProjectDetails, RuntimeService } from '@/sdk/models/project/Project';
 import type { ProjectTag } from '@/sdk/models/project/ProjectTag';
@@ -16,11 +10,8 @@ import {
 	type ResourceUpdateFilter
 } from '@/features/containers/container-model';
 
-// MARK: - ProjectDetails extensions
-
 export const projectDisplayName = (project: Pick<ProjectDetails, 'name'>) => project.name;
 
-/** `composeVersion` is always nil in the reference app. */
 export const projectComposeVersion = (_project: ProjectDetails): string | undefined => undefined;
 
 export const projectHasAvailableUpdate = (project: Pick<ProjectDetails, 'updateInfo'>) =>
@@ -29,13 +20,11 @@ export const projectHasAvailableUpdate = (project: Pick<ProjectDetails, 'updateI
 export const projectIsRunning = (project: Pick<ProjectDetails, 'status'>) =>
 	project.status.toLowerCase() === 'running';
 
-/** `ProjectsView.isStopped(_:)`. */
 export function projectIsStopped(project: Pick<ProjectDetails, 'status'>) {
 	const status = project.status.toLowerCase();
 	return status === 'stopped' || status === 'exited';
 }
 
-/** `ProjectRow.statusColor` / the preview's color. `undefined` is `.secondary`. */
 export function projectStatusColor(status: string): string | undefined {
 	switch (status.toLowerCase()) {
 		case 'running':
@@ -51,7 +40,6 @@ export function projectStatusColor(status: string): string | undefined {
 	}
 }
 
-/** `themedIconUrl(for:)` (light mode prefers the dark-artwork URL, Swift's ordering). */
 export function projectThemedIconUrl(
 	value:
 		| Pick<ProjectDetails, 'iconUrl' | 'iconLightUrl' | 'iconDarkUrl'>
@@ -63,7 +51,6 @@ export function projectThemedIconUrl(
 		: firstUsableURL(value.iconDarkUrl, value.iconLightUrl, value.iconUrl);
 }
 
-/** `ProjectRuntimeServiceRow.iconURL`: a plain light/dark pick (not `ThemedIconURL`). */
 export function runtimeServiceIconURL(
 	service: RuntimeService,
 	isDark: boolean
@@ -73,9 +60,6 @@ export function runtimeServiceIconURL(
 		: (service.iconLightUrl ?? service.iconUrl);
 }
 
-// MARK: - Tags (ProjectTag+Display.swift)
-
-/** Colors the server accepts for project tags. */
 export const projectTagColors = [
 	'gray',
 	'purple',
@@ -108,11 +92,9 @@ export function projectTagDisplayColor(color: string): string {
 	}
 }
 
-/** Compose-managed tags live in the compose file and can't be changed from the app. */
 export const projectTagIsComposeManaged = (tag: ProjectTag) =>
 	(tag.sources ?? []).includes('compose');
 
-/** `ProjectTagOption` (Models.swift): a reusable tag from the `projects/tags` catalog. */
 export type ProjectTagOption = { name: string; color: string };
 
 export const tagOptionAsTag = (option: ProjectTagOption): ProjectTag => ({
@@ -121,17 +103,12 @@ export const tagOptionAsTag = (option: ProjectTagOption): ProjectTag => ({
 	sources: []
 });
 
-/** `UpdateProjectTagRequest` / `UpdateProjectTagResponse`. */
 export type UpdateProjectTagRequest = { name: string; attached: boolean; color?: string };
 export type UpdateProjectTagResponse = { tags?: ProjectTag[] };
 
-// MARK: - Filters
-
-/** `ProjectStatusFilter`. */
 export type ProjectStatusFilter = 'All' | 'Running' | 'Stopped' | 'Partial';
 export const ProjectStatusFilters: ProjectStatusFilter[] = ['All', 'Running', 'Stopped', 'Partial'];
 
-/** `ListSortOrder`. */
 export type ListSortOrder = 'ascending' | 'descending';
 export const ListSortOrders: { id: ListSortOrder; title: string; systemImage: string }[] = [
 	{ id: 'ascending', title: 'A-Z', systemImage: 'arrow.up' },
@@ -157,7 +134,6 @@ type ProjectListItem = { id: string; environmentID: string; value: ProjectDetail
 const containsCaseInsensitive = (value: string, query: string) =>
 	value.toLowerCase().includes(query.toLowerCase());
 
-/** `ProjectsView.computeSections(pinned:)`: filters + sorts once, partitions in a single pass. */
 export function computeProjectSections<Item extends ProjectListItem>(
 	projects: readonly Item[],
 	filters: ProjectListFilters,
@@ -209,9 +185,6 @@ export function computeProjectSections<Item extends ProjectListItem>(
 	];
 }
 
-// MARK: - ProjectDetailView helpers
-
-/** `projectLinks`: unique http(s) URLs with a host. */
 export function projectLinks(project: Pick<ProjectDetails, 'urls'>): string[] {
 	const seen = new Set<string>();
 	const links: string[] = [];
@@ -233,16 +206,13 @@ export function projectLinks(project: Pick<ProjectDetails, 'urls'>): string[] {
 	return links;
 }
 
-/** `projectComposeFileName`. */
 export function projectComposeFileName(project: Pick<ProjectDetails, 'composeFileName'>): string {
 	const value = project.composeFileName?.trim();
 	return value ? value : 'compose.yml';
 }
 
-/** `headerDate(_:)`. */
 export const projectHeaderDate = (iso: string) => formattedISO8601(iso, 'abbreviated', 'omitted');
 
-/** Only compose override files earn a pinned row next to compose/.env. */
 export const composeOverrideNames = new Set([
 	'compose.override.yaml',
 	'compose.override.yml',
@@ -250,7 +220,6 @@ export const composeOverrideNames = new Set([
 	'docker-compose.override.yml'
 ]);
 
-/** `ProjectRow.accessibilityDescription`. */
 export function projectRowAccessibility(
 	project: ProjectDetails,
 	isPinned: boolean,
@@ -265,13 +234,11 @@ export function projectRowAccessibility(
 	return parts.join(', ');
 }
 
-/** `RuntimeRow` matching: tolerate short/long Docker ID forms. */
 export const containerIDMatches = (containerID: string, serviceID: string) =>
 	containerID === serviceID ||
 	containerID.startsWith(serviceID) ||
 	serviceID.startsWith(containerID);
 
-/** `ArchivedProjectRow.dateFormatter` (medium date, short time). */
 export function archivedDateText(iso: string | undefined): string {
 	if (!iso) return 'Archived';
 	const date = new Date(iso);
@@ -279,15 +246,10 @@ export function archivedDateText(iso: string | undefined): string {
 	return `Archived ${date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
 }
 
-// MARK: - CreateProjectView
-
 export const defaultComposeStarter =
 	'services:\n  app:\n    image: \n    ports:\n      - "8080:80"\n';
 
-/** Template name → project name (`lowercased().replacingOccurrences(of: " ", with: "-")`). */
 export const projectNameFromTemplate = (name: string) => name.toLowerCase().replaceAll(' ', '-');
-
-// MARK: - RenderComposeView (scanning + substitution)
 
 const variableDefinitionPattern = /\$\{([A-Za-z_][A-Za-z0-9_]*)(?::?[-?]([^}]*))?\}/g;
 const variableReferencePattern = /\$\{([A-Za-z_][A-Za-z0-9_]*)(?::?[-?][^}]*)?\}/g;
@@ -346,9 +308,6 @@ export function substituteComposeVariables(
 	});
 }
 
-// MARK: - Deploy options (ProjectDeployOptionsPreferences)
-
-/** The reference app's per-server, per-environment UserDefaults prefix. */
 export function deployOptionsKeyPrefix(serverOrigin: string, environmentID: string): string {
 	const bytes = new TextEncoder().encode(serverOrigin);
 	let binary = '';

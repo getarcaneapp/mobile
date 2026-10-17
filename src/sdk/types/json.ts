@@ -1,12 +1,3 @@
-/**
- * Port of `JSONValue` (Models/Base/JSONValue.swift).
- *
- * Swift models it as an enum (`.null`, `.bool`, `.number`, `.string`,
- * `.array`, `.object`). In TypeScript the parsed JSON value itself already
- * carries that information, so `JSONValue` is the structural JSON type and
- * the Swift accessor properties are exposed as companion functions:
- * `value.doubleValue` → `JSONValue.doubleValue(value)`.
- */
 export type JSONValue =
 	| null
 	| boolean
@@ -26,7 +17,6 @@ export const JSONValue = {
 		return typeof value === 'number' ? value : undefined;
 	},
 
-	/** Truncates toward zero, matching `Int(exactly: value.rounded(.towardZero))`. */
 	intValue(this: void, value: JSONValue | undefined): number | undefined {
 		if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
 		return Math.trunc(value);
@@ -45,7 +35,6 @@ export const JSONValue = {
 	}
 } as const;
 
-/** Port of `AnyDecodable` (HTTP/RESTService.swift). */
 export interface AnyDecodable {
 	value: JSONValue;
 }

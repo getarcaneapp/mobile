@@ -1,11 +1,3 @@
-/**
- * Navigation for the Projects destinations. Every route lives once in the
- * shared tab group, so pushes stay in whichever tab stack is current
- * (Swift: `navigationDestination` / `.sheet` on the presenting view).
- *
- * Values that can't travel as route params (an initial project, callbacks)
- * are handed over through `routePayloads`.
- */
 import { useRouter, useSegments, type Href } from 'expo-router';
 import { useMemo } from 'react';
 
@@ -28,14 +20,12 @@ export { routePayloads };
 const projectKey = (environmentID: EnvironmentID, id: string) => `${environmentID}/${id}`;
 const projects = new Map<string, ProjectDetails>();
 
-/** Last known project per environment, for a pushed screen's first render (Swift passes the value). */
 export const projectCache = {
 	set: (environmentID: EnvironmentID, project: ProjectDetails) =>
 		projects.set(projectKey(environmentID, project.id), project),
 	get: (environmentID: EnvironmentID, id: string) => projects.get(projectKey(environmentID, id))
 };
 
-/** Payloads handed to the sheet routes. */
 export type DeployOptionsPayload = { deploy: (options: DeployOptions) => void };
 export type ProjectTagsPayload = { tags: ProjectTag[]; onChange: (tags: ProjectTag[]) => void };
 export type CreateProjectPayload = {
@@ -45,7 +35,6 @@ export type CreateProjectPayload = {
 	templateLabel?: string;
 	onSuccess?: () => Promise<void> | void;
 };
-/** `ProjectDraftReviewView` inputs; `onDismiss` runs after the sheet closes with the chosen action (Swift `.sheet(onDismiss:)`). */
 export type DraftReviewPayload = {
 	originalCompose: string;
 	compose: string;
@@ -65,7 +54,6 @@ export type ProjectFileDialogPayload = {
 	folders: ManagedProjectFileEntry[];
 	existingPaths: ReadonlySet<string>;
 	composeFileName: string;
-	/** Returns an error message to keep the dialog open, or undefined to dismiss. */
 	onSubmit: (result: ProjectFileDialogResult) => string | undefined;
 };
 
@@ -82,7 +70,6 @@ function query(params: Params) {
 		: `?${entries.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
 }
 
-/** Routes relative to the current tab's stack. */
 export function useProjectNavigation() {
 	const router = useRouter();
 	const segments = useSegments() as string[];
@@ -163,7 +150,6 @@ export function useProjectNavigation() {
 			openDraftReview(this: void, payload: DraftReviewPayload) {
 				router.push(href('project-draft-review', { token: routePayloads.put(payload) }));
 			},
-			/** Android: a native Compose editor screen (iOS pushes these inside its SwiftUI `NavigationStack`). */
 			openComposeEditor(this: void, destination: string) {
 				router.push(href('compose-editor', { destination }));
 			},
@@ -175,7 +161,6 @@ export function useProjectNavigation() {
 			openFileDialog(this: void, payload: ProjectFileDialogPayload) {
 				router.push(href('project-file-dialog', { token: routePayloads.put(payload) }));
 			},
-			/** The deployment stream sheet (`DeploymentActivityStore.isSheetPresented = true`). */
 			openDeployment(this: void) {
 				router.push(href(deploymentSheetPath));
 			}

@@ -1,10 +1,3 @@
-/**
- * Port of `ComposeServiceForm` (ComposePreviewEditor.swift): the service
- * overview tiles and routes, plus the small forms it pushes inline
- * (image settings, runtime, identity, name resolution, pull policy).
- *
- * SwiftUI-tree.
- */
 import {
 	Button,
 	Form,
@@ -527,7 +520,6 @@ function Route({
 	);
 }
 
-/** `ComposeServiceForm.policy(_:key:)`. */
 function PolicyPicker({
 	bindingRef,
 	path,
@@ -570,7 +562,6 @@ function PolicyPicker({
 	);
 }
 
-/** The inline `Form`s `ComposeServiceForm` pushes. */
 export function ServiceSubform({ destination }: { destination: SubformDestination }) {
 	const { binding: bindingRef, readOnly, service } = destination;
 	const binding = useComposeBinding(bindingRef);

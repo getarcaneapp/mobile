@@ -1,4 +1,3 @@
-/** Shared state for `AppIconPickerView` (AppIconPickerView.swift). */
 import { useEffect, useState } from 'react';
 
 import { showToast, Toasts } from '@/ui/toast';
@@ -9,7 +8,6 @@ export function useAppIconPicker() {
 	const { currentIconName } = useAppIconState();
 	const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
-	// Swift reads `UIApplication.shared.alternateIconName` when the view appears.
 	useEffect(() => {
 		void AlternateAppIcons.refresh();
 	}, []);
@@ -28,6 +26,5 @@ export function useAppIconPicker() {
 		select,
 		errorMessage,
 		clearError: () => setErrorMessage(undefined)
-		/** Android: launchers apply component changes on their own schedule. */
 	};
 }

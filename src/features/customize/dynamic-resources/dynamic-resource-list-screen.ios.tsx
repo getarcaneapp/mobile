@@ -1,7 +1,3 @@
-/**
- * Port of `DynamicResourceListView` + `DynamicResourceRow`
- * (DynamicResourceViews.swift).
- */
 import { Host } from '@/ui/host';
 import { AlertAnchor } from '@/ui/components/alert-anchor';
 import { UnavailableView } from '@/ui/components/unavailable-view';
@@ -55,7 +51,6 @@ import {
 	type DynamicResourceListModel
 } from './use-dynamic-resource-list';
 
-/** `backendActionLabel(_:)`. */
 export function BackendActionButton({
 	action,
 	onPress
@@ -75,7 +70,6 @@ export function BackendActionButton({
 	);
 }
 
-/** Port of `DynamicResourceRow`. SwiftUI-tree. */
 export function DynamicResourceRow({
 	item,
 	systemImage,
@@ -213,7 +207,6 @@ function ListToolbar({ model }: { model: DynamicResourceListModel }) {
 	);
 }
 
-/** Port of `DynamicResourceListView`. */
 export function DynamicResourceListView(config: DynamicResourceListConfig) {
 	const model = useDynamicResourceList(config);
 	const { snapshot, items } = model;

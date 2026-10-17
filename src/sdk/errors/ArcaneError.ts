@@ -1,16 +1,3 @@
-/**
- * Port of Errors/ArcaneError.swift.
- *
- * Swift's `ArcaneError` is an enum with associated values. Here every case is
- * a subclass of the abstract `ArcaneError` with a literal `kind` discriminant
- * named after the Swift case, so
- *
- *   catch ArcaneError.unauthorized              →  isArcaneError(e, "unauthorized")
- *   catch ArcaneError.server(let code, let msg) →  if (e instanceof ArcaneServerError) { e.code; e.serverMessage }
- *
- * Static factories mirror the Swift case constructors: `ArcaneError.server(code, message)`.
- * `equals()` mirrors Swift's `Equatable` conformance.
- */
 import type { JSONValue } from '../types/json';
 
 export type ArcaneErrorKind =
@@ -35,7 +22,6 @@ export abstract class ArcaneError extends Error {
 		return JSON.stringify(this.payload()) === JSON.stringify(other.payload());
 	}
 
-	/** Associated values, used for equality. */
 	protected payload(): unknown {
 		return null;
 	}
@@ -120,7 +106,6 @@ export class ArcaneNotFoundError extends ArcaneError {
 
 export class ArcaneConflictError extends ArcaneError {
 	readonly kind = 'conflict' as const;
-	/** Swift: `conflict(message: String?)`. */
 	readonly conflictMessage: string | undefined;
 	constructor(message?: string) {
 		super(message ?? 'Conflict');
@@ -151,7 +136,6 @@ export class ArcaneValidationError extends ArcaneError {
 
 export class ArcaneRateLimitedError extends ArcaneError {
 	readonly kind = 'rateLimited' as const;
-	/** Seconds (Swift `TimeInterval`). */
 	readonly retryAfter: number | undefined;
 	constructor(retryAfter?: number) {
 		super('Rate limited');
@@ -166,7 +150,6 @@ export class ArcaneRateLimitedError extends ArcaneError {
 export class ArcaneServerError extends ArcaneError {
 	readonly kind = 'server' as const;
 	readonly code: string;
-	/** Swift associated value `message` (also available as `Error.message`). */
 	readonly serverMessage: string;
 	constructor(code: string, message: string) {
 		super(message);
@@ -231,7 +214,6 @@ type ArcaneErrorByKind = {
 	unknown: ArcaneUnknownError;
 };
 
-/** `isArcaneError(e)` or `isArcaneError(e, "unauthorized")`. */
 export function isArcaneError(error: unknown): error is ArcaneError;
 export function isArcaneError<K extends ArcaneErrorKind>(
 	error: unknown,
@@ -241,10 +223,6 @@ export function isArcaneError(error: unknown, kind?: ArcaneErrorKind): boolean {
 	return error instanceof ArcaneError && (kind === undefined || error.kind === kind);
 }
 
-/**
- * Swift `CancellationError`. Raised when a request is aborted (AbortSignal),
- * or when an auth operation is retired by a newer credential generation.
- */
 export class CancellationError extends Error {
 	constructor(message = 'The operation was cancelled.') {
 		super(message);
@@ -256,7 +234,6 @@ export function isCancellationError(error: unknown): error is CancellationError 
 	return error instanceof CancellationError;
 }
 
-/** True for DOM/RN abort errors thrown by `fetch` when its signal fires. */
 export function isAbortError(error: unknown): boolean {
 	if (error instanceof CancellationError) return true;
 	if (typeof error !== 'object' || error === null) return false;
@@ -264,7 +241,6 @@ export function isAbortError(error: unknown): boolean {
 	return name === 'AbortError';
 }
 
-/** Error raised by a request timeout (Swift `URLError.timedOut`). */
 export class ArcaneTimeoutError extends Error {
 	constructor(message = 'The request timed out.') {
 		super(message);
@@ -272,11 +248,6 @@ export class ArcaneTimeoutError extends Error {
 	}
 }
 
-/**
- * Port of `normalizedTransportError`: aborts become `CancellationError`,
- * Arcane errors pass through, other network failures become
- * `ArcaneError.transport`.
- */
 export function normalizedTransportError(error: unknown): Error {
 	if (error instanceof CancellationError) return new CancellationError();
 	if (error instanceof ArcaneError) return error;
@@ -287,7 +258,6 @@ export function normalizedTransportError(error: unknown): Error {
 	return ArcaneError.transport(String(error));
 }
 
-/** Port of `APIErrorResponse`. */
 export interface APIErrorResponse {
 	success?: boolean;
 	error?: string;
@@ -315,9 +285,7 @@ function parseJSONObject(body: string): Record<string, unknown> | undefined {
 		if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
 			return parsed as Record<string, unknown>;
 		}
-	} catch {
-		// Not JSON.
-	}
+	} catch {}
 	return undefined;
 }
 
@@ -374,7 +342,6 @@ function validationFieldsFromHuma(errors: HumaErrorDetail[]): Record<string, str
 	return fields;
 }
 
-/** Port of `ArcaneError.from(statusCode:data:headers:decoder:)`. */
 export function arcaneErrorFrom(
 	statusCode: number,
 	body: string,

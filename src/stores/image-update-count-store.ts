@@ -1,8 +1,3 @@
-/**
- * Port of `ImageUpdateCountStore.swift`: per-environment image-update counts
- * shared by the dashboard and Updates, scoped to the active client and user
- * so switching servers or accounts can't surface old counts.
- */
 import { create } from 'zustand';
 
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
@@ -23,10 +18,6 @@ const sameScope = (a: Scope | undefined, b: Scope | undefined) =>
 type ImageUpdateCountState = {
 	scope: Scope | undefined;
 	counts: Readonly<Record<string, number>>;
-	/**
-	 * Counts published by an Updates screen come from the rows the user sees.
-	 * Dashboard summaries may fill gaps but must not replace them.
-	 */
 	authoritativeEnvironmentIDs: ReadonlySet<string>;
 
 	count: (
@@ -63,7 +54,6 @@ type ImageUpdateCountState = {
 };
 
 export const useImageUpdateCountStore = create<ImageUpdateCountState>((set, get) => {
-	/** Resets the store when the scope changes; returns the counts to build on. */
 	const prepare = (next: Scope) => {
 		const state = get();
 		if (sameScope(state.scope, next)) {
@@ -89,8 +79,6 @@ export const useImageUpdateCountStore = create<ImageUpdateCountState>((set, get)
 			const state = get();
 			if (!sameScope(state.scope, scopeFor(client, userID)) || environmentIDs.length === 0)
 				return undefined;
-			// Prefer this store only once an Updates surface supplied a fresher,
-			// row-derived count; summary-only values are the dashboard's fallback already.
 			if (state.authoritativeEnvironmentIDs.size === 0) return undefined;
 			let total = 0;
 			for (const id of environmentIDs) {
@@ -134,9 +122,7 @@ export const useImageUpdateCountStore = create<ImageUpdateCountState>((set, get)
 			try {
 				const summary = await client.images.updateSummary({ envID: environmentID });
 				get().setCount(summary.imagesWithUpdates, environmentID, client, userID);
-			} catch {
-				// `try?` in Swift.
-			}
+			} catch {}
 		}
 	};
 });

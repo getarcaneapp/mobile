@@ -1,10 +1,3 @@
-/**
- * Port of `EnvironmentPacketTrack` (EnvironmentConnectionView.swift): a thin
- * connector line with a packet dot that travels manager → agent (edge
- * tunnels run agent → manager). Only this view redraws at animation cadence.
- *
- * Standalone (RN + Reanimated). Inside SwiftUI trees host it in `RNHostView`.
- */
 import { useEffect, useState } from 'react';
 import { AppState, View } from 'react-native';
 import Animated, {

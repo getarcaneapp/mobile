@@ -1,9 +1,3 @@
-/**
- * Android rendering of `ImagesView` (ImagesView.swift): Material 3 grouped
- * list with the same sections, search, filters, pull-to-refresh, pagination
- * and actions. Swipe-to-delete and the context menu become the row's
- * long-press menu; selection shows Material checkboxes.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';

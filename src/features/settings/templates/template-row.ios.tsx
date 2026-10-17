@@ -1,4 +1,3 @@
-/** Port of `TemplateRow` (TemplateBrowserView.swift). SwiftUI-tree. */
 import { HStack, Label, Text, VStack } from '@expo/ui/swift-ui';
 import {
 	accessibilityElement,

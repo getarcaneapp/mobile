@@ -1,12 +1,3 @@
-/**
- * `CreateProjectView` state (ProjectDetailView.swift): name, template picker,
- * compose + .env drafts, Resolve Variables, and create.
- *
- * With the native Compose editor preview (`ComposePreviewSession`, captured
- * once per sheet) the drafts are edited in the native editors, a server
- * default template seeds a blank draft, replacing or discarding an edited
- * draft asks first, and Create becomes Review (with Save and deploy).
- */
 import { File } from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -64,7 +55,6 @@ export function useCreateProject() {
 	useClientManager((s) => s.accessGeneration);
 	const currentSession = useClientManager((s) => s.cacheSessionIdentity);
 
-	// `@State private var previewSession = ComposePreviewSession()`.
 	const [previewSession] = useState(() => makeComposePreviewSession(storage.bool));
 	const previewEnabled = previewSession.isEnabled;
 	const [baseline, setBaseline] = useState<ProjectDraftSnapshot>(() => ({
@@ -105,7 +95,6 @@ export function useCreateProject() {
 		if (!sessionIsCurrent() || !client) return;
 		const requestedFrom = latest.current.draftSnapshot;
 		const session = useClientManager.getState().cacheSessionIdentity;
-		// Optional on older servers; retain the local starter when unavailable.
 		let defaults;
 		try {
 			defaults = await client.templates.getDefaults();
@@ -133,7 +122,6 @@ export function useCreateProject() {
 		setBaseline({ compose, environment: defaults.envTemplate });
 	};
 
-	// `.task`: default template (preview), then the template list.
 	useEffect(() => {
 		if (isPrefilled || !canBrowseTemplates) return;
 		const client = useClientManager.getState().client;
@@ -155,7 +143,6 @@ export function useCreateProject() {
 		return () => {
 			cancelled = true;
 		};
-		// Runs once per sheet, like `.task`.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -236,7 +223,6 @@ export function useCreateProject() {
 		}
 	};
 
-	/** `ProjectDraftReviewView`, then `onDismiss` (deploy options on newer servers). */
 	const review = () =>
 		nav.openDraftReview({
 			originalCompose: '',
@@ -384,10 +370,8 @@ export function useCreateProject() {
 			sessionIdentity === currentSession &&
 			useClientManager.getState().acceptsEnvironmentContext(envID) &&
 			hasPermission(Permission.Projects.create, envID),
-		/** `.interactiveDismissDisabled(previewEnabled && hasDraftChanges)`. */
 		dismissDisabled: previewEnabled && hasDraftChanges,
 		cancel: () => (previewEnabled && hasDraftChanges ? setShowDiscard(true) : dismiss()),
-		/** Create (preview off) or Review (preview on). */
 		create: () => (previewEnabled ? review() : void createProject()),
 		openVariables: () =>
 			nav.openRenderCompose(envID, {

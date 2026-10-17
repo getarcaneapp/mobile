@@ -1,11 +1,8 @@
-/** `LogOptionsMenu` as the dedicated log viewer's toolbar menu (both platforms). */
 import { Stack } from 'expo-router';
 
 import type { AndroidMenuItem } from './android-toolbar';
 import type { LogViewerModel } from './use-log-viewer';
 
-/** The dedicated viewer's trailing `ellipsis.circle` options menu. */
-/** Called as a function (not a component) so `Stack.Toolbar` sees a `Stack.Toolbar.Menu` child on iOS. */
 export function logOptionsToolbarMenu(model: LogViewerModel) {
 	const empty = model.snapshot.lines.length === 0;
 	return (
@@ -50,7 +47,6 @@ export function logOptionsToolbarMenu(model: LogViewerModel) {
 	);
 }
 
-/** The same options as Android popup-menu items. */
 export function logOptionsMenuItems(model: LogViewerModel): AndroidMenuItem[] {
 	const empty = model.snapshot.lines.length === 0;
 	return [

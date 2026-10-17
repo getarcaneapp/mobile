@@ -1,4 +1,3 @@
-/** Android rendering of `NetworkTopologyView` (NetworkTopologyView.swift). */
 import { Stack } from 'expo-router';
 import { View } from 'react-native';
 

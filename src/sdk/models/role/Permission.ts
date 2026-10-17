@@ -1,18 +1,4 @@
-/**
- * Port of Models/Role/Permission.swift.
- *
- * Well-known permission strings recognized by the Arcane v2 RBAC system.
- *
- * Use these constants when calling `User.hasPermission(user, perm, environmentID)`
- * or when building role definitions via `CreateRole` / `UpdateRole`. Custom
- * permission strings are also accepted — the SDK treats permissions as
- * free-form strings and does no client-side validation.
- */
 export const Permission = {
-	/**
-	 * Sudo wildcard. A user holding `"*"` in any in-scope permission bucket
-	 * (global or the queried environment) passes every permission check.
-	 */
 	sudo: '*',
 
 	Containers: {

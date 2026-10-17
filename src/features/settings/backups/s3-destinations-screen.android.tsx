@@ -1,4 +1,3 @@
-/** Android rendering of `S3DestinationsView` (S3DestinationsView.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

@@ -1,4 +1,3 @@
-/** Android rendering of `APIKeyDetailView` (APIKeyDetailView.swift). */
 import { Stack } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 

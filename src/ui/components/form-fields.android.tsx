@@ -1,10 +1,3 @@
-/**
- * Android ports of the form rows: Material 3 list rows with inline inputs,
- * outlined fields for stacked/long values, an icon-button stepper, and an
- * exposed dropdown for pickers.
- *
- * Standalone (RN views; place inside a `MaterialListGroup`).
- */
 import { Host } from '@expo/ui';
 import { DropdownMenu, DropdownMenuItem, Text as ComposeText } from '@expo/ui/jetpack-compose';
 import { useState, type ReactNode } from 'react';

@@ -1,9 +1,3 @@
-/**
- * Ports of `BackupRequestScope` (Types/BackupRequestScope.swift) and the
- * `BackupSessionScope` view modifier (BackupSessionScope.swift), plus the
- * global-permission checks every backup screen uses
- * (`manager.permissions.has(..., in: nil)`).
- */
 import { useNavigation } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
@@ -12,11 +6,6 @@ import { CancellationError } from '@/sdk/errors/ArcaneError';
 import { User } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
 
-/**
- * Captures the client generation and environment when a request starts;
- * `check()` throws `CancellationError` once either changed (or the screen is
- * gone, Swift `Task.checkCancellation()`).
- */
 export function backupRequestScope(isAlive: () => boolean = () => true) {
 	const start = useClientManager.getState();
 	const generation = start.clientGeneration;
@@ -35,7 +24,6 @@ export function backupRequestScope(isAlive: () => boolean = () => true) {
 	};
 }
 
-/** `false` once the component unmounted (Swift task cancellation on disappear). */
 export function useAliveRef() {
 	const alive = useRef(true);
 	useEffect(() => {
@@ -47,7 +35,6 @@ export function useAliveRef() {
 	return alive;
 }
 
-/** `.modifier(BackupSessionScope())`: dismiss when the client or active environment changes. */
 export function useBackupSessionScope() {
 	const navigation = useNavigation();
 	const generation = useClientManager((s) => s.clientGeneration);
@@ -64,21 +51,18 @@ export function useBackupSessionScope() {
 	}, [generation, environmentID, navigation]);
 }
 
-/** `manager.permissions.has(perm, in: nil)`, re-evaluated when access changes. */
 export function useGlobalPermissions() {
 	useClientManager((s) => s.accessGeneration);
 	useClientManager((s) => s.activeEnvironmentID);
 	const user = useClientManager((s) => s.currentUser);
 	return {
 		has: (perm: string) => hasPermission(perm, null),
-		/** `manager.permissions.has(perm, in: EnvironmentID(rawValue: "0"))`. */
 		hasInLocal: (perm: string) => hasPermission(perm, '0'),
 		isAdmin: user ? User.isAdmin(user) : false,
 		isGlobalAdmin: user ? User.isGlobalAdmin(user) : false
 	};
 }
 
-/** Swift `.sheet(onDismiss:)` hand-back: sheets announce their dismissal to the presenting list. */
 type Listener = () => void;
 const listeners = new Map<string, Set<Listener>>();
 
@@ -96,7 +80,6 @@ export const backupEvents = {
 	}
 };
 
-/** Emits `channel` when the calling sheet screen goes away. */
 export function useEmitOnDismiss(channel: 'history' | 's3', enabled = true) {
 	useEffect(() => {
 		if (!enabled) return;
@@ -104,7 +87,6 @@ export function useEmitOnDismiss(channel: 'history' | 's3', enabled = true) {
 	}, [channel, enabled]);
 }
 
-/** Runs `onDismiss` whenever a sheet on `channel` was dismissed. */
 export function useSheetDismissListener(channel: 'history' | 's3', onDismiss: () => void) {
 	const latest = useRef(onDismiss);
 	latest.current = onDismiss;

@@ -1,7 +1,3 @@
-/**
- * Port of `JobsView.scheduleEnvironments` (JobsView.swift): All Environments
- * picks the environment whose schedules to configure.
- */
 import { Host } from '@/ui/host';
 import { ContentUnavailableView, List, Section } from '@expo/ui/swift-ui';
 import { listStyle, refreshable } from '@expo/ui/swift-ui/modifiers';

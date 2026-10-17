@@ -1,11 +1,3 @@
-/**
- * SecurityOverviewView's trend chart: an `AreaMark` (score color at 14%)
- * under a monotone `LineMark`, `.chartYScale(domain: 0...100)` with the
- * default trailing Y axis, `.chartXAxis(.hidden)`.
- *
- * RN svg so both platforms share it (SwiftUI trees host it in an `RNHostView`;
- * @expo/ui's `Chart` can't combine an area and a line or pin the Y domain).
- */
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import Svg, { Line, Path } from 'react-native-svg';
@@ -14,7 +6,6 @@ import { colors } from '@/theme/colors';
 
 const ticks = [0, 25, 50, 75, 100];
 
-/** Fritsch–Carlson monotone cubic (`.interpolationMethod(.monotone)`). */
 function monotonePath(points: [number, number][]): string {
 	const first = points[0];
 	if (!first) return '';

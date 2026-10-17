@@ -1,29 +1,3 @@
-/**
- * Port of ArcaneOIDC/OIDCAuthenticator.swift.
- *
- * The Arcane backend owns the OAuth protocol state: `oidc/url` returns an
- * authorization URL carrying the server-generated `state` and PKCE challenge,
- * and `oidc/callback` validates `state` and redeems the code with the stored
- * verifier. The client only presents the browser and hands back `code` +
- * `state`. Presenting the browser is injected (`AuthSessionPresenter`), e.g.
- * with `expo-web-browser`:
- *
- * ```ts
- * const oidc = new OIDCAuthenticator(client, {
- *   presentAuthSession: async (url, scheme) => {
- *     const result = await WebBrowser.openAuthSessionAsync(url, `${scheme}://`, {
- *       preferEphemeralSession: true,
- *     });
- *     if (result.type !== "success") throw new CancellationError(); // from the SDK
- *     return result.url;
- *   },
- * });
- * const { user } = await oidc.signIn({
- *   callbackURLScheme: "arcane-mobile",
- *   redirectURI: "arcane-mobile://oidc-callback",
- * });
- * ```
- */
 import type { ArcaneClient } from '../client/ArcaneClient';
 import { CancellationError } from '../errors/ArcaneError';
 import { awaitAuthSession, type AuthSessionPresenter } from './authSession';
@@ -31,7 +5,6 @@ import { SignInError, type SignInResult } from './SignInTypes';
 import { urlComponents } from './urlComponents';
 
 export interface OIDCAuthenticatorOptions {
-	/** Default browser for `signIn` / `signInWithAuthorizationURL`. */
 	presentAuthSession: AuthSessionPresenter;
 }
 
@@ -46,11 +19,6 @@ export class OIDCAuthenticator {
 		this.presentAuthSession = options.presentAuthSession;
 	}
 
-	/**
-	 * Low-level entry point: the caller already has an authorization URL and
-	 * wants to drive the OAuth flow directly. Resolves with the callback URL.
-	 * (Swift `signIn(callbackURLScheme:authorizationURL:presenting:)`.)
-	 */
 	signInWithAuthorizationURL(args: {
 		callbackURLScheme: string;
 		authorizationURL: string;
@@ -63,16 +31,6 @@ export class OIDCAuthenticator {
 		);
 	}
 
-	/**
-	 * High-level orchestration: ask the backend for an auth URL, present it,
-	 * then complete the callback with the backend. Tokens are persisted via the
-	 * client's `AuthManager` on success. Throws `MFARequiredError` when the
-	 * server requires a second factor.
-	 *
-	 * `browser` overrides the default presenter (Swift
-	 * `signIn(callbackURLScheme:redirectURI:browser:)`, e.g. an app-owned
-	 * browser that shares the proxy session).
-	 */
 	async signIn(args: {
 		callbackURLScheme: string;
 		redirectURI: string;
@@ -103,7 +61,6 @@ export class OIDCAuthenticator {
 		return this.completeSignIn({ callbackURL, redirectURI: args.redirectURI });
 	}
 
-	/** Exchanges a callback URL's `code` + `state` with the backend. Swift-internal; public here. */
 	async completeSignIn(args: { callbackURL: string; redirectURI: string }): Promise<SignInResult> {
 		const { code, state } = OIDCAuthenticator.parseCallback(args.callbackURL);
 		const response = await this.client.auth.oidcCallback({
@@ -121,7 +78,6 @@ export class OIDCAuthenticator {
 		};
 	}
 
-	/** First `code` and `state` query values; throws `SignInError.missingCodeOrState`. */
 	static parseCallback(url: string): { code: string; state: string } {
 		const items = urlComponents(url)?.queryItems;
 		const code = items?.find((item) => item.name === 'code')?.value;

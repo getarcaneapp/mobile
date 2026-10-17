@@ -1,11 +1,3 @@
-/**
- * Port of HTTP/RESTService.swift: a convenience facade over the transport for
- * standard Arcane JSON endpoints that use the `{ success, data }` envelope.
- *
- * Every method takes `(path, init?)`. `decode` is the response decoder for
- * models with custom Swift `init(from:)`; omit it for plain models.
- * `body: undefined` is Swift's `Optional<EmptyBody>.none` (no body sent).
- */
 import type { ArcaneTransport } from '../client/ArcaneTransport';
 import type { EnvironmentID } from '../client/environment';
 import type { QueryItem } from '../client/url';
@@ -80,10 +72,6 @@ export class RESTService {
 		return this.transport.paginated<T>(path, init);
 	}
 
-	/**
-	 * @internal System backup and S3 endpoints use both bare payloads and API
-	 * envelopes: try the envelope first, then the bare payload.
-	 */
 	async requestPayload<T>(
 		path: string,
 		init: { method?: string; body?: unknown; query?: QueryItem[]; decode?: Decoder<T> } = {}
@@ -100,7 +88,6 @@ export class RESTService {
 		}
 	}
 
-	/** `environments/<id>/<suffix>`; `envID` defaults to the client's environment. */
 	environmentPath(envID: EnvironmentID | undefined, suffix: string): string {
 		return `environments/${envID ?? this.defaultEnvironmentID}/${suffix.replace(/^\/+/, '').replace(/\/+$/, '')}`;
 	}

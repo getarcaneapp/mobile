@@ -1,8 +1,3 @@
-/**
- * The platform-neutral model behind ImageDetailView.swift: details, update
- * status, containers using the image, export, tag, remove, the section tabs,
- * and the resource-actions toolbar items.
- */
 import { Directory, File, Paths } from 'expo-file-system';
 import { randomUUID } from 'expo-crypto';
 import * as Sharing from 'expo-sharing';
@@ -117,16 +112,11 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 			imageCache.setDetails(environmentID, loaded, imageID);
 			setDetails(loaded);
 		} catch {
-			// Swift ignores detail load failures.
 		} finally {
 			setIsLoading(false);
 		}
 	}, [environmentID, imageID]);
 
-	/**
-	 * Loads the last-known update status (cheap, cached) for the header without
-	 * forcing a fresh registry check. The navbar "Recheck" forces a fresh one.
-	 */
 	const loadUpdateStatus = useCallback(async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
@@ -141,9 +131,7 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 					break;
 				}
 			}
-		} catch {
-			// Best-effort; the navbar recheck can force a fresh check.
-		}
+		} catch {}
 	}, [environmentID, image]);
 
 	const loadUsingContainers = useCallback(async () => {
@@ -163,9 +151,7 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 				}
 			);
 			setUsingContainers(all.filter((container) => containerUsesImage(image, container)));
-		} catch {
-			// Best-effort decoration.
-		}
+		} catch {}
 	}, [environmentID, image]);
 
 	useEffect(() => {
@@ -189,16 +175,12 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 		}
 	};
 
-	// MARK: Export
-
 	const cleanupExport = useCallback(() => {
 		const uri = exportedRef.current;
 		if (uri) {
 			try {
 				new File(uri).parentDirectory.delete();
-			} catch {
-				// Already gone.
-			}
+			} catch {}
 		}
 		setExportedImage(undefined);
 	}, []);
@@ -252,7 +234,6 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 			});
 	};
 
-	// `.onDisappear` + context changes: cancel the export and drop the archive.
 	useEffect(
 		() => () => {
 			exportController.current?.abort();
@@ -267,22 +248,17 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 	useOnChange(generation, onContextChange);
 	useOnChange(activeEnvironmentID, onContextChange);
 
-	// MARK: Remove
-
 	const removeImage = async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		try {
 			await client.images.remove({ envID: environmentID, id: image.id });
 			imagesChanged(environmentID);
-			// The confirmation already popped this screen (`dismissOnConfirm`), like Swift's `dismiss()`.
 			showToast(Toasts.success('Image removed'));
 		} catch (error) {
 			showError(error);
 		}
 	};
-
-	// MARK: Toolbar
 
 	const primary: ActionButtonItem = {
 		id: 'recheck',
@@ -322,8 +298,6 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 		confirmationMessage: 'This will remove the image from the host.',
 		action: () => void removeImage()
 	});
-
-	// MARK: Overview
 
 	const metadataItems = (value: ImageDetailSummary): ResourceMetadataItem[] => [
 		{ label: 'Size', value: byteString(value.size), systemImage: 'internaldrive' },

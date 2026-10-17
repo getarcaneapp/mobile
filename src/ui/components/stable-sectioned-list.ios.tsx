@@ -1,11 +1,3 @@
-/**
- * Port of `StableSectionedList` (StableSectionedList.swift): non-empty
- * sections with footnote-semibold headers; one header carries the accessory
- * (e.g. a count or sort control). Rows are tagged with their item ID so
- * `List` selection works.
- *
- * SwiftUI-tree (place inside a `List`).
- */
 import { Group, HStack, Section, Spacer, Text } from '@expo/ui/swift-ui';
 import { font, tag } from '@expo/ui/swift-ui/modifiers';
 

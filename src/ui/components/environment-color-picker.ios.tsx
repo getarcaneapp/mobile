@@ -1,9 +1,3 @@
-/**
- * Port of `EnvironmentColorPicker` (EnvironmentColorsView.swift): the
- * environment's name with an `AccentColorMenu`, and a Custom… sheet.
- *
- * SwiftUI-tree (a `Form` / `List` row).
- */
 import { BottomSheet, Form, HStack, Section, Spacer, Text } from '@expo/ui/swift-ui';
 import { presentationDetents, presentationDragIndicator } from '@expo/ui/swift-ui/modifiers';
 import { useState } from 'react';

@@ -1,4 +1,3 @@
-/** AllVulnerabilitiesView's Filters sheet (`filterSheet`, AllVulnerabilitiesView.swift). */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {

@@ -1,9 +1,3 @@
-/**
- * Android stand-in for a SwiftUI `DatePicker` row inside a Form: title left,
- * the formatted value right; tapping opens the Material 3 date dialog (then
- * the time dialog when `includesTime`). Standalone; Android only (Compose)
- * — import it from `.android.tsx` files.
- */
 import { Host } from '@expo/ui';
 import { DatePickerDialog, TimePickerDialog } from '@expo/ui/jetpack-compose';
 import { useState } from 'react';
@@ -32,7 +26,6 @@ export function DatePickerRow({
 	const [step, setStep] = useState<'closed' | 'date' | 'time'>('closed');
 	const label = formatDate(value, 'abbreviated', includesTime ? 'shortened' : 'omitted');
 
-	// The Material date picker reports the chosen day as UTC midnight; keep the current time of day.
 	const pickDate = (picked: Date) => {
 		const next = new Date(value);
 		next.setFullYear(picked.getUTCFullYear(), picked.getUTCMonth(), picked.getUTCDate());

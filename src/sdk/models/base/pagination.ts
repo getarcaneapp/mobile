@@ -1,4 +1,3 @@
-/** Port of Models/Base/Pagination.swift. */
 import type { QueryItem } from '../../client/url';
 
 export interface PaginationResponse {
@@ -16,10 +15,6 @@ export const SortOrder = {
 	descending: 'desc'
 } as const satisfies Record<string, SortOrder>;
 
-/**
- * Common query parameters for Arcane list endpoints that support search, sort,
- * and offset-based pagination (`start` / `limit`).
- */
 export interface SearchPaginationSort {
 	search?: string;
 	start?: number;
@@ -29,7 +24,6 @@ export interface SearchPaginationSort {
 }
 
 export const SearchPaginationSort = {
-	/** Swift `query.queryItems`. */
 	queryItems(query: SearchPaginationSort = {}): QueryItem[] {
 		const items: QueryItem[] = [];
 		if (query.search !== undefined) items.push({ name: 'search', value: query.search });
@@ -40,10 +34,6 @@ export const SearchPaginationSort = {
 		return items;
 	},
 
-	/**
-	 * `queryItems` minus the pagination fields. Use this when `start` and
-	 * `limit` are passed as explicit arguments to `rest.paginated(...)`.
-	 */
 	nonPaginationQueryItems(query: SearchPaginationSort = {}): QueryItem[] {
 		const items: QueryItem[] = [];
 		if (query.search !== undefined) items.push({ name: 'search', value: query.search });

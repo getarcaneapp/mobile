@@ -1,8 +1,3 @@
-/**
- * Models for `ImagePatchTargetsView` and `ImagePatchView`
- * (ImagePatchViews.swift): patch-target search and pagination, the patch
- * form, and following a running patch until it finishes.
- */
 import { useEffect, useRef, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
@@ -21,7 +16,6 @@ import { useSecurityNavigation } from './security-routes';
 
 const targetsPageSize = 30;
 
-/** Swift `error.localizedDescription`. */
 const localizedDescription = (error: unknown) =>
 	error instanceof Error ? error.message : String(error);
 
@@ -33,8 +27,6 @@ const sleep = (ms: number, signal: AbortSignal) =>
 			reject(new Error('Aborted'));
 		});
 	});
-
-// MARK: - ImagePatchTargetsView
 
 export function useImagePatchTargets(environmentID: EnvironmentID) {
 	const nav = useSecurityNavigation();
@@ -98,7 +90,6 @@ export function useImagePatchTargets(environmentID: EnvironmentID) {
 		}
 	};
 
-	// `.task(id: scope)` with a 250 ms debounce.
 	useEffect(() => {
 		const timer = setTimeout(() => void load(true), 250);
 		return () => clearTimeout(timer);
@@ -119,8 +110,6 @@ export function useImagePatchTargets(environmentID: EnvironmentID) {
 			nav.openPatch(environmentID, target.imageId, target.imageRef, target.localOnly === true)
 	};
 }
-
-// MARK: - ImagePatchView
 
 export function useImagePatch({
 	environmentID,
@@ -162,7 +151,6 @@ export function useImagePatch({
 		live.current.patch = undefined;
 	};
 
-	// `.onChange(of: clientGeneration)` / `.onChange(of: activeEnvironmentID)`.
 	const watched = useRef({ clientGeneration, activeEnvironmentID });
 	useEffect(() => {
 		if (
@@ -176,10 +164,8 @@ export function useImagePatch({
 		setActivity(undefined);
 	}, [clientGeneration, activeEnvironmentID]);
 
-	// `.onDisappear { patchTask?.cancel() }`.
 	useEffect(() => () => cancelPatch(), []);
 
-	// `.task(id: scope) { await checkAvailability() }`.
 	useEffect(() => {
 		const controller = new AbortController();
 		setAvailable(false);
@@ -205,7 +191,6 @@ export function useImagePatch({
 		return () => controller.abort();
 	}, [scope, environmentID]);
 
-	// `.task(id: "\(scope)|\(record?.id ?? "")|\(refreshToken)") { await follow() }`.
 	const recordID = record?.id ?? '';
 	const recordRef = useRef(record);
 	recordRef.current = record;
@@ -313,7 +298,6 @@ export function useImagePatch({
 			void start(controller.signal);
 		},
 		refreshStatus: () => setRefreshToken((value) => value + 1),
-		/** "Progress and output" → ActivityDetailView. */
 		openActivity: () => {
 			if (activity) activityNav.openActivity(activity);
 		}

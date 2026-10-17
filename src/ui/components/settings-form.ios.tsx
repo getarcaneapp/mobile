@@ -1,9 +1,3 @@
-/**
- * iOS ports of the views in `EnvironmentSettingsForm.swift`:
- * `SettingFieldRow` and `SettingsSectionsView` (SwiftUI-tree, place inside a
- * `Form` / `List`), `SettingsCategoryView` (Standalone screen: Timeouts,
- * Activity History) and `ContainerMultiSelectView` (Standalone screen).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -69,9 +63,6 @@ import {
 } from './settings-form.types';
 import { useSettingsCategory } from './use-settings-category';
 
-// MARK: - Field row
-
-/** One editable setting, rendered with the app's shared form rows. */
 export function SettingFieldRow({
 	field,
 	draft,
@@ -134,7 +125,6 @@ export function SettingFieldRow({
 					title={field.label}
 					selection={selection}
 					onSelectionChange={setValue}
-					// Friendly label ("Older Than"), raw API value ("olderThan") as the tag.
 					options={type.options.map((option) => ({ label: optionLabel(option), value: option }))}
 					helper={field.description}
 				/>
@@ -188,8 +178,6 @@ export function SettingFieldRow({
 	}
 }
 
-// MARK: - Settings sections
-
 function SettingsSection({
 	section,
 	draft,
@@ -218,10 +206,6 @@ function SettingsSection({
 	);
 }
 
-/**
- * A tab's settings as native form sections. `draftToken` is the registry
- * token from `useEnvironmentSettingsDraft` (for the excluded-containers push).
- */
 export function SettingsSectionsView({
 	sections,
 	draft,
@@ -252,7 +236,6 @@ export function SettingsSectionsView({
 	);
 }
 
-/** `Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red) }`. */
 export function SettingsErrorSection({ draft }: { draft: EnvironmentSettingsDraft }) {
 	const error = useDraft(draft, (s) => s.errorMessage);
 	if (!error) return null;
@@ -267,8 +250,6 @@ export function SettingsErrorSection({ draft }: { draft: EnvironmentSettingsDraf
 	);
 }
 
-/** Keeps the last rows scrollable above the floating save bar (`safeAreaInset`). */
-/** Room for the floating save bar; see `SettingsSaveBarSpacer`. */
 export function SaveBarClearanceSection({
 	afterFooterlessSection = false
 }: {
@@ -277,12 +258,6 @@ export function SaveBarClearanceSection({
 	return <SettingsSaveBarSpacer afterFooterlessSection={afterFooterlessSection} />;
 }
 
-// MARK: - Server-wide settings page
-
-/**
- * A standalone settings page (Timeouts, Activity History), saved on the local
- * environment like the web's server-wide Settings pages.
- */
 export function SettingsCategoryView({
 	category,
 	environmentID,
@@ -306,7 +281,6 @@ export function SettingsCategoryView({
 							draftToken={model.draftToken}
 						/>
 						<SettingsErrorSection draft={draft} />
-						{/* Category sections have no footers. */}
 						<SaveBarClearanceSection afterFooterlessSection />
 					</Form>
 				</Host>
@@ -338,16 +312,6 @@ export function SettingsCategoryView({
 	);
 }
 
-// MARK: - Excluded Containers Picker
-
-/**
- * Multi-select checklist of running containers that builds the
- * comma-separated exclusion string used by auto-update / auto-heal. Names are
- * normalized by stripping any leading "/", joined with commas.
- *
- * Already-excluded names that aren't currently running are still listed
- * (marked "Not running") so they can be unchecked instead of silently persisting.
- */
 export function ContainerMultiSelectView({
 	title,
 	selection,
@@ -357,7 +321,6 @@ export function ContainerMultiSelectView({
 	title: string;
 	selection: string;
 	onSelectionChange: (selection: string) => void;
-	/** Running container display names. */
 	containers: string[];
 }) {
 	const accent = useAccentColor();
@@ -432,7 +395,6 @@ export function ContainerMultiSelectView({
 	);
 }
 
-/** Route screen for `environment/[id]/excluded-containers`: edits the registered draft. */
 export function ContainerMultiSelectScreen() {
 	const params = useLocalSearchParams<ContainerMultiSelectParams>();
 	const draft = registeredSettingsDraft(params.draft);

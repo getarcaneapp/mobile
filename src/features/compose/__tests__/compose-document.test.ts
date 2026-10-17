@@ -1,4 +1,3 @@
-// Port of ComposeDocumentTests.swift and ComposeScreenshotIntegrationTests.swift.
 import assert from 'node:assert/strict';
 import { describe, it } from 'vite-plus/test';
 
@@ -243,7 +242,6 @@ describe('ComposeDocument', () => {
 	}
 });
 
-/** Mirrors the shapes in the reported Arcane service with synthetic deployment values. */
 export const screenshotFixture = [
 	'services:',
 	'  arcane:',

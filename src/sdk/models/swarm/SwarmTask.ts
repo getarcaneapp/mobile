@@ -1,7 +1,5 @@
-/** Port of Models/Swarm/SwarmTask.swift. */
 import type { ISODateString } from '../base/date';
 
-/** A swarm task summary (one row in a service's task list). */
 export interface SwarmTaskSummary {
 	id: string;
 	name: string;

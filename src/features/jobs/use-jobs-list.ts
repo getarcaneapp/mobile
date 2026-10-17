@@ -1,7 +1,3 @@
-/**
- * The platform-neutral model behind JobsListView.swift: loading (one or all
- * environments), debounced search, category groups, and run/copy actions.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -24,7 +20,6 @@ import { useJobsNavigation } from './jobs-routes';
 
 export type JobsListProps = {
 	environmentID: EnvironmentID;
-	/** All Environments preview: list and run jobs from every enabled environment. */
 	allEnvironments: boolean;
 };
 
@@ -42,7 +37,6 @@ export function useJobsList({ environmentID, allEnvironments }: JobsListProps) {
 		const environments = await useEnvironmentsStore
 			.getState()
 			.listEnvironments(environmentID, allEnvironments);
-		// The jobs endpoint isn't paginated: each environment returns one complete page.
 		await list.reload(environments, async (envID) => {
 			const jobs = (await current.jobs.list({ envID })).jobs;
 			return {

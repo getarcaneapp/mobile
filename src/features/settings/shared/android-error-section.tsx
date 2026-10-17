@@ -1,9 +1,3 @@
-/**
- * Android rendering of the settings forms' inline error section:
- * `Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red) }`.
- *
- * Standalone (RN views).
- */
 import { Text, View } from 'react-native';
 
 import { systemColors } from '@/theme/colors';

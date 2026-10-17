@@ -1,8 +1,3 @@
-/**
- * The model behind UserSettingsView.swift: the manager's Gravatar toggle and
- * (when the server exposes it) the avatar upload limit, with dirty tracking,
- * validation, save and revert. Shared by both platforms.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -21,7 +16,6 @@ export function useUserSettings() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>();
 
-	// `Task.isCancelled`: the screen went away mid-request.
 	const mounted = useRef(true);
 	useEffect(
 		() => () => {

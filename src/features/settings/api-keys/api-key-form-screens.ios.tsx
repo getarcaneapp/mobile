@@ -1,4 +1,3 @@
-/** Ports of `CreateAPIKeyView` and `EditAPIKeyView` (CreateAPIKeyView.swift). */
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import {
@@ -40,7 +39,6 @@ import { useCreateAPIKey, useEditAPIKey } from './use-api-key-form';
 
 const permissionsFooter = 'Select at least one permission. API keys cannot exceed your own access.';
 
-/** `.searchable(text:placement: .navigationBarDrawer(displayMode: .always), prompt: "Search permissions")`. */
 function usePermissionSearchModifier(
 	enabled: boolean,
 	onChange: (text: string) => void

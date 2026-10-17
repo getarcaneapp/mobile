@@ -1,4 +1,3 @@
-/** Port of `TemplateRegistriesView` + `TemplateRegistryRow` (TemplateRegistriesView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

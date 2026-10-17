@@ -1,10 +1,3 @@
-/**
- * Material 3 single-choice segmented buttons (Compose
- * `SingleChoiceSegmentedButtonRow`) for the Android security screens: the
- * stand-in for SwiftUI's `.pickerStyle(.segmented)`.
- *
- * Android only (imported from `.android.tsx` files). Standalone (own Host).
- */
 import { Host } from '@expo/ui';
 import {
 	SegmentedButton,

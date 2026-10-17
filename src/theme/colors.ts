@@ -5,16 +5,6 @@ function pick(ios: ColorValue, android: ColorValue, web: string): ColorValue {
 	return Platform.select({ ios, android, default: web });
 }
 
-/**
- * A color table whose values follow the current appearance on Android.
- *
- * Material 3 dynamic colors resolve to fixed hex values for one scheme, so a
- * module-level table would keep the launch appearance forever. On Android
- * each property is a getter that resolves (cached per scheme) on read, so a
- * render after a dark-mode switch picks up the new colors; the root layout
- * re-renders the tree when the scheme changes. iOS colors are dynamic
- * `PlatformColor`s already and resolve once.
- */
 export function appearanceColors<T extends Record<string, ColorValue>>(
 	resolve: () => T
 ): Readonly<T> {
@@ -37,10 +27,6 @@ export function appearanceColors<T extends Record<string, ColorValue>>(
 	);
 }
 
-/**
- * Semantic colors. iOS resolves UIKit system colors natively (so they match
- * the SwiftUI app exactly); Android maps to Material 3 dynamic roles.
- */
 export const colors = appearanceColors(() => ({
 	label: pick(Color.ios.label, Color.android.dynamic.onSurface, '#000000'),
 	secondaryLabel: pick(Color.ios.secondaryLabel, Color.android.dynamic.onSurfaceVariant, '#3c3c43'),
@@ -86,7 +72,6 @@ type SystemColorTable = Record<
 	string
 >;
 
-/** iOS 18 and Android: the classic system palette (light, dark). */
 const classicLight: SystemColorTable = {
 	blue: '#007AFF',
 	green: '#34C759',
@@ -117,7 +102,6 @@ const classicDark: SystemColorTable = {
 	brown: '#AC8E68',
 	gray: '#8E8E93'
 };
-/** iOS 26+ system palette; dark values sampled from the reference app. */
 const ios26Light: SystemColorTable = {
 	blue: '#0088FF',
 	green: '#34C759',
@@ -158,12 +142,6 @@ function currentSystemTable(): SystemColorTable {
 	return dark ? classicDark : classicLight;
 }
 
-/**
- * SwiftUI's named system colors (`.blue`, `.green`, …) as hex so they can be
- * mixed with opacity. On iOS each read resolves for the current appearance
- * and OS (SwiftUI's colors are dynamic and were retuned in iOS 26); Android
- * keeps the classic light palette as accents.
- */
 export const systemColors: Readonly<SystemColorTable> = Object.defineProperties(
 	{} as SystemColorTable,
 	Object.fromEntries(
@@ -176,13 +154,11 @@ export const systemColors: Readonly<SystemColorTable> = Object.defineProperties(
 
 export type SystemColorName = keyof typeof systemColors;
 
-/** `Color(hex:)` — returns undefined for anything that isn't `#RRGGBB`. */
 export function parseHex(hex: string): string | undefined {
 	const cleaned = hex.trim().replace('#', '');
 	return /^[0-9a-fA-F]{6}$/.test(cleaned) ? `#${cleaned.toUpperCase()}` : undefined;
 }
 
-/** `color.opacity(x)` for hex colors. */
 export function withOpacity(hex: string, opacity: number): string {
 	const alpha = Math.round(Math.min(Math.max(opacity, 0), 1) * 255)
 		.toString(16)
@@ -190,7 +166,6 @@ export function withOpacity(hex: string, opacity: number): string {
 	return `${hex.slice(0, 7)}${alpha}`;
 }
 
-/** Mix a hex color toward white by `amount` (0...1). */
 export function lighten(hex: string, amount: number): string {
 	const n = parseInt(hex.slice(1, 7), 16);
 	const mix = (c: number) => Math.round(c + (255 - c) * amount);
@@ -200,7 +175,6 @@ export function lighten(hex: string, amount: number): string {
 	return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0').toUpperCase()}`;
 }
 
-/** SwiftUI `Color.gradient`: a soft top-lit linear gradient of one color. */
 export function colorGradient(hex: string) {
 	return {
 		type: 'linearGradient' as const,

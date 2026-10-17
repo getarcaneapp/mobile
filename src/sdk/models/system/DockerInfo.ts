@@ -1,15 +1,6 @@
-/** Port of Models/System/DockerInfo.swift. */
 import { JSONValue, type JSONObject } from '../../types/json';
 import { D } from '../base/decoding';
 
-/**
- * Docker daemon version + system info as returned by `/system/docker/info`.
- *
- * The fields below the top-level metadata mirror the Docker SDK's
- * `system.Info` struct, which the Go API embeds verbatim. They are exposed as
- * the `info` dictionary; use the typed top-level fields for the values Arcane
- * massages itself.
- */
 export interface DockerInfo {
 	success: boolean;
 	apiVersion: string;
@@ -18,10 +9,6 @@ export interface DockerInfo {
 	os: string;
 	arch: string;
 	buildTime: string;
-	/**
-	 * Raw Docker SDK info payload. Undefined when the API did not embed the
-	 * info document (older deployments) — generally populated.
-	 */
 	info?: Record<string, JSONValue>;
 }
 
@@ -52,7 +39,6 @@ export const DockerInfo = {
 		return { ...args };
 	},
 
-	/** Convenience access to commonly-used fields embedded from `system.Info`. */
 	ncpu(this: void, value: DockerInfo): number | undefined {
 		return JSONValue.intValue(value.info?.['NCPU']);
 	},
@@ -69,10 +55,6 @@ export const DockerInfo = {
 		return JSONValue.stringValue(value.info?.['OperatingSystem']);
 	},
 
-	/**
-	 * Swift `init(from:)`: decodes the whole payload as a JSON object, pulling
-	 * the top-level fields and moving every other key into `info`.
-	 */
 	decode(this: void, raw: unknown): DockerInfo {
 		const o = D.object(raw, 'DockerInfo') as JSONObject;
 		const string = (key: string) => JSONValue.stringValue(o[key]) ?? '';
@@ -93,7 +75,6 @@ export const DockerInfo = {
 		};
 	},
 
-	/** Swift `encode(to:)`: flattens `info` back alongside the top-level fields. */
 	encode(this: void, value: DockerInfo): Record<string, JSONValue> {
 		const raw: Record<string, JSONValue> = {
 			success: value.success,

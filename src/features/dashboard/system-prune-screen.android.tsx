@@ -1,6 +1,3 @@
-/**
- * Android (Material 3) rendering of `SystemPruneView`. Presented as a modal route.
- */
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';

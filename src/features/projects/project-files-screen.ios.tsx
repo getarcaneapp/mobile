@@ -1,10 +1,3 @@
-/**
- * Port of `ProjectFilesWorkspaceView` (ProjectFilesWorkspaceView.swift),
- * presented as a sheet with its own SwiftUI NavigationStack: the compose and
- * .env editors, the file browser with folder drill-downs, and managed file
- * editors, all sharing one draft. With the native Compose editor preview the
- * compose, .env and compose-related files open in the native editors.
- */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {
@@ -94,7 +87,6 @@ import {
 
 type Model = ProjectFilesWorkspaceModel;
 
-/** `ProjectTextFileEditorView`. */
 function TextFileEditor({
 	text,
 	onChangeText,
@@ -206,7 +198,6 @@ function TextFileEditor({
 	);
 }
 
-/** `projectFileActions(folderPath:)` as editor menu items (Swift passes them as `menuActions`). */
 function useProjectFileMenuActions(model: Model, folderPath: string): ComposeMenuAction[] {
 	const {
 		previewEnabled,
@@ -311,7 +302,6 @@ function WorkspaceToolbar({
 	model: Model;
 	destination: ProjectFilesDestination;
 	isRoot: boolean;
-	/** `editorToolbar(combined:)`: the native editors carry the file actions in their own menu. */
 	combined?: boolean;
 	children: ReactNode;
 }) {
@@ -325,7 +315,6 @@ function WorkspaceToolbar({
 						<Button label="Done" onPress={model.done} modifiers={toolbarSymbol} />
 					</ToolbarItem>
 				) : null}
-				{/* @expo/ui nests one `.toolbar` per item, so same-placement items render in reverse: Save last = rightmost. */}
 				<ToolbarItem placement="topBarTrailing">
 					<Button
 						onPress={model.save}
@@ -362,7 +351,6 @@ function WorkspaceToolbar({
 	);
 }
 
-/** `managedFileEditor(path:)` with the preview: compose-related files and `.env*` files open natively. */
 export function managedFilePreviewKind(model: Model, path: string): 'compose' | 'env' | undefined {
 	if (!model.previewEnabled || model.managedFileContent(path) === undefined) return undefined;
 	if (model.composeRelatedPaths.has(path)) return 'compose';
@@ -370,7 +358,6 @@ export function managedFilePreviewKind(model: Model, path: string): 'compose' | 
 	return undefined;
 }
 
-/** `editorNotice`. */
 function EditorNotice({ model }: { model: Model }) {
 	const message = model.errorMessage ?? model.readOnlyReason;
 	return (
@@ -395,7 +382,6 @@ function EditorNotice({ model }: { model: Model }) {
 	);
 }
 
-/** A native editor over host-owned text (`ComposePreviewEditor` / `EnvPreviewEditor`). */
 function PreviewEditor({
 	kind,
 	text,
@@ -440,7 +426,6 @@ function ManagedFileEditor({ model, path }: { model: Model; path: string }) {
 	);
 	useEffect(() => {
 		void model.loadManagedFileContent(path);
-		// `.task(id: path)`.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [path]);
 	if (entry?.isDirectory)
@@ -639,7 +624,6 @@ function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string 
 	);
 }
 
-/** `workspaceContent(for:)`. */
 function WorkspaceContent({
 	model,
 	destination,
@@ -761,7 +745,6 @@ export function ProjectFilesScreen() {
 
 	return (
 		<View style={{ flex: 1 }}>
-			{/* `.interactiveDismissDisabled(hasChanges)`. */}
 			<Stack.Screen options={{ gestureEnabled: !model.hasChanges }} />
 			<Host style={{ flex: 1 }}>
 				<NavigationStack path={path} onPathChange={setPath} modifiers={[disabled(model.isSaving)]}>

@@ -1,14 +1,11 @@
-/** Port of Models/Volume/Backup.swift. */
 import type { PaginationResponse } from '../base/pagination';
 import { D } from '../base/decoding';
 
-/** BackupEntry represents a single volume backup record. */
 export interface BackupEntry {
 	id: string;
 	volumeName: string;
 	size: number;
 	createdAt: string;
-	/** JSON key `activityId`. */
 	activityID?: string;
 	status?: string;
 	trigger?: string;
@@ -53,7 +50,6 @@ export const BackupEntry = {
 	}
 } as const;
 
-/** VolumeBackupListPage is the page envelope returned by `GET volumes/{name}/backups`. */
 export interface VolumeBackupListPage {
 	success: boolean;
 	data: BackupEntry[];
@@ -73,12 +69,10 @@ export const VolumeBackupListPage = {
 	}
 } as const;
 
-/** BackupHasPath is the response for the `has-path` lookup. */
 export interface BackupHasPath {
 	exists: boolean;
 }
 
-/** RestoreBackupFilesRequest is the body for the partial restore endpoint. */
 export interface RestoreBackupFilesRequest {
 	paths: string[];
 	selectAll?: boolean;
@@ -91,12 +85,10 @@ export const RestoreBackupFilesRequest = {
 	}
 } as const;
 
-/** DiscoverVolumeBackupsRequest scans an S3 destination for existing backups. */
 export interface DiscoverVolumeBackupsRequest {
 	s3DestinationId: string;
 }
 
-/** DiscoverVolumeBackupsResponse reports newly imported backups. */
 export interface DiscoverVolumeBackupsResponse {
 	count: number;
 	errors?: string[];

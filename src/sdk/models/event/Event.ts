@@ -1,4 +1,3 @@
-/** Port of Models/Event/Event.swift. */
 import type { JSONValue } from '../../types/json';
 import type { ISODateString } from '../base/date';
 
@@ -29,7 +28,6 @@ export interface EventSeverityCounts {
 }
 
 export const EventSeverityCounts = {
-	/** Swift init defaults: every count defaults to `0`. */
 	make(init: Partial<EventSeverityCounts> = {}): EventSeverityCounts {
 		return {
 			total: init.total ?? 0,

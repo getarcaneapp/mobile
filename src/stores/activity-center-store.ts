@@ -1,12 +1,3 @@
-/**
- * Port of `ActivityCenterStore` (Services/ActivityCenterStore.swift).
- *
- * One store per presenting view (Swift `@State private var store =
- * ActivityCenterStore()`), so this is a factory: `createActivityCenterStore()`
- * returns a vanilla zustand store; read it with `useActivityCenter(store, …)`.
- * The Activity Center hands its store to a pushed `ActivityDetailView`, which
- * shares the stream through `acquireStream` / `releaseStream`.
- */
 import { createStore, useStore, type StoreApi } from 'zustand';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -37,13 +28,10 @@ import type {
 } from '@/sdk/models/activity/Activity';
 
 const pageSize = 50;
-/** Stream events rebuild the grouped lists at most this often. */
 const streamRebuildIntervalMs = 200;
 const maxReconnectAttempts = 20;
 const maxReconnectDelaySeconds = 15;
-/** Reset the retry budget after a stream survives long enough to be useful. */
 const stableConnectionSeconds = 5;
-/** After the fast-backoff budget is spent, keep probing at this cadence forever. */
 const idleRetrySeconds = 30;
 
 export type ActivityHistoryClearResult = {
@@ -71,7 +59,6 @@ export type ActivityCenterState = {
 	loadMoreError: string | undefined;
 	streamErrorMessage: string | undefined;
 	environmentIDs: string[];
-	/** Keyed by `ActivityCenterItem.activity(activity).id`. */
 	activityDetails: Readonly<Record<string, ActivityDetail>>;
 
 	searchText: string;
@@ -186,7 +173,6 @@ function matchesSearch(activity: Activity, search: string): boolean {
 	);
 }
 
-/** Messages stay sorted by time; streamed ones almost always belong at the end. */
 function insertMessage(
 	message: ActivityMessage,
 	messages: readonly ActivityMessage[]
@@ -233,7 +219,6 @@ export function createActivityCenterStore(): ActivityCenterStore {
 		let streamTask: AbortController | undefined;
 		let failedStreamEnvironmentIDs = new Set<string>();
 		let streamWarning: StreamWarning | undefined;
-		/** Bumped on every stream start/stop so a finishing task from a previous generation can't mutate state. */
 		let streamGeneration = 0;
 		let streamConsumers = 0;
 		let pendingStreamStop: ReturnType<typeof setTimeout> | undefined;
@@ -265,7 +250,6 @@ export function createActivityCenterStore(): ActivityCenterStore {
 			if (Object.keys(next).length > 0) set(next);
 		};
 
-		/** Filter menus list the types present; only the activity set changes them. */
 		const recomputeAvailableFilters = () => {
 			const { activities, availableTypes, availableResourceTypes } = get();
 			const nextTypes = sortedUnique(activities.map((activity) => activity.type));
@@ -468,15 +452,12 @@ export function createActivityCenterStore(): ActivityCenterStore {
 						}
 					} catch (error) {
 						if (isCancellation(error) || signal.aborted) return;
-						// Transport drops, server restarts, and NDJSON decode failures are
-						// retried below. The warning only shows once the budget is spent.
 					}
 
 					if (generation !== streamGeneration || signal.aborted) return;
 
 					if (receivedFirstEvent && Date.now() - connectedAt >= stableConnectionSeconds * 1000)
 						attempt = 0;
-					// Exponential backoff while the budget lasts, then a slow idle probe forever.
 					let delay: number;
 					if (attempt >= maxReconnectAttempts) {
 						markStreamFailed();
@@ -633,8 +614,6 @@ export function createActivityCenterStore(): ActivityCenterStore {
 						requests.push([environment, paginationByEnvironment.get(id)?.nextStart ?? 0]);
 					}
 					let failures = 0;
-					// Every environment loads at once; each batch of answers publishes
-					// so one slow environment doesn't hold the list back.
 					await progressiveFanOut(
 						requests,
 						async ([environment, start]): Promise<
@@ -747,8 +726,6 @@ export function createActivityCenterStore(): ActivityCenterStore {
 				if (identity !== clientTransportIdentity) return;
 				const environment = environmentFor(environmentID);
 				let current: ActivityDetail = get().activityDetails[key] ?? response;
-				// A detail request must not replace a status or progress update that
-				// arrived from the stream while the request was suspended.
 				if (
 					current.activity === previousActivity &&
 					ActivityDisplay.sortTime(response.activity) >= ActivityDisplay.sortTime(current.activity)
@@ -876,7 +853,6 @@ export function createActivityCenterStore(): ActivityCenterStore {
 	});
 }
 
-/** Reads an `ActivityCenterStore` with a selector (re-renders on change). */
 export function useActivityCenter<T>(
 	store: ActivityCenterStore,
 	selector: (state: ActivityCenterState) => T

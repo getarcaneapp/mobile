@@ -10,7 +10,6 @@ import { MaterialListGroup, MaterialListItem, MaterialSectionHeader } from '@/ui
 
 import { useMoreDestinations } from './use-more-destinations';
 
-/** Android rendering of the More tab (`SettingsView`). */
 export function MoreScreen() {
 	const router = useRouter();
 	const [search, setSearch] = useState('');

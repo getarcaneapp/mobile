@@ -1,9 +1,3 @@
-/**
- * Android rendering of `WhatsNewPresentationView` / `WhatsNewArchiveView`
- * (Views/WhatsNew/WhatsNewView.swift) in Material 3: a sheet with a top app
- * bar (Previous Releases + Continue), the release's category sections, and an
- * in-sheet Previous Releases list that opens each older release.
- */
 import { Stack } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { BackHandler, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
@@ -30,7 +24,6 @@ import {
 	type WhatsNewPresentation
 } from './whats-new-model';
 
-/** `undefined` = the release; `"archive"` = Previous Releases; otherwise an archived version. */
 type ArchiveState = undefined | 'archive' | { version: string };
 
 function TopBar({
@@ -116,7 +109,6 @@ export function WhatsNewScreen() {
 	const { whatsNew, dismiss } = useWhatsNewPresentation();
 	const [archive, setArchive] = useState<ArchiveState>(undefined);
 
-	// System back steps out of the archive before closing the sheet.
 	useEffect(() => {
 		if (archive === undefined) return;
 		const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -263,7 +255,6 @@ function FeatureRow({
 	);
 }
 
-// Read per render: colors follow the current appearance.
 const bulletText = () => [m3Type.bodyMedium, { color: colors.secondaryLabel }];
 
 function FeatureText({ section }: { section: PresentationSection }) {
@@ -293,10 +284,6 @@ function BulletRow({ bullet }: { bullet: ReleaseNoteBullet }) {
 
 const legendHeight = 16;
 
-/**
- * A badged release note drawn as a tinted block quote: the badge label sits
- * in the card's outline, cutting the line, and the note fills the card.
- */
 function BadgedReleaseNote({ text, badge }: { text: string; badge: ReleaseNoteBadge }) {
 	const color = badgeColor[badge];
 	const label = badgeLabel[badge];
@@ -316,7 +303,6 @@ function BadgedReleaseNote({ text, badge }: { text: string; badge: ReleaseNoteBa
 			>
 				<Text style={bulletText()}>{text}</Text>
 			</View>
-			{/* The legend's backdrop repeats the page above the edge and the tint below it, hiding the outline behind the label. */}
 			<View
 				style={{
 					position: 'absolute',

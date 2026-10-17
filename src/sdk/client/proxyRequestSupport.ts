@@ -1,13 +1,3 @@
-/**
- * Port of Client/ProxyRequestSupport.swift.
- *
- * Differences from Swift (platform limits, see README):
- * - `fetch` follows redirects itself, so instead of vetoing each hop in a
- *   URLSession delegate, the final `response.url` is checked with `contains`
- *   and any 3xx that surfaces is treated as a proxy gate.
- * - WebSocket handshake responses are not observable from JS, so
- *   `receive` is only invoked for HTTP responses.
- */
 import { ArcaneError, CancellationError } from '../errors/ArcaneError';
 import type {
 	ArcaneHTTPResponseInfo,
@@ -36,12 +26,10 @@ function hasLineBreak(value: string): boolean {
 	return value.includes('\r') || value.includes('\n');
 }
 
-/** Mutable request under construction (Swift `URLRequest`). */
 export interface PreparedRequest {
 	url: string;
 	method: string;
 	headers: Record<string, string>;
-	/** `false` mirrors `httpShouldHandleCookies = false`. */
 	handleCookies: boolean;
 }
 
@@ -61,7 +49,6 @@ export function getHeader(headers: Record<string, string>, name: string): string
 	return undefined;
 }
 
-/** Records the proxy context so the response can be reported (Swift `ProxyRequestDelegate`). */
 export class ProxyRequestDelegate {
 	readonly support: ProxyRequestSupport;
 	private readonly context: ArcaneProxyRequestContext | undefined;
@@ -157,11 +144,6 @@ export class ProxyRequestSupport {
 		);
 	}
 
-	/**
-	 * Throws `proxyAuthenticationRequired` for HTML gates, redirects, 407s and
-	 * `Proxy-Authenticate`; `authenticationRejected` for 401/403 bodies that are
-	 * not Arcane (or RFC 7807) errors, so they never invalidate Arcane tokens.
-	 */
 	check(response: ArcaneHTTPResponseInfo, body?: string, expectsJSON = true): void {
 		if (!response.url || !this.contains(response.url)) {
 			throw ArcaneError.proxyAuthenticationRequired();

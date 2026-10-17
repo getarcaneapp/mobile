@@ -1,7 +1,3 @@
-/**
- * Orchestration of `UpdaterRunView` (UpdaterRunView.swift): runs the updater
- * on one environment while polling its live status.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -105,7 +101,6 @@ export function useUpdaterRun(environmentID: EnvironmentID) {
 		setLiveStatus(undefined);
 
 		const pollLoop = async () => {
-			// First tick: short delay so we transition to .running quickly.
 			await sleep(400, poll.signal);
 			if (poll.signal.aborted) return;
 			setPhase((current) => (current.kind === 'starting' ? { kind: 'running' } : current));
@@ -115,9 +110,7 @@ export function useUpdaterRun(environmentID: EnvironmentID) {
 					if (poll.signal.aborted) return;
 					setLiveStatus(status);
 					setPhase((current) => (current.kind === 'starting' ? { kind: 'running' } : current));
-				} catch {
-					// Swallow status-poll errors — the run task owns the authoritative outcome.
-				}
+				} catch {}
 				await sleep(1500, poll.signal);
 			}
 		};
@@ -153,7 +146,6 @@ export function useUpdaterRun(environmentID: EnvironmentID) {
 		start();
 	}, [cancel, start]);
 
-	// `.task { await start() }` + `.onDisappear { cancel }`
 	useEffect(() => {
 		start();
 		return cancel;

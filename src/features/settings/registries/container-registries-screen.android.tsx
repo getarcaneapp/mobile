@@ -1,8 +1,3 @@
-/**
- * Android rendering of `ContainerRegistriesView` (ContainerRegistriesView.swift):
- * Material 3 grouped list with the same states, search, pagination and row
- * actions (tap edits; long-press opens Edit / Delete).
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

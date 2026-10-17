@@ -1,4 +1,3 @@
-/** Port of Models/Federated/FederatedCredential.swift. */
 import type { ISODateString } from '../base/date';
 
 export interface FederatedCredential {

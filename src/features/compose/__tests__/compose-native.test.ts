@@ -1,4 +1,3 @@
-// Port of ComposeBlockScalarTests.swift and the document half of ComposeNativeFieldsTests.swift.
 import assert from 'node:assert/strict';
 import { describe, it } from 'vite-plus/test';
 

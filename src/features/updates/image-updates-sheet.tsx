@@ -1,8 +1,3 @@
-/**
- * Root of the Dashboard's image updates sheet: `AllEnvironmentsImageUpdatesView`
- * with `dismissOnOperationStart: true` (starting an update dismisses the sheet)
- * and the sheet's own toast host (`.toastHost(reservesTabBarSpace: false)`).
- */
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 

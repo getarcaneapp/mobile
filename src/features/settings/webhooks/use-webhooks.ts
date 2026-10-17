@@ -1,7 +1,3 @@
-/**
- * `WebhooksView` model (WebhooksView.swift): the environment's webhooks with
- * enable/disable, delete, create, and the one-time token reveal.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
@@ -17,7 +13,6 @@ import { showToast, Toasts } from '@/ui/toast';
 import { settingsPayloads, useSettingsNavigation } from '../shared/settings-routes';
 import type { CreateWebhookPayload, WebhookTokenPayload } from './webhook-models';
 
-/** `webhookIcon(for:)` / `WebhookRow.targetIcon(_:)`. */
 export function webhookIcon(targetType: string): string {
 	switch (targetType) {
 		case 'container':
@@ -33,7 +28,6 @@ export function webhookIcon(targetType: string): string {
 	}
 }
 
-/** Swift `String.capitalized`. */
 export function capitalized(value: string): string {
 	return value.replace(
 		/\w\S*/g,
@@ -41,7 +35,6 @@ export function capitalized(value: string): string {
 	);
 }
 
-/** `Text(date, style: .relative)`: the two largest units, e.g. "2 hr, 5 min". */
 export function relativeStyle(value: string): string | undefined {
 	const date = parseArcaneDate(value);
 	if (!date) return undefined;
@@ -67,7 +60,6 @@ export function relativeStyle(value: string): string | undefined {
 	return parts.length === 0 ? '0 sec' : parts.join(', ');
 }
 
-/** `.alert("Error", isPresented:)` with a single OK button. */
 function presentError(message: string) {
 	Alert.alert('Error', message, [{ text: 'OK' }]);
 }
@@ -98,7 +90,6 @@ export function useWebhooks() {
 		}
 	}, []);
 
-	// `.task { await loadWebhooks() }`.
 	useEffect(() => {
 		void loadWebhooks();
 	}, [loadWebhooks, client, activeEnvironmentID]);
@@ -133,7 +124,6 @@ export function useWebhooks() {
 				manager.activeEnvironmentID,
 				`webhooks/${webhook.id}`
 			);
-			// PATCH returns `{ success: true }` with no webhook, so only the status matters.
 			await manager.client.transport.rawRequest(path, { method: 'PATCH', body });
 			invalidateWebhookCaches();
 			await loadWebhooks();
@@ -150,7 +140,6 @@ export function useWebhooks() {
 		actions: [{ title: 'Delete', action: () => void deleteWebhook(webhook) }]
 	}));
 
-	// `.sheet(item: $createdWebhook)`: shown once the create sheet has dismissed.
 	const pendingToken = useRef<WebhookTokenPayload | undefined>(undefined);
 	const isFocused = useRef(false);
 	const presentPendingToken = useCallback(() => {

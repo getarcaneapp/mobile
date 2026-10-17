@@ -1,11 +1,3 @@
-/**
- * Port of `CodeEditorView` (Views/Main/CodeEditorView.swift): a monospaced
- * plain-text editor with YAML / .env syntax coloring, YAML auto-indent on
- * Return, and the quick-keys bar above the keyboard (iOS input accessory;
- * Android shows it pinned under the editor while focused).
- *
- * Standalone (RN view). Inside a SwiftUI tree, host it in an `RNHostView`.
- */
 import { useId, useMemo, useRef, useState } from 'react';
 import {
 	InputAccessoryView,
@@ -30,11 +22,9 @@ export type CodeEditorLanguage = 'yaml' | 'env' | 'plaintext';
 
 export type CodeEditorProps = {
 	text: string;
-	/** Omit for read-only viewers. */
 	onChangeText?: (text: string) => void;
 	language?: CodeEditorLanguage;
 	readOnly?: boolean;
-	/** Fixed height (Form rows); omit to fill the parent. */
 	height?: number;
 	accessibilityLabel?: string;
 };
@@ -64,7 +54,6 @@ const palette = {
 type ColorName = keyof typeof palette;
 type Rule = { pattern: RegExp; group: number; color: ColorName };
 
-/** `YAMLHighlighter.rules` (lookbehinds rewritten as capture groups). Later rules win. */
 const yamlRules: Rule[] = [
 	{ pattern: /^(\s*)([\w\-./]+)(?=\s*:)/gm, group: 2, color: 'key' },
 	{ pattern: /'[^'\n]*'/g, group: 0, color: 'string' },
@@ -75,17 +64,14 @@ const yamlRules: Rule[] = [
 	{ pattern: /#.*$/gm, group: 0, color: 'comment' }
 ];
 
-/** `EnvHighlighter.rules`. */
 const envRules: Rule[] = [
 	{ pattern: /^[A-Z_][A-Z0-9_]*(?==)/gm, group: 0, color: 'key' },
 	{ pattern: /=(.*)$/gm, group: 1, color: 'string' },
 	{ pattern: /#.*$/gm, group: 0, color: 'comment' }
 ];
 
-/** `UIFont.monospacedSystemFont` on iOS. */
 const editorFont = Platform.select({ ios: 'Menlo', default: monoFamily });
 
-/** Above this size coloring is skipped so typing stays responsive. */
 const maximumHighlightedLength = 120_000;
 
 type Span = { text: string; color?: ColorName };
@@ -117,7 +103,6 @@ function highlight(text: string, language: CodeEditorLanguage): Span[] {
 
 type Selection = { start: number; end: number };
 
-/** YAML Return: keep the line's indent, plus two spaces after `key:`, `-`, `|`, `|-`, `>`. */
 function autoIndent(
 	previous: string,
 	next: string,
@@ -315,7 +300,6 @@ export function CodeEditor({
 					fontSize: 13.5,
 					color: colors.label,
 					paddingTop: 12,
-					// UITextView's default lineFragmentPadding (5) sits inside Swift's 8pt inset; RN zeroes it.
 					paddingLeft: Platform.OS === 'ios' ? 13 : 8,
 					paddingRight: Platform.OS === 'ios' ? 13 : 8,
 					paddingBottom: 32

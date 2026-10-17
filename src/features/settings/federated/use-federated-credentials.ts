@@ -1,8 +1,3 @@
-/**
- * `FederatedCredentialsView` model (FederatedCredentialsView.swift): searchable,
- * paginated credential list keyed by the session identity, with create and
- * swipe-to-delete for global admins.
- */
 import { useEffect, useRef, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
@@ -22,7 +17,6 @@ import type {
 	FederatedCredentialFormPayload
 } from './federated-credential-form';
 
-/** `manager.currentUser?.isGlobalAdmin == true`. */
 export function useCanManageFederated(): boolean {
 	const user = useClientManager((s) => s.currentUser);
 	return user !== undefined && User.isGlobalAdmin(user);
@@ -47,7 +41,6 @@ export function useFederatedCredentials() {
 	const [unsupported, setUnsupported] = useState(false);
 	const [pendingDelete, setPendingDelete] = useState<FederatedCredential>();
 
-	// Async continuations compare against the latest values (Swift reads `@State` live).
 	const live = useRef({ identity, credentials, search });
 	live.current = { identity, credentials, search };
 	const requestID = useRef(0);
@@ -115,7 +108,6 @@ export function useFederatedCredentials() {
 	latestLoad.current = load;
 	const reload = () => latestLoad.current(true);
 
-	// `.task(id: identity) { await load(reset: true) }`.
 	useEffect(() => {
 		void latestLoad.current(true);
 	}, [identity]);

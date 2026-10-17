@@ -1,8 +1,3 @@
-/**
- * Port of `JobsView` (JobsView.swift): links to the jobs list and the
- * schedule settings. In All Environments the schedules link first picks an
- * environment.
- */
 import { Host } from '@/ui/host';
 import { List, Section } from '@expo/ui/swift-ui';
 import { listStyle } from '@expo/ui/swift-ui/modifiers';

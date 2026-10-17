@@ -1,4 +1,3 @@
-/** Android rendering of `ContainerInspectView`. */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 

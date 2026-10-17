@@ -1,4 +1,3 @@
-/** Android rendering of `VolumeDetailView` (VolumesView.swift). */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 

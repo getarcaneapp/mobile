@@ -1,8 +1,3 @@
-/**
- * Pure pieces of the dashboard (DashboardView.swift, AllEnvironmentsDashboard.swift,
- * DashboardTotalsTile.swift, EnvironmentsView.swift `EnvironmentListRow`,
- * NeedsAttentionSection.swift). Free of RN imports so they're unit-testable.
- */
 import { formatFileBytes } from '@/core/networking/remote-data-limits';
 import { parseArcaneDate } from '@/sdk/models/base/date';
 import type { Activity } from '@/sdk/models/activity/Activity';
@@ -21,26 +16,17 @@ import {
 	type SparklineSample
 } from '@/stores/dashboard-stream-logic';
 
-// MARK: - Formatting
-
-/** Swift `Int64.byteString` (`ByteCountFormatter`, `.file`). */
 export const byteString = formatFileBytes;
 
-/** `String(format: "%.0f%%", value)`. */
 export const percent0 = (value: number) => `${value.toFixed(0)}%`;
-/** `String(format: "%.1f%%", value)`. */
 export const percent1 = (value: number) => `${value.toFixed(1)}%`;
 
-/** Swift `Environment.displayName`. */
 export function displayName(environment: Pick<Environment, 'id' | 'name'>): string {
 	return environment.name ? environment.name : `Environment ${environment.id}`;
 }
 
-/** `env.name ?? env.id`. */
 export const nameOrID = (environment: Pick<Environment, 'id' | 'name'>) =>
 	environment.name ?? environment.id;
-
-// MARK: - Greeting
 
 export function greetings(firstName: string, hour: number): string[] {
 	const timeOfDay =
@@ -58,9 +44,7 @@ export function greetings(firstName: string, hour: number): string[] {
 	];
 }
 
-/** Greetings already shown this launch, keyed by user, so tab switches keep the same greeting. */
 const shownGreetings = new Map<string, string>();
-/** Greetings that already typed themselves in this launch. */
 export const typedGreetings = new Set<string>();
 
 export function greetingFor(
@@ -78,12 +62,6 @@ export function greetingFor(
 	return greeting;
 }
 
-// MARK: - Live counts
-
-/**
- * Aggregated container/image counts derived live from per-environment
- * `system/docker/info` (dashboard snapshots exclude Arcane-managed containers).
- */
 export type DashboardLiveCounts = {
 	running: number;
 	stopped: number;
@@ -91,7 +69,6 @@ export type DashboardLiveCounts = {
 	images: number;
 };
 
-/** `DashboardEnvironmentLiveState`: docker info when online, undefined when offline. */
 export type DashboardEnvironmentLiveStates = Readonly<Record<string, DockerInfo | null>>;
 
 export function liveStatesFrom(
@@ -101,7 +78,6 @@ export function liveStatesFrom(
 	return Object.fromEntries(enabledEnvironments.map((e) => [e.id, dockerInfo[e.id] ?? null]));
 }
 
-/** Every enabled environment must be online; any offline one invalidates the total. */
 export function aggregateLiveCounts(
 	states: DashboardEnvironmentLiveStates,
 	expectedCount: number
@@ -119,7 +95,6 @@ export function aggregateLiveCounts(
 	return aggregate;
 }
 
-/** The active environment first, then the first `visibleCount`. */
 export function dashboardEnvironments<E extends Pick<Environment, 'id'>>(
 	envs: readonly E[],
 	activeID: string,
@@ -135,13 +110,8 @@ export function dashboardEnvironments<E extends Pick<Environment, 'id'>>(
 }
 
 export const environmentBatchSize = 50;
-/** Counts that aren't streamed refresh when the dashboard reappears after this long (ms). */
 export const reappearRefreshIntervalMs = 60_000;
 
-/**
- * Port of `DashboardImageUpdateCountResolver`: summary sources first. The
- * stream's action-item tally counts resources and lags the server reconcile.
- */
 export function resolveImageUpdateCount(
 	shared?: number,
 	streamed?: number,
@@ -150,7 +120,6 @@ export function resolveImageUpdateCount(
 	return shared ?? supplemental ?? streamed;
 }
 
-/** Port of `DashboardLiveStatsLimitPresentation`. */
 export function liveStatsLimitMessage(
 	enabledEnvironmentCount: number,
 	maximumStreams: number
@@ -158,8 +127,6 @@ export function liveStatsLimitMessage(
 	if (maximumStreams <= 0 || enabledEnvironmentCount <= maximumStreams) return undefined;
 	return `Live CPU, memory, and disk metrics stream for the first ${maximumStreams} enabled environments. Change this in App Settings. Container and image counts still load for every environment.`;
 }
-
-// MARK: - Count availability
 
 export type DashboardCountIssue = { id: string; title: string; detail: string };
 
@@ -214,8 +181,6 @@ export function countAvailabilityIssues(input: {
 	return issues;
 }
 
-// MARK: - Needs attention
-
 export type AttentionSeverity = 'critical' | 'warning';
 
 export const severityTitle: Record<AttentionSeverity, string> = {
@@ -223,7 +188,6 @@ export const severityTitle: Record<AttentionSeverity, string> = {
 	warning: 'Warnings'
 };
 
-/** What tapping an attention row does; DashboardView maps these to routes and sheets. */
 export type AttentionAction =
 	| { kind: 'environment'; id: string; name: string }
 	| { kind: 'vulnerabilities'; id: string; name: string }
@@ -232,7 +196,6 @@ export type AttentionAction =
 	| { kind: 'apiKeys' }
 	| { kind: 'activityCenter' };
 
-/** Port of `NeedsAttentionItem` (the action is data so this stays pure). */
 export type NeedsAttentionItem = {
 	id: string;
 	detail: string;
@@ -241,11 +204,9 @@ export type NeedsAttentionItem = {
 	title: string;
 	count: number;
 	action: AttentionAction;
-	/** True when the action presents a sheet (needs the popover/sheet to finish dismissing first). */
 	presentsSheet: boolean;
 };
 
-/** DashboardView `needsAttentionItems`: folded from data the dashboard already holds. */
 export function needsAttentionItems(input: {
 	attention: AttentionSummary;
 	allEnvironments: readonly Pick<Environment, 'id' | 'name'>[];
@@ -299,7 +260,6 @@ export function needsAttentionItems(input: {
 			presentsSheet: false
 		});
 	}
-	// Prefer the summary-based count (same source as the Updates tile).
 	const imageUpdates = input.imageUpdatesTotal ?? attention.imageUpdates;
 	if (imageUpdates > 0) {
 		items.push({
@@ -340,7 +300,6 @@ export function needsAttentionItems(input: {
 	return items;
 }
 
-/** `AttentionToolbarButton` glyph and tint. */
 export function attentionButtonAppearance(items: readonly NeedsAttentionItem[]): {
 	symbol: string;
 	tint: 'red' | 'orange' | 'green';
@@ -355,9 +314,6 @@ export function attentionButtonAppearance(items: readonly NeedsAttentionItem[]):
 	};
 }
 
-// MARK: - Failed activities
-
-/** `activity.sourceEnvironmentKey`. */
 export function sourceEnvironmentKey(activity: Activity): string {
 	const source = activity.sourceEnvironmentID?.trim() ?? '';
 	if (source) return source;
@@ -365,13 +321,11 @@ export function sourceEnvironmentKey(activity: Activity): string {
 	return environment ? environment : '0';
 }
 
-/** `activity.sortTime` as ms. */
 export function activitySortTime(activity: Activity): number {
 	const raw = activity.updatedAt ?? activity.endedAt ?? activity.startedAt;
 	return parseArcaneDate(raw)?.getTime() ?? 0;
 }
 
-/** Port of `ActivityHistoryClearFilter.retainingActiveActivities`. */
 export function retainingActiveActivities(
 	activities: readonly Activity[],
 	clearedEnvironmentIDs: ReadonlySet<string>
@@ -384,7 +338,6 @@ export function retainingActiveActivities(
 	);
 }
 
-/** Fills missing source environment fields, then keeps the newest three. */
 export function mergeFailedActivities(
 	perEnvironment: readonly { id: string; name: string; activities: Activity[] }[]
 ): Activity[] {
@@ -399,8 +352,6 @@ export function mergeFailedActivities(
 	);
 	return merged.sort((a, b) => activitySortTime(b) - activitySortTime(a)).slice(0, 3);
 }
-
-// MARK: - Totals tiles (DashboardTotalsTile.swift)
 
 export type DashboardTotalsTile =
 	| 'running'
@@ -425,7 +376,6 @@ export type TileTint = 'orange' | 'gray' | 'purple' | 'blue' | 'green' | 'red' |
 export const DashboardTotalsTile = {
 	preferenceKey: 'arcane.dashboardTiles',
 	defaults: ['running', 'images', 'volumes'] as DashboardTotalsTile[],
-	/** One row of tiles stays legible on an iPhone up to four. */
 	maximum: 4,
 	allCases: [
 		'running',
@@ -504,7 +454,6 @@ export const DashboardTotalsTile = {
 		}
 	} satisfies Record<DashboardTotalsTile, TileInfo>,
 
-	/** Drops unknown and repeated tiles; an empty result falls back to the defaults. */
 	decode(raw: string): DashboardTotalsTile[] {
 		const seen = new Set<DashboardTotalsTile>();
 		const tiles = raw
@@ -523,7 +472,6 @@ export const DashboardTotalsTile = {
 	}
 } as const;
 
-/** All-environment totals from the dashboard's existing count sources (`AllEnvironmentsDashboard.Counts`). */
 export type AllEnvironmentsCounts = {
 	running?: number;
 	total?: number;
@@ -576,20 +524,15 @@ export function tileValue(
 	}
 }
 
-// MARK: - Live usage chart
-
 export type UsageMetric = 'CPU' | 'Memory';
 
-/** The chart's visible span (s); matches the history store's five-minute window. */
 export const usageWindowSeconds = 300;
 
-/** Snaps the window's right edge to the stream's 2s cadence (ms in, ms out). */
 export function windowEnd(newest: number, stepSeconds = 2): number {
 	const step = stepSeconds * 1000;
 	return Math.floor(newest / step) * step;
 }
 
-/** Exponential moving average for display: raw 2s host samples read as noise. */
 export function smoothed(samples: readonly SparklineSample[], weight = 0.35): SparklineSample[] {
 	let average: number | undefined;
 	return samples.map((sample) => {
@@ -606,7 +549,6 @@ export function usageHeadline(
 	if (stats.length === 0) return undefined;
 	const hosts = stats.length === 1 ? '1 environment' : `${stats.length} environments`;
 	if (metric === 'CPU') {
-		// Weighted by cores so a busy 2-core box doesn't read like a busy 64-core one.
 		const cores = stats.reduce((total, s) => total + Math.max(s.cpuCount, 1), 0);
 		const weighted = stats.reduce(
 			(total, s) => total + SystemStatsDisplay.cpuPercent(s) * Math.max(s.cpuCount, 1),
@@ -623,7 +565,6 @@ export function usageHeadline(
 	};
 }
 
-/** Fallback palette slot when an environment has no chosen color. */
 export const fallbackEnvironmentColors = [
 	'blue',
 	'orange',
@@ -635,9 +576,6 @@ export const fallbackEnvironmentColors = [
 	'brown'
 ] as const;
 
-// MARK: - Environment rows (EnvironmentListRow)
-
-/** Snapshot gated on the one-way loaded latch. */
 export const loadedSnapshot = (state: DashboardEnvironmentState | undefined) =>
 	state?.hasLoaded ? state.snapshot : undefined;
 
@@ -701,7 +639,6 @@ export function memoryPercentFor(
 	return total !== undefined && total > 0 ? (stats.memoryUsage / total) * 100 : undefined;
 }
 
-/** Port of `DashboardVersionBadgeFormatter.arcane`. */
 export function arcaneVersionBadge(
 	info: Pick<VersionInfo, 'displayVersion' | 'currentTag' | 'currentVersion'>
 ): string {
@@ -709,8 +646,6 @@ export function arcaneVersionBadge(
 	if (!raw) return '—';
 	return raw.startsWith('v') ? raw : `v${raw}`;
 }
-
-// MARK: - System prune (SystemPruneView)
 
 export function formatPruneResult(result: PruneAllResult): string {
 	const parts: string[] = [];
@@ -728,29 +663,22 @@ export function formatPruneResult(result: PruneAllResult): string {
 	return summary;
 }
 
-// MARK: - Container / project presentation (Models.swift)
-
-/** `ContainerSummary.displayName`. */
 export function containerDisplayName(container: { names: string[]; id: string }): string {
 	const first = (container.names[0] ?? '').replace(/^\/+|\/+$/g, '');
 	return first ? first : container.id.slice(0, 12);
 }
 
-/** `ContainerSummary.isRunning`. */
 export const containerIsRunning = (container: { state: string }) =>
 	container.state.toLowerCase() === 'running';
 
-/** `ProjectDetails.isDashboardRunning`. */
 export const projectIsRunning = (project: { status: string }) =>
 	project.status.toLowerCase() === 'running';
 
-/** Swift `String.capitalized`. */
 export const capitalized = (value: string) =>
 	value
 		.toLowerCase()
 		.replace(/(^|[^\p{L}\p{N}])(\p{L})/gu, (_, sep: string, c: string) => sep + c.toUpperCase());
 
-/** Docker reports health inside the status string ("Up 3 hours (healthy)"). */
 export function containerHealth(
 	status: string
 ): { icon: string; color: 'red' | 'yellow' | 'green'; label: string } | undefined {
@@ -763,7 +691,6 @@ export function containerHealth(
 	return undefined;
 }
 
-/** The status string with the health parenthetical stripped. */
 export function containerStatusText(status: string): string {
 	let text = status;
 	for (const token of ['(healthy)', '(unhealthy)', '(health: starting)']) {
@@ -772,7 +699,6 @@ export function containerStatusText(status: string): string {
 	return text.trim();
 }
 
-/** `container.themedIconUrl(for:)`: the light/dark icon, else the legacy icon label. */
 export function containerIconURL(
 	container: { iconLightUrl?: string; iconDarkUrl?: string; labels: Record<string, string> },
 	isDark: boolean
@@ -785,7 +711,6 @@ export function containerIconURL(
 	return themed || legacy || undefined;
 }
 
-/** `ContainerResourceMetrics` texts. */
 export const ResourceMetricsText = {
 	cpu: (sample: { cpuPercent: number }) => percent1(sample.cpuPercent),
 	memoryUsed: (sample: { memoryUsageBytes: number }) => byteString(sample.memoryUsageBytes),

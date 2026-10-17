@@ -1,11 +1,3 @@
-/**
- * Ports of `EnvironmentLabel`, `EnvironmentFilterSection`,
- * `EnvironmentLoadFailuresSection` and `EnvironmentActionButton`
- * (EnvironmentLabel.swift). For toolbar menus use
- * `EnvironmentToolbarAction` from `toolbar`.
- *
- * SwiftUI-tree.
- */
 import { Button, HStack, Label, Menu, Picker, Section, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -43,7 +35,6 @@ export function EnvironmentLabel({ name, color }: EnvironmentLabelProps) {
 	);
 }
 
-/** Environment section for a list's filter sheet. Only shown in All Environments lists. */
 export function EnvironmentFilterSection({
 	environments,
 	selection,
@@ -71,7 +62,6 @@ export function EnvironmentFilterSection({
 	);
 }
 
-/** Rows for environments that failed to load while others succeeded. */
 export function EnvironmentLoadFailuresSection({
 	failures,
 	retry
@@ -100,7 +90,6 @@ export function EnvironmentLoadFailuresSection({
 	);
 }
 
-/** An in-menu action that targets one environment; a submenu in All Environments lists. */
 export function EnvironmentActionButton({
 	title,
 	systemImage,

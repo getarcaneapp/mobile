@@ -1,8 +1,3 @@
-/**
- * Port of Types/GitOpsSyncDetails.swift: a GitOps sync read leniently from the
- * server's JSON, so a server missing newer fields (backup mode, pre-deploy
- * hooks) still renders. Pure TS.
- */
 import { parseURL } from '@/sdk/client/url';
 import { parseArcaneDate } from '@/sdk/models/base/date';
 import { capitalized } from '@/ui/components/resource-status';
@@ -15,7 +10,6 @@ import {
 
 export type GitOpsSyncMode = 'deploy' | 'backup';
 
-/** A status string `ResourceStatusBadge` understands, plus the text to show. */
 export interface StatusPresentation {
 	status: string;
 	label: string;
@@ -62,7 +56,6 @@ export interface GitOpsSyncDetails {
 	updatedAt?: Date;
 }
 
-/** Typed accessors over a decoded JSON object; absent or mistyped keys read as empty. */
 function reader(values: JSONObject) {
 	const string = (key: string) => {
 		const value = values[key];
@@ -174,20 +167,17 @@ export const GitOpsSyncDetails = {
 		}
 	},
 
-	/** The first seven characters of a full commit hash. */
 	shortCommit: (sync: GitOpsSyncDetails) => sync.lastSyncCommit?.slice(0, 7),
 
 	syncIntervalDescription: (sync: GitOpsSyncDetails) =>
 		GitOpsSyncDetails.intervalDescription(sync.syncIntervalMinutes),
 
-	/** Deploy syncs report the last pull; backups report the backup lifecycle. */
 	statusPresentation(sync: GitOpsSyncDetails): StatusPresentation {
 		return GitOpsSyncDetails.isBackup(sync)
 			? GitOpsSyncDetails.backupStatePresentation(sync.backupState)
 			: GitOpsSyncDetails.syncStatusPresentation(sync.lastSyncStatus);
 	},
 
-	/** The last error, shown only while the sync is in a failed state. */
 	visibleError(sync: GitOpsSyncDetails): string | undefined {
 		if (sync.lastSyncError === undefined) return undefined;
 		if (GitOpsSyncDetails.isBackup(sync)) {
@@ -232,8 +222,6 @@ export const GitOpsSyncDetails = {
 		if (sync.repositoryURL === undefined || sync.lastSyncCommit === undefined) return undefined;
 		return GitOpsSyncDetails.commitURLFor(sync.repositoryURL, sync.lastSyncCommit);
 	},
-
-	// MARK: - Formatting
 
 	syncStatusPresentation(status: string | undefined): StatusPresentation {
 		switch (status?.toLowerCase()) {
@@ -281,7 +269,6 @@ export const GitOpsSyncDetails = {
 		return value === 1 ? `Every ${unit}` : `Every ${value} ${unit}s`;
 	},
 
-	/** The browsable https URL for an https, ssh://, or scp-style Git remote. */
 	webURL(raw: string): string | undefined {
 		const trimmed = raw.trim();
 		if (trimmed === '') return undefined;
@@ -289,7 +276,6 @@ export const GitOpsSyncDetails = {
 			const url = parseURL(trimmed);
 			if (!url || url.host === '') return undefined;
 			const isWeb = url.scheme === 'http' || url.scheme === 'https';
-			// An ssh:// port is the SSH port, not the forge's web port.
 			const host = isWeb ? url.host + (url.port !== undefined ? `:${url.port}` : '') : url.host;
 			const stripped = stripGitSuffix(trimSlashes(url.path));
 			if (stripped === '') return undefined;

@@ -1,7 +1,3 @@
-/**
- * `EnvVarsView` / `LabelsView` (ContainerDetailView.swift) for a swarm
- * service's spec, pushed from Service Detail → Configuration.
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

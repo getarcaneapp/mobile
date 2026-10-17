@@ -1,8 +1,3 @@
-/**
- * Port of `ImageDetailView` (ImageDetailView.swift): a scrollable section bar
- * (Overview / History / Attestations / Vulnerabilities) above the selected
- * tab, with Recheck + actions in the toolbar.
- */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -257,11 +252,6 @@ function OverviewTab({ model }: { model: ImageDetailModel }) {
 	);
 }
 
-/**
- * The detail toolbar: `.resourceActionsToolbar` plus the archive ShareLink and
- * the selected tab's own items (attestation type filter, patch link). One
- * `Stack.Toolbar` per placement, since each replaces the header's items.
- */
 function ImageDetailToolbar({
 	model,
 	attestations
@@ -325,7 +315,6 @@ function ImageDetailToolbar({
 					</Stack.Toolbar.MenuAction>
 				))}
 			</Stack.Toolbar.Menu>
-			{/* The embedded tab view's own toolbar items (Swift: inner `.toolbar`) follow the detail's actions. */}
 			{showsPredicateFilter ? (
 				<Stack.Toolbar.Menu
 					icon={
@@ -375,7 +364,6 @@ export function ImageDetailScreen() {
 		<>
 			<Stack.Screen
 				options={{
-					// The embedded Attestations / Vulnerabilities views set `.navigationTitle("")`, which wins over the detail's title.
 					title:
 						model.selectedSection === 'attestations' || model.selectedSection === 'vulnerabilities'
 							? ''

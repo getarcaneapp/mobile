@@ -1,4 +1,3 @@
-/** Port of `ContainerConfigurationView` (ContainerConfigurationView.swift). */
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import {

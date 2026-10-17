@@ -1,4 +1,3 @@
-/** Android rendering of `UserDetailView` (UserDetailView.swift). */
 import { Stack } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 

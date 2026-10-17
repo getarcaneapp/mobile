@@ -1,4 +1,3 @@
-/** Port of Models/Container/ContainerSummary.swift. */
 import { parseArcaneDate, type ISODateString } from '../base/date';
 import { D, DecodingError, type RawObject } from '../base/decoding';
 import type { ImageUpdateInfo } from '../image/ImageUpdateInfo';
@@ -9,7 +8,6 @@ import {
 	type ContainerPort
 } from './Container';
 
-/** A container summary as returned by the list endpoint. */
 export interface ContainerSummary {
 	id: string;
 	names: string[];
@@ -29,10 +27,6 @@ export interface ContainerSummary {
 	updateInfo?: ImageUpdateInfo;
 	redeployDisabled?: boolean;
 	hidden?: boolean;
-	/**
-	 * Resource usage sampled by the server's shared stats collector. Only present on
-	 * resource-sorted list requests (`ContainerResourceSort`) for running containers.
-	 */
 	resourceSample?: ContainerResourceSample;
 }
 
@@ -55,7 +49,6 @@ export const ContainerSummary = {
 		};
 	},
 
-	/** Swift `init(from:)`. */
 	decode(this: void, raw: unknown): ContainerSummary {
 		const o = D.object(raw, 'ContainerSummary');
 		return {
@@ -77,7 +70,6 @@ export const ContainerSummary = {
 			updateInfo: D.optNested(o, 'updateInfo', D.cast<ImageUpdateInfo>),
 			redeployDisabled: D.optBoolean(o, 'redeployDisabled'),
 			hidden: D.optBoolean(o, 'hidden'),
-			// A malformed sample must not drop the whole row from the lossy list decode.
 			resourceSample: D.attempt(() =>
 				D.optNested(o, 'resourceSample', ContainerResourceSample.decode)
 			)
@@ -85,30 +77,17 @@ export const ContainerSummary = {
 	}
 } as const;
 
-/**
- * Server-side container list sort keys backed by the shared stats collector.
- * Responses sorted by these keys carry `ContainerSummary.resourceSample` for
- * running containers; check `ContainerListResponse.resourceSortSupported`
- * because older servers ignore the key and fall back to their default order.
- */
 export type ContainerResourceSort = 'cpuUsage' | 'memoryUsage';
 
 export const ContainerResourceSort = {
 	cpuUsage: 'cpuUsage',
 	memoryUsage: 'memoryUsage',
-	/** Swift `CaseIterable.allCases`. */
 	allCases: ['cpuUsage', 'memoryUsage'] as const
 } as const;
 
-/**
- * A point-in-time resource usage sample for a container. Ordering and the
- * displayed values come from the same sample.
- */
 export interface ContainerResourceSample {
-	/** Normalized CPU usage percentage (0-100 scale). */
 	cpuPercent: number;
 	memoryUsageBytes: number;
-	/** Memory limit in bytes; the host total when the container has no limit. */
 	memoryLimitBytes: number;
 	sampleTime?: ISODateString;
 }
@@ -131,13 +110,11 @@ export const ContainerResourceSample = {
 		};
 	},
 
-	/** Memory usage as a percentage of the limit, or undefined when the limit is unknown. */
 	memoryPercent(this: void, value: ContainerResourceSample): number | undefined {
 		if (!(value.memoryLimitBytes > 0)) return undefined;
 		return Math.min(Math.max((value.memoryUsageBytes / value.memoryLimitBytes) * 100, 0), 100);
 	},
 
-	/** Swift `init(from:)`: an unparseable `sampleTime` decodes as undefined. */
 	decode(this: void, raw: unknown): ContainerResourceSample {
 		const o = D.object(raw, 'ContainerResourceSample');
 		return {
@@ -149,7 +126,6 @@ export const ContainerResourceSample = {
 	}
 } as const;
 
-/** A group of container summaries, e.g. by Compose project. */
 export interface ContainerSummaryGroup {
 	groupName: string;
 	items: ContainerSummary[];
@@ -163,7 +139,6 @@ export const ContainerSummaryGroup = {
 		return { groupName: init.groupName, items: init.items ?? [] };
 	},
 
-	/** Swift `init(from:)`: undecodable items are dropped. */
 	decode(this: void, raw: unknown): ContainerSummaryGroup {
 		const o = D.object(raw, 'ContainerSummaryGroup');
 		return {
@@ -173,10 +148,6 @@ export const ContainerSummaryGroup = {
 	}
 } as const;
 
-/**
- * @internal Swift `LossyContainerSummaryArray`: decodes an array of
- * `ContainerSummary`, skipping elements that fail to decode.
- */
 export function decodeLossyContainerSummaryArray(raw: unknown): ContainerSummary[] {
 	if (!Array.isArray(raw)) throw new DecodingError('Expected array for LossyContainerSummaryArray');
 	const elements: ContainerSummary[] = [];
@@ -187,7 +158,6 @@ export function decodeLossyContainerSummaryArray(raw: unknown): ContainerSummary
 	return elements;
 }
 
-/** Counts of containers by status. */
 export interface ContainerStatusCounts {
 	runningContainers: number;
 	stoppedContainers: number;
@@ -204,14 +174,12 @@ export const ContainerStatusCounts = {
 	}
 } as const;
 
-/** Result of a container batch action (start/stop/etc). */
 export interface ContainerActionResult {
 	started?: string[];
 	stopped?: string[];
 	failed?: string[];
 	success: boolean;
 	errors?: string[];
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -244,7 +212,6 @@ export const ContainerActionResult = {
 	}
 } as const;
 
-/** A newly created container. */
 export interface ContainerCreated {
 	id: string;
 	name: string;

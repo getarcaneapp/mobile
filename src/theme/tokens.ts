@@ -1,17 +1,8 @@
-/**
- * Corner radii. Same values as `DesignTokens.swift` — every rounded shape
- * uses `borderCurve: "continuous"` to match SwiftUI's `.continuous` style.
- */
 export const Radius = {
-	/** Small icon wells (e.g. 32pt app-icon preview). */
 	small: 8,
-	/** Nested elements inside a card: mini metrics, inline banners, icon wells. */
 	nested: 12,
-	/** Grouped-list-style surfaces: info groups, small panels. */
 	standard: 16,
-	/** Primary cards, tiles, bubbles, the composer. The default tier. */
 	card: 22,
-	/** Hero surfaces: environment dashboard card, login panel. */
 	hero: 28,
 	concentric: (outer: number, inset: number) => Math.max(outer - inset, 4)
 } as const;
@@ -23,10 +14,6 @@ type Timing = {
 	easing: 'easeOut' | 'easeInOut' | 'linear' | 'smooth';
 };
 
-/**
- * Motion tokens. Same names and timings as `Motion.swift`. Reanimated/SwiftUI
- * call sites convert these with the helpers in `src/theme/motion.ts`.
- */
 export const Motion = {
 	state: { type: 'timing', duration: 250, easing: 'smooth' } as Timing,
 	press: { type: 'spring', response: 0.28, dampingFraction: 0.86 } as Spring,
@@ -45,7 +32,6 @@ export const Motion = {
 	chartScroll: { type: 'timing', duration: 2000, easing: 'linear' } as Timing,
 	completionSweep: { type: 'timing', duration: 600, easing: 'easeInOut' } as Timing,
 	reducedFallback: { type: 'timing', duration: 200, easing: 'easeOut' } as Timing,
-	/** Per-item delay for staggered entrances, in ms. */
 	stagger: 45
 } as const;
 

@@ -1,4 +1,3 @@
-/** `ErrorBanner` for RN trees on iOS (its own Host). */
 import { Host } from '@/ui/host';
 
 import { ErrorBanner } from '@/ui/components/error-banner';

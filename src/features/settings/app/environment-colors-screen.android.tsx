@@ -1,4 +1,3 @@
-/** Android rendering of `EnvironmentColorsView` + `EnvironmentColorPicker` (EnvironmentColorsView.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';

@@ -1,7 +1,3 @@
-/**
- * Models for the small image sheets: `PullImageView` (ImagesView.swift),
- * `UploadImageView`, `ImagePruneView`, and `ImageTagView`.
- */
 import { File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -22,7 +18,6 @@ import { pickedFileName } from '@/core/picked-file-name';
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-/** `.onChange(of: manager.clientGeneration) / .onChange(of: manager.activeEnvironmentID)` → dismiss. */
 export function useDismissOnContextChange(onDismiss: () => void) {
 	const generation = useClientManager((s) => s.clientGeneration);
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
@@ -38,8 +33,6 @@ export function useDismissOnContextChange(onDismiss: () => void) {
 	}, [generation, activeEnvironmentID]);
 }
 
-// MARK: - PullImageView
-
 export function usePullImage(environmentID: EnvironmentID) {
 	const router = useRouter();
 	const [imageName, setImageName] = useState('');
@@ -52,7 +45,6 @@ export function usePullImage(environmentID: EnvironmentID) {
 	const dismiss = () => router.back();
 	useDismissOnContextChange(dismiss);
 
-	// `.task(id: server|generation|environment|term)`: debounced Docker Hub search.
 	useEffect(() => {
 		setSearchResults([]);
 		setSearchError(undefined);
@@ -117,8 +109,6 @@ export function usePullImage(environmentID: EnvironmentID) {
 	};
 }
 
-// MARK: - UploadImageView
-
 type PickedFile = { uri: string; name: string; size: number };
 
 export function useUploadImage(environmentID: EnvironmentID) {
@@ -132,7 +122,6 @@ export function useUploadImage(environmentID: EnvironmentID) {
 
 	const pickFile = async () => {
 		try {
-			// Swift allows `.gzip`, `public.tar-archive`, and `.data` (any file).
 			const result = await File.pickFileAsync();
 			if (result.canceled) return;
 			const file = result.result;
@@ -189,8 +178,6 @@ export function useUploadImage(environmentID: EnvironmentID) {
 	};
 }
 
-// MARK: - ImagePruneView
-
 export function useImagePrune(environmentID: EnvironmentID) {
 	const router = useRouter();
 	const [mode, setMode] = useState<ImagePruneMode>('dangling');
@@ -227,8 +214,6 @@ export function useImagePrune(environmentID: EnvironmentID) {
 		cancel: () => router.back()
 	};
 }
-
-// MARK: - ImageTagView
 
 export function useImageTag(environmentID: EnvironmentID, imageID: string) {
 	const router = useRouter();

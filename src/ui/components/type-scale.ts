@@ -1,6 +1,5 @@
 import type { TextStyle } from 'react-native';
 
-/** Material 3 type scale for the Android component renderings. */
 export const m3Type = {
 	labelSmall: { fontSize: 11, lineHeight: 16, fontWeight: '500', letterSpacing: 0.5 },
 	labelMedium: { fontSize: 12, lineHeight: 16, fontWeight: '500', letterSpacing: 0.5 },
@@ -14,5 +13,4 @@ export const m3Type = {
 	headlineSmall: { fontSize: 24, lineHeight: 32 }
 } satisfies Record<string, TextStyle>;
 
-/** Monospaced family for literal identifiers on Android. */
 export const monoFamily = 'monospace';

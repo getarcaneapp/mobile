@@ -1,9 +1,3 @@
-/**
- * The platform-neutral model behind `DynamicResourceListView`
- * (DynamicResourceViews.swift): a paginated list of backend resources from one
- * environment, every enabled environment (All Environments preview), or a
- * global endpoint, with search, row / page actions, create and edit forms.
- */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { tabTitle, type AppTab } from '@/core/app-tab';
@@ -41,28 +35,19 @@ export type DynamicResourceItem = EnvironmentItem<DynamicResource>;
 export interface DynamicResourceListConfig {
 	title: string;
 	systemImage: string;
-	/** The list endpoint in an environment. Global resources ignore the environment. */
 	path: (environmentID: EnvironmentID, client: ArcaneClient) => string;
-	/** The environment an environment-scoped list loads from; undefined for global resources. */
 	environmentID?: EnvironmentID;
-	/** All Environments preview: list and act on resources from every enabled environment. */
 	allEnvironments?: boolean;
 	emptyTitle?: string;
 	actions?: BackendListAction[];
 	createTitle?: string;
 	createFields?: BackendFormField[];
 	createPath?: (environmentID: EnvironmentID, client: ArcaneClient) => string;
-	/** Adds Edit to rows and the generic detail page. */
 	edit?: DynamicEditConfig;
 	managementDestination?: AppTab;
-	/**
-	 * Replaces the generic detail page for a row. Receives the row and a
-	 * callback that reloads the list after the page changes the resource.
-	 */
 	openDetail?: (item: DynamicResourceItem, onChange: () => void) => void;
 }
 
-/** A confirmed action, for a row or (when `item` is undefined) the whole page. */
 export interface PendingAction {
 	action: BackendListAction;
 	item?: DynamicResourceItem;
@@ -81,7 +66,6 @@ export function useDynamicResourceList(config: DynamicResourceListConfig) {
 		createPath,
 		edit
 	} = config;
-	// Destinations pass inline closures; read the latest without re-running loads.
 	const configRef = useRef(config);
 	configRef.current = config;
 
@@ -91,11 +75,9 @@ export function useDynamicResourceList(config: DynamicResourceListConfig) {
 	const [actionMessage, setActionMessage] = useState<string>();
 	const [selectedAction, setSelectedAction] = useState<PendingAction>();
 
-	/** Global resources load once through the active environment's client; their path ignores it. */
 	const baseEnvironmentID = environmentID ?? activeEnvironmentID;
 	const showsAllEnvironments = allEnvironments && environmentID !== undefined;
 
-	/** The environments this list covers, known before the first load finishes. */
 	const listEnvironments: ListEnvironment[] = showsAllEnvironments
 		? snapshot.environments
 		: [{ id: baseEnvironmentID }];
@@ -158,12 +140,10 @@ export function useDynamicResourceList(config: DynamicResourceListConfig) {
 		await list.loadMore(resourcesPage(current, list.getSnapshot().environments));
 	}, [list, resourcesPage]);
 
-	// `.task` + `.onChange(of: debouncedSearchText)`.
 	useEffect(() => {
 		void load();
 	}, [load, client]);
 
-	/** Stable reload callback for pushed pages that change a resource. */
 	const loadRef = useRef(load);
 	loadRef.current = load;
 	const reload = useCallback(() => void loadRef.current(), []);
@@ -177,7 +157,6 @@ export function useDynamicResourceList(config: DynamicResourceListConfig) {
 	const itemPath = (item: DynamicResourceItem, current: ArcaneClient) =>
 		`${resourcePath(item.environmentID, current)}/${escapedPathComponent(item.value.id)}`;
 
-	/** Row actions target the row's environment; page-wide actions target the list's own environment. */
 	const actionPath = (pending: PendingAction, current: ArcaneClient) => {
 		const base = resourcePath(pending.item?.environmentID ?? baseEnvironmentID, current);
 		const suffix = pending.item
@@ -251,7 +230,6 @@ export function useDynamicResourceList(config: DynamicResourceListConfig) {
 		if (managementDestination) nav.push(managementDestination);
 	};
 
-	/** The alert's message: `"<Action> <Title>?"`, or `"<Action>?"` for page actions. */
 	const selectedActionMessage = selectedAction
 		? selectedAction.item
 			? `${selectedAction.action.title} ${DynamicResource.title(selectedAction.item.value)}?`

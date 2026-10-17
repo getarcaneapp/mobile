@@ -1,4 +1,3 @@
-/** Port of `VolumeDetailView` (VolumesView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

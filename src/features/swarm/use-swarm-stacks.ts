@@ -1,4 +1,3 @@
-/** State behind `SwarmStacksView`, `SwarmStackDetailView` and `SwarmStackEditorView` (SwarmStacksView.swift). */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -127,7 +126,6 @@ export function useSwarmStackDetail() {
 			await client.swarm.deleteStack({ name, envID: environmentID });
 			swarmChanged(environmentID);
 			showToast(Toasts.success('Stack deleted'));
-			// The toolbar's confirmation already dismissed this screen.
 		} catch (error) {
 			showToast(Toasts.error(friendlyErrorMessage(error)));
 		} finally {
@@ -193,7 +191,6 @@ export function validationSummary(result: SwarmStackRenderConfigResponse) {
 	);
 }
 
-/** The editor sheet mounts its own confirmation host so the card shows above the sheet. */
 export const stackEditorConfirmationHost = 'swarm-stack-editor';
 
 export function useSwarmStackEditor() {

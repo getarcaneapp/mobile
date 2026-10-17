@@ -1,18 +1,15 @@
-/** Port of Models/Image/ImageSummary.swift. */
 import type { JSONValue } from '../../types/json';
 import { D } from '../base/decoding';
 import type { PaginationResponse } from '../base/pagination';
 import type { VulnerabilityScanSummary } from '../vulnerability/VulnerabilityScan';
 import type { ImageUpdateInfo } from './ImageUpdateInfo';
 
-/** Describes the project, container, or other consumer using an image. */
 export interface ImageUsedBy {
 	type: string;
 	name: string;
 	id?: string;
 }
 
-/** Image summary as returned by the list endpoint. */
 export interface ImageSummary {
 	id: string;
 	repoTags: string[];
@@ -45,7 +42,6 @@ export const ImageSummary = {
 		};
 	},
 
-	/** Swift `init(from:)`: a missing `labels` key decodes as `{}`. */
 	decode(this: void, raw: unknown): ImageSummary {
 		const o = D.object(raw, 'ImageSummary');
 		return {
@@ -66,7 +62,6 @@ export const ImageSummary = {
 	}
 } as const;
 
-/** Result of an image prune operation. */
 export interface ImagePruneReport {
 	imagesDeleted: string[];
 	spaceReclaimed: number;
@@ -78,7 +73,6 @@ export const ImagePruneReport = {
 	}
 } as const;
 
-/** Aggregate image usage counts for an environment. */
 export interface ImageUsageCounts {
 	imagesInuse: number;
 	imagesUnused: number;
@@ -97,7 +91,6 @@ export const ImageUsageCounts = {
 	}
 } as const;
 
-/** Result of a `docker load` operation. */
 export interface ImageLoadResult {
 	stream: string;
 }
@@ -108,7 +101,6 @@ export const ImageLoadResult = {
 	}
 } as const;
 
-/** Paginated list response for images. */
 export interface ImageListResponse {
 	success: boolean;
 	data: ImageSummary[];

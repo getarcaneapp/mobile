@@ -1,4 +1,3 @@
-/** Android rendering of `VolumeBackupsView` (VolumeBackupsView.swift). */
 import { MenuView } from '@react-native-menu/menu';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';

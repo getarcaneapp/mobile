@@ -1,4 +1,3 @@
-/** Port of Auth/AuthService.swift. */
 import type { ArcaneTransport } from '../client/ArcaneTransport';
 import { AuthenticationResult, MFARequiredError, type LoginResponse } from '../models/auth/Login';
 import {
@@ -18,13 +17,11 @@ export class AuthService {
 	private readonly transport: ArcaneTransport;
 	private readonly authManager: AuthManager;
 
-	/** @internal */
 	constructor(transport: ArcaneTransport, authManager: AuthManager) {
 		this.transport = transport;
 		this.authManager = authManager;
 	}
 
-	/** Throws `MFARequiredError` when a second factor is required. */
 	async login(args: { username: string; password: string }): Promise<LoginResponse> {
 		const result = await this.authenticate(args);
 		if (result.kind === 'mfaRequired') throw new MFARequiredError(result.value);
@@ -54,8 +51,6 @@ export class AuthService {
 		} catch (error) {
 			remoteError = error;
 		}
-		// Local credential removal is the security-critical outcome. If both
-		// operations fail, report this failure rather than the revocation error.
 		await this.authManager.clearIfCredentialGenerationMatches(generation);
 		if (remoteError !== undefined) throw remoteError;
 	}
@@ -77,10 +72,6 @@ export class AuthService {
 			decode: MessageResponse.decode
 		});
 	}
-
-	// MARK: - OIDC
-	// The OIDC endpoints return their body directly (no `{ success, data }`
-	// envelope), so they use `rawRequest` and decode the body themselves.
 
 	async oidcStatus(): Promise<OIDCStatusInfo> {
 		const text = await this.transport.rawRequest('oidc/status', { authorized: false });
@@ -104,7 +95,6 @@ export class AuthService {
 		return this.transport.decode<OIDCAuthURLResponse>(text);
 	}
 
-	/** Throws `MFARequiredError` when a second factor is required. */
 	async oidcCallback(args: {
 		code: string;
 		state: string;

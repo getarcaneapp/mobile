@@ -1,9 +1,3 @@
-/**
- * Android ports of `RowIcon`, `ImageReferenceName`, `ImageReferenceLine` and
- * `TagChip`. The icon well bounces (scale) when `changeToken` changes.
- *
- * Standalone (RN views).
- */
 import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {

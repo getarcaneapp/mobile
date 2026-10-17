@@ -1,4 +1,3 @@
-/** Android rendering of VolumesView's toolbar and selection toolbar. */
 import { environmentTitle } from '@/ui/components/environment-label.types';
 
 import { AndroidToolbar, type AndroidToolbarItem } from '@/features/containers/android-toolbar';

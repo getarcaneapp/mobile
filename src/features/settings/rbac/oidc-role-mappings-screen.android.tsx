@@ -1,8 +1,3 @@
-/**
- * Android rendering of `OIDCRoleMappingsView` (OIDCRoleMappingsView.swift):
- * Material 3 list; tapping a manual mapping edits it and long-press offers
- * Delete in place of the swipe action.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

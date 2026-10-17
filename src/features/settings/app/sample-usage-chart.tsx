@@ -1,10 +1,3 @@
-/**
- * The static three-line CPU chart in `RefreshedDashboardIntroductionView`
- * (`sampleChart`): 24 Catmull-Rom points per environment, Y fixed at 0–100,
- * no axes.
- *
- * Standalone (react-native-svg; `@expo/ui`'s `Chart` is single-series).
- */
 import { useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';

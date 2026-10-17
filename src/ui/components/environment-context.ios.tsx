@@ -1,11 +1,3 @@
-/**
- * Port of `EnvironmentContextPicker` (EnvironmentContextBar.swift): the
- * "Choose Environment" sheet: searchable list with a checkmark on the active
- * environment, its API URL, and a card-style status badge. Present it as a
- * medium/large sheet with a visible grabber.
- *
- * Standalone (Host + SwiftUI NavigationStack; render as the sheet's content).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

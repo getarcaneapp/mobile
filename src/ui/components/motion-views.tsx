@@ -1,10 +1,3 @@
-/**
- * React Native ports of the `Motion.swift` view modifiers and button styles,
- * for RN trees on both platforms (Android screens, RN overlays on iOS).
- * SwiftUI-tree equivalents live in `swiftui-motion.ios.tsx`.
- *
- * Standalone (RN views).
- */
 import { createContext, use, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
 	Pressable,
@@ -30,7 +23,6 @@ import { Motion, type MotionToken } from '@/theme/tokens';
 
 import { useReduceMotion } from './accessibility';
 
-/** Reanimated animation for a Motion token. */
 export function animateTo(token: MotionToken, value: number, delayMs = 0) {
 	const animation =
 		token.type === 'spring'
@@ -39,12 +31,6 @@ export function animateTo(token: MotionToken, value: number, delayMs = 0) {
 	return delayMs > 0 ? withDelay(delayMs, animation) : animation;
 }
 
-// MARK: - Card entrance
-
-/**
- * Process-lifetime latch shared by both renderers: an entrance plays once per
- * identity and never again, even after the row is torn down and rebuilt.
- */
 export const seenEntranceIdentities = new Set<string>();
 
 type EntranceProps = {
@@ -54,7 +40,6 @@ type EntranceProps = {
 	style?: StyleProp<ViewStyle>;
 };
 
-/** Port of `.cardEntrance(id:index:)`: one-shot 2% scale + fade. Reduce Motion fades only. */
 export function CardEntranceView({ id, index = 0, children, style }: EntranceProps) {
 	const reduceMotion = useReduceMotion();
 	const [alreadyPlayed] = useState(() => seenEntranceIdentities.has(id));
@@ -75,7 +60,6 @@ export function CardEntranceView({ id, index = 0, children, style }: EntrancePro
 	return <Animated.View style={[style, animated]}>{children}</Animated.View>;
 }
 
-/** Port of `.staggeredReveal(index:)`: rise + fade that replays on every appear. */
 export function StaggeredRevealView({
 	index,
 	children,
@@ -97,15 +81,9 @@ export function StaggeredRevealView({
 	return <Animated.View style={[style, animated]}>{children}</Animated.View>;
 }
 
-// MARK: - Scroll-edge fade
-
 type ScrollEdgeContext = { scrollY: SharedValue<number>; viewportHeight: SharedValue<number> };
 const ScrollEdgeFadeContext = createContext<ScrollEdgeContext | null>(null);
 
-/**
- * `ScrollView` that drives `ScrollEdgeFade` children. Use for card scroll views
- * only, never lists (same rule as the Swift modifier).
- */
 export function ScrollEdgeFadeScrollView({
 	children,
 	onLayout,
@@ -133,11 +111,6 @@ export function ScrollEdgeFadeScrollView({
 	);
 }
 
-/**
- * Port of `.scrollEdgeFade(scales:)`: a card eases to 0.55 opacity (and 97%
- * scale) as it crosses the scroll view's top or bottom edge. Must be a direct
- * child of `ScrollEdgeFadeScrollView`'s content. Reduce Motion keeps the fade.
- */
 export function ScrollEdgeFade({
 	scales = true,
 	children,
@@ -183,12 +156,6 @@ export function ScrollEdgeFade({
 	);
 }
 
-// MARK: - Loading cross-fade
-
-/**
- * Port of `LoadingCrossfade`: cross-fades skeleton ↔ content over `Motion.state`.
- * `animatesTransition = false` swaps instantly (use when a branch is a list).
- */
 export function LoadingCrossfadeView({
 	showSkeleton,
 	animatesTransition = true,
@@ -248,11 +215,8 @@ export function LoadingCrossfadeView({
 	);
 }
 
-// MARK: - Button styles
-
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-/** Port of `PressableButtonStyle`: 94% scale + 0.8 opacity while pressed. Standalone buttons only, never list rows. */
 export function PressableScale({
 	style,
 	onPressIn,
@@ -281,7 +245,6 @@ export function PressableScale({
 	);
 }
 
-/** Port of `CardRowLinkStyle`: card rows dim to 0.65 and shrink 1% while pressed. */
 export function CardRowPressable({
 	style,
 	onPressIn,

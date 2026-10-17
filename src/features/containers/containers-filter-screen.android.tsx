@@ -1,4 +1,3 @@
-/** Android rendering of ContainersView's Filter sheet. */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView } from 'react-native';
 

@@ -1,10 +1,3 @@
-/**
- * Android ports of `ResourceCountLabel`, `ResourceCountSectionHeader`,
- * `SectionHeader`, `UpdateStateBadge` and `DestructiveLabel`, in the
- * Material 3 type scale.
- *
- * Standalone (RN views).
- */
 import { Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
@@ -98,7 +91,6 @@ export function UpdateStateBadge({ state }: { state: ImageUpdateState }) {
 	);
 }
 
-/** Destructive menu-item content: error-colored icon and text. */
 export function DestructiveLabel({ text, systemImage = 'trash' }: DestructiveLabelProps) {
 	return (
 		<View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

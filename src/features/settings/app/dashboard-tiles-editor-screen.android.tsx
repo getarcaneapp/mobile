@@ -1,7 +1,3 @@
-/**
- * Android rendering of `DashboardTilesEditor` (DashboardTotalsTile.swift).
- * Arrow buttons stand in for drag-to-reorder; the remove button for swipe-to-delete.
- */
 import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';

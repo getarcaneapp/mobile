@@ -1,8 +1,3 @@
-/**
- * Android rendering of `RolesView` (RolesView.swift): Built-in and Custom
- * Material groups with search, pull-to-refresh and pagination; custom roles
- * offer Delete on long-press in place of the swipe action.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

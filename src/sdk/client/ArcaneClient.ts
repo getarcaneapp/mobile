@@ -1,12 +1,3 @@
-/**
- * Port of Client/ArcaneClient.swift.
- *
- * ```ts
- * const client = new ArcaneClient({ baseURL: "https://arcane.example.com", tokenStore });
- * await client.auth.login({ username, password });
- * const page = await client.containers.list({ envID: "0" });
- * ```
- */
 import { AuthManager } from '../auth/AuthManager';
 import { AuthService } from '../auth/AuthService';
 import { InMemoryTokenStore, type TokenStore } from '../auth/TokenStore';
@@ -54,24 +45,17 @@ import { EnvironmentID, RetryPolicy } from './environment';
 import { expoStreamingFetch } from './expoStreamingFetch';
 import type { ServerCapabilities } from './ServerCapabilities';
 
-/** Swift `ArcaneClient.Configuration`. */
 export interface ArcaneClientConfiguration {
 	baseURL: string;
-	/** Defaults to an `InMemoryTokenStore`; apps inject a secure, shared store. */
 	tokenStore?: TokenStore;
 	apiKey?: string;
-	/** Defaults to `EnvironmentID.localDocker` ("0"). */
 	defaultEnvironmentID?: EnvironmentID;
 	retryPolicy?: RetryPolicy;
 	additionalHeaders?: Record<string, string>;
 	proxySession?: ArcaneProxySession;
-	/** Request timeout in ms (default 60 000). Streams time out only until headers arrive. */
 	timeoutMs?: number;
-	/** Buffered requests (default: global `fetch`). Swift `urlSession`. */
 	fetch?: FetchLike;
-	/** Streaming requests (default: `expo/fetch`). */
 	streamingFetch?: FetchLike;
-	/** WebSocket factory and optional idle watchdog for logs/stats/terminal. */
 	webSocket?: WebSocketStreamConfig;
 }
 
@@ -87,12 +71,7 @@ const globalFetch: FetchLike = (input, init) =>
 export class ArcaneClient {
 	readonly configuration: Readonly<ResolvedConfiguration>;
 	readonly authManager: AuthManager;
-	/**
-	 * Low-level request/response transport. Reach for this for raw bytes,
-	 * multipart uploads, or a not-yet-wrapped endpoint.
-	 */
 	readonly transport: ArcaneTransport;
-	/** REST facade for endpoints that use the `{ success, data }` envelope. */
 	readonly rest: RESTService;
 
 	readonly auth: AuthService;
@@ -132,7 +111,6 @@ export class ArcaneClient {
 	readonly mobilePush: MobilePushService;
 
 	constructor(configuration: ArcaneClientConfiguration);
-	/** @internal */
 	constructor(
 		configuration: ArcaneClientConfiguration,
 		shared: { authManager: AuthManager; transport: ArcaneTransport }
@@ -212,7 +190,6 @@ export class ArcaneClient {
 		this.mobilePush = new MobilePushService(rest);
 	}
 
-	/** Same credentials and transport, different default environment. */
 	scoped(toEnvironment: EnvironmentID): ArcaneClient {
 		return new ArcaneClient(
 			{ ...this.configuration, defaultEnvironmentID: toEnvironment },
@@ -220,10 +197,6 @@ export class ArcaneClient {
 		);
 	}
 
-	/**
-	 * Returns a client whose requests carry `options` (e.g. an activity batch
-	 * ID). Shares this client's authentication manager.
-	 */
 	withRequestOptions(options: ArcaneRequestOptions): ArcaneClient {
 		return new ArcaneClient(this.configuration, {
 			authManager: this.authManager,
@@ -231,10 +204,6 @@ export class ArcaneClient {
 		});
 	}
 
-	/**
-	 * TS addition replacing Swift task cancellation: every request, stream and
-	 * socket made through the returned client is cancelled when `signal` aborts.
-	 */
 	withSignal(signal: AbortSignal): ArcaneClient {
 		return new ArcaneClient(this.configuration, {
 			authManager: this.authManager,
@@ -242,10 +211,6 @@ export class ArcaneClient {
 		});
 	}
 
-	/**
-	 * Snapshot of the server's API shape. `unknown` until the SDK decodes its
-	 * first authenticated `User` payload (login, `auth/me`, or OIDC callback).
-	 */
 	serverCapabilities(): ServerCapabilities {
 		return this.authManager.currentCapabilities();
 	}

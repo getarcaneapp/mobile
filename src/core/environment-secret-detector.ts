@@ -1,9 +1,3 @@
-/**
- * Port of Utils/EnvironmentSecretDetector.swift: `ParsedEnvironmentVariable`
- * plus the heuristics that flag a `NAME=value` pair as a potential secret so
- * its value is blurred until revealed. Pure TS.
- */
-
 export interface ParsedEnvironmentVariable {
 	rawValue: string;
 	name: string;

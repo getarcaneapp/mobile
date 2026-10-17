@@ -1,4 +1,3 @@
-/** Android (Material 3) rendering of `BuildSettingsView` (BuildSettingsView.swift). */
 import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

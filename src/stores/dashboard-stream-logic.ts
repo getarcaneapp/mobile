@@ -1,26 +1,13 @@
-/**
- * Pure pieces of `DashboardStreamStore.swift` and `SystemStatsHistoryStore.swift`:
- * per-environment state transitions, the aggregate/attention folds, the
- * rolling stats window, and the reconnect backoff. Free of RN imports so
- * they're unit-testable.
- */
 import { JSONValue } from '@/sdk/types/json';
 import type { DashboardSnapshot, DashboardStreamErrorCode } from '@/sdk/models/dashboard';
 import type { DockerInfo } from '@/sdk/models/system/DockerInfo';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { SystemStats } from '@/sdk/models/system/SystemStats';
 
-// MARK: - Dashboard stream
-
-/** Port of `DashboardStreamStore.EnvironmentState`. Replaced wholesale on every change. */
 export type DashboardEnvironmentState = {
 	id: string;
 	name: string;
 	snapshot?: DashboardSnapshot;
-	/**
-	 * One-way latch: flips on the first snapshot and never back, so later
-	 * errors keep showing the last-known counts instead of skeletons.
-	 */
 	hasLoaded: boolean;
 	loading: boolean;
 	streamError: boolean;
@@ -30,7 +17,6 @@ export type DashboardEnvironmentState = {
 
 export type DashboardStates = Readonly<Record<string, DashboardEnvironmentState>>;
 
-/** Port of `DashboardStreamStore.AggregateCounts`. */
 export type AggregateCounts = {
 	runningContainers: number;
 	stoppedContainers: number;
@@ -39,7 +25,6 @@ export type AggregateCounts = {
 	imageUpdates: number;
 };
 
-/** Port of `DashboardStreamStore.AttentionSummary`. */
 export type AttentionSummary = {
 	erroringEnvironmentIDs: ReadonlySet<string>;
 	stoppedContainers: number;
@@ -48,10 +33,6 @@ export type AttentionSummary = {
 	vulnerabilities: number;
 	mostVulnerableEnvironmentID?: string;
 	hasCriticalVulnerabilities: boolean;
-	/**
-	 * Environments whose snapshot reports a newer Arcane release; undefined
-	 * until at least one snapshot has loaded (v1 servers never do).
-	 */
 	arcaneUpgradeCount?: number;
 };
 
@@ -68,7 +49,6 @@ export function makeEnvironmentState(id: string, name: string): DashboardEnviron
 	return { id, name, hasLoaded: false, loading: true, streamError: false };
 }
 
-/** Swift `environment.name?.trimmed`, falling back to the ID. */
 export function streamDisplayName(environment: Pick<Environment, 'id' | 'name'>): string {
 	const name = environment.name?.trim() ?? '';
 	return name ? name : environment.id;
@@ -80,7 +60,6 @@ export function applySnapshot(
 	snapshot: DashboardSnapshot
 ): DashboardStates {
 	const state = states[environmentID];
-	// Events can keep arriving briefly for environments removed by reconcile; don't resurrect them.
 	if (!state) return states;
 	return {
 		...states,
@@ -138,10 +117,6 @@ export function clearAllStreamErrors(states: DashboardStates): DashboardStates {
 	);
 }
 
-/**
- * Tracks the enabled environments only — the aggregated stream never serves
- * disabled ones. Returns the next states and the IDs that were newly added.
- */
 export function reconcileStates(
 	states: DashboardStates,
 	environments: readonly Pick<Environment, 'id' | 'name' | 'enabled'>[]
@@ -163,11 +138,6 @@ export function reconcileStates(
 	return { states: next, added };
 }
 
-/**
- * Aggregate tile counts across tracked environments. Every environment must
- * have a snapshot from the current stream connection; stale or partial data
- * is never presented as a live total.
- */
 export function resolvedAggregate(states: DashboardStates): AggregateCounts | undefined {
 	const values = Object.values(states);
 	if (values.length === 0) return undefined;
@@ -268,21 +238,13 @@ export function sameAttention(a: AttentionSummary, b: AttentionSummary): boolean
 	);
 }
 
-// MARK: - Reconnect backoff (shared by both stores)
-
 export const StreamBackoff = {
 	maxReconnectAttempts: 20,
 	maxReconnectDelaySeconds: 15,
-	/** A connection must survive this long before the attempt budget resets. */
 	stableConnectionSeconds: 5,
-	/** After the fast-backoff budget is spent, keep probing at this cadence forever. */
 	idleRetrySeconds: 30
 } as const;
 
-/**
- * Next delay (seconds) and attempt counter. `exhausted` is true once the fast
- * budget is spent (the dashboard stream's `streamFailed`).
- */
 export function nextReconnect(attempt: number): {
 	delay: number;
 	attempt: number;
@@ -298,12 +260,8 @@ export function nextReconnect(attempt: number): {
 	};
 }
 
-// MARK: - System stats history
-
-/** Port of Models.swift `SparklineSample`. */
 export type SparklineSample = { timestamp: number; value: number };
 
-/** Port of `SystemStatsHistoryStore.Series`. Replaced wholesale on every frame. */
 export type StatsSeries = {
 	cpu: SparklineSample[];
 	memory: SparklineSample[];
@@ -313,12 +271,10 @@ export type StatsSeries = {
 
 export const emptySeries: StatsSeries = { cpu: [], memory: [] };
 
-/** Five minutes at the stream's 2s cadence. */
 export const statsWindowSize = 150;
 
 const clampPercent = (value: number) => Math.min(Math.max(value, 0), 100);
 
-/** Appends one frame, keeping the newest `statsWindowSize` samples per series. */
 export function appendFrame(series: StatsSeries, frame: SystemStats, now: number): StatsSeries {
 	const cpu = [
 		...series.cpu,
@@ -337,10 +293,8 @@ export function appendFrame(series: StatsSeries, frame: SystemStats, now: number
 	};
 }
 
-/** Port of `LiveStatsLimit`: how many environments stream live host stats (App Settings). */
 export const LiveStatsLimit = {
 	preferenceKey: 'arcane.liveStatsEnvironmentLimit',
-	/** Streams every enabled environment. */
 	all: 0,
 	defaultValue: 8,
 	choices: [4, 8, 16, 0] as const,
@@ -353,9 +307,6 @@ export const LiveStatsLimit = {
 	}
 } as const;
 
-// MARK: - Model presentation (Models.swift extensions)
-
-/** `extension SystemStats` presentation helpers. */
 export const SystemStatsDisplay = {
 	cpuPercent: (stats: SystemStats) => stats.cpuUsage,
 	memoryUsageBytes: (stats: SystemStats) => stats.memoryUsage,
@@ -373,7 +324,6 @@ export const SystemStatsDisplay = {
 	}
 } as const;
 
-/** `extension DockerInfo` count accessors. */
 export const DockerCounts = {
 	containers: (info: DockerInfo) => JSONValue.int64Value(info.info?.['Containers']) ?? 0,
 	containersRunning: (info: DockerInfo) =>
@@ -385,7 +335,6 @@ export const DockerCounts = {
 	serverVersion: (info: DockerInfo) => JSONValue.stringValue(info.info?.['ServerVersion'])
 } as const;
 
-/** `Arcane.Environment.isOnline`. */
 export function environmentIsOnline(environment: Pick<Environment, 'status'>): boolean {
 	const lower = environment.status.toLowerCase();
 	return lower === 'online' || lower === 'up';

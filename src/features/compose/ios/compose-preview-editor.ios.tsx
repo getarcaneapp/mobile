@@ -1,11 +1,3 @@
-/**
- * Ports of `ComposePreviewEditor` (ComposePreviewEditor.swift) and
- * `EnvPreviewEditor` (EnvPreviewEditor.swift): a view over the original
- * source, never a second serialized copy of the document.
- *
- * Compact width only (iPhone); the reference app's regular-width split view
- * is not ported. SwiftUI-tree.
- */
 import {
 	Button,
 	ContentUnavailableView,
@@ -84,11 +76,6 @@ import {
 
 type Mode = 'editor' | 'yaml';
 
-/**
- * The YAML/Text tab under the native tab's content. An `RNHostView` mounted
- * into an already laid-out SwiftUI tree never sizes its React Native content,
- * so the source editor stays mounted and is only hidden.
- */
 function ModeContent({
 	showsSource,
 	source,
@@ -114,7 +101,6 @@ function ModeContent({
 	);
 }
 
-/** `CodeEditorView` inside a SwiftUI tree. */
 function SourceEditor({
 	binding,
 	language,
@@ -158,7 +144,6 @@ export function ComposePreviewEditor({
 	);
 }
 
-/** `ComposePreviewEditor(text:readOnly:menuActions:)`. */
 export function ComposePreviewEditorView({
 	bindingRef,
 	readOnly,
@@ -424,8 +409,6 @@ function ServiceRow({ service, image }: { service: string; image?: string }) {
 	);
 }
 
-// MARK: - EnvPreviewEditor
-
 export function EnvPreviewEditor({
 	destination
 }: {
@@ -440,7 +423,6 @@ export function EnvPreviewEditor({
 	);
 }
 
-/** `EnvPreviewEditor(text:readOnly:menuActions:)`. */
 export function EnvPreviewEditorView({
 	bindingRef,
 	readOnly,

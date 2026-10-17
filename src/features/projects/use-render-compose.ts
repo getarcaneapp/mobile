@@ -1,4 +1,3 @@
-/** `RenderComposeView` state (RenderComposeView.swift): fill `${VAR}` placeholders and preview the resolved YAML. */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -12,7 +11,6 @@ export function useRenderCompose() {
 	useEffect(() => () => routePayloads.delete(token), [token]);
 
 	const initialCompose = payload?.initialCompose ?? '';
-	// `.task { scanForVariables() }`, pre-populating values with the defaults.
 	const [scan] = useState(() => scanComposeVariables(initialCompose, payload?.initialEnv ?? ''));
 	const [values, setValues] = useState<Record<string, string>>(() =>
 		Object.fromEntries(scan.order.map((name) => [name, scan.defaults[name] ?? '']))

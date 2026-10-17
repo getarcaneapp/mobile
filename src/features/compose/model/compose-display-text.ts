@@ -1,4 +1,3 @@
-/** Port of `ComposeDisplayText` (ComposeDisplayText.swift): presentation only; source paths keep their spelling. */
 import { capitalized } from './compose-field-options';
 
 const acronyms: Record<string, string> = {

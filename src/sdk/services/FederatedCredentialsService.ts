@@ -1,4 +1,3 @@
-/** Port of Services/FederatedCredentialsService.swift. */
 import type { RESTService } from '../http/RESTService';
 import { SearchPaginationSort } from '../models/base/pagination';
 import type {

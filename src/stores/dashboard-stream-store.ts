@@ -1,12 +1,3 @@
-/**
- * Port of `DashboardStreamStore.swift`: consumes the aggregated
- * `GET /dashboard/stream` NDJSON endpoint (one connection covering every
- * enabled environment) and tracks per-environment dashboard snapshots.
- * Older servers without the endpoint latch `streamUnsupported` after a single
- * 404 and the dashboard falls back to one REST snapshot pass.
- *
- * Owned by `EnvironmentsStore` (see `environment-detail-streams.ts`).
- */
 import { create } from 'zustand';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -41,11 +32,8 @@ import {
 type DashboardStreamState = {
 	statesByEnvironmentID: DashboardStates;
 	connected: boolean;
-	/** Set after the fast reconnect budget is exhausted; cleared by retry() or a reconnect. */
 	streamFailed: boolean;
-	/** Latched when the server 404s the stream endpoint. Permanent until configure() sees a new client. */
 	streamUnsupported: boolean;
-	/** Cached separately so consumers update only when a displayed count changes. */
 	aggregate: AggregateCounts | undefined;
 	attention: AttentionSummary;
 
@@ -55,10 +43,8 @@ type DashboardStreamState = {
 	start: () => void;
 	stop: () => void;
 	retry: () => void;
-	/** Pull-to-refresh: force a fresh connection. */
 	reconnect: () => void;
 	reconcile: (environments: Environment[]) => void;
-	/** Re-fetch snapshots over REST; each applies as it arrives. */
 	refresh: (environmentIDs?: string[]) => Promise<void>;
 };
 
@@ -79,12 +65,9 @@ export const useDashboardStreamStore = create<DashboardStreamState>((set, get) =
 	let client: ArcaneClient | undefined;
 	let clientIdentity: object | undefined;
 	let streamTask: AbortController | undefined;
-	/** Desired lifecycle state; the task can be gone while the dashboard still wants it. */
 	let shouldRun = false;
-	/** Bumped on every stop()/start() so stale events can't mutate the current generation. */
 	let generation = 0;
 
-	/** Publishes new states and rebuilds the derived aggregate/attention values. */
 	const commit = (states: DashboardStates) => {
 		const aggregate = resolvedAggregate(states);
 		const attention = resolvedAttention(states);
@@ -157,20 +140,17 @@ export const useDashboardStreamStore = create<DashboardStreamState>((set, get) =
 						if (!receivedFirstEvent) {
 							receivedFirstEvent = true;
 							set({ connected: true, streamFailed: false });
-							// A fresh stream re-emits errors for environments still failing.
 							commit(clearAllStreamErrors(get().statesByEnvironmentID));
 						}
 						apply(event);
 					}
 				} catch (error) {
 					if (isArcaneError(error, 'notFound')) {
-						// Server predates the stream endpoint: silent legacy mode.
 						set({ streamUnsupported: true, connected: false });
 						await get().refresh();
 						return;
 					}
 					if (isCancellation(error) || signal.aborted) return;
-					// Transport drops, server restarts, undecodable lines: all retried below.
 				}
 
 				set({ connected: false });
@@ -223,7 +203,6 @@ export const useDashboardStreamStore = create<DashboardStreamState>((set, get) =
 			});
 		},
 
-		/** Idempotent: a live stream task is left alone. */
 		start: () => {
 			shouldRun = true;
 			if (!client || get().streamUnsupported || streamTask) return;
@@ -239,7 +218,6 @@ export const useDashboardStreamStore = create<DashboardStreamState>((set, get) =
 			generation += 1;
 			streamTask?.abort();
 			streamTask = undefined;
-			// Environment states are intentionally kept: last-known data keeps rendering.
 			set({ connected: false, streamFailed: false });
 		},
 
@@ -255,8 +233,6 @@ export const useDashboardStreamStore = create<DashboardStreamState>((set, get) =
 		reconcile: (environments) => {
 			const { states, added } = reconcileStates(get().statesByEnvironmentID, environments);
 			commit(states);
-			// Only environments added mid-connection need a one-shot snapshot; a
-			// connection still opening delivers every environment it serves.
 			if (streamTask && get().connected) {
 				const forGeneration = generation;
 				for (const id of added) void refreshEnvironment(id, forGeneration);
@@ -272,7 +248,6 @@ export const useDashboardStreamStore = create<DashboardStreamState>((set, get) =
 	};
 });
 
-/** Reactive state for one environment card. */
 export function useDashboardEnvironmentState(
 	environmentID: string
 ): DashboardEnvironmentState | undefined {

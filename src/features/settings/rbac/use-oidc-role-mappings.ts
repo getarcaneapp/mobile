@@ -1,8 +1,3 @@
-/**
- * The model behind OIDCRoleMappingsView.swift: the mapping list with roles and
- * environments for labels, create / edit sheets (manual mappings only),
- * swipe-to-delete and its failure alert. v2 servers, global admins only.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -62,7 +57,6 @@ export function useOIDCRoleMappings() {
 		}
 	}, [rbacAvailable]);
 
-	// `.task { await load() }`
 	useEffect(() => {
 		void load();
 	}, [load]);
@@ -112,7 +106,6 @@ export function useOIDCRoleMappings() {
 		roleFor: (mapping: OidcRoleMapping) =>
 			availableRoles.find((role) => role.id === mapping.roleId),
 		openCreate: () => openForm(undefined),
-		/** Tapping a row edits it; env-declared mappings are read-only. */
 		openEdit: (mapping: OidcRoleMapping) => {
 			if (isManualMapping(mapping)) openForm(mapping);
 		},

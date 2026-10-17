@@ -1,4 +1,3 @@
-/** Port of Models/Search/Search.swift. */
 import type { SettingCategory } from '../category/Category';
 
 export interface SettingsSearchRequest {

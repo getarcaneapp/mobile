@@ -1,8 +1,3 @@
-/**
- * Android rendering of `NetworksView` (NetworksView.swift): Material 3
- * grouped list with the same sections, search, filters, create and prune.
- * Context menus and swipe actions become the row's long-press menu.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

@@ -1,8 +1,3 @@
-/**
- * Port of `ProjectDraftSnapshot` (Types/ProjectDraftSnapshot.swift) and
- * ProjectDraftSnapshot+Review.swift: review summaries, a line diff, and the
- * pre-save syntax check for the native Compose editor preview.
- */
 import { parseAllDocuments } from 'yaml';
 
 import { ComposeDocument } from './compose-document';
@@ -13,10 +8,6 @@ export type ProjectDraftSnapshot = { compose: string; environment: string };
 export const snapshotsEqual = (a: ProjectDraftSnapshot, b: ProjectDraftSnapshot) =>
 	a.compose === b.compose && a.environment === b.environment;
 
-/**
- * `CollectionDifference` offsets: indices removed from `before` and inserted
- * into `after`, from a minimal (Myers) edit script.
- */
 export function lineDifference(
 	before: readonly string[],
 	after: readonly string[]
@@ -99,7 +90,6 @@ export const ProjectDraftReview = {
 		].join('\n');
 	},
 
-	/** Checks syntax only: valid advanced YAML remains saveable through the raw editor. */
 	validateSyntax(draft: ProjectDraftSnapshot) {
 		const documents = parseAllDocuments(draft.compose, { uniqueKeys: false });
 		const list = Array.isArray(documents) ? documents : [documents];

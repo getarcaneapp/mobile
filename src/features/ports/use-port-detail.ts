@@ -1,4 +1,3 @@
-/** `PortMappingDetailView` reads the mapping handed over by the list row. */
 import { useLocalSearchParams } from 'expo-router';
 
 import type { PortMapping } from '@/sdk/models/port/PortMapping';

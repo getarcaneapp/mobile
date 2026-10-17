@@ -1,9 +1,3 @@
-/**
- * Port of `ActivitiesView` (Views/Activities/ActivitiesView.swift): the
- * Activity Center. Running / History sections with batch disclosure groups,
- * search, status/type/resource filters, live stream, pagination and Clear
- * History.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -220,7 +214,6 @@ function ActivityRow({ activity }: { activity: Activity }) {
 	);
 }
 
-/** `NavigationLink(value: activity) { label }`. */
 function ActivityLink({
 	model,
 	activity,
@@ -386,7 +379,6 @@ function ActivitiesToolbar({ model }: { model: ActivitiesScreenModel }) {
 	);
 }
 
-/** `onDone`: shown as the Activity Center sheet (leading Done, ContentView.swift). */
 export function ActivitiesScreen({ onDone }: { onDone?: () => void } = {}) {
 	const model = useActivitiesScreen();
 	const { state } = model;
@@ -478,7 +470,6 @@ export function ActivitiesScreen({ onDone }: { onDone?: () => void } = {}) {
 					title: 'Activities',
 					headerSearchBarOptions: {
 						placeholder: 'Search activities',
-						// `.navigationBarDrawer(displayMode: .always)`: under the title, also inside the Activity Center sheet.
 						placement: 'stacked',
 						hideWhenScrolling: false,
 						onChangeText: (event) => model.setSearchText(event.nativeEvent.text),

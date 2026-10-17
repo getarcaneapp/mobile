@@ -1,8 +1,3 @@
-/**
- * Data flow of `NotificationSettingsView` (NotificationSettingsView.swift):
- * the configured providers for the active environment, deleting a provider,
- * and opening a provider's form.
- */
 import { useCallback, useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -17,10 +12,8 @@ import { showToast, Toasts } from '@/ui/toast';
 import { settingsPayloads, useSettingsNavigation } from '../shared/settings-routes';
 import { notificationProviders, providerDisplayName } from './notification-provider-models';
 
-/** Route of the pushed provider form. */
 export const notificationProviderRoute = 'settings/notifications/provider';
 
-/** Hand-off for the pushed `NotificationProviderFormView`. */
 export type NotificationProviderFormPayload = {
 	provider: NotificationProvider;
 	existing: NotificationSettings | undefined;

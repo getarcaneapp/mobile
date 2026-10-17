@@ -1,9 +1,3 @@
-/**
- * The platform-neutral model behind `ImageVulnerabilitiesView`
- * (ImageVulnerabilitiesView.swift): scanner status, scan summary, paginated
- * findings with severity filtering, the ignored toggle, re-scan, and
- * ignore / unignore.
- */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
@@ -31,7 +25,6 @@ export type ImageVulnerabilitiesProps = {
 	imageID: string;
 	imageDisplayName: string;
 	environmentID: EnvironmentID;
-	/** Rendered inside the image detail screen: no title of its own. */
 	embedded?: boolean;
 };
 
@@ -60,7 +53,6 @@ export function useImageVulnerabilities({
 	const [hasMore, setHasMore] = useState(false);
 	const [cleared, setCleared] = useState(false);
 
-	// Values the async loaders read synchronously (Swift reads `@State` live).
 	const live = useRef({
 		page: 1,
 		isLoading: false,
@@ -69,7 +61,6 @@ export function useImageVulnerabilities({
 		vulnerabilities: [] as VulnerabilityRecord[]
 	});
 
-	/** `displayedVulnerabilities` (rebuilt whenever its inputs change). */
 	const displayedVulnerabilities = useMemo(
 		() =>
 			cleared
@@ -88,7 +79,6 @@ export function useImageVulnerabilities({
 			const result = await client.vulnerabilities.scannerStatus({ envID: environmentID });
 			next = { available: result.available, version: result.version };
 		} catch {
-			// Treat as unavailable.
 			next = { available: false };
 		}
 		setStatus(next);
@@ -105,7 +95,6 @@ export function useImageVulnerabilities({
 				)
 			);
 		} catch {
-			// Likely 404 (no scan yet) — leave summary nil.
 			setSummary(undefined);
 		}
 	};
@@ -166,7 +155,6 @@ export function useImageVulnerabilities({
 
 	useEffect(() => {
 		void initialLoad();
-		// `.task`: once per appearance of this image's view.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 

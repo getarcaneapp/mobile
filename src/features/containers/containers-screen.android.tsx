@@ -1,9 +1,3 @@
-/**
- * Android rendering of `ContainersView` (ContainersView.swift): Material 3
- * grouped list with the same sections, search, filters, pull-to-refresh,
- * pagination and actions. SwiftUI swipe actions and context menus become the
- * row's long-press menu; selection shows Material checkboxes.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

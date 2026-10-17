@@ -1,8 +1,3 @@
-/**
- * SwiftUI-tree pieces shared by the iOS Activity screens: `ActivityProgressView`
- * (Views/Activities/ActivityProgressView.swift), `ActivityIcon`, and the
- * `ActivityTint` → SwiftUI style mapping.
- */
 import { HStack, ProgressView, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -22,7 +17,6 @@ import { ActivityDisplay, type ActivityTint } from './activity-display';
 
 type SwiftStyle = string | { type: 'hierarchical'; style: 'secondary' | 'tertiary' };
 
-/** `Color` → SwiftUI style (`.secondary` is hierarchical). */
 export function swiftTint(tint: ActivityTint): SwiftStyle {
 	return tint === 'secondary' ? { type: 'hierarchical', style: 'secondary' } : tint;
 }
@@ -86,7 +80,6 @@ export function ActivityProgressView({
 	return null;
 }
 
-/** The activity glyph: callout semibold symbol in a 28 pt column. */
 export function ActivitySymbol({ systemName, tint }: { systemName: string; tint: ActivityTint }) {
 	return (
 		<Image
@@ -101,7 +94,6 @@ export function ActivitySymbol({ systemName, tint }: { systemName: string; tint:
 	);
 }
 
-/** `ActivityIcon`. */
 export function ActivityIcon({ activity }: { activity: Activity }) {
 	return (
 		<ActivitySymbol

@@ -1,8 +1,3 @@
-/**
- * Platform-neutral logic from the Views/Compose SwiftUI views (their computed
- * properties and button/binding closures), shared by the iOS and Android
- * renderings so both edit the source identically.
- */
 import { ComposeDocument } from './model/compose-document';
 import { ComposeEntryDraft, type ComposeEntryKind } from './model/compose-entry-draft';
 import { composeErrorMessage, ComposeFormError } from './model/compose-errors';
@@ -16,7 +11,6 @@ import {
 import { ComposeFieldOptions } from './model/compose-field-options';
 import { EnvDocument, type EnvEntry } from './model/env-document';
 
-/** `mutate`/`change`/`apply`: returns the new text or the error message. */
 export function attempt(
 	text: string,
 	action: (document: ComposeDocument) => string
@@ -29,8 +23,6 @@ export function attempt(
 }
 
 export const validName = (value: string) => value !== '' && /^[A-Za-z0-9_.-]+$/.test(value);
-
-// MARK: - ComposePreviewEditor
 
 export const projectResourceKeys = [
 	'services',
@@ -67,8 +59,6 @@ export function serviceImage(document: ComposeDocument, service: string): string
 	const field = document.nativeField([{ key: 'services' }, { key: service }, { key: 'image' }]);
 	return field.kind === 'string' && field.value !== '' ? field.value : undefined;
 }
-
-// MARK: - ComposeServiceForm
 
 export const primaryServiceFields = new Set([
 	'image',
@@ -164,7 +154,6 @@ export class ServiceFormModel {
 	}
 }
 
-/** `ComposeServiceForm.policy` setter. */
 export function settingPolicy(text: string, path: string[], key: string, selected: string): string {
 	const document = ComposeDocument.parse(text);
 	if (selected === '') {
@@ -181,8 +170,6 @@ export function policyOptions(text: string, path: string[], key: string) {
 	const current = new ServiceFormModel(text, path[1] ?? '').value(key) ?? '';
 	return { options, current, custom: current !== '' && !options.values.includes(current) };
 }
-
-// MARK: - ComposeScalarField / ComposeBooleanField
 
 export function scalarFieldState(text: string, path: string[]) {
 	const nativePath = keyPath(path);
@@ -235,8 +222,6 @@ export function settingBoolean(text: string, path: string[], enabled: boolean): 
 	return ComposeDocument.parse(text).settingNative(String(enabled), 'boolean', keyPath(path));
 }
 
-// MARK: - ComposeMappingForm
-
 export function mappingNativeFallback(
 	document: ComposeDocument | undefined,
 	path: string[]
@@ -270,8 +255,6 @@ export function addingMappingEntry(
 	return document.setting('""', [...path, name]);
 }
 
-// MARK: - ComposeCollectionForm
-
 export function collectionNativeFallback(
 	document: ComposeDocument | undefined,
 	path: string[]
@@ -294,7 +277,6 @@ export function collectionItems(
 
 export function entryName(raw: string): string {
 	const value = ComposeDocument.tryParse('entry: ' + raw)?.scalar(['entry']) ?? raw;
-	// `split(separator: "=", maxSplits: 1).first` (empty pieces are omitted).
 	if (value.startsWith('=')) return value.slice(1);
 	const separator = value.indexOf('=');
 	return separator === -1 ? value : value.slice(0, separator);
@@ -302,7 +284,6 @@ export function entryName(raw: string): string {
 
 export type EntrySelection = { id: string; index?: number; raw: string };
 
-/** The `ComposeEntrySheet` save closure in `ComposeCollectionForm`; returns the new text. */
 export function savingCollectionEntry(
 	text: string,
 	path: string[],
@@ -368,7 +349,6 @@ export function removingItems(text: string, path: string[], indices: readonly nu
 	return source;
 }
 
-/** `ComposeEntrySheet` "All settings": wraps the entry so native fields can edit it. */
 export const entryWrapper = (raw: string) =>
 	'entry:\n' +
 	raw
@@ -376,14 +356,11 @@ export const entryWrapper = (raw: string) =>
 		.map((line) => '  ' + line)
 		.join('\n');
 
-/** `ComposeEntrySheet.applyNativeSettings`. */
 export function rawFromWrapper(wrapper: string): string {
 	const raw = ComposeDocument.parse(wrapper).rawValue(['entry']);
 	if (raw === undefined) throw ComposeFormError.invalid('The entry cannot be empty.');
 	return raw;
 }
-
-// MARK: - ComposeStringListForm
 
 export function stringListNeedsNativeFields(
 	document: ComposeDocument | undefined,
@@ -419,8 +396,6 @@ export function addingStringValue(
 	}
 	return document.appendingItem(ComposeDocument.quoted(newValue), path);
 }
-
-// MARK: - ComposeNetworkAttachmentsForm
 
 export function attachmentNames(
 	document: ComposeDocument | undefined,
@@ -482,8 +457,6 @@ export function addingAttachment(
 export const fieldNames = (text: string, path: ComposeFieldPathComponent[]) =>
 	new Set((ComposeDocument.tryParse(text)?.nativeFields(path) ?? []).map((field) => field.name));
 
-// MARK: - ComposeNativeFieldsForm
-
 export function savingNativeField(
 	text: string,
 	field: ComposeNativeField,
@@ -507,7 +480,6 @@ export function removingNativeFields(
 	return result;
 }
 
-/** Swift `String.count`: grapheme clusters where the engine can segment them. */
 function characterCount(value: string): number {
 	const Segmenter = (Intl as { Segmenter?: typeof Intl.Segmenter }).Segmenter;
 	if (Segmenter) return Array.from(new Segmenter().segment(value)).length;
@@ -519,8 +491,6 @@ export const editsInline = (field: ComposeNativeField) =>
 	!field.value.includes('\n') &&
 	!field.value.includes('\r') &&
 	characterCount(field.value) <= 160;
-
-// MARK: - ComposeResourceDefinitionList
 
 export function addingResource(text: string, kind: string, name: string): string {
 	const document = ComposeDocument.parse(text);
@@ -539,8 +509,6 @@ export function removingResources(text: string, kind: string, indices: readonly 
 	}
 	return source;
 }
-
-// MARK: - EnvPreviewEditor
 
 export function settingEnvValue(text: string, entry: EnvEntry, value: string): string {
 	const document = new EnvDocument(text);

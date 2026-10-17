@@ -1,4 +1,3 @@
-/** Android rendering of ContainersView's toolbar and selection toolbar. */
 import { systemColors } from '@/theme/colors';
 import { maintenanceActionInfo } from '@/ui/components/all-environments-maintenance';
 import { environmentTitle } from '@/ui/components/environment-label.types';

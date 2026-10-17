@@ -1,9 +1,3 @@
-/**
- * Port of `UpdatesView` + `EnvironmentPickerSheet` (UpdatesView.swift).
- *
- * iOS: the SwiftUI image updates page, with the Run Updater sheet and the
- * history environment picker as SwiftUI sheets in the same tree.
- */
 import {
 	BottomSheet,
 	Button,

@@ -1,8 +1,3 @@
-/**
- * Root of the Activity Center sheet (ContentView.swift): `ActivitiesView` in
- * its own NavigationStack with a leading Done, plus the sheet's own toast host
- * (`.toastHost(reservesTabBarSpace: false)`).
- */
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 

@@ -1,9 +1,3 @@
-/**
- * Port of `StableSectionedList` (Android): non-empty sections as Material 3
- * list groups with a header row; one header carries the accessory.
- *
- * Standalone (RN views; place inside a ScrollView).
- */
 import { Fragment } from 'react';
 import { Text, View } from 'react-native';
 

@@ -1,11 +1,3 @@
-/**
- * Port of Services/LogViewerStore.swift: the live log viewer model shared by
- * the embedded and full-screen log consoles. Lines publish in 100 ms batches,
- * the retained window is capped at 5,000 lines, and scrolling away pauses
- * following while counting new lines.
- *
- * Pure TS (no React Native imports); bind with `useLogViewerSnapshot`.
- */
 import { formattedClockTime } from '@/core/date-formatting';
 import { RemoteDataLimits, boundedText, saturatingAdd } from '@/core/networking/remote-data-limits';
 import type { LogLine } from '@/sdk/types/streaming/LogLine';
@@ -77,7 +69,6 @@ export const LogViewerFormatting = {
 		return metadata.join(' ');
 	},
 
-	/** Letters, digits, `-` and `_`; everything else collapses into single hyphens. */
 	sanitizedFilename(value: string): string {
 		const replaced = Array.from(value)
 			.map((c) => (/^[\p{L}\p{N}_-]$/u.test(c) ? c : '-'))
@@ -90,7 +81,6 @@ export const LogViewerFormatting = {
 	}
 } as const;
 
-/** Per-line values the console row shows, derived once when the line arrives. */
 export interface LogLinePresentation {
 	severity: LogViewerSeverity;
 	levelLabel?: string;
@@ -135,7 +125,6 @@ export interface LogViewerSnapshot {
 	newLinesWhilePaused: number;
 }
 
-/** Builds the stream; called on every (re)connect. Undefined means unavailable. */
 export type LogStreamFactory = (signal: AbortSignal) => AsyncIterable<LogLine> | undefined;
 
 function isAbort(error: unknown) {
@@ -146,7 +135,6 @@ function isAbort(error: unknown) {
 
 export class LogViewerStore {
 	static readonly maximumRetainedLines = 5_000;
-	/** Lines publish at most this often, driven by a timer so a burst's tail shows when the stream goes quiet. */
 	static readonly flushIntervalMs = 100;
 
 	private state: LogViewerSnapshot = {
@@ -294,7 +282,6 @@ export class LogViewerStore {
 				}
 				return;
 			}
-			// Swift `Task.yield()` before reporting live.
 			await Promise.resolve();
 			if (!isCurrent()) return;
 			this.update({ connectionState: { kind: 'live' } });

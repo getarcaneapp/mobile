@@ -1,13 +1,10 @@
 import ExpoModulesCore
 import UIKit
 
-/// `UIApplication` alternate icon API (AppIconPickerView.swift).
 public class ArcaneAppIconModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ArcaneAppIcon")
 
-    /// Keys of Info.plist `CFBundleIcons.CFBundleAlternateIcons`, sorted like
-    /// `AppIconPickerView.options`. Reading the bundle is thread-safe.
     Constant("alternateIconNames") { () -> [String] in
       guard
         let icons = Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any],

@@ -1,9 +1,3 @@
-/**
- * Port of `NewAPIKeyView` (CreateAPIKeyView.swift) / `NewWebhookTokenView`
- * (WebhooksView.swift): a sheet that shows a secret once, with copy.
- *
- * Standalone (renders its own Host + SwiftUI navigation bar).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

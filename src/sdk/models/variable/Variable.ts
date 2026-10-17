@@ -1,18 +1,12 @@
-/** Port of Models/Variable/Variable.swift. */
 import { D, DecodingError } from '../base/decoding';
 import type { ISODateString } from '../base/date';
 
-/**
- * A manager-owned variable that is materialized into one or more environments.
- * Secret values are redacted by the server when read.
- */
 export interface GlobalVariable {
 	id: string;
 	key: string;
 	value: string;
 	isSecret: boolean;
 	allEnvironments: boolean;
-	/** JSON key `environmentIds`. */
 	environmentIDs: string[];
 	createdAt: ISODateString;
 	updatedAt?: ISODateString;
@@ -77,7 +71,6 @@ export interface CreateGlobalVariableRequest {
 	value: string;
 	isSecret: boolean;
 	allEnvironments: boolean;
-	/** JSON key `environmentIds`. */
 	environmentIDs: string[];
 }
 
@@ -120,16 +113,11 @@ export const CreateGlobalVariableRequest = {
 	}
 } as const;
 
-/**
- * Partial update. An undefined value preserves the current field; an empty
- * `environmentIDs` array explicitly clears environment-specific scope.
- */
 export interface UpdateGlobalVariableRequest {
 	key?: string;
 	value?: string;
 	isSecret?: boolean;
 	allEnvironments?: boolean;
-	/** JSON key `environmentIds`. */
 	environmentIDs?: string[];
 }
 
@@ -156,10 +144,6 @@ export const UpdateGlobalVariableRequest = {
 	}
 } as const;
 
-/**
- * Current materialization state for a manager-owned variable in an environment.
- * Unknown server values are preserved so newer backends remain decodable.
- */
 export type VariableSyncState = 'synced' | 'pending' | 'error' | (string & {});
 
 export const VariableSyncState = {
@@ -188,7 +172,6 @@ export const VariableSyncState = {
 } as const;
 
 export interface EnvironmentSyncStatus {
-	/** JSON key `environmentId`. */
 	environmentID: string;
 	environmentName?: string;
 	status: VariableSyncState;
@@ -197,7 +180,6 @@ export interface EnvironmentSyncStatus {
 }
 
 export const EnvironmentSyncStatus = {
-	/** Swift `Identifiable.id`. */
 	id(this: void, value: EnvironmentSyncStatus): string {
 		return value.environmentID;
 	},

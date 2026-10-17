@@ -1,4 +1,3 @@
-/** Port of Models/System/Prune.swift. */
 import { D } from '../base/decoding';
 
 export type PruneContainerMode = 'none' | 'stopped' | 'olderThan';
@@ -62,7 +61,6 @@ export interface PruneBuildCacheOptions {
 	until?: string;
 }
 
-/** Body for `POST /environments/{id}/system/prune`. */
 export interface PruneAllRequest {
 	containers?: PruneContainersOptions;
 	images?: PruneImagesOptions;
@@ -71,7 +69,6 @@ export interface PruneAllRequest {
 	buildCache?: PruneBuildCacheOptions;
 }
 
-/** Result of a system prune. */
 export interface PruneAllResult {
 	containersPruned?: string[];
 	imagesDeleted?: string[];
@@ -84,12 +81,10 @@ export interface PruneAllResult {
 	buildCacheSpaceReclaimed?: number;
 	success: boolean;
 	errors?: string[];
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
 export const PruneAllResult = {
-	/** Swift memberwise init defaults (`spaceReclaimed: 0`, `success: false`). */
 	make(this: void, args: Partial<PruneAllResult> = {}): PruneAllResult {
 		return { ...args, spaceReclaimed: args.spaceReclaimed ?? 0, success: args.success ?? false };
 	},

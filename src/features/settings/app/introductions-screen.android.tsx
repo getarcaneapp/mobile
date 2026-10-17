@@ -1,7 +1,3 @@
-/**
- * Android renderings of `AllEnvironmentsIntroductionView` and
- * `RefreshedDashboardIntroductionView` (Views/WhatsNew/).
- */
 import { Text, View } from 'react-native';
 
 import { ContainerResourceMetrics } from '@/features/containers/container-row';

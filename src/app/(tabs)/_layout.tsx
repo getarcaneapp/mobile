@@ -11,22 +11,14 @@ import { resolveTabs, useNavTabsStore } from '@/stores/nav-tabs-store';
 import { useAccentColor } from '@/theme/accent';
 import { materialSymbol } from '@/ui/symbols';
 
-/**
- * Port of `MainTabView`: the user's four pinned destinations plus More.
- * Every pinnable destination is declared statically (native tabs can't be
- * added at runtime); unpinned ones are hidden.
- */
 export default function TabsLayout() {
 	const accent = useAccentColor();
-	// ContentView: `authenticatedContent.arcaneWhatsNewSheet()`.
 	useAutomaticWhatsNewPresentation();
 	const [showTabLabels] = useStoredBool(Keys.showTabLabels, false);
 	const pinned = useNavTabsStore((s) => s.pinnedTabs);
 	const canAccess = useClientManager((s) => s.canAccess);
-	// Re-evaluate access whenever the session changes.
 	useClientManager((s) => s.accessGeneration);
 
-	// MainTabView `.onChange(of: selectedTab)`: remember the selected tab.
 	const segments = useSegments() as string[];
 	const selectedGroup = segments[1];
 	useEffect(() => {
@@ -34,9 +26,6 @@ export default function TabsLayout() {
 		if (id) storage.set(Keys.lastSelectedTabID, id === 'more' ? 'settings' : id);
 	}, [selectedGroup]);
 
-	// Android: a sheet or page popped while its field had focus leaves the IME up over the
-	// previous screen; UIKit resigns first responder on its own. Only on pops, so screens
-	// that focus a field on push (the terminal) keep their keyboard.
 	const stackDepth = focusedDepth(useRootNavigationState());
 	const previousDepth = useRef(stackDepth);
 	useEffect(() => {
@@ -53,10 +42,8 @@ export default function TabsLayout() {
 		<NativeTabs
 			tintColor={accent}
 			minimizeBehavior="never"
-			// Android: Material bottom bars hide unselected labels past three items unless told otherwise.
 			labelVisibilityMode={showTabLabels ? 'labeled' : 'unlabeled'}
 		>
-			{/* Pinned order first; reordering remounts the tabs, same as SwiftUI rebuilding its TabView. */}
 			{[...visible, ...pinnableTabs.filter((tab) => !visible.includes(tab))].map((tab) => {
 				return (
 					<NativeTabs.Trigger key={tab} name={`(${tab})`} hidden={!visible.includes(tab)}>
@@ -80,7 +67,6 @@ export default function TabsLayout() {
 
 type NavState = { index?: number; routes: { state?: NavState }[] } | undefined;
 
-/** Screens stacked along the focused route path (sum of each navigator's index). */
 function focusedDepth(state: NavState): number {
 	let depth = 0;
 	for (let current = state; current;) {

@@ -1,4 +1,3 @@
-/** Android rendering of `GitOpsSyncDetailView` (GitOpsSyncDetailView.swift). */
 import { Stack } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

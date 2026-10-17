@@ -1,10 +1,3 @@
-/**
- * URL identity helpers shared by auth, caching and image loading.
- * Ports of `AppGroup.canonicalServerOrigin`, `ServerCacheIdentity`,
- * `ArcaneAPIHelpers.isSameOrigin/escapedPathComponent`, the URL normalization
- * in `ArcaneClientManager.configure(serverURL:)`, and its IP-address helpers.
- * Pure TS (no RN imports) so it runs under `node --test`.
- */
 import { parseURL } from '@/sdk/client/url';
 
 function defaultPort(scheme: string): number | undefined {
@@ -18,10 +11,6 @@ function defaultPort(scheme: string): number | undefined {
 	}
 }
 
-/**
- * Port of `AppGroup.canonicalServerOrigin(for:)`: `scheme://host:port[/path]`
- * with the effective port spelled out. Keys tokens and credential bindings.
- */
 export function canonicalServerOrigin(url: string): string | undefined {
 	const parsed = parseURL(url);
 	if (!parsed) return undefined;
@@ -37,11 +26,6 @@ export function canonicalServerOrigin(url: string): string | undefined {
 	return `${scheme}://${host}:${port}${path}`;
 }
 
-/**
- * Port of `ServerCacheIdentity.canonical(for:)`: canonical scheme + host +
- * effective port + base path (always slash-terminated). Cache keys and the
- * avatar disk cache use it.
- */
 export function serverCacheIdentity(url: string): string {
 	const parsed = parseURL(url);
 	if (!parsed || !parsed.scheme || !parsed.host) return url;
@@ -57,7 +41,6 @@ export function serverCacheIdentity(url: string): string {
 		: `${scheme}://${authority}${path}`;
 }
 
-/** Port of `ArcaneAPIHelpers.isSameOrigin`. */
 export function isSameOrigin(lhs: string, rhs: string): boolean {
 	const a = parseURL(lhs);
 	const b = parseURL(rhs);
@@ -73,10 +56,8 @@ export function isSameOrigin(lhs: string, rhs: string): boolean {
 	return (a.port ?? defaultPort(aScheme)) === (b.port ?? defaultPort(bScheme));
 }
 
-// `CharacterSet.urlPathAllowed` minus "/".
 const pathAllowed = /[A-Za-z0-9!$&'()*+,\-.:;=@_~]/;
 
-/** Port of `ArcaneAPIHelpers.escapedPathComponent`. */
 export function escapedPathComponent(value: string): string {
 	let out = '';
 	for (const char of value) {
@@ -91,11 +72,6 @@ export function escapedPathComponent(value: string): string {
 	return out;
 }
 
-/**
- * The validation in `configure(serverURL:)`: trims, defaults to `https://`
- * when no scheme was typed (local HTTP servers need an explicit `http://`),
- * and requires a host. Returns `undefined` for "Invalid server URL".
- */
 export function normalizeServerURLInput(input: string): string | undefined {
 	const trimmed = input.trim();
 	const lowered = trimmed.toLowerCase();
@@ -103,28 +79,23 @@ export function normalizeServerURLInput(input: string): string | undefined {
 		lowered.startsWith('http://') || lowered.startsWith('https://')
 			? trimmed
 			: `https://${trimmed}`;
-	// `URL(string:)` rejects unescaped spaces and other illegal characters.
 	if (/[\s<>"{}|\\^`]/.test(normalized)) return undefined;
 	const parsed = parseURL(normalized);
 	if (!parsed || !parsed.host) return undefined;
 	return normalized;
 }
 
-/** `URL.host(percentEncoded: false)` without IPv6 brackets. */
 export function hostOf(url: string): string | undefined {
 	const host = parseURL(url)?.host;
 	if (!host) return undefined;
 	return host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host;
 }
 
-/** `host[:port]` for display (LoginView `serverDisplayName`, profile default names). */
 export function hostAndPort(url: string): string | undefined {
 	const parsed = parseURL(url);
 	if (!parsed?.host) return undefined;
 	return parsed.port !== undefined ? `${parsed.host}:${parsed.port}` : parsed.host;
 }
-
-// MARK: - IP addresses
 
 export function ipv4Octets(value: string): number[] | undefined {
 	const parts = value.split('.');
@@ -139,7 +110,6 @@ export function ipv4Octets(value: string): number[] | undefined {
 	return octets;
 }
 
-/** Parses an IPv6 literal into 16 bytes (`inet_pton(AF_INET6)`), or `undefined`. */
 export function ipv6Bytes(value: string): number[] | undefined {
 	if (!value.includes(':') || /[^0-9A-Fa-f:.]/.test(value)) return undefined;
 	let head = value;

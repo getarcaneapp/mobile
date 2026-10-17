@@ -1,8 +1,6 @@
-/** Port of Models/Volume/Volume.swift. */
 import type { PaginationResponse } from '../base/pagination';
 import { D } from '../base/decoding';
 
-/** VolumeUsageData mirrors Docker SDK volume usage data (JSON keys `Size` / `RefCount`). */
 export interface VolumeUsageData {
 	size: number;
 	refCount: number;
@@ -21,12 +19,6 @@ export const VolumeUsageData = {
 	}
 } as const;
 
-/**
- * Volume represents a Docker volume. Several fields are decoded leniently
- * (defaulting to empty / false / 0) because the Docker daemon often emits
- * `null` for empty labels/options/containers and the backend forwards that
- * through unchanged.
- */
 export interface Volume {
 	id: string;
 	name: string;
@@ -40,7 +32,6 @@ export interface Volume {
 	usageData?: VolumeUsageData;
 	size: number;
 	containers: string[];
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -87,18 +78,15 @@ export const Volume = {
 	}
 } as const;
 
-/** VolumeUsageCounts contains counts of volumes by usage status. */
 export interface VolumeUsageCounts {
 	inuse: number;
 	unused: number;
 	total: number;
 }
 
-/** VolumePruneReport is the result of a volume prune operation. */
 export interface VolumePruneReport {
 	volumesDeleted: string[];
 	spaceReclaimed: number;
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -120,7 +108,6 @@ export const VolumePruneReport = {
 	}
 } as const;
 
-/** CreateVolume is used to create a new volume. */
 export interface CreateVolume {
 	name: string;
 	driver?: string;
@@ -128,20 +115,17 @@ export interface CreateVolume {
 	labels?: Record<string, string>;
 }
 
-/** VolumeUsage represents per-volume usage details returned by GET /volumes/{name}/usage. */
 export interface VolumeUsage {
 	inUse: boolean;
 	containers: string[];
 }
 
-/** VolumeSizeInfo represents size information for a single volume. */
 export interface VolumeSizeInfo {
 	name: string;
 	size: number;
 	refCount: number;
 }
 
-/** VolumeListPage is the page envelope returned by `GET /environments/{id}/volumes`. */
 export interface VolumeListPage {
 	success: boolean;
 	data: Volume[];

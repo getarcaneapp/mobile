@@ -1,8 +1,3 @@
-/**
- * Android rendering of `VariablesView` (VariablesView.swift): Material 3 list
- * with the same states, sync status, search, and actions. The SwiftUI context
- * menu and swipe actions become the row's long-press menu.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

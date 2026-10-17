@@ -1,4 +1,3 @@
-/** Port of `FederatedCredentialDetailView` (FederatedCredentialsView.swift). */
 import { Host } from '@/ui/host';
 import { LabeledContent, List, Section, Text } from '@expo/ui/swift-ui';
 import { listStyle } from '@expo/ui/swift-ui/modifiers';

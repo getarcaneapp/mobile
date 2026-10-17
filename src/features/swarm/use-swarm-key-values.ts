@@ -1,4 +1,3 @@
-/** State behind `SwarmKeyValueListView`, `SwarmKeyValueDetailView` and `SwarmKeyValueCreateView` (SwarmKeyValueViews.swift). */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -31,7 +30,6 @@ import {
 	type SwarmKeyValueKind
 } from './swarm-routes';
 
-/** `SwarmKeyValueListView.Kind`. */
 export const KeyValueKind = {
 	title: (kind: SwarmKeyValueKind) => (kind === 'config' ? 'Configs' : 'Secrets'),
 	singular: (kind: SwarmKeyValueKind) => (kind === 'config' ? 'Config' : 'Secret'),
@@ -46,7 +44,6 @@ export const parseKind = (value?: string): SwarmKeyValueKind =>
 export const itemName = (item: SwarmKeyValueItem) =>
 	swarmString(swarmField(item.spec, 'Name')) ?? shortID(item.id);
 
-/** Decoded `Data` for configs; undefined when absent or not UTF-8. */
 export function decodedData(item: SwarmKeyValueItem): string | undefined {
 	const base64 = swarmString(swarmField(item.spec, 'Data'));
 	if (base64 === undefined) return undefined;
@@ -198,7 +195,6 @@ export function useSwarmKeyValueDetail() {
 			if (!(await deleteItem(kind, item, environmentID))) return;
 			swarmChanged(environmentID);
 			showToast(Toasts.success(`${KeyValueKind.singular(kind)} deleted`));
-			// The toolbar's confirmation already dismissed this screen.
 		} catch (error) {
 			showToast(Toasts.error(friendlyErrorMessage(error)));
 		} finally {

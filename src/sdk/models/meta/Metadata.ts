@@ -1,6 +1,3 @@
-/** Port of Models/Meta/Metadata.swift. */
-
-/** Metadata describing a configuration / setting field. */
 export interface ConfigMetadata {
 	key: string;
 	label: string;
@@ -9,7 +6,6 @@ export interface ConfigMetadata {
 	description?: string;
 }
 
-/** Metadata associated with a template (URLs, tags, author etc.). */
 export interface TemplateMetadata {
 	version?: string;
 	author?: string;

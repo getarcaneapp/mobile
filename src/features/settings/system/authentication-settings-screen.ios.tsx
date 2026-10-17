@@ -1,4 +1,3 @@
-/** Port of `AuthenticationSettingsView` (AuthenticationSettingsView.swift). */
 import { Form, Label, Section, Text, Toggle } from '@expo/ui/swift-ui';
 import { Host } from '@/ui/host';
 import { disabled, foregroundStyle } from '@expo/ui/swift-ui/modifiers';
@@ -20,7 +19,6 @@ import {
 	useAuthenticationSettings
 } from './use-authentication-settings';
 
-/** `appTabDestination(.authentication)`. */
 export function AuthenticationDestination() {
 	const model = useAuthenticationSettings();
 	const { form, update, oidcEnvForced } = model;
@@ -67,8 +65,6 @@ export function AuthenticationDestination() {
 						/>
 					</Section>
 
-					{/* Fields take `disabled={oidcEnvForced}`: Swift's FormTextField dims its value via
-              `@Environment(\.isEnabled)` when the section is disabled, which JS can't read. */}
 					<Section
 						header={<Label title="OIDC Provider" systemImage="lock.shield" />}
 						footer={

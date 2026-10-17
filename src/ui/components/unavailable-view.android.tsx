@@ -1,8 +1,3 @@
-/**
- * Android `ContentUnavailableView` with any number of text-button actions.
- *
- * Standalone (RN views).
- */
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';

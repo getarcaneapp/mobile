@@ -1,14 +1,6 @@
-/**
- * Ports of Types/DynamicResourceTypes.swift (`AnyJSONValue`, `DynamicResource`,
- * `BackendFormField`, `DynamicEditConfig`, `BackendListAction`) and the
- * request helpers in Utils/ArcaneAPIHelpers.swift. Pure TS.
- */
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { QueryItem } from '@/sdk/client/url';
 
-// MARK: - AnyJSONValue
-
-/** Swift `AnyJSONValue`: any decoded JSON value. */
 export type JSONValue =
 	| string
 	| number
@@ -23,7 +15,6 @@ export function isJSONObject(value: JSONValue | undefined): value is JSONObject 
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** `AnyJSONValue.displayString`. */
 export function jsonDisplayString(value: JSONValue): string {
 	if (value === null) return 'None';
 	if (typeof value === 'string') return value;
@@ -33,19 +24,14 @@ export function jsonDisplayString(value: JSONValue): string {
 	return `${Object.keys(value).length} fields`;
 }
 
-/** `localizedStandardCompare`: case-insensitive, numeric-aware. */
 export function standardCompare(lhs: string, rhs: string): number {
 	return lhs.localeCompare(rhs, undefined, { numeric: true, sensitivity: 'base' });
 }
 
-/** `localizedCaseInsensitiveContains`. */
 export function caseInsensitiveContains(text: string, query: string): boolean {
 	return text.toLocaleLowerCase().includes(query.toLocaleLowerCase());
 }
 
-// MARK: - DynamicResource
-
-/** Swift `DynamicResource`: a server object read leniently as JSON. */
 export interface DynamicResource {
 	id: string;
 	values: JSONObject;
@@ -130,7 +116,6 @@ export const DynamicResource = {
 		return { id, values };
 	},
 
-	/** `init(from:)`: any JSON object. */
 	decode(this: void, raw: unknown): DynamicResource {
 		const values: JSONObject =
 			typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as JSONObject) : {};
@@ -155,7 +140,6 @@ export const DynamicResource = {
 		return undefined;
 	},
 
-	/** Every field except secrets, sorted by key. */
 	sortedDetails(this: void, resource: DynamicResource): [string, JSONValue][] {
 		return Object.entries(resource.values)
 			.filter(([key]) => {
@@ -166,7 +150,6 @@ export const DynamicResource = {
 	}
 } as const;
 
-/** `DynamicValueRow.prettyKey`: `snake_case` / `kebab-case` → "Title Case". */
 export function prettyKey(raw: string): string {
 	return raw
 		.replace(/_/g, ' ')
@@ -177,16 +160,12 @@ export function prettyKey(raw: string): string {
 		.join(' ');
 }
 
-// MARK: - Forms and actions
-
-/** `BackendFormField.FieldType`. */
 export type BackendFieldType =
 	| { kind: 'text' }
 	| { kind: 'secure' }
 	| { kind: 'multiline' }
 	| { kind: 'toggle' }
 	| { kind: 'number' }
-	/** Fixed set of string values; the first is the default. */
 	| { kind: 'choice'; options: string[] };
 
 export interface BackendFormField {
@@ -213,7 +192,6 @@ export function backendFormField(
 
 export type BackendMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-/** Edit form for a dynamic resource; saves to `<list path>/{id}`. */
 export interface DynamicEditConfig {
 	title: string;
 	fields: BackendFormField[];
@@ -254,16 +232,12 @@ export function backendListAction(args: {
 	};
 }
 
-// MARK: - ArcaneAPIHelpers
-
-/** `escapedPathComponent`: percent-encodes everything outside the URL path set, including `/`. */
 export function escapedPathComponent(value: string): string {
 	return encodeURIComponent(value).replace(/%(2[146-9ABC]|3[ABD]|40)/g, (match) =>
 		decodeURIComponent(match)
 	);
 }
 
-/** Splits `path?query` into the bare path and its query items. */
 export function splitPath(path: string): { path: string; query: QueryItem[] } {
 	const index = path.indexOf('?');
 	if (index < 0) return { path, query: [] };
@@ -279,7 +253,6 @@ export function splitPath(path: string): { path: string; query: QueryItem[] } {
 	return { path: path.slice(0, index), query };
 }
 
-/** `ArcaneAPIHelpers.send`: raw request, response text out. */
 export function sendRequest(
 	client: ArcaneClient,
 	path: string,
@@ -291,7 +264,6 @@ export function sendRequest(
 	return client.transport.rawRequest(bare, { method, query, body });
 }
 
-/** `ArcaneAPIHelpers.formBody`: the JSON body for a create / edit form. */
 export function formBody(
 	values: Record<string, string>,
 	toggles: Record<string, boolean>,

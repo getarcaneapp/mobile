@@ -1,14 +1,6 @@
-/**
- * Port of `ContainerStatsFrame` (ContainerStatsFrame.swift) and
- * `ContainerStatsChartSeries` (ContainerStatsView.swift): one parsed Docker
- * stats sample with per-second rates derived from the previous frame.
- *
- * Pure TS.
- */
 import { formatFileBytes, nonnegative, saturatingAdd } from '@/core/networking/remote-data-limits';
 
 export interface ContainerStatsFrame {
-	/** Milliseconds since the epoch. */
 	timestamp: number;
 	cpuPercent: number;
 	memoryUsed: number;
@@ -32,13 +24,11 @@ const asObject = (value: unknown): JSONObject | undefined =>
 		: undefined;
 const asArray = (value: unknown): unknown[] | undefined =>
 	Array.isArray(value) ? value : undefined;
-/** `JSONValue.asInt64`: finite numbers truncated toward zero. */
 const asInt = (value: unknown): number | undefined =>
 	typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : undefined;
 const asString = (value: unknown): string | undefined =>
 	typeof value === 'string' ? value : undefined;
 
-/** Swift's Int64 domain is wider than JS doubles; cap like `RemoteDataLimits` does. */
 const maxValue = Number.MAX_SAFE_INTEGER;
 const rateCap = 1_000_000_000_000_000;
 
@@ -135,7 +125,6 @@ export function parseContainerStatsFrame(
 	};
 }
 
-/** Flat per-chart value arrays, one entry per frame. */
 export interface ContainerStatsChartSeries {
 	cpu: number[];
 	memoryMegabytes: number[];
@@ -156,7 +145,6 @@ export function chartSeries(frames: readonly ContainerStatsFrame[]): ContainerSt
 	};
 }
 
-/** Keeps the newest `windowSize` frames (Swift: 60). */
 export function appendFrame(
 	frames: readonly ContainerStatsFrame[],
 	frame: ContainerStatsFrame,
@@ -166,7 +154,6 @@ export function appendFrame(
 	return next.length > windowSize ? next.slice(next.length - windowSize) : next;
 }
 
-/** ContainerStatsView's tile strings. */
 export const StatsText = {
 	percent: (value: number | undefined) => (value === undefined ? '—' : `${value.toFixed(1)}%`),
 	memory: (used: number | undefined) => (used === undefined ? '—' : formatFileBytes(used)),

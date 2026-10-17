@@ -1,7 +1,3 @@
-/**
- * `ContainerStatsView.startStreaming()`: consumes the stats WebSocket while the
- * tab is on screen, keeping a 60-frame window and the chart series.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';

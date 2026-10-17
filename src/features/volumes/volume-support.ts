@@ -1,11 +1,3 @@
-/**
- * Ports of the small backup/workspace helpers the volume screens share:
- * `BackupRequestScope` (Types/BackupRequestScope.swift), `BackupSessionScope`
- * (Views/Settings/Backups/BackupSessionScope.swift), `BackupPolicyDraft`
- * (Types/BackupPolicyDraft.swift), `VolumeWorkspaceDraft`
- * (Types/VolumeWorkspaceDraft.swift), plus `.confirmationDialog`, temporary
- * files, and share-sheet glue.
- */
 import { Directory, File, Paths } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
@@ -21,13 +13,6 @@ import { useClientManager } from '@/stores/client-manager';
 
 import { uuidString } from './volume-model';
 
-// MARK: - BackupRequestScope
-
-/**
- * Captures the session generation and active environment at the start of a
- * request; `check` throws a cancellation once either changed (or the caller
- * went away).
- */
 export class BackupRequestScope {
 	readonly generation: number;
 	readonly environmentID: EnvironmentID;
@@ -50,7 +35,6 @@ export class BackupRequestScope {
 	}
 }
 
-/** `BackupSessionScope`: leaves the screen when the session or active environment changes. */
 export function useBackupSessionScope() {
 	const router = useRouter();
 	const generation = useClientManager((s) => s.clientGeneration);
@@ -67,7 +51,6 @@ export function useBackupSessionScope() {
 	}, [generation, activeEnvironmentID, router]);
 }
 
-/** A ref that turns true once the component unmounts (`Task.isCancelled` for view tasks). */
 export function useUnmounted() {
 	const unmounted = useRef(false);
 	useEffect(() => {
@@ -78,8 +61,6 @@ export function useUnmounted() {
 	}, []);
 	return unmounted;
 }
-
-// MARK: - BackupPolicyDraft
 
 export type BackupPolicyDraft = {
 	id: string;
@@ -143,8 +124,6 @@ export const BackupPolicyDraft = {
 	}
 } as const;
 
-// MARK: - VolumeWorkspaceDraft
-
 export type VolumeWorkspaceDraft = { text: string; baseline: string; conflict: boolean };
 
 export const VolumeWorkspaceDraft = {
@@ -170,12 +149,6 @@ export const VolumeWorkspaceDraft = {
 	}
 } as const;
 
-// MARK: - Dialogs
-
-/**
- * SwiftUI `.confirmationDialog(_:isPresented:titleVisibility: .visible)` with
- * one destructive action: an action sheet on iOS, a Material dialog on Android.
- */
 export function confirmationDialog({
 	title,
 	message,
@@ -208,30 +181,22 @@ export function confirmationDialog({
 	]);
 }
 
-/** `.alert(title, isPresented:) { Button("OK") } message: { Text(message) }`. */
 export function showErrorAlert(title: string, message: string) {
 	Alert.alert(title, message, [{ text: 'OK', style: 'cancel' }]);
 }
 
-// MARK: - Files
-
-/** A new empty directory under the cache directory (`temporaryDirectory/UUID`). */
 export function makeTemporaryDirectory(): Directory {
 	const directory = new Directory(Paths.cache, uuidString());
 	directory.create({ intermediates: true, idempotent: true });
 	return directory;
 }
 
-/** Deletes a file or directory, ignoring failures (`try? FileManager.removeItem`). */
 export function removeItem(item: File | Directory | undefined) {
 	try {
 		if (item?.exists) item.delete();
-	} catch {
-		// Best effort.
-	}
+	} catch {}
 }
 
-/** Streams an authenticated download to `destination`. */
 export async function downloadTo(
 	request: ArcaneAuthorizedRequest,
 	destination: File
@@ -242,12 +207,10 @@ export async function downloadTo(
 	});
 }
 
-/** `ShareLink(item: url)`: presents the system share sheet for a local file. */
 export async function shareFile(file: File) {
 	await Sharing.shareAsync(file.uri);
 }
 
-/** `@State` + `useCallback` setter that also exposes the latest value through a ref. */
 export function useLatestState<T>(initial: T) {
 	const [value, setValue] = useState(initial);
 	const ref = useRef(value);

@@ -1,4 +1,3 @@
-/** Port of Services/GitOpsService.swift. */
 import type { EnvironmentID } from '../client/environment';
 import { boolString, q, type QueryItem } from '../client/url';
 import type { RESTService } from '../http/RESTService';
@@ -26,18 +25,13 @@ import {
 	type ImportGitOpsSyncResponse
 } from '../types/gitOps/GitOpsSyncAndBackup';
 
-/** GitOpsService manages Git repositories and GitOps sync configurations. */
 export class GitOpsService {
 	private readonly rest: RESTService;
 
-	/** @internal */
 	constructor(rest: RESTService) {
 		this.rest = rest;
 	}
 
-	// MARK: - Git repositories (top-level)
-
-	/** List configured git repositories with pagination. */
 	listRepositoriesPaginated(
 		args: { search?: string; sort?: string; order?: SortOrder; start?: number; limit?: number } = {}
 	): Promise<PaginatedResponse<GitRepository>> {
@@ -52,39 +46,32 @@ export class GitOpsService {
 		});
 	}
 
-	/** Get a git repository by ID. */
 	getRepository(args: { id: string }): Promise<GitRepository> {
 		return this.rest.get(`customize/git-repositories/${args.id}`);
 	}
 
-	/** Create a new git repository configuration. */
 	createRepository(args: { body: CreateGitRepository }): Promise<GitRepository> {
 		return this.rest.post('customize/git-repositories', { body: args.body });
 	}
 
-	/** Update an existing git repository. */
 	updateRepository(args: { id: string; body: UpdateGitRepository }): Promise<GitRepository> {
 		return this.rest.put(`customize/git-repositories/${args.id}`, { body: args.body });
 	}
 
-	/** Delete a git repository configuration. */
 	deleteRepository(args: { id: string }): Promise<void> {
 		return this.rest.deleteVoid(`customize/git-repositories/${args.id}`);
 	}
 
-	/** Test connectivity and authentication for a git repository. */
 	testRepository(args: { id: string; branch?: string }): Promise<void> {
 		const query: QueryItem[] = [];
 		if (args.branch !== undefined) query.push(q('branch', args.branch));
 		return this.rest.postVoid(`customize/git-repositories/${args.id}/test`, { query });
 	}
 
-	/** List branches available in a git repository. */
 	listBranches(args: { id: string }): Promise<GitOpsBranchesResponse> {
 		return this.rest.get(`customize/git-repositories/${args.id}/branches`);
 	}
 
-	/** Browse files and directories in a git repository at the given branch. */
 	browseRepositoryFiles(args: {
 		id: string;
 		branch: string;
@@ -95,14 +82,10 @@ export class GitOpsService {
 		return this.rest.get(`customize/git-repositories/${args.id}/files`, { query });
 	}
 
-	/** Sync git repositories from a manager to an agent instance. */
 	syncRepositories(args: { body: GitRepositorySyncRequest }): Promise<void> {
 		return this.rest.postVoid('git-repositories/sync', { body: args.body });
 	}
 
-	// MARK: - GitOps syncs (per environment)
-
-	/** List GitOps syncs in the given environment with pagination. */
 	listSyncsPaginated(
 		args: {
 			search?: string;
@@ -132,19 +115,16 @@ export class GitOpsService {
 		});
 	}
 
-	/** Create a new GitOps sync configuration. */
 	createSync(args: { body: CreateGitOpsSync; envID?: EnvironmentID }): Promise<GitOpsSync> {
 		return this.rest.post(this.rest.environmentPath(args.envID, 'gitops-syncs'), {
 			body: args.body
 		});
 	}
 
-	/** Get a GitOps sync by ID. */
 	getSync(args: { id: string; envID?: EnvironmentID }): Promise<GitOpsSync> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `gitops-syncs/${args.id}`));
 	}
 
-	/** Update an existing GitOps sync. */
 	updateSync(args: {
 		id: string;
 		body: UpdateGitOpsSync;
@@ -155,22 +135,18 @@ export class GitOpsService {
 		});
 	}
 
-	/** Delete a GitOps sync. */
 	deleteSync(args: { id: string; envID?: EnvironmentID }): Promise<void> {
 		return this.rest.deleteVoid(this.rest.environmentPath(args.envID, `gitops-syncs/${args.id}`));
 	}
 
-	/** Manually trigger a sync operation. */
 	performSync(args: { id: string; envID?: EnvironmentID }): Promise<GitOpsSyncResult> {
 		return this.rest.post(this.rest.environmentPath(args.envID, `gitops-syncs/${args.id}/sync`));
 	}
 
-	/** Get the current status of a GitOps sync. */
 	getSyncStatus(args: { id: string; envID?: EnvironmentID }): Promise<GitOpsSyncStatus> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `gitops-syncs/${args.id}/status`));
 	}
 
-	/** Browse files in a synced repository. */
 	browseSyncFiles(args: {
 		id: string;
 		path?: string;
@@ -183,7 +159,6 @@ export class GitOpsService {
 		});
 	}
 
-	/** Import multiple GitOps syncs from a JSON list. */
 	importSyncs(args: {
 		syncs: ImportGitOpsSyncRequest[];
 		envID?: EnvironmentID;
@@ -193,16 +168,12 @@ export class GitOpsService {
 		});
 	}
 
-	// MARK: - Git backup mode
-
-	/** Preview what the next Git backup would commit. */
 	previewBackup(args: { id: string; envID?: EnvironmentID }): Promise<GitBackupPreview> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `gitops-syncs/${args.id}/backup/preview`)
 		);
 	}
 
-	/** List repository revisions affecting a backup directory. */
 	backupHistory(args: {
 		id: string;
 		limit?: number;
@@ -216,7 +187,6 @@ export class GitOpsService {
 		);
 	}
 
-	/** Get one backup revision with per-file diffs. */
 	backupRevision(args: {
 		id: string;
 		commit: string;
@@ -227,7 +197,6 @@ export class GitOpsService {
 		);
 	}
 
-	/** Resolve a backup that needs attention. */
 	resolveBackupConflict(args: {
 		id: string;
 		body?: ResolveGitBackupConflictRequest;

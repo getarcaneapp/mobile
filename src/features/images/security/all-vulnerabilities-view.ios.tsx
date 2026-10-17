@@ -1,8 +1,3 @@
-/**
- * Port of `AllVulnerabilitiesView` (AllVulnerabilitiesView.swift): the
- * "Security" screen with Overview / Findings sections below a scrollable tab
- * bar, the Findings filter sheet, CSV export, and the patch-targets link.
- */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -214,7 +209,6 @@ function FindingsContent({ model }: { model: AllVulnerabilitiesModel }) {
 	);
 }
 
-/** `EnvironmentActionButton` as a top-level toolbar item: a menu in All Environments lists. */
 function EnvironmentToolbarItem({
 	title,
 	systemImage,
@@ -323,7 +317,6 @@ export function AllVulnerabilitiesView(props: AllVulnerabilitiesProps) {
 	const model = useAllVulnerabilities(props);
 	return (
 		<>
-			{/* Swift's nav bar is transparent over the grouped background, so the bar and the tab strip read as one surface. */}
 			<Stack.Screen
 				options={{
 					title: 'Security',

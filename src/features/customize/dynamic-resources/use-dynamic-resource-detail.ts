@@ -1,4 +1,3 @@
-/** The platform-neutral model behind `DynamicResourceDetailView` (DynamicResourceViews.swift). */
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -53,9 +52,7 @@ export function useDynamicResourceDetail() {
 				const response = await sendRequest(client, target, edit.method, body);
 				try {
 					setResource(client.transport.decodeEnvelope(response, DynamicResource.decode));
-				} catch {
-					// A response without the updated resource keeps the current one.
-				}
+				} catch {}
 				setActionMessage('Saved');
 				payload?.onChange();
 			}

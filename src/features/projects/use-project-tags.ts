@@ -1,8 +1,3 @@
-/**
- * `ProjectTagsSheet` state (ProjectTagsSheet.swift): attach, detach, and
- * create project tags. Each change is a single `PATCH projects/{id}/tags`;
- * tags declared in the compose file are shown but locked.
- */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -38,7 +33,6 @@ export function useProjectTags() {
 	const [pendingName, setPendingName] = useState<string>();
 	const [errorMessage, setErrorMessage] = useState<string>();
 
-	// `.task { await loadCatalog() }`.
 	useEffect(() => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
@@ -56,7 +50,6 @@ export function useProjectTags() {
 		};
 	}, [envID]);
 
-	/** Attached tags first, then unattached catalog tags. */
 	const rows = useMemo(() => {
 		const attachedNames = new Set(tags.map((t) => t.name));
 		const unattached = catalog

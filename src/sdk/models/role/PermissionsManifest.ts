@@ -1,4 +1,3 @@
-/** Port of Models/Role/PermissionsManifest.swift. */
 import { D } from '../base/decoding';
 import { User } from '../user/User';
 import { Permission } from './Permission';
@@ -8,7 +7,6 @@ export type PermissionResourceScope = 'global' | 'env';
 export const PermissionResourceScope = {
 	global: 'global',
 	env: 'env',
-	/** Swift `PermissionResourceScope(rawValue:)`. */
 	fromRawValue(raw: string): PermissionResourceScope | undefined {
 		return raw === 'global' || raw === 'env' ? raw : undefined;
 	}
@@ -131,8 +129,6 @@ export const PermissionPreset = {
 	}
 } as const;
 
-// MARK: - Access surface enums (open: unknown server values pass through)
-
 export type AccessSurfaceKind =
 	| 'route'
 	| 'settings-category'
@@ -155,7 +151,6 @@ export const AccessSurfaceKind = {
 	rawValue(value: AccessSurfaceKind): string {
 		return value;
 	},
-	/** Swift single-value `init(from:)`: any string is accepted. */
 	decode(raw: unknown): AccessSurfaceKind {
 		return D.str(raw);
 	}
@@ -269,7 +264,6 @@ export const AccessSurface = {
 		};
 	},
 
-	/** Swift `AccessSurface.init(from:)`: missing enums decode as `.unknown("")`. */
 	decode(this: void, raw: unknown): AccessSurface {
 		const o = D.object(raw, 'AccessSurface');
 		return {
@@ -365,7 +359,6 @@ export const PermissionsManifest = {
 		};
 	},
 
-	/** Swift `PermissionsManifest.init(from:)`: every list defaults to `[]`. */
 	decode(this: void, raw: unknown): PermissionsManifest {
 		const o = D.object(raw, 'PermissionsManifest');
 		return {
@@ -375,10 +368,6 @@ export const PermissionsManifest = {
 		};
 	},
 
-	/**
-	 * Adds every transitive `PermissionAction.requires` dependency while
-	 * preserving the caller's selection order.
-	 */
 	normalizePermissionSelection(
 		this: void,
 		manifest: PermissionsManifest,
@@ -409,10 +398,6 @@ export const PermissionsManifest = {
 		return normalized;
 	},
 
-	/**
-	 * Evaluates backend-owned access metadata for advisory UI gating.
-	 * Backend authorization remains authoritative for actual requests.
-	 */
 	canAccessSurface(
 		this: void,
 		manifest: PermissionsManifest,

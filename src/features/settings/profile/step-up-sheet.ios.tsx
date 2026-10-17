@@ -1,10 +1,3 @@
-/**
- * Port of `StepUpAuthenticationSheet` (PasskeysMFAView.swift): confirm the
- * user's identity with a password or passkey before a security change.
- * `.sheet(isPresented:)` with `.presentationDetents([.medium])`.
- *
- * SwiftUI-tree: place inside the presenting screen's `Host`.
- */
 import {
 	BottomSheet,
 	Button,

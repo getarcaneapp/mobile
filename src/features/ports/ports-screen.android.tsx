@@ -1,4 +1,3 @@
-/** Android rendering of `PortsView` (PortsView.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

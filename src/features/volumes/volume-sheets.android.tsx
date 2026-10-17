@@ -1,4 +1,3 @@
-/** Android renderings of the Create Volume and Rename Volume sheets. */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text } from 'react-native';
 

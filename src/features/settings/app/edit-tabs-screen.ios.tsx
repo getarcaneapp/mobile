@@ -1,4 +1,3 @@
-/** Port of `EditTabsView` (SettingsView.swift). */
 import { Host } from '@/ui/host';
 import { Button, HStack, Label, List, Menu, Section, Spacer, Text } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
@@ -28,9 +27,7 @@ export function EditTabsScreen() {
 	return (
 		<>
 			<Stack.Screen options={{ title: 'Edit Tabs', headerLargeTitleEnabled: false }} />
-			{/* `EditButton()` */}
 			<AppToolbar placement="right" tintColor={accent}>
-				{/* iOS 26's `EditButton` shows a prominent checkmark while editing. */}
 				{isEditing ? (
 					<Stack.Toolbar.Button
 						variant="done"

@@ -1,10 +1,3 @@
-/**
- * Sub-routes of the Backups destination (Swift `NavigationLink` / `.sheet`).
- * Paths are relative to the current tab stack (`useSettingsNavigation`).
- *
- * Presentations: `create`, `run-volumes`, `s3-create` are sheets (large
- * detent, own SwiftUI nav bar on iOS); every other route is a push.
- */
 import { useLocalSearchParams } from 'expo-router';
 
 import type { BackupHistoryEntry } from '@/sdk/models/backup/BackupHistoryEntry';
@@ -26,13 +19,11 @@ export const BackupRoutes = {
 	files: 'settings/backups/files'
 } as const;
 
-/** `BackupPolicyEditor(environmentID:volumeName:systemVolumes:)`. */
 export type BackupPolicyEditorTarget =
 	| { kind: 'system' }
 	| { kind: 'systemVolumes' }
 	| { kind: 'volume'; volumeName: string; environmentID?: string };
 
-/** `BackupFilesView(backupID:environmentID:volumeName:recoveryKey:canRestore:)`. */
 export type BackupFilesTarget = {
 	backupID: string;
 	environmentID?: string;
@@ -71,7 +62,6 @@ export function useBackupNavigation() {
 		openS3Create: () => navigation.push(BackupRoutes.s3Create),
 		openRecoveryKey: () => navigation.push(BackupRoutes.recoveryKey),
 		openDiscover: () => navigation.push(BackupRoutes.discover),
-		/** The recovery key never travels in the URL. */
 		openFiles: (target: BackupFilesTarget) =>
 			navigation.push(BackupRoutes.files, {
 				backupID: target.backupID,

@@ -1,9 +1,3 @@
-/**
- * Shared state and logic for `PasskeysMFAView`
- * (Views/Settings/PasskeysMFAView.swift): passkey list + management, MFA
- * status, and the step-up (password or passkey) gate in front of every
- * security change.
- */
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
@@ -35,10 +29,8 @@ type ProtectedAction =
 	| { kind: 'disableMFA' }
 	| { kind: 'regenerateRecoveryCodes' };
 
-/** Payload handed to the `settings/profile/recovery-codes` sheet. */
 export type RecoveryCodesPayload = { codes: string[] };
 
-/** Swift catches `CancellationError`, `CeremonyError.cancelled`, and `.canceledLogin` silently. */
 const isUserCancellation = (error: unknown) =>
 	isCancellation(error) || (error instanceof CeremonyError && error.kind === 'cancelled');
 
@@ -47,7 +39,6 @@ const expiry = (grant: StepUpGrant) => parseArcaneDate(grant.expiresAt)?.getTime
 const makeAuthenticator = (client: ArcaneClient) =>
 	new ArcanePasskeyAuthenticator(client, passkeyAuthenticatorOptions);
 
-/** `Text(date, format: .relative(presentation: .named))`. */
 function relativeNamed(date: Date, now = Date.now()): string {
 	const seconds = Math.round((date.getTime() - now) / 1000);
 	const format = relativeTimeFormat();
@@ -61,7 +52,6 @@ function relativeNamed(date: Date, now = Date.now()): string {
 	return format.format(Math.round(seconds / 31_557_600), 'year');
 }
 
-/** Display strings for a passkey row. */
 export function passkeyRowDetails(passkey: PasskeySummary) {
 	const created = parseArcaneDate(passkey.createdAt);
 	const lastUsed = parseArcaneDate(passkey.lastUsedAt);
@@ -88,7 +78,6 @@ export function usePasskeysMFA() {
 	const [renamedPasskeyName, setRenamedPasskeyName] = useState('');
 	const [pendingDelete, setPendingDelete] = useState<PasskeySummary>();
 
-	// Async flows read the latest values (Swift reads `@State` live).
 	const latest = useRef({ passkeys, capabilities, bridgeAvailable });
 	latest.current = { passkeys, capabilities, bridgeAvailable };
 	const grantRef = useRef<StepUpGrant | undefined>(undefined);
@@ -170,7 +159,6 @@ export function usePasskeysMFA() {
 		await execute(action, grant);
 	};
 
-	/** Resolves with an error message to show in the sheet, or `undefined`. */
 	const authenticateStepUpWithPassword = async (password: string): Promise<string | undefined> => {
 		const client = useClientManager.getState().client;
 		if (!client) return 'No server configured';
@@ -283,7 +271,6 @@ export function usePasskeysMFA() {
 		}
 	};
 
-	// `.task(id: manager.clientGeneration)` + `.onChange(of: clientGeneration)`.
 	useEffect(() => {
 		cancelPasskeyCeremony();
 		clearStepUp();
@@ -291,7 +278,6 @@ export function usePasskeysMFA() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the client changes
 	}, [clientGeneration]);
 
-	// `.task(id: stepUpGrant?.expiresAt)`: drop the grant once it expires.
 	const grantExpiresAt = stepUpGrant?.expiresAt;
 	useEffect(() => {
 		if (grantExpiresAt === undefined) return;
@@ -306,9 +292,6 @@ export function usePasskeysMFA() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the grant's expiry only
 	}, [grantExpiresAt]);
 
-	// `.onChange(of: scenePhase)`: leaving the app abandons any ceremony and grant.
-	// (RN reports `inactive` for system passkey / Face ID sheets mid-ceremony, so
-	// only backgrounding counts.)
 	useEffect(() => {
 		const subscription = AppState.addEventListener('change', (state) => {
 			if (state === 'background') {
@@ -320,7 +303,6 @@ export function usePasskeysMFA() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- refs only
 	}, []);
 
-	// `.onDisappear { cancelPasskeyCeremony() }`
 	useEffect(() => () => cancelPasskeyCeremony(), []);
 
 	useItemDeleteConfirmation(pendingDelete, setPendingDelete, (passkey) => ({
@@ -328,7 +310,6 @@ export function usePasskeysMFA() {
 		message: `This removes ${passkey.name} from your Arcane account.`,
 		icon: 'trash',
 		actions: [{ title: 'Delete', action: () => request({ kind: 'delete', passkey }) }],
-		// Keep this screen open: the step-up sheet may need to present from it.
 		dismissOnConfirm: false
 	}));
 
@@ -355,7 +336,6 @@ export function usePasskeysMFA() {
 
 		refresh: load,
 
-		// Add prompt
 		showsAddPrompt,
 		newPasskeyName,
 		setNewPasskeyName,
@@ -370,7 +350,6 @@ export function usePasskeysMFA() {
 			request({ kind: 'add', name: name === '' ? undefined : name });
 		},
 
-		// Rename prompt
 		renamingPasskey,
 		renamedPasskeyName,
 		setRenamedPasskeyName,
@@ -392,7 +371,6 @@ export function usePasskeysMFA() {
 		disableMFA: () => request({ kind: 'disableMFA' }),
 		regenerateRecoveryCodes: () => request({ kind: 'regenerateRecoveryCodes' }),
 
-		// Step-up sheet
 		showsStepUp,
 		stepUpAllowsPassword: capabilities?.hasLocalPassword === true,
 		stepUpAllowsPasskey: bridgeAvailable && passkeys.length > 0,

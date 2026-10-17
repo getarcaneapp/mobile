@@ -1,6 +1,3 @@
-/**
- * Ports of `VolumeWorkspaceView` and its action sheet (VolumeWorkspaceView.swift).
- */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {
@@ -130,7 +127,6 @@ export function VolumeWorkspaceScreen() {
 	);
 }
 
-/** The rename / move / new file / new folder sheet. */
 export function VolumeWorkspaceActionScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const params = useLocalSearchParams<{

@@ -1,13 +1,3 @@
-/**
- * Port of `EnvironmentsStore.swift`: the shared environment catalog for the
- * Dashboard, Environments, and All Environments resource lists, plus the
- * per-environment Docker info pass.
- *
- * Swift owns a `DashboardStreamStore` and `SystemStatsHistoryStore`. They
- * plug in through `EnvironmentDetailStreams`, registered by
- * `environment-detail-streams.ts` (imported by the dashboard). Until then
- * the defaults are no-ops.
- */
 import { create } from 'zustand';
 
 import { cachedClient } from '@/core/networking/use-cached-client';
@@ -22,30 +12,22 @@ import type { ActionItems } from '@/sdk/models/dashboard';
 import { useClientManager } from '@/stores/client-manager';
 import { useEnvironmentColorStore } from '@/stores/environment-color-store';
 
-/** Swift `Environment.displayName` (Models.swift). */
 export function environmentDisplayName(environment: Pick<Environment, 'id' | 'name'>): string {
 	return environment.name ? environment.name : `Environment ${environment.id}`;
 }
 
-/** An environment a resource list loads from. `name` is set only for All Environments. */
 export interface ListEnvironment {
 	id: EnvironmentID;
 	name?: string;
 }
 
-/**
- * Hooks for the dashboard stream / stats history stores Swift keeps on
- * `EnvironmentsStore`. Registered by `environment-detail-streams.ts`.
- */
 export interface EnvironmentDetailStreams {
 	configure(client: ArcaneClient | undefined): void;
 	start(options: { dashboardStream: boolean }): void;
 	stop(): void;
 	reconcile(environments: Environment[]): void;
 	prioritizeStats(ordered: Environment[]): void;
-	/** Refreshes dashboard snapshots (all environments when `environmentIDs` is omitted). */
 	refreshSnapshots(environmentIDs?: string[]): Promise<void>;
-	/** Whether the aggregated stream currently delivers snapshots. */
 	isStreaming(): boolean;
 	actionItems(environmentID: string): ActionItems | undefined;
 }
@@ -88,10 +70,8 @@ type EnvironmentsState = {
 	refreshActionItems: (client: ArcaneClient | undefined) => Promise<void>;
 	actionItems: (environmentID: string) => ActionItems | undefined;
 	prioritizeStats: (activeEnvironmentID: string) => void;
-	/** Enabled environments sorted by name, as listed in All Environments views. */
 	enabledEnvironments: () => Environment[];
 	displayName: (environmentID: EnvironmentID) => string | undefined;
-	/** The environments a resource list loads: `environmentID` alone, or every enabled one. */
 	listEnvironments: (
 		environmentID: EnvironmentID,
 		allEnvironments: boolean
@@ -105,10 +85,6 @@ export const useEnvironmentsStore = create<EnvironmentsState>((set, get) => {
 	let dockerInformationTaskID = 0;
 	let actionItemsTask: Promise<void> | undefined;
 	let actionItemsTaskID = 0;
-	/**
-	 * Whether the docker info and snapshot passes ran for the current catalog.
-	 * A list-only load fetches the catalog without them; the Dashboard starts them.
-	 */
 	let hasStartedEnvironmentDetails = false;
 	let loadWaiters: (() => void)[] = [];
 	const visibleConsumers = new Set<string>();
@@ -146,8 +122,6 @@ export const useEnvironmentsStore = create<EnvironmentsState>((set, get) => {
 		);
 		set({ dockerInfoByEnvironmentID: pruned, unavailableEnvironmentIDs: unavailable });
 
-		// Every environment loads at once; results publish as they arrive,
-		// coalesced so the dashboard re-renders a few times, not once per env.
 		await progressiveFanOut(
 			enabledIDs,
 			async (environmentID) => {
@@ -190,11 +164,6 @@ export const useEnvironmentsStore = create<EnvironmentsState>((set, get) => {
 		return task;
 	};
 
-	/**
-	 * Dashboard snapshots carry each environment's action items. While the
-	 * aggregated stream runs it delivers them on connect, so a REST pass is
-	 * only needed without a stream or when a refresh must not wait.
-	 */
 	const startActionItemsLoad = (refreshesSnapshots: boolean): Promise<void> => {
 		const taskID = ++actionItemsTaskID;
 		const task = (async () => {
@@ -369,13 +338,11 @@ export const useEnvironmentsStore = create<EnvironmentsState>((set, get) => {
 			}));
 		},
 
-		/** Awaits the docker info pass, joining one in flight unless `restart`. */
 		refreshDockerInformation: async (client, restart = false) => {
 			if (!client) return;
 			await ((!restart ? dockerInformationTask : undefined) ?? startDockerInformationLoad(client));
 		},
 
-		/** Awaits the dashboard snapshot (action items) pass, joining one in flight. */
 		refreshActionItems: async (client) => {
 			if (!client) return;
 			await (actionItemsTask ?? startActionItemsLoad(true));
@@ -402,8 +369,6 @@ export const useEnvironmentsStore = create<EnvironmentsState>((set, get) => {
 
 		listEnvironments: async (environmentID, allEnvironments) => {
 			if (!allEnvironments) return [{ id: environmentID }];
-			// Always refetch the catalog (deduplicated with any load in flight) so a
-			// newly added or disabled environment shows up right away.
 			await get().load({ refresh: get().hasLoaded, loadsEnvironmentDetails: false });
 			return get()
 				.enabledEnvironments()

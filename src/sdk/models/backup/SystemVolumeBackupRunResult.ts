@@ -1,4 +1,3 @@
-/** Port of Models/Backup/SystemVolumeBackupRunResult.swift. */
 import type { SystemVolumeBackupFailure } from './SystemVolumeBackupFailure';
 
 export interface SystemVolumeBackupRunResult {

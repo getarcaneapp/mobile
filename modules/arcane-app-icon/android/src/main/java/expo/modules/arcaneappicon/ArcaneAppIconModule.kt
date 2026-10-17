@@ -9,13 +9,6 @@ import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
-/**
- * Alternate launcher icons via `<activity-alias>` entries added by the
- * `with-app-icons` config plugin. Each alias carries
- * `<meta-data android:name="app.getarcane.appIcon" android:value="…"/>`:
- * `AppIcon` for the primary icon, the iOS alternate name otherwise. Exactly one
- * alias is enabled at a time.
- */
 class ArcaneAppIconModule : Module() {
   private val context
     get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
@@ -40,8 +33,6 @@ class ArcaneAppIconModule : Module() {
       val target = all.firstOrNull { iconName(it) == name }
         ?: throw IconNotFoundException(name ?: PRIMARY)
       val pm = context.packageManager
-      // Enable the new alias before disabling the old one so the app always
-      // has a launcher entry.
       pm.setComponentEnabledSetting(
         ComponentName(context.packageName, target.name),
         PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
@@ -70,7 +61,6 @@ class ArcaneAppIconModule : Module() {
     return info.activities.orEmpty().filter { it.metaData?.getString(META_KEY) != null }
   }
 
-  /** `null` for the primary icon, matching `UIApplication.alternateIconName`. */
   private fun iconName(alias: ActivityInfo): String? =
     alias.metaData?.getString(META_KEY)?.takeUnless { it == PRIMARY }
 

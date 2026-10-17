@@ -1,15 +1,3 @@
-/**
- * The Refreshed Dashboard's live usage chart (`AllEnvironmentsDashboard.usageChart`):
- * one Catmull-Rom line per environment over a fixed five-minute window on a
- * 2s clock, Y fixed at 0–100 with dashed 0/50/100 grid lines labeled on the
- * leading edge, three hour:minute labels along X, and a soft gradient fill
- * when only one environment is drawn.
- *
- * Drawn with react-native-svg on both platforms: `@expo/ui`'s `Chart` is
- * single-series with automatic domains, so it can't draw this.
- *
- * Standalone (RN view).
- */
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import Svg, { Defs, G, Line, LinearGradient, Path, Stop, ClipPath, Rect } from 'react-native-svg';
@@ -30,7 +18,6 @@ export type UsageLine = {
 const yAxisWidth = 34;
 const xAxisHeight = 18;
 
-/** Catmull-Rom spline through the points as cubic Béziers (SwiftUI `.catmullRom`). */
 function catmullRomPath(points: readonly (readonly [number, number])[]): string {
 	if (points.length === 0) return '';
 	const first = points[0]!;
@@ -73,7 +60,6 @@ export function UsageChart({
 	const plotHeight = height - xAxisHeight;
 	const x = (t: number) => yAxisWidth + ((t - start) / (end - start)) * plotWidth;
 	const y = (v: number) => plotHeight - (Math.min(Math.max(v, 0), 100) / 100) * plotHeight;
-	// `.automatic(desiredCount: 3)`: three evenly spaced labels inside the window.
 	const ticks = [start + (end - start) / 6, start + (end - start) / 2, end - (end - start) / 6];
 
 	return (

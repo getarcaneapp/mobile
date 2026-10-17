@@ -1,4 +1,3 @@
-/** Android rendering of `StepUpAuthenticationSheet` (PasskeysMFAView.swift). */
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { colors, systemColors } from '@/theme/colors';

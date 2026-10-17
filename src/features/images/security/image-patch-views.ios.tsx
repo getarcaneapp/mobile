@@ -1,4 +1,3 @@
-/** Ports of `ImagePatchTargetsView` and `ImagePatchView` (ImagePatchViews.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

@@ -1,4 +1,3 @@
-/** Port of `SettingsExternalRow` (SettingsRows.swift). SwiftUI-tree. */
 import { HStack, Spacer } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import { font, foregroundStyle } from '@expo/ui/swift-ui/modifiers';

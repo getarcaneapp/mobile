@@ -20,12 +20,10 @@ import { Icon } from '@/ui/Icon';
 
 import { dismissToast, useToastPresenter, type Toast } from './presenter';
 
-/** Root dock navigation clearance above the tab bar (iOS 26 glass bar is taller). */
 const barClearance = 60;
 
 const toastSpring = springConfig(Motion.toast.response, Motion.toast.dampingFraction);
 
-/** Port of `ToastHost`: the single, app-wide toast overlay. */
 export function ToastHost({ reservesTabBarSpace = true }: { reservesTabBarSpace?: boolean }) {
 	const toast = useToastPresenter((s) => s.activeToast);
 	const insets = useSafeAreaInsets();
@@ -46,8 +44,6 @@ export function ToastHost({ reservesTabBarSpace = true }: { reservesTabBarSpace?
 
 function ToastCapsule({ toast }: { toast: Toast }) {
 	const segments = useSegments() as string[];
-	// `Toast.activity`'s tap opens the Activity Center (QuickActionRouter.openActivityCenter),
-	// presented over the current tab like the Dashboard's toolbar button.
 	const tapAction =
 		toast.tapAction ??
 		(toast.activityID !== undefined && segments[0] === '(tabs)'

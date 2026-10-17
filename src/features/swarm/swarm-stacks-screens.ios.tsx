@@ -1,4 +1,3 @@
-/** Ports of `SwarmStacksView`, `SwarmStackDetailView` and `SwarmStackEditorView` (SwarmStacksView.swift). */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -314,7 +313,6 @@ export function SwarmStackDetailScreen() {
 	);
 }
 
-/** `fileEditor(isEnvironment:)`: a plain monospaced editor (see release notes: no syntax highlighting yet). */
 function FileEditor({
 	model,
 	isEnvironment

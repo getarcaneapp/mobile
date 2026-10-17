@@ -1,8 +1,3 @@
-/**
- * Port of `ProfileView` (Views/Settings/ProfileView.swift): identity header,
- * editable display name + email, password change, account links, and the
- * sign-out menu. Floating Save via `SettingsSaveBar`.
- */
 import { Host } from '@/ui/host';
 import {
 	Form,

@@ -1,4 +1,3 @@
-/** Port of `AccountPreferencesView` (Views/Settings/AccountPreferencesView.swift). */
 import { Host } from '@/ui/host';
 import { Form, Picker, Section, Text } from '@expo/ui/swift-ui';
 import { disabled, pickerStyle, tag } from '@expo/ui/swift-ui/modifiers';

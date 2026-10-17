@@ -1,8 +1,3 @@
-/**
- * Port of `friendlyErrorMessage(_:)` (Models.swift) plus the transient-network
- * classification `ArcaneClientManager` uses to decide whether to rebuild its
- * session and retry. Pure TS (no RN imports).
- */
 import {
 	ArcaneConflictError,
 	ArcaneError,
@@ -14,15 +9,8 @@ import {
 	isAbortError
 } from '@/sdk/errors/ArcaneError';
 
-/**
- * React Native's `fetch` reports every connection-level failure as
- * `TypeError("Network request failed")`, which the SDK wraps in
- * `ArcaneError.transport`. It covers what URLSession splits into
- * cannot-connect / host-not-found / connection-lost.
- */
 const rnNetworkFailure = 'network request failed';
 
-/** True for Swift `CancellationError` equivalents (SDK, ResponseCache, aborts). */
 export function isCancellation(error: unknown): boolean {
 	if (error instanceof CancellationError || isAbortError(error)) return true;
 	return error instanceof Error && error.name === 'CancellationError';
@@ -42,7 +30,6 @@ function humanizeFieldName(name: string): string {
 	return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
-/** Port of `friendlyErrorMessage(_:)`. */
 export function friendlyErrorMessage(error: unknown): string {
 	if (error instanceof ArcaneError) {
 		switch (error.kind) {
@@ -109,8 +96,6 @@ export function friendlyErrorMessage(error: unknown): string {
 			}
 			case 'decoding': {
 				const message = error.message;
-				// "Unexpected character '<'" = the server answered with an HTML page
-				// (proxy login screen, wrong port, or a web app in front of Arcane).
 				if (
 					message.includes("Unexpected character '<'") ||
 					message.toLowerCase().includes('not valid json') ||
@@ -151,10 +136,8 @@ const transientPhrases = [
 	'unable to resolve host'
 ];
 
-/** Port of `ArcaneClientManager.shouldRefreshNetworkSession(after:)`. */
 export function shouldRefreshNetworkSession(error: unknown): boolean {
 	if (!(error instanceof ArcaneError) || error.kind !== 'transport') {
-		// RN surfaces raw TypeErrors when something bypasses the SDK.
 		return error instanceof TypeError && error.message.toLowerCase().includes(rnNetworkFailure);
 	}
 	const lower = error.message.toLowerCase();

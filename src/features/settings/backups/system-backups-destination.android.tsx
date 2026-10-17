@@ -1,4 +1,3 @@
-/** Android rendering of `SystemBackupsView` (SystemBackupsView.swift). */
 import { Stack } from 'expo-router';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { useState } from 'react';

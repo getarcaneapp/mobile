@@ -1,32 +1,11 @@
-/**
- * Replacement for `ASWebAuthenticationSession`: the app presents the browser
- * (e.g. `expo-web-browser`'s `openAuthSessionAsync(url, redirectUrl)`) and
- * the SDK drives the protocol around it.
- */
 import { CancellationError } from '../errors/ArcaneError';
 
-/**
- * Presents `url` in a secure (ideally ephemeral) browser session and resolves
- * with the callback URL once the browser navigates to `callbackScheme://…`.
- *
- * - Resolve `undefined` if the session finished without a callback URL.
- * - Reject if the user dismissed the browser (e.g. with `CancellationError`)
- *   or the session could not start (`SignInError.sessionDidNotStart()` /
- *   `CeremonyError.sessionDidNotStart()`).
- * - Stop the session when `signal` aborts.
- */
 export type AuthSessionPresenter = (
 	url: string,
 	callbackScheme: string,
 	signal: AbortSignal
 ) => Promise<string | undefined>;
 
-/**
- * Port of Swift `awaitCallback(stream:start:cancel:)`: never starts once
- * cancelled, cancels a started session when `signal` aborts (rejecting with
- * `CancellationError`), and maps a missing callback to `missingCallback()`.
- * @internal
- */
 export async function awaitAuthSession(
 	present: (signal: AbortSignal) => Promise<string | undefined>,
 	options: { signal?: AbortSignal; missingCallback: () => Error }
@@ -43,7 +22,6 @@ export async function awaitAuthSession(
 		};
 		signal?.addEventListener('abort', onAbort);
 	});
-	// Keep an unobserved rejection from surfacing when the session wins the race.
 	aborted.catch(() => {});
 
 	try {

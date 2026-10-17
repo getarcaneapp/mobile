@@ -1,4 +1,3 @@
-/** The platform-neutral model behind `VariableEditorView` (VariablesView.swift). */
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';

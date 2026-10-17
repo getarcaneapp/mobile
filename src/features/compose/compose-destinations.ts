@@ -1,8 +1,3 @@
-/**
- * Pushed screens of the native Compose editor (the Swift `NavigationLink`
- * destinations in Views/Compose). Encoded as strings so iOS can push them as
- * `NavigationLink` values and Android as route params.
- */
 import type { ComposeBindingRef } from './compose-session';
 import type { ComposeEntryKind } from './model/compose-entry-draft';
 import type { ComposeFieldPathComponent } from './model/compose-native-field';
@@ -10,7 +5,6 @@ import type { ComposeFieldPathComponent } from './model/compose-native-field';
 type Base = { binding: ComposeBindingRef; readOnly: boolean };
 
 export type ComposeDestination =
-	/** `ComposePreviewEditor` / `EnvPreviewEditor` (the root editors). */
 	| (Base & { screen: 'editor'; title: string })
 	| (Base & { screen: 'envEditor'; title: string })
 	| (Base & { screen: 'service'; service: string; menu: boolean })
@@ -62,7 +56,6 @@ export function decodeComposeDestination(value: string): ComposeDestination | un
 	}
 }
 
-/** `ComposeNativeFieldsForm(text:path:title:readOnly:excluding:schemaPath:)` (the public initializer). */
 export function nativeFieldsDestination(
 	binding: ComposeBindingRef,
 	path: string[],

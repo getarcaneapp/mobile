@@ -1,8 +1,3 @@
-/**
- * The model behind `RoleDetailView` (RolesView.swift): create / edit / read-only
- * role info and permission selection, the permission search, save + revert.
- * Shared by the pushed detail and the New Role sheet on both platforms.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -49,7 +44,6 @@ export function useRoleDetail(fallbackMode: RoleDetailMode) {
 	const [errorMessage, setErrorMessage] = useState<string>();
 	const [search, setSearch] = useState('');
 
-	// The list hands over its manifest; if it hadn't loaded yet, fetch it here.
 	const hasManifest = manifest !== undefined;
 	useEffect(() => {
 		const client = useClientManager.getState().client;

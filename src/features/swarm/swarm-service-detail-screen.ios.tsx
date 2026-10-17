@@ -1,4 +1,3 @@
-/** Port of `SwarmServiceDetailView` (SwarmServiceDetailView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

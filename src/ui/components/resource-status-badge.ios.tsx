@@ -1,8 +1,3 @@
-/**
- * Ports of `ResourceStatusBadge` and `StatusIcon` (ResourceStatusBadge.swift).
- *
- * SwiftUI-tree.
- */
 import { HStack, Text, useNativeState } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -97,7 +92,6 @@ export function ResourceStatusBadge({
 	);
 }
 
-/** Compact, text-free status indicator for dense list rows. */
 export function StatusIcon({ status, isLive }: { status?: string; isLive?: boolean }) {
 	const reduceMotion = useReduceMotion();
 	const config = statusIconPresentation(status, isLive);

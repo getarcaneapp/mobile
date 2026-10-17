@@ -1,10 +1,3 @@
-/**
- * The container slice of `DeploymentActivityStore.swift`: request-backed
- * container redeploy and update operations (`.containerRedeploy`,
- * `.containerUpdate`). The Swift store renders these in the floating
- * deployment pill + Live Activity; until that store is ported, progress and
- * the outcome show as an activity toast. One operation at a time, like Swift.
- */
 import { create } from 'zustand';
 
 import { cachedClient } from '@/core/networking/use-cached-client';
@@ -22,10 +15,6 @@ export type UpdateTarget = { id: string; name: string };
 
 type ContainerDeploymentState = {
 	isRunning: boolean;
-	/**
-	 * Port of `DeploymentActivityStore.start(kind:envID:targetID:targetName:…)`
-	 * for the container kinds. Returns false when another operation is running.
-	 */
 	start: (args: {
 		kind: ContainerDeploymentKind;
 		envID: EnvironmentID;
@@ -94,7 +83,6 @@ export const useContainerDeploymentStore = create<ContainerDeploymentState>((set
 				failure = isCancellation(error) ? 'Cancelled' : friendlyErrorMessage(error);
 			}
 
-			// Session teardown while running: don't land completion effects on the new session.
 			if (useClientManager.getState().clientGeneration !== session) {
 				set({ isRunning: false });
 				return;
@@ -124,7 +112,6 @@ export const useContainerDeploymentStore = create<ContainerDeploymentState>((set
 				}
 				finishActivityToast(id, title, 'success');
 			} else {
-				// Partial updates still recreated some containers; refresh what's on screen.
 				useResourceMutationStore.getState().markChanged('containers', envID);
 				finishActivityToast(id, title, 'failure');
 				showToast(Toasts.error(failure));

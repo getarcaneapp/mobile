@@ -1,14 +1,3 @@
-/**
- * Port of `.capsuleProgressBorder(fraction:isActive:tint:)`
- * (CapsuleProgressBorder.swift): progress drawn around a capsule's edge. With
- * a fraction, a 2pt tinted stroke fills clockwise from the top center
- * (animated on `Motion.gauge`); while active without one, a short arc with a
- * fading tail laps the border every 1.8 s. Nothing when idle. Reduce Motion
- * parks the arc at the top.
- *
- * Standalone (RN svg overlay, both platforms). Lay it over the capsule with
- * `StyleSheet.absoluteFill`; it never takes touches.
- */
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
@@ -32,7 +21,6 @@ const lapDuration = 1.8;
 const arcLength = 0.22;
 const trackColor = '#8E8E934D';
 
-/** Capsule outline from top center, clockwise; `inset` keeps the stroke inside the bounds. */
 function capsulePath(width: number, height: number, inset: number) {
 	const w = width - inset * 2;
 	const h = height - inset * 2;
@@ -50,12 +38,9 @@ function capsulePath(width: number, height: number, inset: number) {
 }
 
 export type CapsuleProgressBorderProps = {
-	/** 0...1 for determinate progress; undefined for none/indeterminate. */
 	fraction?: number;
 	isActive: boolean;
-	/** Hex. */
 	tint: string;
-	/** How fraction changes animate; `Motion.gauge` by default. */
 	animation?: MotionToken;
 };
 
@@ -95,7 +80,6 @@ export function CapsuleProgressBorder({
 	const length = ring?.length ?? 1;
 
 	const fillProps = useAnimatedProps(() => ({ strokeDashoffset: length * (1 - progress.value) }));
-	// The path is drawn twice so a window that wraps past the start stays continuous.
 	const headProps = useAnimatedProps(() => {
 		const start = (((phase.value - arcLength) % 1) + 1) % 1;
 		return { strokeDashoffset: -start * length };

@@ -1,11 +1,3 @@
-/**
- * Shared props for the form rows (FormFieldRows.swift).
- *
- * `FormFieldLayout`:
- * - `inline`: Settings style — title left, value right-aligned on one row.
- * - `stacked`: caption title above a full-width field, for long values.
- * - `automatic`: stacked for vertical / multi-line / URL fields, inline otherwise.
- */
 export type FormFieldLayout = 'automatic' | 'inline' | 'stacked';
 
 export type FormKeyboardType =
@@ -26,7 +18,6 @@ export type FormTextFieldProps = {
 	text: string;
 	onChangeText: (text: string) => void;
 	keyboardType?: FormKeyboardType;
-	/** SwiftUI `UITextContentType` raw name, e.g. "URL", "username", "password". */
 	textContentType?:
 		| 'URL'
 		| 'username'
@@ -70,10 +61,8 @@ export type FormSecureFieldProps = {
 export type FormNumberFieldProps = {
 	title: string;
 	placeholder: string;
-	/** String-backed to match the flat settings store. */
 	text: string;
 	onChangeText: (text: string) => void;
-	/** Floor for the stepper; defaults to 0 (these settings are all non-negative). */
 	minValue?: number;
 	maxValue?: number;
 	step?: number;

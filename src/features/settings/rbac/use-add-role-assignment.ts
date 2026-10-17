@@ -1,8 +1,3 @@
-/**
- * The model behind `AddRoleAssignmentSheet` (UserRoleAssignmentsView.swift):
- * pick a role and a scope, then replace the user's manual assignments with the
- * existing ones plus the new one.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
@@ -50,8 +45,6 @@ export function useAddRoleAssignment() {
 		setIsSaving(true);
 		setErrorMessage(undefined);
 		const environmentId = scope === 'global' ? undefined : selectedEnvironmentId;
-		// The PUT endpoint replaces all manual assignments — preserve the
-		// existing manual ones and append the new one.
 		const inputs: UserAssignmentInput[] = payload.existingAssignments
 			.filter(isManualAssignment)
 			.map((assignment) => ({

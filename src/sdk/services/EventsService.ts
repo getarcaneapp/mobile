@@ -1,4 +1,3 @@
-/** Port of Services/EventsService.swift: EventsService manages system audit events. */
 import type { QueryItem } from '../client/url';
 import type { RESTService } from '../http/RESTService';
 import type { SortOrder } from '../models/base/pagination';
@@ -13,7 +12,6 @@ interface EventListOptions {
 	type?: string;
 }
 
-/** Swift private `EventListOptions.queryItems`. */
 function eventListQueryItems(options: EventListOptions): QueryItem[] {
 	const query: QueryItem[] = [];
 	if (options.search !== undefined) query.push({ name: 'search', value: options.search });
@@ -27,12 +25,10 @@ function eventListQueryItems(options: EventListOptions): QueryItem[] {
 export class EventsService {
 	private readonly rest: RESTService;
 
-	/** @internal */
 	constructor(rest: RESTService) {
 		this.rest = rest;
 	}
 
-	/** List system events with pagination and optional filters. */
 	listPaginated(
 		args: EventListOptions & { start?: number; limit?: number } = {}
 	): Promise<PaginatedResponse<Event>> {
@@ -43,7 +39,6 @@ export class EventsService {
 		});
 	}
 
-	/** List events scoped to a specific environment ID. */
 	listByEnvironmentPaginated(
 		args: EventListOptions & { environmentID: string; start?: number; limit?: number }
 	): Promise<PaginatedResponse<Event>> {
@@ -54,12 +49,10 @@ export class EventsService {
 		});
 	}
 
-	/** Returns global event counts grouped by severity. */
 	stats(): Promise<EventSeverityCounts> {
 		return this.rest.get('events/stats');
 	}
 
-	/** Delete an event by ID. */
 	delete(args: { id: string }): Promise<void> {
 		return this.rest.deleteVoid(`events/${args.id}`);
 	}

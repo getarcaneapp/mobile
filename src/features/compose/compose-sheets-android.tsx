@@ -1,11 +1,3 @@
-/**
- * Android renderings of the native Compose editor sheets (Views/Compose):
- * `ComposeNameSheet`, `ComposeNativeValueSheet`, `ComposeSettingEditor`
- * (+ `ComposeSettingFields`, `ComposeValuePicker`), `ComposeAddFieldsSheet`,
- * `ComposeEntrySheet`, and `ComposeResourcePicker`, as Material full-screen dialogs.
- *
- * Standalone (RN views). Android only.
- */
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
@@ -54,8 +46,6 @@ import {
 import type { ComposeSchemaField } from './model/compose-schema';
 import { useAddFields, type AddFieldsOptions } from './use-add-fields';
 
-// MARK: - ComposeNameSheet
-
 export function NameSheet({
 	visible,
 	title,
@@ -97,8 +87,6 @@ export function NameSheet({
 		</FullScreenDialog>
 	);
 }
-
-// MARK: - ComposeNativeValueSheet
 
 export function NativeValueSheet({
 	title,
@@ -173,9 +161,6 @@ export function NativeValueSheet({
 	);
 }
 
-// MARK: - ComposeValuePicker
-
-/** Shared choice control for new settings and existing values. */
 export function ValuePicker({
 	title,
 	options,
@@ -223,8 +208,6 @@ export function ValuePicker({
 		</>
 	);
 }
-
-// MARK: - ComposeSettingEditor
 
 function formatName(draft: ComposeSettingDraft, kind: ComposeNativeKind) {
 	switch (kind) {
@@ -541,8 +524,6 @@ export function SettingEditor({
 	);
 }
 
-// MARK: - ComposeAddFieldsSheet
-
 function FieldButton({ field, onPress }: { field: ComposeSchemaField; onPress: () => void }) {
 	return (
 		<NavRow
@@ -674,7 +655,6 @@ function AddFieldsContent({
 	);
 }
 
-/** Mounted only while presented, like a SwiftUI `.sheet` (fresh state per presentation). */
 export function AddFieldsSheet(props: {
 	visible: boolean;
 	text: string;
@@ -692,8 +672,6 @@ export function AddFieldsSheet(props: {
 		/>
 	);
 }
-
-// MARK: - ComposeResourcePicker
 
 export function ResourcePicker({
 	kind,
@@ -850,9 +828,6 @@ export function ResourcePicker({
 	);
 }
 
-// MARK: - ComposeEntrySheet
-
-/** Renders an in-dialog native fields stack for an entry's "All settings". */
 export type NativeFieldsRenderer = (props: {
 	session: string;
 	schemaPath: ComposeFieldPathComponent[];

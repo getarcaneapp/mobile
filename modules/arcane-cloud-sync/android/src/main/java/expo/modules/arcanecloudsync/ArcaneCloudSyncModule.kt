@@ -43,18 +43,6 @@ private class BlockStoreUnavailableException :
 private class TooLargeException(size: Int) :
   CodedException("ERR_TOO_LARGE", "Item is $size bytes; Block Store allows ${BlockstoreClient.MAX_SIZE}", null)
 
-/**
- * Android side of `modules/arcane-cloud-sync/index.ts`.
- *
- * Items live in Google Play services Block Store, backed up to the user's
- * Google account (end-to-end encrypted when the device has a screen lock) and
- * restored on new-device setup. Block Store keys are limited in length and
- * character set, so each item is stored under a hash of `service`/`account`
- * with both carried in a small JSON envelope: `{"s": service, "a": account, "v": value}`.
- * `accessGroup` / `accessible` are iOS keychain concepts and are ignored.
- *
- * Password sign-ins go through Credential Manager (Google Password Manager).
- */
 class ArcaneCloudSyncModule : Module() {
   private val context: Context
     get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
@@ -169,7 +157,6 @@ class ArcaneCloudSyncModule : Module() {
     Item(json.getString("s"), json.getString("a"), json.getString("v"))
   }.getOrNull()
 
-  /** `arcane_` + 128 bits of SHA-256 over `service\u0000account`, hex. */
   private fun keyFor(service: String, account: String): String {
     val digest = MessageDigest.getInstance("SHA-256").digest("$service\u0000$account".toByteArray(Charsets.UTF_8))
     return "arcane_" + digest.take(16).joinToString("") { "%02x".format(it) }

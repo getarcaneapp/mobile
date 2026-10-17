@@ -1,4 +1,3 @@
-/** Draft state + save for `TemplateRegistryFormView` (TemplateRegistryFormView.swift), shared by both platforms. */
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 

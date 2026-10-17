@@ -1,8 +1,3 @@
-/**
- * The root-level stream sheet of `DeploymentActivityStore` (Swift presents
- * `InstallStreamSheet` from the app root): the live log of the running
- * project operation. Hiding it keeps the operation running.
- */
 import { Stack, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';

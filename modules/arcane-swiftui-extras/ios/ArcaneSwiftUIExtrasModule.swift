@@ -3,13 +3,6 @@ import ExpoUI
 import SwiftUI
 import UIKit
 
-/// SwiftUI modifiers the reference app uses that `@expo/ui` doesn't ship,
-/// registered into its `ViewModifierRegistry` so they work in any `modifiers`
-/// array. `symbolRenderingMode` is environment-based, so the view-level
-/// modifier also reaches `Image(systemName:)` (no image-specific path needed).
-/// `appAccentNavigationBar` ports NavigationBar+Accent.swift; the Host's
-/// hosting controller is a child of the screen's view controller, so it also
-/// reaches react-native-screens navigation bars.
 public class ArcaneSwiftUIExtrasModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ArcaneSwiftUIExtras")
@@ -54,10 +47,6 @@ internal struct SymbolRenderingModeModifier: ViewModifier, Record {
   }
 }
 
-// MARK: - appAccentNavigationBar (NavigationBar+Accent.swift)
-
-/// Colors the native Back indicator that Liquid Glass renders monochrome
-/// despite SwiftUI tint, and restores this bar's appearance when leaving.
 internal struct AppAccentNavigationBarModifier: ViewModifier, Record {
   @Field var color: Color = .accentColor
 
@@ -95,8 +84,6 @@ private struct NavigationBarAccent: UIViewControllerRepresentable {
     private var originalScrollEdge: UINavigationBarAppearance?
     private var originalCompact: UINavigationBarAppearance?
     private var originalCompactScrollEdge: UINavigationBarAppearance?
-    /// react-native-screens sets per-item appearances, which win over the
-    /// bar's, so the owning screen's item is accented (and restored) too.
     private weak var item: UINavigationItem?
     private var originalItemStandard: UINavigationBarAppearance?
     private var originalItemScrollEdge: UINavigationBarAppearance?
@@ -149,7 +136,6 @@ private struct NavigationBarAccent: UIViewControllerRepresentable {
       navigationBar.compactScrollEdgeAppearance = accented(originalCompactScrollEdge ?? standard)
 
       guard let navigationItem = owningNavigationItem() else { return }
-      // Re-capture when the screen replaced its appearance (header updates).
       if item !== navigationItem || navigationItem.standardAppearance !== appliedItemStandard {
         if item !== navigationItem { restoreItemAppearance() }
         item = navigationItem
@@ -167,7 +153,6 @@ private struct NavigationBarAccent: UIViewControllerRepresentable {
       navigationItem.compactScrollEdgeAppearance = originalItemCompactScrollEdge.map(accented)
     }
 
-    /// The navigation item of the view controller this view is pushed in.
     private func owningNavigationItem() -> UINavigationItem? {
       var controller: UIViewController? = self
       while let current = controller, let parent = current.parent {

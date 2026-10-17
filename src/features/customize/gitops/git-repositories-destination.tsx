@@ -1,4 +1,3 @@
-/** Port of `GitRepositoriesView` (GitRepositoriesView.swift): `appTabDestination(.gitRepositories)`. */
 import {
 	backendFormField,
 	backendListAction,
@@ -7,7 +6,6 @@ import {
 } from '../dynamic-resources/dynamic-resource';
 import { DynamicResourceListView } from '../dynamic-resources/dynamic-resource-list-screen';
 
-/** Fields accepted by both the create and update requests; the server rejects unknown keys. */
 const fields: BackendFormField[] = [
 	backendFormField('name', 'Name', { required: true }),
 	backendFormField('url', 'URL', {

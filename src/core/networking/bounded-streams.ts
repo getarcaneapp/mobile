@@ -1,9 +1,3 @@
-/**
- * Ports of Networking/BoundedLogStream.swift and BoundedTerminalSession.swift:
- * receive-only log streams and interactive terminals that reject oversized
- * WebSocket frames and keep only the newest 100 undelivered frames, so a fast
- * server can't build an unbounded backlog while the UI renders.
- */
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { ArcaneError, CancellationError } from '@/sdk/errors/ArcaneError';
@@ -32,7 +26,6 @@ function boundedLogLine(line: LogLine): LogLine {
 	};
 }
 
-/** `BoundedLogStream`: each iteration opens its own socket; aborting `signal` closes it. */
 export function boundedLogStream(
 	client: ArcaneClient,
 	path: string,
@@ -88,7 +81,6 @@ function boundedLogs(
 	);
 }
 
-/** `client.boundedContainerLogs(envID:id:timestamps:)`. */
 export function boundedContainerLogs(
 	client: ArcaneClient,
 	args: { envID: EnvironmentID; id: string; timestamps: boolean },
@@ -101,7 +93,6 @@ export function boundedContainerLogs(
 	return boundedLogs(client, path, '100', args.timestamps, signal);
 }
 
-/** `client.boundedProjectLogs(envID:projectID:timestamps:)`. */
 export function boundedProjectLogs(
 	client: ArcaneClient,
 	args: { envID: EnvironmentID; projectID: string; timestamps: boolean },
@@ -114,7 +105,6 @@ export function boundedProjectLogs(
 	return boundedLogs(client, path, '200', args.timestamps, signal);
 }
 
-/** `client.boundedSwarmServiceLogs(envID:serviceID:timestamps:)`. */
 export function boundedSwarmServiceLogs(
 	client: ArcaneClient,
 	args: { envID: EnvironmentID; serviceID: string; timestamps: boolean },
@@ -127,10 +117,6 @@ export function boundedSwarmServiceLogs(
 	return boundedLogs(client, path, '200', args.timestamps, signal);
 }
 
-/**
- * `BoundedTerminalSession`: outbound input stays lossless; only an
- * overproducing server's unread output is coalesced.
- */
 export class BoundedTerminalSession {
 	readonly output: AsyncIterable<Uint8Array>;
 
@@ -171,7 +157,6 @@ export class BoundedTerminalSession {
 	}
 }
 
-/** `client.boundedExec(envID:id:shell:)`. */
 export function boundedExec(
 	client: ArcaneClient,
 	args: { envID: EnvironmentID; id: string; shell?: string }

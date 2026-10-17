@@ -1,8 +1,3 @@
-/**
- * Android rendering of `UserRoleAssignmentsView` (UserRoleAssignmentsView.swift):
- * Material 3 groups per scope; manual assignments get a long-press Remove menu
- * in place of the swipe action.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

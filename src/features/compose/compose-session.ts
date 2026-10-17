@@ -1,16 +1,3 @@
-/**
- * Text bindings for the native Compose editor.
- *
- * SwiftUI passes `@Binding var text: String` down every pushed view. Pushed
- * destinations here are rebuilt from a string value (iOS `NavigationDestination`)
- * or a route (Android), so the source text lives in a session keyed by id and
- * each screen resolves a `ComposeBindingRef` back to `{ text, setText }`.
- *
- * Derived bindings mirror the Swift computed `Binding`s:
- * - `attachments`: `ComposeNetworkAttachmentsForm.attachmentSource` (renders
- *   short network attachments as mappings without changing the document until an edit);
- * - `item`: `ComposeStringListForm.itemBinding` (one sequence item's raw YAML).
- */
 import { useCallback, useEffect, useLayoutEffect } from 'react';
 import { create } from 'zustand';
 
@@ -22,7 +9,6 @@ export type ComposeTransform =
 export type ComposeBindingRef = { session: string; transforms?: ComposeTransform[] };
 export type ComposeBinding = { text: string; setText: (text: string) => void };
 
-/** A host-provided editor menu item (Swift `menuActions: AnyView?`, e.g. the project file actions). */
 export type ComposeMenuAction = {
 	id: string;
 	title: string;
@@ -68,7 +54,6 @@ let nextSession = 0;
 export const makeSessionID = (prefix: string) =>
 	`${prefix}-${Date.now().toString(36)}-${++nextSession}`;
 
-/** Registers (or refreshes) a session for host-owned text. */
 export function syncComposeSession(
 	id: string,
 	text: string,
@@ -82,11 +67,6 @@ export function syncComposeSession(
 	else if (existing.text !== text) state.update(id, text);
 }
 
-/**
- * Keeps session `id` in step with host-owned text (the `$text` binding a host
- * passes to the editor). The first render registers synchronously so pushed
- * screens never read an empty session; later changes sync in a layout effect.
- */
 export function useComposeSessionHost(
 	id: string,
 	text: string,
@@ -110,9 +90,7 @@ function applyTransforms(text: string, transforms: readonly ComposeTransform[]):
 		if (transform.kind === 'attachments') {
 			try {
 				result = ComposeDocument.parse(result).convertingNetworkAttachments(transform.path);
-			} catch {
-				// `(try? ...) ?? text`.
-			}
+			} catch {}
 		} else {
 			const items = ComposeDocument.tryParse(result)?.items(transform.path);
 			result = items?.[transform.index] ?? transform.original;
@@ -121,7 +99,6 @@ function applyTransforms(text: string, transforms: readonly ComposeTransform[]):
 	return result;
 }
 
-/** Writes `value` (the transformed text) back through every transform to the session text. */
 function writeBack(base: string, transforms: readonly ComposeTransform[], value: string): string {
 	if (transforms.length === 0) return value;
 	const [first, ...rest] = transforms;
@@ -147,7 +124,6 @@ export function resolveBinding(ref: ComposeBindingRef): ComposeBinding {
 	};
 }
 
-/** Reactive binding for a screen. Errors from item write-back surface to the caller's `change`. */
 export function useComposeBinding(ref: ComposeBindingRef): ComposeBinding {
 	const base = useComposeSessionStore((state) => state.sessions[ref.session]?.text ?? '');
 	const key = JSON.stringify(ref);

@@ -1,4 +1,3 @@
-/** Port of `UserDetailView` (UserDetailView.swift). */
 import { Host } from '@/ui/host';
 import { Button, Form, HStack, Section, Spacer, Text, Toggle, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';

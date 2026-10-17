@@ -1,10 +1,3 @@
-/**
- * Port of `DeleteConfirmationCard` (iOS): a centered SwiftUI card over a 40%
- * black scrim, scaling (0.94 → 1), fading and unblurring in on
- * `Motion.overlay`. Liquid Glass buttons on iOS 26, capsule fills on iOS 18.
- *
- * Standalone (RN overlay hosting a SwiftUI card).
- */
 import { Host } from '@/ui/host';
 import { Button, HStack, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
@@ -68,7 +61,6 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 		if (action) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		setShown(false);
 		scrim.value = animateTo(motion, 0);
-		// A plain timer, like the Swift card: spring completion callbacks are unreliable.
 		setTimeout(() => onResolved(action), exitDelay(reduceMotion));
 	};
 
@@ -87,7 +79,6 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 				...(color ? [foregroundStyle(color)] : []),
 				frame({ maxWidth: Infinity }),
 				padding({ vertical: isIOS26 ? 4 : 12 }),
-				// iOS 18 neutral capsule: gray at 25%.
 				...(isIOS26 ? [] : [background('#8E8E9340', capsule)])
 			]}
 		>
@@ -161,7 +152,6 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 					accessibilityRole="button"
 				/>
 			</Animated.View>
-			{/* Centered so it clears the floating tab / action bar on every page. */}
 			<View
 				pointerEvents="box-none"
 				style={[
@@ -175,7 +165,6 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 							spacing={16}
 							modifiers={[
 								padding({ all: 20 }),
-								// Opaque system color: inside iOS 26 sheets `.background` resolves to translucent glass.
 								background(
 									colors.systemBackground,
 									shapes.roundedRectangle({ cornerRadius, roundedCornerStyle: 'continuous' })

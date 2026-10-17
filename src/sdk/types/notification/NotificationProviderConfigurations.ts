@@ -1,11 +1,3 @@
-/**
- * Port of Types/Notification/NotificationProviderConfigurations.swift.
- *
- * Each configuration is a synthesized `Codable` struct; they carry a `decode`
- * / `encode` because the nested `NotificationEvents` maps its keys to
- * snake_case. `make(...)` applies the Swift init defaults (notably
- * `events = NotificationEvents.defaults`).
- */
 import { D, type RawObject } from '../../models/base/decoding';
 import {
 	EmailAuthMode,
@@ -21,15 +13,9 @@ function encodeEvents(events: NotificationEvents | undefined): Record<string, un
 	return events === undefined ? undefined : NotificationEvents.encode(events);
 }
 
-/**
- * `events` is defaulted only when the caller omits the key; passing
- * `events: undefined` explicitly mirrors Swift `events: nil`.
- */
 function eventsDefault(init: { events?: NotificationEvents }): NotificationEvents | undefined {
 	return 'events' in init ? init.events : NotificationEvents.defaults;
 }
-
-// MARK: - Discord
 
 export interface DiscordNotificationConfiguration {
 	webhookId: string;
@@ -58,8 +44,6 @@ export const DiscordNotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Email
-
 export interface EmailNotificationConfiguration {
 	smtpHost: string;
 	smtpPort: number;
@@ -73,7 +57,6 @@ export interface EmailNotificationConfiguration {
 }
 
 export const EmailNotificationConfiguration = {
-	/** Defaults: `authMode = "auto"`, `events = NotificationEvents.defaults` (when the key is omitted). */
 	make(init: EmailNotificationConfiguration): EmailNotificationConfiguration {
 		return {
 			...init,
@@ -100,8 +83,6 @@ export const EmailNotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Telegram
-
 export interface TelegramNotificationConfiguration {
 	botToken?: string;
 	chatIds: string[];
@@ -113,7 +94,6 @@ export interface TelegramNotificationConfiguration {
 }
 
 export const TelegramNotificationConfiguration = {
-	/** Defaults: `preview = true`, `notification = true`. */
 	make(
 		init: Omit<TelegramNotificationConfiguration, 'preview' | 'notification'> & {
 			preview?: boolean;
@@ -144,8 +124,6 @@ export const TelegramNotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Signal
-
 export interface SignalNotificationConfiguration {
 	host: string;
 	port: number;
@@ -159,7 +137,6 @@ export interface SignalNotificationConfiguration {
 }
 
 export const SignalNotificationConfiguration = {
-	/** Defaults: `disableTls = false`. */
 	make(
 		init: Omit<SignalNotificationConfiguration, 'disableTls'> & { disableTls?: boolean }
 	): SignalNotificationConfiguration {
@@ -183,8 +160,6 @@ export const SignalNotificationConfiguration = {
 		return { ...value, events: encodeEvents(value.events) };
 	}
 } as const;
-
-// MARK: - Slack
 
 export interface SlackNotificationConfiguration {
 	token?: string;
@@ -219,8 +194,6 @@ export const SlackNotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Ntfy
-
 export interface NtfyNotificationConfiguration {
 	host: string;
 	port: number;
@@ -239,7 +212,6 @@ export interface NtfyNotificationConfiguration {
 }
 
 export const NtfyNotificationConfiguration = {
-	/** Defaults: `cache = true`, `firebase = true`, `disableTls = false`, `disableTlsVerification = false`. */
 	make(
 		init: Omit<
 			NtfyNotificationConfiguration,
@@ -284,8 +256,6 @@ export const NtfyNotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Pushover
-
 export interface PushoverNotificationConfiguration {
 	token?: string;
 	user: string;
@@ -296,7 +266,6 @@ export interface PushoverNotificationConfiguration {
 }
 
 export const PushoverNotificationConfiguration = {
-	/** Defaults: `priority = 0`. */
 	make(
 		init: Omit<PushoverNotificationConfiguration, 'priority'> & { priority?: number }
 	): PushoverNotificationConfiguration {
@@ -318,8 +287,6 @@ export const PushoverNotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Gotify
-
 export interface GotifyNotificationConfiguration {
 	host: string;
 	port?: number;
@@ -334,7 +301,6 @@ export interface GotifyNotificationConfiguration {
 }
 
 export const GotifyNotificationConfiguration = {
-	/** Defaults: `disableTls`, `insecureSkipVerify`, `useHeader` = `false`. */
 	make(
 		init: Omit<
 			GotifyNotificationConfiguration,
@@ -373,8 +339,6 @@ export const GotifyNotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Matrix
-
 export interface MatrixNotificationConfiguration {
 	host: string;
 	port?: number;
@@ -386,7 +350,6 @@ export interface MatrixNotificationConfiguration {
 }
 
 export const MatrixNotificationConfiguration = {
-	/** Defaults: `disableTlsVerification = false`. */
 	make(
 		init: Omit<MatrixNotificationConfiguration, 'disableTlsVerification'> & {
 			disableTlsVerification?: boolean;
@@ -415,8 +378,6 @@ export const MatrixNotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Google Chat
-
 export interface GoogleChatNotificationConfiguration {
 	webhookUrl?: string;
 	events?: NotificationEvents;
@@ -438,8 +399,6 @@ export const GoogleChatNotificationConfiguration = {
 	}
 } as const;
 
-// MARK: - Generic webhook
-
 export interface GenericNotificationConfiguration {
 	webhookUrl: string;
 	method?: string;
@@ -454,7 +413,6 @@ export interface GenericNotificationConfiguration {
 }
 
 export const GenericNotificationConfiguration = {
-	/** Defaults: `disableTls = false`. */
 	make(
 		init: Omit<GenericNotificationConfiguration, 'disableTls'> & { disableTls?: boolean }
 	): GenericNotificationConfiguration {

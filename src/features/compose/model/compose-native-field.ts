@@ -1,4 +1,3 @@
-/** `ComposeNativeField.swift`: native field paths, kinds and values. */
 export type ComposeFieldPathComponent = { key: string } | { index: number };
 export type ComposeFieldPath = readonly ComposeFieldPathComponent[];
 
@@ -18,7 +17,6 @@ export function componentsEqual(a: ComposeFieldPathComponent, b: ComposeFieldPat
 export function pathsEqual(a: ComposeFieldPath, b: ComposeFieldPath) {
 	return a.length === b.length && a.every((component, i) => componentsEqual(component, b[i]!));
 }
-/** A stable string identity for a path (`ComposeNativeField.id`). */
 export function pathID(path: ComposeFieldPath) {
 	return JSON.stringify(
 		path.map((component) => (isKey(component) ? ['k', component.key] : ['i', component.index]))
@@ -40,7 +38,6 @@ export type ComposeNativeKind =
 	| 'sequence'
 	| 'unsupported';
 
-/** `ComposeNativeKind.rawValue`. */
 export const nativeKindTitle: Record<ComposeNativeKind, string> = {
 	string: 'Text',
 	number: 'Number',

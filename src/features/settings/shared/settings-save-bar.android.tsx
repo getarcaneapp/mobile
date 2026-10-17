@@ -1,11 +1,3 @@
-/**
- * Android rendering of `SettingsSaveBar` (SettingsSaveBar.swift): a Material 3
- * FAB pair pinned bottom-end — a tonal Revert FAB that appears once the form is
- * dirty, and the primary Save FAB.
- *
- * Standalone. Put it after the screen's scroll view inside a `flex: 1`
- * container and pad the scroll content by `settingsSaveBarHeight`.
- */
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -109,7 +101,6 @@ export function SettingsSaveBar(props: SettingsSaveBarProps) {
 	);
 }
 
-/** iOS-only Form spacer; nothing to render on Android (pad the scroll view instead). */
 export function SettingsSaveBarSpacer(_props: {
 	isPresented?: boolean;
 	afterFooterlessSection?: boolean;

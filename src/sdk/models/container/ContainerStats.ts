@@ -1,8 +1,6 @@
-/** Port of Models/Container/ContainerStats.swift. */
 import type { JSONObject, JSONValue } from '../../types/json';
 import { D } from '../base/decoding';
 
-/** Compact history sample for container CPU and memory usage. */
 export interface ContainerStatsHistorySample {
 	cpuTenths: number;
 	memoryTenths: number;
@@ -18,7 +16,6 @@ export const ContainerStatsHistorySample = {
 		};
 	},
 
-	/** Synthesized Swift decoding: every field is required. */
 	decode(raw: unknown): ContainerStatsHistorySample {
 		const o = D.object(raw, 'ContainerStatsHistorySample');
 		return {
@@ -29,13 +26,7 @@ export const ContainerStatsHistorySample = {
 	}
 } as const;
 
-/**
- * Container stats websocket payload. Mirrors Docker's StatsResponse (embedded)
- * plus Arcane-added history. The Docker portion is exposed as raw JSON so we
- * stay forward-compatible with the upstream schema.
- */
 export interface ContainerStatsPayload {
-	/** Raw Docker stats fields (anything not under `statsHistory` / `currentHistorySample`). */
 	raw: Record<string, JSONValue>;
 	statsHistory?: ContainerStatsHistorySample[];
 	currentHistorySample: ContainerStatsHistorySample;
@@ -54,7 +45,6 @@ export const ContainerStatsPayload = {
 		};
 	},
 
-	/** Swift `init(from:)`: splits the Arcane history fields from the raw Docker stats. */
 	decode(this: void, raw: unknown): ContainerStatsPayload {
 		const object = D.object(raw, 'ContainerStatsPayload') as JSONObject;
 		const history = object['statsHistory'];
@@ -73,7 +63,6 @@ export const ContainerStatsPayload = {
 		return { raw: rest, statsHistory, currentHistorySample };
 	},
 
-	/** Swift `encode(to:)`: merges the history fields back into the raw object. */
 	encode(this: void, value: ContainerStatsPayload): Record<string, unknown> {
 		const merged: Record<string, unknown> = { ...value.raw };
 		if (value.statsHistory !== undefined) merged['statsHistory'] = value.statsHistory;

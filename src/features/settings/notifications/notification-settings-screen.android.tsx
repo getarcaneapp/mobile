@@ -1,4 +1,3 @@
-/** Android rendering of `NotificationSettingsView` (NotificationSettingsView.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
@@ -18,7 +17,6 @@ import {
 } from './notification-provider-models';
 import { useNotificationSettings } from './use-notification-settings';
 
-/** `appTabDestination(.notifications)`. */
 export function NotificationsDestination() {
 	const model = useNotificationSettings();
 	const [isRefreshing, setIsRefreshing] = useState(false);

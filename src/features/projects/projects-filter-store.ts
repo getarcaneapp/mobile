@@ -1,7 +1,3 @@
-/**
- * ProjectsView's filter/sort `@State`, keyed per list instance so the Filter
- * sheet (a separate route here) edits the list that opened it.
- */
 import { create } from 'zustand';
 
 import type { ResourceUpdateFilter } from '@/features/containers/container-model';
@@ -13,13 +9,10 @@ export type ProjectsFilterState = {
 	environmentFilter?: string;
 	statusFilter: ProjectStatusFilter;
 	updateFilter: ResourceUpdateFilter;
-	/** Server-side tag filter (matches any selected tag). */
 	tagFilter: string[];
 	tagOptions: ProjectTagOption[];
 	sortOrder: ListSortOrder;
-	/** The list's environments, for the Environment filter section. */
 	environments: ListEnvironment[];
-	/** `listEnvironments`: the environments the tag catalog loads from. */
 	listEnvironments: ListEnvironment[];
 };
 
@@ -56,7 +49,6 @@ export function useProjectsFilter(key: string): ProjectsFilterState {
 	return useProjectsFilterStore((s) => s.lists[key] ?? defaultProjectsFilter);
 }
 
-/** `activeFilterCount`. */
 export function projectsActiveFilterCount(filter: ProjectsFilterState): number {
 	let count = filter.statusFilter !== 'All' ? 1 : 0;
 	if (filter.environmentFilter !== undefined) count += 1;

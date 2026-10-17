@@ -1,8 +1,3 @@
-/**
- * Ports of `BackupPolicyDraft` (Types/BackupPolicyDraft.swift),
- * `BackupOperation` (Types/BackupOperation.swift) and the option list of
- * `BackupDestinationPicker` (BackupPolicyEditor.swift).
- */
 import type { S3Destination } from '@/sdk/models/backup/S3Destination';
 import type { UpdateBackupPolicy } from '@/sdk/models/backup/UpdateBackupPolicy';
 import type { UpdateSystemVolumeBackupPolicy } from '@/sdk/models/backup/UpdateSystemVolumeBackupPolicy';
@@ -70,7 +65,6 @@ export function policyDraftVolumeUpdate(draft: BackupPolicyDraft): UpdateSystemV
 	return {
 		...policyDraftUpdate(draft),
 		selectionMode: draft.selectionMode,
-		// Swift `split(separator: "\n")` drops empty lines.
 		volumeNames: draft.volumeNames.split('\n').filter((name) => name !== ''),
 		ignoreAnonymous: draft.ignoreAnonymous
 	};
@@ -78,7 +72,6 @@ export function policyDraftVolumeUpdate(draft: BackupPolicyDraft): UpdateSystemV
 
 export type BackupOperation = 'restore' | 'delete';
 
-/** `BackupDestinationPicker`: placeholder, every destination, and an unknown saved selection. */
 export function destinationPickerOptions(
 	selection: string,
 	destinations: S3Destination[]

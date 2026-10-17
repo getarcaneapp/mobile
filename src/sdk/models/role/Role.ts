@@ -1,4 +1,3 @@
-/** Port of Models/Role/Role.swift. */
 import type { ISODateString } from '../base/date';
 import { D } from '../base/decoding';
 
@@ -14,7 +13,6 @@ export interface Role {
 }
 
 export const Role = {
-	/** Swift `Role.init(...)` with its defaults. */
 	make(
 		this: void,
 		init: {
@@ -40,7 +38,6 @@ export const Role = {
 		};
 	},
 
-	/** Swift `Role.init(from:)`: missing collections/flags fall back to defaults. */
 	decode(this: void, raw: unknown): Role {
 		const o = D.object(raw, 'Role');
 		return {
@@ -55,10 +52,6 @@ export const Role = {
 		};
 	},
 
-	/**
-	 * Stable built-in role IDs seeded by the v2 backend migration. Custom
-	 * roles will have any other ID and are user-defined.
-	 */
 	BuiltIn: {
 		admin: 'role_admin',
 		editor: 'role_editor',

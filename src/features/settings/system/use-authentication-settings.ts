@@ -1,8 +1,3 @@
-/**
- * Data flow of `AuthenticationSettingsView` (AuthenticationSettingsView.swift):
- * local auth + OIDC provider settings, loaded from and saved to the active
- * environment's flat settings, with the OIDC env-var override status.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -13,7 +8,6 @@ import { showToast, Toasts } from '@/ui/toast';
 
 import { swiftInt } from '@/ui/components/settings-form.types';
 
-/** Port of `AuthenticationSettingsValidation`. */
 export const AuthenticationSettingsValidation = {
 	sessionTimeoutMinutes: { lowerBound: 15, upperBound: 525_600 },
 
@@ -27,7 +21,6 @@ export const AuthenticationSettingsValidation = {
 	}
 } as const;
 
-/** The Password Policy picker's options (label, raw value). */
 export const passwordPolicyOptions = [
 	{ label: 'Basic', value: 'basic' },
 	{ label: 'Standard', value: 'standard' },
@@ -35,11 +28,9 @@ export const passwordPolicyOptions = [
 ];
 
 export type AuthenticationForm = {
-	// Local Auth
 	authLocalEnabled: boolean;
 	authSessionTimeout: string;
 	authPasswordPolicy: string;
-	// OIDC
 	oidcEnabled: boolean;
 	oidcProviderName: string;
 	oidcIssuerUrl: string;
@@ -70,7 +61,6 @@ const initialForm: AuthenticationForm = {
 	oidcProviderLogoUrl: ''
 };
 
-/** Builds the form from the loaded settings with the same fallbacks as `loadSettings()`. */
 function formFromSettings(dict: Record<string, string>): AuthenticationForm {
 	const isTrue = (key: string) => dict[key]?.toLowerCase() === 'true';
 	return {
@@ -105,7 +95,6 @@ export function useAuthenticationSettings() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>();
-	// Env-var override status
 	const [oidcEnvForced, setOidcEnvForced] = useState(false);
 
 	const latestForm = useRef(form);
@@ -136,9 +125,7 @@ export function useAuthenticationSettings() {
 			try {
 				const status = await client.auth.oidcStatus();
 				setOidcEnvForced(status.envForced);
-			} catch {
-				// Silently ignore — fields remain editable if status check fails
-			}
+			} catch {}
 			setOriginalState(loaded);
 		} catch (error) {
 			setErrorMessage(friendlyErrorMessage(error));
@@ -172,8 +159,6 @@ export function useAuthenticationSettings() {
 		setIsSaving(true);
 		setErrorMessage(undefined);
 		try {
-			// Settings are flat string key/values server-side; send a raw dict so we can
-			// include keys (e.g. oidcGroupsClaim) the SDK's UpdateSettings doesn't model.
 			const body: Record<string, string> = {
 				authLocalEnabled: String(current.authLocalEnabled),
 				authPasswordPolicy: current.authPasswordPolicy,
@@ -183,7 +168,6 @@ export function useAuthenticationSettings() {
 				oidcSkipTlsVerify: String(current.oidcSkipTlsVerify),
 				oidcAutoRedirectToProvider: String(current.oidcAutoRedirectToProvider)
 			};
-			// Omit empty optional fields so they don't overwrite existing server values.
 			const setIfPresent = (key: keyof AuthenticationForm) => {
 				const trimmed = String(current[key]).trim();
 				if (trimmed !== '') body[key] = trimmed;

@@ -1,10 +1,3 @@
-/**
- * `LogsView` for a swarm service (`manager.client?.boundedSwarmServiceLogs`):
- * the embedded console in Service Detail (with Expand) and the full-screen
- * cover opened from the services list, sharing one `LogViewerStore`.
- *
- * Standalone (RN views; reuses the Containers log console).
- */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
 import { useEffect, useRef, useState } from 'react';
@@ -75,7 +68,6 @@ export function EmbeddedServiceLogs({
 	);
 }
 
-/** Full-screen viewer: Done + options in the navigation bar. */
 export function SwarmServiceLogsScreen() {
 	const router = useRouter();
 	const accent = useAccentColor();

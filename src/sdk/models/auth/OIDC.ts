@@ -1,4 +1,3 @@
-/** Port of Models/Auth/OIDC.swift. */
 import type { ISODateString } from '../base/date';
 import { D } from '../base/decoding';
 import { User } from '../user/User';

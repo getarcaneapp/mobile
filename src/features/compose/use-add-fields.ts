@@ -1,7 +1,3 @@
-/**
- * `ComposeAddFieldsSheet` state (ComposeAddFieldsSheet.swift): uses the
- * Compose specification to offer fields without exposing YAML syntax.
- */
 import { useEffect, useState } from 'react';
 
 import { ComposeDocument } from './model/compose-document';
@@ -111,7 +107,6 @@ export function useAddFields(
 		setDraft(pending);
 	};
 
-	// `.onAppear`: a list adds an item directly.
 	useEffect(() => {
 		if (isList && draft === undefined) select(ComposeSchema.value([...schemaPath, { index: 0 }]));
 		// eslint-disable-next-line react-hooks/exhaustive-deps

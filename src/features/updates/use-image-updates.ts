@@ -1,7 +1,3 @@
-/**
- * State and actions of `AllEnvironmentsImageUpdatesView`
- * (AllEnvironmentsImageUpdatesView.swift), shared by iOS and Android.
- */
 import * as Clipboard from 'expo-clipboard';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -48,14 +44,12 @@ import {
 
 export type ImageDetailTarget = { envID: string; imageID: string };
 
-/** Port of `EnvironmentImageUpdateItem`. */
 export type EnvironmentImageUpdateItem = {
 	id: string;
 	bucket: EnvUpdateBucket;
 	image: OutdatedImage;
 };
 
-/** What the detail sheet resolves to against live state. */
 export type ImageDetailState =
 	| { kind: 'image'; item: OutdatedImage; hasUpdate: boolean; bucket: EnvUpdateBucket }
 	| { kind: 'updatedAway' };
@@ -92,8 +86,6 @@ async function fetchEnv(
 		...new Set(images.flatMap((image) => image.repoTags).filter((tag) => tag !== '<none>:<none>'))
 	];
 
-	// Seed byRef from each image's inline updateInfo; only entries where the
-	// server has a definitive answer.
 	const byRef: Record<string, ImageUpdateResponse> = {};
 	for (const image of images) {
 		const info = image.updateInfo;
@@ -102,7 +94,6 @@ async function fetchEnv(
 		for (const tag of image.repoTags) if (tag !== '<none>:<none>') byRef[tag] = response;
 	}
 
-	// Merge with the by-refs API; its keys take precedence. Batches load concurrently.
 	const batches: string[][] = [];
 	for (let offset = 0; offset < refs.length; offset += 100)
 		batches.push(refs.slice(offset, offset + 100));
@@ -121,7 +112,6 @@ async function fetchEnv(
 	}
 
 	const summary = await pendingSummary;
-	// Only surface an error if we couldn't get either summary or images.
 	const error = summary === undefined && listError !== undefined ? listError : undefined;
 	return { index, summary, images, byRef, totalImages: images.length, error };
 }
@@ -251,7 +241,6 @@ export function useImageUpdates({
 			return;
 		}
 
-		// Every environment loads at once; each applies as it answers.
 		await Promise.all(
 			envs.map(async (env, index) => {
 				const result = await fetchEnv(index, env.id, activeClient);
@@ -264,12 +253,10 @@ export function useImageUpdates({
 		}
 	}, [publishUpdateCount]);
 
-	// `.task { await loadAll() }`
 	useEffect(() => {
 		void loadAll();
 	}, [loadAll, client]);
 
-	// When an operation this page started finishes, clear the row spinners and refetch.
 	const wasRunning = useRef(deploymentRunning);
 	useEffect(() => {
 		const was = wasRunning.current;
@@ -290,8 +277,6 @@ export function useImageUpdates({
 		if (!loadingRef.current.hasLoadedOnce || loadingRef.current.isLoading) return;
 		void loadAll();
 	}, [imageMutationVersion, loadAll]);
-
-	// MARK: Derived
 
 	const updateItemCount = useMemo(
 		() => buckets.reduce((count, bucket) => count + outdatedImages(bucket).length, 0),
@@ -353,8 +338,6 @@ export function useImageUpdates({
 			bucket
 		};
 	};
-
-	// MARK: Update actions
 
 	const freshContainers = async (bucket: EnvUpdateBucket): Promise<ContainerSummary[]> => {
 		const activeClient = useClientManager.getState().client;
@@ -437,8 +420,6 @@ export function useImageUpdates({
 		setRescanningEnvID(bucket.id);
 		try {
 			const envID = bucket.env.id;
-			// Try the typed post first, then refetch the env either way so remote
-			// envs still pick up fresh results from the by-refs cache.
 			const postedMap = await activeClient.images.checkAllUpdates({ envID }).catch(() => undefined);
 			const index = bucketsRef.current.findIndex((b) => b.id === bucket.id);
 			if (index < 0) return;

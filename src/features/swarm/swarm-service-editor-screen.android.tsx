@@ -1,7 +1,3 @@
-/**
- * Android rendering of `SwarmServiceEditorView`. Swipe-to-delete rows become
- * a trailing remove button; the segmented mount type is a Material segmented row.
- */
 import { Stack } from 'expo-router';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 

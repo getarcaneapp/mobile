@@ -1,8 +1,3 @@
-/**
- * `APIKeyDetailView` model (APIKeyDetailView.swift): v2 metadata lookup,
- * edit / rotate / delete actions with the same access rules, and the
- * one-time secret reveal after a rotation.
- */
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -96,7 +91,6 @@ export function useAPIKeyDetail() {
 		}
 	};
 
-	// `.task { await loadMetadata() }`.
 	const initialLoad = useRef(loadMetadata);
 	useEffect(() => {
 		void initialLoad.current();
@@ -141,7 +135,6 @@ export function useAPIKeyDetail() {
 			await client.apiKeys.delete({ id: apiKey.id });
 			invalidateAPIKeyCache();
 			showToast(Toasts.success('API key deleted'));
-			// The confirmation already dismissed this screen (`dismissOnConfirm`).
 			await onChanged();
 		} catch (error) {
 			showToast(Toasts.error(friendlyErrorMessage(error)));
@@ -150,7 +143,6 @@ export function useAPIKeyDetail() {
 		}
 	};
 
-	// `.sheet(item: $revealedKey, onDismiss: finishSecretPresentation)`.
 	const finishSecretPresentation = () => {
 		if (!afterReveal.current.refresh) return;
 		const shouldDismiss = afterReveal.current.dismiss;
@@ -259,7 +251,6 @@ export function useAPIKeyDetail() {
 		actions: [
 			{ title: 'Rotate', role: null, tint: systemColors.orange, action: () => void rotateKey() }
 		],
-		// Keep this screen up so the replacement key can be revealed from it.
 		dismissOnConfirm: false
 	});
 
@@ -277,7 +268,6 @@ export function useAPIKeyDetail() {
 		isProtected,
 		isExpired,
 		kindLabel,
-		/** The notice under the form; hidden while access is still loading. */
 		rotationNotice:
 			rotationUnavailableReason === loadingAccessReason ? undefined : rotationUnavailableReason,
 		actionItems,

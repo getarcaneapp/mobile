@@ -1,8 +1,3 @@
-/**
- * Platform-neutral logic of `PermissionPickerView` (PermissionPickerView.swift):
- * search filtering, per-resource selection state, and the resource icon /
- * color tables.
- */
 import { useState } from 'react';
 
 import {
@@ -16,13 +11,11 @@ import { systemColors } from '@/theme/colors';
 export type PermissionPickerProps = {
 	manifest: PermissionsManifest;
 	selected: Set<string>;
-	/** Adds (`true`) or removes every permission in the list. */
 	onSetPermissions: (permissions: string[], selected: boolean) => void;
 	isReadOnly?: boolean;
 	search: string;
 };
 
-/** `filteredResources`: resources whose label/key match keep every action; otherwise only matching actions. */
 export function filterResources(
 	manifest: PermissionsManifest,
 	search: string
@@ -42,7 +35,6 @@ export function filterResources(
 	});
 }
 
-/** `resourceHeader` selection state. */
 export function resourceSelection(resource: PermissionResource, selected: Set<string>) {
 	const selectedCount = resource.actions.filter((action) => selected.has(action.permission)).length;
 	const totalCount = resource.actions.length;
@@ -69,7 +61,6 @@ export function actionTitle(action: PermissionAction): string {
 	return action.label === '' ? action.key : action.label;
 }
 
-/** `expandedResources` plus `expansionBinding(for:)`: a non-empty search expands every resource. */
 export function useResourceExpansion(search: string) {
 	const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 	return {
@@ -141,7 +132,6 @@ export function iconForResource(key: string): string {
 	}
 }
 
-/** Hex tint, or `undefined` for SwiftUI's `.secondary`. */
 export function colorForResource(key: string): string | undefined {
 	switch (key) {
 		case 'containers':

@@ -1,10 +1,3 @@
-/**
- * Port of `EnvironmentContextPicker` (Android): "Choose Environment" sheet
- * content with a Material 3 search field, a check on the active environment,
- * its API URL and a status chip. Present in a ModalBottomSheet or sheet route.
- *
- * Standalone (RN view).
- */
 import { useState } from 'react';
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 

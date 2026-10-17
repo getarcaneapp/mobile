@@ -1,7 +1,5 @@
-/** Port of Models/Webhook/Webhook.swift. */
 import type { ISODateString } from '../base/date';
 
-/** Summary is returned in list responses; the token is masked. */
 export interface Webhook {
 	id: string;
 	name: string;
@@ -16,7 +14,6 @@ export interface Webhook {
 	createdAt: ISODateString;
 }
 
-/** Returned once when a webhook is first created, including the raw token. */
 export interface WebhookCreated {
 	id: string;
 	name: string;

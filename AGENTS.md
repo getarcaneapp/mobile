@@ -21,6 +21,7 @@ Arcane Mobile, React Native edition. A port of the SwiftUI app at `../ios` (the 
 
 - **pnpm only** (`packageManager` pins the version; `preinstall` rejects npm/yarn). `nodeLinker: hoisted` in `pnpm-workspace.yaml` keeps a flat `node_modules` for React Native autolinking and Metro. Shared tool versions live in the workspace `catalog`.
 - **Vite+** (`vp`, configured in `vite.config.ts`) handles everything except bundling: `pnpm check` (Oxfmt + Oxlint + type check), `pnpm fmt`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (Vitest; tests live in `src/**/__tests__/*.test.ts` and import from `vite-plus/test`). Metro still bundles the app.
+- **No code comments.** Don't add comments, doc comments or JSX comments to any source file. The only exceptions are tool directives (`// oxlint-disable-next-line`, `// @ts-expect-error`).
 - **Code style** matches the `arcane` repo: tabs, single quotes, no trailing commas, width 100. Let `pnpm fmt` do it; don't hand-format.
 - **Dependencies:** Expo SDK packages (and `react`, `react-native`, gesture-handler, etc.) stay on the versions `pnpm expo install --check` reports for the current SDK; everything else stays on its latest release.
 

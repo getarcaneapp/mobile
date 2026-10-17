@@ -1,10 +1,3 @@
-/**
- * Material 3 overlays for the Android profile screens: a modal bottom sheet
- * (SwiftUI `.sheet`) and a text-prompt dialog (SwiftUI `.alert` with a
- * `TextField`). RN `Modal`s so text input and the keyboard behave.
- *
- * Standalone (RN views). Android only.
- */
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

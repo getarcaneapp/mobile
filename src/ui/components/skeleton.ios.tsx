@@ -1,11 +1,3 @@
-/**
- * Ports of `skeletonShimmer()`, `SkeletonFill`, `SkeletonRect` and
- * `SkeletonCircle` (SkeletonViews.swift): neutral placeholders with a
- * contained highlight that sweeps across while data loads. Fills under one
- * `SkeletonShimmer` appear together, so their sweeps stay in step.
- *
- * SwiftUI-tree.
- */
 import { Circle, Rectangle, RoundedRectangle, ZStack } from '@expo/ui/swift-ui';
 import {
 	Animation,
@@ -32,13 +24,11 @@ import {
 	type SkeletonRectProps
 } from './skeleton.types';
 
-/** Turns on the sweep for every skeleton fill below. Placeholders render static without it or under Reduce Motion. */
 export function SkeletonShimmer({ children }: { children: ReactNode }) {
 	const reduceMotion = useReduceMotion();
 	return <SkeletonShimmerContext value={!reduceMotion}>{children}</SkeletonShimmerContext>;
 }
 
-/** SwiftUI has no repeatForever here; this many laps outlasts any loading state. */
 const forever = 100_000;
 
 function SkeletonFill({
@@ -104,7 +94,6 @@ function SkeletonFill({
 	);
 }
 
-/** A rounded rectangle stand-in for text or other content while data loads. */
 export function SkeletonRect({ width, height, cornerRadius = 4, fillOpacity }: SkeletonRectProps) {
 	return (
 		<SkeletonFill
@@ -117,7 +106,6 @@ export function SkeletonRect({ width, height, cornerRadius = 4, fillOpacity }: S
 	);
 }
 
-/** A circle placeholder for avatars and icons. */
 export function SkeletonCircle({ size, fillOpacity }: SkeletonCircleProps) {
 	return <SkeletonFill shape="circle" width={size} height={size} fillOpacity={fillOpacity} />;
 }

@@ -1,9 +1,3 @@
-/**
- * `if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.red) } }`
- * — the inline save/load failure row the Settings forms end with.
- *
- * SwiftUI-tree (place inside a `Form`).
- */
 import { Label, Section } from '@expo/ui/swift-ui';
 import { foregroundStyle } from '@expo/ui/swift-ui/modifiers';
 

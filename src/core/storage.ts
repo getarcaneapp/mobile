@@ -1,10 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { createMMKV } from 'react-native-mmkv';
 
-/**
- * App-wide key/value store. Mirrors `UserDefaults.standard` in the reference
- * app: keys use the exact same strings so behavior ports one-to-one.
- */
 export const defaults = createMMKV({ id: 'arcane.defaults' });
 
 type Listener = () => void;
@@ -49,7 +45,6 @@ export const storage = {
 	subscribe
 };
 
-/** `@AppStorage` equivalent for strings. */
 export function useStoredString(key: string, fallback: string): [string, (value: string) => void] {
 	const value = useSyncExternalStore(
 		(listener) => subscribe(key, listener),
@@ -58,7 +53,6 @@ export function useStoredString(key: string, fallback: string): [string, (value:
 	return [value, (next) => defaults.set(key, next)];
 }
 
-/** `@AppStorage` equivalent for booleans. */
 export function useStoredBool(key: string, fallback: boolean): [boolean, (value: boolean) => void] {
 	const value = useSyncExternalStore(
 		(listener) => subscribe(key, listener),
@@ -67,7 +61,6 @@ export function useStoredBool(key: string, fallback: boolean): [boolean, (value:
 	return [value, (next) => defaults.set(key, next)];
 }
 
-/** UserDefaults keys shared across the app. Same strings as the Swift app. */
 export const Keys = {
 	serverURL: 'arcane.serverURL',
 	activeEnvironmentID: 'arcane.activeEnvironmentID',

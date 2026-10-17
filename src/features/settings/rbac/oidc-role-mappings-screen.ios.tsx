@@ -1,4 +1,3 @@
-/** Port of `OIDCRoleMappingsView` + `MappingRow` (OIDCRoleMappingsView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

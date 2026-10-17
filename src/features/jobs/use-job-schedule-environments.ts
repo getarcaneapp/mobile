@@ -1,8 +1,3 @@
-/**
- * `JobsView.scheduleEnvironments` (JobsView.swift): schedules are
- * per-environment settings, so All Environments picks the environment to
- * configure first.
- */
 import { useEffect } from 'react';
 
 import { environmentDisplayName, useEnvironmentsStore } from '@/stores/environments-store';
@@ -12,7 +7,6 @@ import { useJobsNavigation } from './jobs-routes';
 export function useJobScheduleEnvironments() {
 	const navigation = useJobsNavigation();
 	const hasLoaded = useEnvironmentsStore((s) => s.hasLoaded);
-	// Re-render on catalog changes; `enabledEnvironments()` reads the latest list.
 	useEnvironmentsStore((s) => s.environments);
 	const environments = useEnvironmentsStore
 		.getState()
@@ -22,7 +16,6 @@ export function useJobScheduleEnvironments() {
 			displayName: environmentDisplayName(environment)
 		}));
 
-	// `.task { await environmentsStore.load(manager: manager) }`
 	useEffect(() => {
 		void useEnvironmentsStore.getState().load();
 	}, []);

@@ -1,4 +1,3 @@
-/** Android renderings of the Environment / Labels / Mounts / Health History pages. */
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';

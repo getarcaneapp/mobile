@@ -1,12 +1,3 @@
-/**
- * Port of `ArcaneClientManager.swift`: server configuration, the SDK client
- * lifecycle, every sign-in path (password, OIDC, passkey, MFA, demo), session
- * restore, and the access checks navigation relies on.
- *
- * Swift's per-call `Task` cancellation is replaced by authentication
- * generations: every async path captures `authenticationGeneration` and drops
- * its result once a newer sign-in, sign-out, or server change retires it.
- */
 import { CryptoDigestAlgorithm, digestStringAsync, randomUUID } from 'expo-crypto';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
@@ -64,21 +55,14 @@ import { CeremonyError } from '@/sdk/passkeys/CeremonyTypes';
 export { LoginCapabilities } from '@/core/auth/access';
 export { ArcaneMobileOIDC } from '@/core/auth/auth-session';
 
-/** Port of `AppAuthState`. */
-export type AppAuthState =
-	| 'setup' // No server URL configured
-	| 'authenticating' // Server URL set, checking existing tokens
-	| 'login' // Server URL configured, not authenticated
-	| 'authenticated'; // Logged in
+export type AppAuthState = 'setup' | 'authenticating' | 'login' | 'authenticated';
 
 export type DemoEndReason = 'userInitiated' | 'expired';
 
 type ClientManagerState = {
-	// MARK: Persisted config
 	serverURL: string;
 	parsedServerURL: string | undefined;
 
-	// MARK: Auth state
 	authState: AppAuthState;
 	currentUser: User | undefined;
 	serverCapabilities: ServerCapabilities | undefined;
@@ -86,44 +70,33 @@ type ClientManagerState = {
 	isLoading: boolean;
 	errorMessage: string | undefined;
 
-	// MARK: Login capabilities
 	loginCapabilities: LoginCapabilities | undefined;
 	isOIDCSigningIn: boolean;
 
-	// MARK: Passkeys and post-2.6 features
 	isPasskeySigningIn: boolean;
 	pendingMFAChallenge: MFAChallenge | undefined;
 	supportsPost26MobileFeatures: boolean;
 	supportsMobilePush: boolean;
 
-	// MARK: Demo mode
 	isDemoActive: boolean;
 	isStartingDemo: boolean;
-	/** Milliseconds since 1970. */
 	demoEndsAt: number | undefined;
 	demoExpiredMessage: string | undefined;
 
 	allEnvironmentsPreview: boolean;
-	/** Preview: live usage graphs, busiest containers and host metrics on the dashboard. */
 	refreshedDashboardPreview: boolean;
 
-	// MARK: Active environment
 	activeEnvironmentID: EnvironmentID;
 	activeEnvironmentName: string;
 
-	// MARK: Client
 	client: ArcaneClient | undefined;
 	clientGeneration: number;
 	authenticationGeneration: number;
-	/** Rotates for every authenticated session; part of every cache key. */
 	cacheSessionIdentity: string;
-	/** Bumped when the user, capabilities, or permissions manifest change. */
 	accessGeneration: number;
 
-	/** Local file URI of the signed-in user's profile picture, if any. */
 	currentUserAvatarURI: string | undefined;
 
-	// MARK: Derived
 	serverOrigin: () => string | undefined;
 	isOIDCAvailable: () => boolean;
 	isLocalAuthAvailable: () => boolean;
@@ -132,7 +105,6 @@ type ClientManagerState = {
 	acceptsEnvironmentContext: (id: EnvironmentID) => boolean;
 	isCurrentAuthentication: (generation: number) => boolean;
 
-	// MARK: Actions
 	configure: (serverURL: string) => void;
 	setErrorMessage: (message: string | undefined) => void;
 	dismissDemoExpiredMessage: () => void;
@@ -159,11 +131,6 @@ type ClientManagerState = {
 const bootstrapTimeoutMs = 20_000;
 const newSessionIdentity = () => randomUUID().toUpperCase();
 
-/**
- * Exported for unit tests: which errors earn the "local DNS" hint. Swift
- * suggests it when the server's host name resolved only to public addresses
- * (iCloud Private Relay bypassing local DNS).
- */
 export function shouldSuggestLocalDNSHint(
 	error: unknown,
 	serverURL: string | undefined,
@@ -181,26 +148,17 @@ export function shouldSuggestLocalDNSHint(
 }
 
 export const useClientManager = create<ClientManagerState>((set, get) => {
-	// MARK: - Private state (Swift `private var`s that don't drive the UI)
-
 	let credentialLease = new CredentialLease();
 	const credentialPersistence = new CredentialPersistenceCoordinator();
 	const bootstrapControllers = new Map<string, AbortController>();
 	const bootstrapClients = new Map<string, ArcaneClient>();
-	/** URL the current `client` was built for; lets `configureClient` skip needless rebuilds. */
 	let configuredClientURL: string | undefined;
 	let needsConnectionBootstrapRetry = false;
 	let isRetryingConnectionBootstrap = false;
-	/**
-	 * Swift fills this from `getaddrinfo` to decide on the Private Relay hint.
-	 * React Native has no resolver API, so it stays empty and the hint is
-	 * never shown. TODO(dns): resolve via a native module if needed.
-	 */
 	let lastBootstrapDNSAddresses: string[] = [];
 	let passkeyAuthenticator: ArcanePasskeyAuthenticator | undefined;
 	let oidcAbort: AbortController | undefined;
 	let demoExpiryTimer: ReturnType<typeof setTimeout> | undefined;
-	/** De-dupes avatar fetches: session + user id + updatedAt. */
 	let avatarFetchKey: string | undefined;
 
 	const bumpAccess = () => set((s) => ({ accessGeneration: s.accessGeneration + 1 }));
@@ -212,16 +170,12 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		if (!isCurrentAuthentication(generation)) throw new CancellationError();
 	};
 
-	// TODO(app-group): Swift mirrors server/env/session into the App Group for
-	// widgets and intents. No widget extension in this build.
 	const mirrorToAppGroup = () => {};
 
 	const setCacheSessionIdentity = (identity = newSessionIdentity()) => {
 		set({ cacheSessionIdentity: identity });
 		mirrorToAppGroup();
 	};
-
-	// MARK: - Client construction
 
 	const makeClient = (url: string, bootstrap: boolean, signal?: AbortSignal): ArcaneClient => {
 		const origin = canonicalServerOrigin(url) ?? url;
@@ -244,8 +198,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 	};
 
 	const configureClient = (url: string, force = false) => {
-		// Reuse the live client when it already points at this URL: every
-		// bootstrap round-trip would otherwise tear down in-flight streams.
 		if (!force && get().client && configuredClientURL === url) return;
 		clearPendingAuthentication();
 		set((s) => ({ client: makeClient(url, false), clientGeneration: s.clientGeneration + 1 }));
@@ -256,7 +208,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		const current = get();
 		set({ authenticationGeneration: current.authenticationGeneration + 1 });
 		setCacheSessionIdentity();
-		// TODO(push): PushNotificationCoordinator.sessionDidChange() — no push in this build.
 		credentialLease.retire(allowCredentialClear);
 		for (const client of [
 			...bootstrapClients.values(),
@@ -304,12 +255,8 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		needsConnectionBootstrapRetry = false;
 		const parsed = get().parsedServerURL;
 		CredentialBinding.unbind(parsed ? canonicalServerOrigin(parsed) : undefined);
-		// TODO(live-activities/widgets): DeploymentActivityStore.sessionDidEnd(),
-		// WidgetSnapshotPublisher.publishSignedOut().
 		ResponseCache.invalidateAll();
 	};
-
-	// MARK: - Bootstrap requests
 
 	const runBootstrapOperation = async <T>(
 		url: string,
@@ -328,10 +275,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		}
 	};
 
-	/**
-	 * Runs `operation` on a short-timeout bootstrap client. A transient network
-	 * failure (possibly a wedged connection) rebuilds the client and retries once.
-	 */
 	const withNetworkSessionRefreshRetry = async <T>(
 		operation: (client: ArcaneClient) => Promise<T>
 	): Promise<T> => {
@@ -346,7 +289,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		} catch (error) {
 			requireCurrentAuthentication(generation);
 			if (!shouldRefreshNetworkSession(error)) throw error;
-			// The transient failure may be a wedged session — force a rebuild.
 			configureClient(url, true);
 			await new Promise((resolve) => setTimeout(resolve, 500));
 			requireCurrentAuthentication(generation);
@@ -356,8 +298,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			return result;
 		}
 	};
-
-	// MARK: - Error wording
 
 	const connectionAwareErrorMessage = (error: unknown, passwordLogin = false): string => {
 		if (passwordLogin && error instanceof ArcaneError && error.kind === 'unauthorized') {
@@ -372,8 +312,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 	};
 
 	const loginErrorMessage = (error: unknown) => connectionAwareErrorMessage(error, true);
-
-	// MARK: - Login capabilities
 
 	const fetchLoginCapabilitiesIfAvailable = async (client: ArcaneClient) => {
 		try {
@@ -398,13 +336,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		set({ loginCapabilities: next });
 	};
 
-	// MARK: - Authenticated bootstrap
-
-	/**
-	 * Finishes every successful authentication path. The manifest is session
-	 * metadata, so a fetch failure must not block sign-in; navigation falls back
-	 * to the legacy admin policy.
-	 */
 	const completeAuthenticatedBootstrap = async (
 		user: User,
 		capabilities: ServerCapabilities,
@@ -415,7 +346,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		setCacheSessionIdentity();
 		set({ currentUser: user, serverCapabilities: capabilities });
 		bumpAccess();
-		// Permissions and version load together rather than one after the other.
 		const loadsPermissions = capabilities.mode === 'rbac';
 		const [manifest, versionInfo] = await Promise.all([
 			loadsPermissions
@@ -434,7 +364,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			authState: 'authenticated'
 		});
 		bumpAccess();
-		// TODO(push): PushNotificationCoordinator.registerIfAuthorized() when supportsMobilePush.
 	};
 
 	const applyAuthenticationResult = async (
@@ -459,10 +388,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		}
 	};
 
-	/**
-	 * Preserve stored credentials after transient bootstrap failures without
-	 * showing the signed-in UI until `auth/me` loads a real user.
-	 */
 	const keepSignedInIfCredentialPresent = async (
 		client: ArcaneClient,
 		error: unknown,
@@ -482,11 +407,8 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		ResponseCache.invalidateAll();
 	};
 
-	/** Swift catches `ASWebAuthenticationSessionError.canceledLogin` and `CeremonyError.cancelled` silently. */
 	const isUserCancellation = (error: unknown) =>
 		isCancellation(error) || (error instanceof CeremonyError && error.kind === 'cancelled');
-
-	// MARK: - Demo
 
 	const scheduleDemoExpiry = (endsAt: number) => {
 		if (demoExpiryTimer !== undefined) clearTimeout(demoExpiryTimer);
@@ -501,13 +423,9 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		}, interval);
 	};
 
-	// MARK: - Avatar
-
 	const fetchGravatar = async (user: User, client: ArcaneClient, generation: number) => {
 		const email = user.email?.trim().toLowerCase();
 		if (!email) return undefined;
-		// Only reach out to Gravatar when the server has it enabled, like the
-		// web UI — don't leak email hashes to a third party otherwise.
 		try {
 			const settings = await client.settings.getSettings({ envID: EnvironmentID.localDocker });
 			if (!isCurrentAuthentication(generation)) return undefined;
@@ -517,26 +435,20 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			return undefined;
 		}
 		const hash = await digestStringAsync(CryptoDigestAlgorithm.SHA256, email);
-		// d=404 keeps Gravatar's generated placeholders out — no image means
-		// we show our own initials fallback.
 		return get().fetchImageData(`https://www.gravatar.com/avatar/${hash}?s=160&d=404`);
 	};
-
-	// MARK: - Init
 
 	const savedURL = storage.string(Keys.serverURL) ?? '';
 	const initialParsed = savedURL ? normalizeServerURLInput(savedURL) && savedURL : undefined;
 	let initialClient: ArcaneClient | undefined;
 	if (initialParsed) {
 		const origin = canonicalServerOrigin(initialParsed);
-		// Swift binds legacy credentials to the configured origin on upgrade.
 		if (origin && CredentialBinding.origin === undefined) CredentialBinding.bind(origin);
 		initialClient = makeClient(initialParsed, false);
 		configuredClientURL = initialParsed;
 	}
 	const savedEnvID = storage.string(Keys.activeEnvironmentID);
 	if (savedEnvID === undefined) {
-		// Persist the default env (id 0) so it's always explicit.
 		storage.set(Keys.activeEnvironmentID, EnvironmentID.localDocker);
 		storage.set(Keys.activeEnvironmentName, 'Local Docker');
 	}
@@ -574,8 +486,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		accessGeneration: 0,
 		currentUserAvatarURI: undefined,
 
-		// MARK: - Derived
-
 		serverOrigin: () => {
 			const parsed = get().parsedServerURL;
 			return parsed ? canonicalServerOrigin(parsed) : undefined;
@@ -588,10 +498,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			get().allEnvironmentsPreview || get().activeEnvironmentID === id,
 		isCurrentAuthentication,
 
-		// MARK: - Server setup
-
 		configure: (url) => {
-			// Clear a stale validation error before re-validating.
 			set({ errorMessage: undefined });
 			const normalized = normalizeServerURLInput(url);
 			if (!normalized) {
@@ -602,7 +509,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			const previousOrigin = previous ? canonicalServerOrigin(previous) : undefined;
 			const nextOrigin = canonicalServerOrigin(normalized);
 			if (previousOrigin !== undefined && previousOrigin !== nextOrigin) {
-				// TODO(push): PushNotificationCoordinator.tearDown(client:origin:).
 				CredentialBinding.unbind(previousOrigin);
 				signOutLocally();
 			}
@@ -614,7 +520,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			set({ serverURL: normalized, parsedServerURL: normalized });
 			clearSessionState();
 			lastBootstrapDNSAddresses = [];
-			// Explicit (re)configuration — always rebuild, even for the same URL.
 			setCacheSessionIdentity();
 			configureClient(normalized, true);
 			set({ authState: 'login', loginCapabilities: undefined });
@@ -669,8 +574,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				if (isCurrentAuthentication(generation)) isRetryingConnectionBootstrap = false;
 			}
 		},
-
-		// MARK: - Auth
 
 		login: async (username, password) => {
 			if (!get().client) {
@@ -727,7 +630,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 					set({ pendingMFAChallenge: error.challenge, authState: 'login' });
 					return;
 				}
-				// The user closed the browser — no error message needed.
 				if (isUserCancellation(error)) return;
 				if (!isCurrentAuthentication(generation)) return;
 				set({ errorMessage: loginErrorMessage(error) });
@@ -846,7 +748,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			const generation = get().authenticationGeneration;
 			set({ isLoading: true });
 			try {
-				// TODO(push): PushNotificationCoordinator.tearDown(client:origin:).
 				let logoutError: unknown;
 				try {
 					await client.auth.logout();
@@ -880,8 +781,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				if (isCurrentAuthentication(generation)) set({ isLoading: false });
 			}
 		},
-
-		// MARK: - Demo
 
 		startDemo: async () => {
 			let generation = beginAuthentication();
@@ -935,12 +834,9 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			if (demoExpiryTimer !== undefined) clearTimeout(demoExpiryTimer);
 			demoExpiryTimer = undefined;
 
-			// Update UI state synchronously first so the user is sent back to the
-			// login screen immediately — don't wait on network cleanup.
 			const endingClient = get().client;
 			const parsed = get().parsedServerURL;
 			const endingOrigin = parsed ? canonicalServerOrigin(parsed) : undefined;
-			// TODO(push): PushNotificationCoordinator.tearDown(client:origin:).
 			setCacheSessionIdentity();
 			clearSessionState();
 			needsConnectionBootstrapRetry = false;
@@ -967,8 +863,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			ResponseCache.invalidateAll();
 		},
 
-		// MARK: - Session restore
-
 		checkExistingAuth: async () => {
 			const generation = get().authenticationGeneration;
 			const client = get().client;
@@ -977,8 +871,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				return;
 			}
 
-			// A secure-store read hiccup is treated as "unknown" — never as
-			// signed-out. `me()` below confirms the real state.
 			let hasCredential: boolean;
 			try {
 				hasCredential = await client.authManager.hasRefreshCredential();
@@ -987,7 +879,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			}
 			if (!isCurrentAuthentication(generation)) return;
 			if (!hasCredential) {
-				// No stored credential at all — the user is genuinely signed out.
 				signOutLocally();
 				await refreshLoginCapabilities();
 				return;
@@ -1009,26 +900,14 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 					error instanceof ArcaneError &&
 					(error.kind === 'unauthorized' || error.kind === 'forbidden')
 				) {
-					// The server explicitly rejected the stored credential. This is the
-					// ONLY path that signs the user out without an explicit logout.
 					signOutLocally();
 					await refreshLoginCapabilities();
 					return;
 				}
-				// Transient failures (network, decoding, cancellation…) keep credentials
-				// but fall back to login until a real user payload loads.
 				await keepSignedInIfCredentialPresent(client, error, generation);
 			}
 		},
 
-		// MARK: - Current user avatar
-
-		/**
-		 * Syncs the profile picture. Safe to call from every view that renders
-		 * the avatar — it only hits the network when the user (or their
-		 * `updatedAt`) changed. A custom uploaded avatar wins; otherwise Gravatar
-		 * by email when the server's `enableGravatar` setting is on.
-		 */
 		refreshCurrentUserAvatar: async (force = false) => {
 			const { client, currentUser: user } = get();
 			if (!client || !user) {
@@ -1041,7 +920,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			if (!force && key === avatarFetchKey) return;
 			avatarFetchKey = key;
 			const isCurrent = () => isCurrentAuthentication(generation) && avatarFetchKey === key;
-			// Session-independent, so the picture survives relaunches.
 			const parsed = get().parsedServerURL;
 			const server = parsed ? serverCacheIdentity(parsed) : get().serverURL;
 			const diskKey = `${server}|${user.id}|${user.updatedAt ?? ''}`;
@@ -1064,7 +942,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				set({ currentUserAvatarURI: uri });
 				return;
 			} catch (error) {
-				// 404: no uploaded avatar; continue to the optional Gravatar fallback.
 				if (!isHTTPStatusError(error, 404)) {
 					if (!isCurrent()) return;
 					set({ currentUserAvatarURI: undefined });
@@ -1079,8 +956,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			set({ currentUserAvatarURI: uri });
 		},
 
-		// MARK: - Image fetching
-
 		fetchImageData: async (urlString) => {
 			const { client, parsedServerURL } = get();
 			if (!client || !isAllowedImageURL(urlString, parsedServerURL)) return undefined;
@@ -1092,8 +967,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			const timer = setTimeout(() => controller.abort(), 30_000);
 			try {
 				const response = await fetch(urlString, { headers, signal: controller.signal });
-				// Redirects are followed by the platform (which drops Authorization
-				// across origins); vet where we ended up.
 				if (response.url && !isAllowedImageURL(response.url, parsedServerURL)) return undefined;
 				if (response.status !== 200) return undefined;
 				const declared = Number(response.headers.get('content-length') ?? -1);
@@ -1117,12 +990,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 	};
 });
 
-/**
- * Port of `isAllowedImageURL`. Same-origin images may use http(s); anything
- * else must be https on 443. Swift additionally resolves the host and requires
- * public addresses; React Native has no resolver, so only IP literals are
- * vetted (TODO(dns)).
- */
 function isAllowedImageURL(url: string, serverURL: string | undefined): boolean {
 	const match = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)/.exec(url);
 	if (!match) return false;

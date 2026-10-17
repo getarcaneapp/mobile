@@ -1,4 +1,3 @@
-/** Android rendering of `CreateProjectView` (ProjectDetailView.swift), including the native Compose editor preview path. */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -28,7 +27,6 @@ import {
 	type CreateProjectModel
 } from './use-create-project';
 
-/** `Section("Compose · Preview")`: the native editors and import actions. */
 function ComposePreviewSection({ model }: { model: CreateProjectModel }) {
 	const nav = useProjectNavigation();
 	const [composeSession] = useState(() => makeSessionID('create-compose'));

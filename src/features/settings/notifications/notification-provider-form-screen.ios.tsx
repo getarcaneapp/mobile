@@ -1,4 +1,3 @@
-/** Port of `NotificationProviderFormView` (NotificationProviderFormView.swift). */
 import {
 	Button,
 	ConfirmationDialog,

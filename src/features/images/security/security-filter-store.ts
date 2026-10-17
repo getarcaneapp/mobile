@@ -1,8 +1,3 @@
-/**
- * AllVulnerabilitiesView's Findings filter `@State`, keyed per list instance
- * so the Filters sheet (a separate route here) edits the list that opened it.
- * The sheet's Done bumps `doneRevision`; the list reloads on that.
- */
 import { create } from 'zustand';
 
 import type { ListEnvironment } from '@/stores/environments-store';
@@ -14,11 +9,8 @@ export type SecurityFilterState = {
 	selectedImage?: string;
 	onlyFixAvailable: boolean;
 	environmentFilter?: string;
-	/** The list's environments, for the Environment filter section. */
 	environments: ListEnvironment[];
-	/** Image names for the Image picker. */
 	imageOptions: string[];
-	/** Bumped by the sheet's Done button. */
 	doneRevision: number;
 };
 
@@ -53,12 +45,10 @@ export function useSecurityFilter(key: string): SecurityFilterState {
 	return useSecurityFilterStore((s) => s.lists[key] ?? defaultSecurityFilter);
 }
 
-/** Current values, read synchronously (Swift reads `@State` live inside tasks). */
 export function securityFilterSnapshot(key: string): SecurityFilterState {
 	return useSecurityFilterStore.getState().lists[key] ?? defaultSecurityFilter;
 }
 
-/** Filters-sheet actions shared by both platforms. */
 export function securityFilterActions(key: string) {
 	const update = (patch: Partial<SecurityFilterState>) =>
 		useSecurityFilterStore.getState().update(key, patch);

@@ -1,8 +1,6 @@
-/** Port of Models/Container/Container.swift. */
 import type { JSONValue } from '../../types/json';
 import { D } from '../base/decoding';
 
-/** A port binding for a container. */
 export interface ContainerPort {
 	ip?: string;
 	privatePort: number;
@@ -10,7 +8,6 @@ export interface ContainerPort {
 	type: string;
 }
 
-/** A volume mount for a container. */
 export interface ContainerMount {
 	type: string;
 	name?: string;
@@ -22,7 +19,6 @@ export interface ContainerMount {
 	propagation?: string;
 }
 
-/** Network endpoint settings for a container. */
 export interface ContainerNetworkEndpoint {
 	ipamConfig?: JSONValue;
 	links?: string[];
@@ -41,7 +37,6 @@ export interface ContainerNetworkEndpoint {
 	dnsNames?: string[];
 }
 
-/** Network configuration for a container. */
 export interface ContainerNetworkSettings {
 	networks: Record<string, ContainerNetworkEndpoint>;
 }
@@ -51,7 +46,6 @@ export const ContainerNetworkSettings = {
 		return { networks: init.networks ?? {} };
 	},
 
-	/** Swift `init(from:)`: a missing `networks` key decodes as `{}`. */
 	decode(this: void, raw: unknown): ContainerNetworkSettings {
 		const o = D.object(raw, 'ContainerNetworkSettings');
 		return {
@@ -60,7 +54,6 @@ export const ContainerNetworkSettings = {
 	}
 } as const;
 
-/** Host configuration for a container. */
 export interface ContainerHostConfig {
 	networkMode?: string;
 	restartPolicy?: string;

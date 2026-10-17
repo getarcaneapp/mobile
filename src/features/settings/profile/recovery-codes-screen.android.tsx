@@ -1,4 +1,3 @@
-/** Android rendering of `RecoveryCodesSaveView` (PasskeysMFAView.swift). */
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
@@ -17,7 +16,6 @@ export function RecoveryCodesScreen() {
 	const model = useRecoveryCodes();
 	const insets = useSafeAreaInsets();
 
-	// `.interactiveDismissDisabled()`: only the confirmation button closes this.
 	useEffect(() => {
 		const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
 		return () => subscription.remove();

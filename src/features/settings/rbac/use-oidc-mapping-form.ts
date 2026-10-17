@@ -1,7 +1,3 @@
-/**
- * The model behind `OIDCMappingFormSheet` (OIDCRoleMappingsView.swift):
- * claim value, role and scope with dirty tracking, revert, and create/update.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 

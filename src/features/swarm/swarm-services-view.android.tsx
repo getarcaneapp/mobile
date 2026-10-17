@@ -1,4 +1,3 @@
-/** Android renderings of `SwarmServicesView`, `SwarmServiceRow` and `SwarmScaleSheet`. */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -205,7 +204,6 @@ export function SwarmServicesScreen() {
 	);
 }
 
-/** `Stepper(value:in: 0...1_000)` row: title, value, and − / + buttons. */
 export function ReplicaStepper({
 	value,
 	onValueChange

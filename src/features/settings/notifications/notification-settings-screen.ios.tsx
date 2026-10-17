@@ -1,4 +1,3 @@
-/** Port of `NotificationSettingsView` (NotificationSettingsView.swift). */
 import {
 	Button,
 	HStack,
@@ -91,7 +90,6 @@ function ProviderRow({ provider, model }: { provider: NotificationProvider; mode
 	);
 }
 
-/** `appTabDestination(.notifications)`. */
 export function NotificationsDestination() {
 	const model = useNotificationSettings();
 	return (
@@ -115,7 +113,6 @@ export function NotificationsDestination() {
 							))}
 						</Section>
 					</List>
-					{/* Outside the List: inside it, the alert's anchor renders as an empty row. */}
 					<ActionErrorAlert
 						title="Error"
 						message={model.errorMessage}

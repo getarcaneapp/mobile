@@ -1,9 +1,3 @@
-/**
- * Android rendering of `JobsListView` (JobsListView.swift): Material 3
- * grouped list by category with search, pull-to-refresh and a refresh
- * action. SwiftUI swipe actions and context menus become the row's
- * long-press menu.
- */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
@@ -164,7 +158,6 @@ export function JobsListView(props: JobsListProps) {
 	);
 }
 
-/** Route screen: `jobs-list?envID=…&all=1`. */
 export function JobsListScreen() {
 	const { envID = '0', all } = useLocalSearchParams<{ envID?: string; all?: string }>();
 	return (

@@ -1,4 +1,3 @@
-/** Port of `UserSettingsView` (UserSettingsView.swift). */
 import { Host } from '@/ui/host';
 import { Form, Label, Section, Text, Toggle } from '@expo/ui/swift-ui';
 import { refreshable } from '@expo/ui/swift-ui/modifiers';

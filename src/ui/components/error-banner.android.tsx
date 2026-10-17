@@ -1,9 +1,3 @@
-/**
- * Port of `ErrorBanner` (Android): Material 3 error / warning container with
- * an optional Retry text button.
- *
- * Standalone (RN view).
- */
 import { Pressable, Text, View } from 'react-native';
 
 import { colors, systemColors } from '@/theme/colors';

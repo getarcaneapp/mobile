@@ -1,8 +1,3 @@
-/**
- * Data and actions for `DashboardPinnedSection` (DashboardPinnedSection.swift):
- * the active environment's pinned containers and projects, with a start/stop
- * (deploy/down) quick action per row.
- */
 import { useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -22,7 +17,6 @@ import {
 	projectIsRunning
 } from './dashboard-logic';
 
-/** Port of `DashboardPinnedItem`. */
 export type DashboardPinnedItem =
 	| { kind: 'container'; container: ContainerSummary }
 	| { kind: 'project'; project: ProjectDetails };
@@ -79,7 +73,6 @@ export function useDashboardPinned(refreshToken: number) {
 	];
 	itemCount.current = items.length;
 
-	// Loads once, then on environment, pin, mutation, and refresh-token changes.
 	useEffect(() => {
 		let cancelled = false;
 		const load = async () => {

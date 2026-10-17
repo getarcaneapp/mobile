@@ -1,4 +1,3 @@
-/** Android rendering of `SwarmServiceDetailView` (SwarmServiceDetailView.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

@@ -1,11 +1,3 @@
-/**
- * Port of the definitions in `EnvironmentSettingsForm.swift`:
- * `SettingFieldDef`, `SettingFieldCondition`, `SettingFieldType`,
- * `SettingsCategoryDef`, `SettingsSectionDef`, the environment settings tab
- * sections, `EnvironmentSecuritySection`, and the server-wide categories
- * (`activityHistorySettings`, `timeoutSettings`). Pure TS.
- */
-
 export type SettingFieldCondition = { key: string; value: string };
 
 export type SettingFieldType =
@@ -17,7 +9,6 @@ export type SettingFieldType =
 	| { kind: 'networkSelect' }
 	| { kind: 'cron' }
 	| { kind: 'textarea' }
-	/** Multi-select checklist of running containers → comma-separated names. */
 	| { kind: 'containerMultiSelect' };
 
 export type SettingFieldDef = {
@@ -27,10 +18,6 @@ export type SettingFieldDef = {
 	description?: string;
 	minValue?: number;
 	maxValue?: number;
-	/**
-	 * Force the stacked (caption-above-field) layout for long free-text values
-	 * like URLs, paths, and comma-separated lists. Short values stay inline.
-	 */
 	stacked?: boolean;
 	visibleWhen?: SettingFieldCondition;
 };
@@ -45,7 +32,6 @@ export type SettingsCategoryDef = {
 	sections: SettingsSectionDef[];
 };
 
-/** `SettingsCategoryDef.fields`. */
 export const categoryFields = (category: SettingsCategoryDef): SettingFieldDef[] =>
 	sectionFields(category.sections);
 
@@ -61,12 +47,6 @@ const select = (options: string[]): SettingFieldType => ({ kind: 'select', optio
 const networkSelect: SettingFieldType = { kind: 'networkSelect' };
 const containerMultiSelect: SettingFieldType = { kind: 'containerMultiSelect' };
 
-// MARK: - Environment settings tabs
-
-/**
- * Settings shown on an environment's detail page, grouped like the web's
- * environment tabs. Each tab's sections save through one shared draft.
- */
 export const environmentFeatureSections: SettingsSectionDef[] = [
 	{
 		id: 'features',
@@ -199,7 +179,6 @@ export const environmentDockerSections: SettingsSectionDef[] = [
 	}
 ];
 
-/** The web's Security tab sub-tabs (`EnvironmentSecuritySection`). */
 export type EnvironmentSecuritySection = 'Scanning' | 'Patching' | 'Lifecycle';
 
 export const environmentSecuritySectionCases: EnvironmentSecuritySection[] = [
@@ -352,12 +331,6 @@ export const environmentAutomationSections: SettingsSectionDef[] = [
 	}
 ];
 
-// MARK: - Server-wide settings
-
-/**
- * Settings that apply to the whole Arcane server, stored on the local
- * environment like the web's Settings pages.
- */
 export const activityHistorySettings: SettingsCategoryDef = {
 	id: 'activity',
 	title: 'Activity History',
@@ -457,9 +430,6 @@ export const timeoutSettings: SettingsCategoryDef = {
 	]
 };
 
-// MARK: - Field row helpers (SettingFieldRow)
-
-/** `SettingFieldRow.rangeHint`. */
 export function rangeHint(field: SettingFieldDef): string | undefined {
 	const { minValue: min, maxValue: max } = field;
 	if (min !== undefined && max !== undefined) return `Allowed: ${min}–${max}`;
@@ -468,7 +438,6 @@ export function rangeHint(field: SettingFieldDef): string | undefined {
 	return undefined;
 }
 
-/** `SettingFieldRow.networkOptions(selected:)`: "" is Auto. */
 export function networkOptions(networkNames: string[], selected: string): string[] {
 	const options = ['', 'bridge', 'host', 'none'];
 	for (const name of networkNames) if (!options.includes(name)) options.push(name);
@@ -476,7 +445,6 @@ export function networkOptions(networkNames: string[], selected: string): string
 	return options;
 }
 
-/** "None" or the number of excluded container names. */
 export function excludedCountLabel(raw: string): string {
 	const count = raw
 		.split(',')
@@ -485,7 +453,6 @@ export function excludedCountLabel(raw: string): string {
 	return count === 0 ? 'None' : String(count);
 }
 
-/** `SettingFieldRow.optionLabel`: "olderThan" → "Older Than", "dangling" → "Dangling". */
 export function optionLabel(raw: string): string {
 	if (raw === '' || raw.startsWith('/')) return raw;
 	let spaced = '';
@@ -502,17 +469,12 @@ export function optionLabel(raw: string): string {
 		.join(' ');
 }
 
-/** Toggle state for a boolean setting (`"true"`, case-insensitive). */
 export const settingBool = (raw: string) => raw.toLowerCase() === 'true';
 
-/** Swift's `Int(String)`: whole-string signed integer, else undefined. */
 export function swiftInt(raw: string): number | undefined {
 	return /^[+-]?\d+$/.test(raw) ? Number(raw) : undefined;
 }
 
-// MARK: - ContainerMultiSelectView helpers
-
-/** Strips any leading "/" from a container name. */
 export function normalizeContainerName(name: string): string {
 	let value = name;
 	while (value.startsWith('/')) value = value.slice(1);
@@ -532,7 +494,6 @@ export type ContainerSelectRow = { name: string; isRunning: boolean };
 
 const swiftSort = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-/** Running containers, then already-excluded names that aren't running. */
 export function containerSelectRows(
 	runningNames: string[],
 	selection: string
@@ -555,7 +516,6 @@ export function filterContainerSelectRows(
 	return rows.filter((row) => row.name.toLocaleLowerCase().includes(needle));
 }
 
-/** Toggles `name` in the comma-separated selection (sorted, comma-joined like the web). */
 export function toggleContainerSelection(selection: string, name: string): string {
 	const normalized = normalizeContainerName(name);
 	const set = selectedContainerNames(selection);

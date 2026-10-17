@@ -1,9 +1,3 @@
-/**
- * Android rendering of `ImageVulnerabilitiesView` (ImageVulnerabilitiesView.swift):
- * the same summary, filter chips, re-scan, and paginated findings as a
- * Material 3 grouped list. The admin context menu becomes the row's
- * long-press menu.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

@@ -1,7 +1,3 @@
-/**
- * `AllEnvironmentsOperationStore.performMaintenance` / `performPrune`
- * (AllEnvironmentsOperationStore.swift), built on the ported `runWithToast`.
- */
 import { hasPermission } from '@/core/auth/permissions';
 import { nonnegative } from '@/core/networking/remote-data-limits';
 import { ResponseCache } from '@/core/networking/response-cache';

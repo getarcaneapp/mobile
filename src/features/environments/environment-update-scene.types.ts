@@ -1,6 +1,3 @@
-// Port of the scene models in Views/Environments/UpdateAllEnvironmentsView.swift
-// (EnvironmentUpdateSceneKind, EnvironmentUpdateRingEnvironment,
-// EnvironmentUpdateSceneModel, EnvironmentUpdateBubblePresentation).
 import {
 	EnvironmentUpdateResult,
 	type EnvironmentUpdateResultStatus
@@ -17,7 +14,6 @@ export type EnvironmentUpdateSceneKind =
 	| 'warning'
 	| 'failed';
 
-/** Swift `EnvironmentUpdateSceneKind.tint` — `"accent"` means `.accentColor`. */
 export type EnvironmentUpdateTint = 'accent' | 'orange' | 'green' | 'red' | 'gray';
 
 export const EnvironmentUpdateSceneKind = {
@@ -85,7 +81,6 @@ export interface EnvironmentUpdateSceneModel {
 	ringEnvironments: EnvironmentUpdateRingEnvironment[];
 }
 
-/** Swift memberwise init with defaulted params. */
 export function makeEnvironmentUpdateSceneModel(args: {
 	kind: EnvironmentUpdateSceneKind;
 	title: string;
@@ -204,7 +199,6 @@ export const EnvironmentUpdateBubblePresentation = {
 
 export type EnvironmentUpdateBubbleTint = EnvironmentUpdateTint;
 
-/** `EnvironmentUpdatePipeline.bubbleSize`. */
 export function pipelineBubbleSize(count: number): number {
 	if (count <= 5) return 40;
 	if (count <= 8) return 32;
@@ -212,7 +206,6 @@ export function pipelineBubbleSize(count: number): number {
 	return 20;
 }
 
-/** `EnvironmentUpdatePipeline.connectorFill(after:)`. */
 export function pipelineConnectorFill(
 	environment: EnvironmentUpdateRingEnvironment,
 	activeEnvironmentID: string | undefined
@@ -223,7 +216,6 @@ export function pipelineConnectorFill(
 	return 0;
 }
 
-/** `EnvironmentUpdateBubble.bubbleTint`. */
 export function bubbleTint(
 	presentation: EnvironmentUpdateBubblePresentation,
 	tint: EnvironmentUpdateTint
@@ -243,11 +235,10 @@ export function bubbleTint(
 	}
 }
 
-/** Swift `EnvironmentUpdateBubblePhase` (floating drift keyframes). */
 export const EnvironmentUpdateBubblePhases = [
-	{ x: 0, y: 0, scale: 1 }, // resting
-	{ x: 2.8, y: -2.2, scale: 1.006 }, // upperTrailing
-	{ x: 2.1, y: 2.5, scale: 1.003 }, // lowerTrailing
-	{ x: -2.7, y: 1.8, scale: 0.996 }, // lowerLeading
-	{ x: -2.2, y: -2.6, scale: 0.999 } // upperLeading
+	{ x: 0, y: 0, scale: 1 },
+	{ x: 2.8, y: -2.2, scale: 1.006 },
+	{ x: 2.1, y: 2.5, scale: 1.003 },
+	{ x: -2.7, y: 1.8, scale: 0.996 },
+	{ x: -2.2, y: -2.6, scale: 0.999 }
 ] as const;

@@ -1,9 +1,3 @@
-/**
- * Ports of `UpdaterRunSheet`, `UpdaterRunView`, and `UpdaterRunItemRow`
- * (UpdaterRunView.swift). Render inside a `BottomSheet` of a SwiftUI tree.
- *
- * SwiftUI-tree. iOS only.
- */
 import {
 	Button,
 	ContentUnavailableView,
@@ -70,7 +64,6 @@ import {
 } from './updates-logic';
 import { useUpdaterRun } from './use-updater-run';
 
-/** `EnvironmentPickerSheet` / `UpdaterRunSheet` row: name, API URL, and status badge. */
 export function EnvironmentPickerRow({
 	environment,
 	onPress
@@ -103,7 +96,6 @@ export function EnvironmentPickerRow({
 	);
 }
 
-/** Port of `UpdaterRunSheet`: an environment picker, or the run for the chosen environment. */
 export function UpdaterRunSheet({
 	environments,
 	initialEnvironmentID,
@@ -434,7 +426,6 @@ function ResultItemsCard({ items }: { items: UpdaterResourceResult[] }) {
 	);
 }
 
-/** Port of `UpdaterRunView` (always shown with its dismiss button, inside a sheet). */
 export function UpdaterRunView({
 	environmentID,
 	onDismiss

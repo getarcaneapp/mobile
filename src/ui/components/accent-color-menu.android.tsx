@@ -1,10 +1,3 @@
-/**
- * Ports of `AccentColorMenu` (Material 3 exposed dropdown: colored dot +
- * name, check on the selected color) and `CustomAccentColorPicker` (a grid of
- * hue swatches plus a hex field — Android has no system color picker).
- *
- * Standalone (RN view + Compose `DropdownMenu`).
- */
 import { Host } from '@expo/ui';
 import {
 	Box,

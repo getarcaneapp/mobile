@@ -1,10 +1,3 @@
-/**
- * Port of `EnvironmentListRow` (EnvironmentsView.swift): one environment card
- * on the classic dashboard: status dot, name, icon + count pairs, version
- * line, and CPU / memory / disk rings, with a long-press action menu.
- *
- * SwiftUI-tree.
- */
 import {
 	Button,
 	ContextMenu,
@@ -159,7 +152,6 @@ export function EnvironmentRow(props: EnvironmentRowProps) {
 	const { environment, dockerInfo, isActive, allEnvironmentsPreview, onOpen, onRefresh } = props;
 	const row = useEnvironmentRow(environment, dockerInfo, onRefresh);
 	const name = environment.name ?? environment.id;
-	// Rings sweep in from empty once per environment per session.
 	const [revealed] = useState(() => {
 		const seen = revealedEnvironmentIDs.has(environment.id);
 		revealedEnvironmentIDs.add(environment.id);

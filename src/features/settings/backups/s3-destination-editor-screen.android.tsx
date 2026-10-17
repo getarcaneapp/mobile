@@ -1,4 +1,3 @@
-/** Android rendering of `S3DestinationEditor` (S3DestinationsView.swift). */
 import type { S3Destination } from '@/sdk/models/backup/S3Destination';
 import { FormSecureField, FormTextField } from '@/ui/components/form-fields';
 

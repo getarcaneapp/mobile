@@ -1,9 +1,3 @@
-/**
- * The platform-neutral model behind `EnvironmentDetailView`
- * (EnvironmentDetailView.swift): Docker info, Arcane version, and connection
- * details with a 30 s refresh while visible; the section tabs; and the
- * environment settings draft with save/revert.
- */
 import { useFocusEffect, useRouter, useSegments, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -40,7 +34,6 @@ import {
 
 const refreshIntervalMs = 30_000;
 
-/** `scenePhase != .background`. */
 function useIsNotBackground() {
 	const [value, setValue] = useState(AppState.currentState !== 'background');
 	useEffect(() => {
@@ -91,10 +84,6 @@ export function useEnvironmentDetail(environmentID: string, environmentName: str
 	const title = environment?.name ?? environmentName;
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
 
-	/**
-	 * Mirrors the web's environment tabs: settings tabs need the environment
-	 * enabled and settings access; the local environment has no connection.
-	 */
 	const showsSettings = environment?.enabled !== false && canReadSettings;
 	const sections = useMemo(
 		() =>
@@ -112,10 +101,7 @@ export function useEnvironmentDetail(environmentID: string, environmentName: str
 		[environmentID, showsSettings]
 	);
 
-	// MARK: Loading
-
 	const isLoadingRef = useRef(false);
-	/** Bumped when a load run is cancelled (focus lost, key changed). */
 	const runRef = useRef(0);
 
 	const loadEnvironment = useCallback(async () => {
@@ -187,9 +173,6 @@ export function useEnvironmentDetail(environmentID: string, environmentName: str
 	const loadKey = `${clientGeneration}|${environmentID}|${isNotBackground}`;
 	const loadedKeyRef = useRef<string | undefined>(undefined);
 
-	// `.task(id: loadKey)`: restarts on focus, so returning from a pushed
-	// screen refreshes in place; a new environment, client, or return from
-	// the background starts clean.
 	useFocusEffect(
 		useCallback(() => {
 			if (!isNotBackground) {
@@ -225,7 +208,6 @@ export function useEnvironmentDetail(environmentID: string, environmentName: str
 		await draft.getState().load(client, allEnvironmentSettingsFields);
 	}, [draft]);
 
-	// `.task(id: selectedTab)`
 	useEffect(() => {
 		const first = sections[0];
 		if (!sections.includes(selectedTab) && first) {
@@ -250,8 +232,6 @@ export function useEnvironmentDetail(environmentID: string, environmentName: str
 	}, [draft]);
 
 	const revertSettings = useCallback(() => draft.getState().revert(), [draft]);
-
-	// MARK: Navigation
 
 	const push = useCallback(
 		(path: string, params: Record<string, string>) => {

@@ -1,9 +1,3 @@
-/**
- * Port of `EnvironmentConnectionView` + its private `EnvironmentConnectionStatus`
- * and `EnvironmentPacketTrack` (EnvironmentConnectionView.swift).
- *
- * SwiftUI-tree (rendered inside the detail page's List row).
- */
 import {
 	DisclosureGroup,
 	Divider,
@@ -49,7 +43,6 @@ import {
 import { EnvironmentPacketTrack } from './environment-connection-packet-track';
 import { symbolRenderingMode } from '../../../modules/arcane-swiftui-extras';
 
-/** `TimelineView(.periodic(from: .now, by: seconds))`. */
 function useNow(seconds: number) {
 	const [now, setNow] = useState(() => new Date());
 	useEffect(() => {

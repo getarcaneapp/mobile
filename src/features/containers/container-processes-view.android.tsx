@@ -1,4 +1,3 @@
-/** Android rendering of `ContainerProcessesView`. */
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 

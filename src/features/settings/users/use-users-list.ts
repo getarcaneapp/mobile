@@ -1,8 +1,3 @@
-/**
- * The model behind UsersView.swift: progressive pagination with debounced
- * search, delete confirmation + failure alert, and the pushes to the user
- * detail, create sheet and user settings. Shared by both platforms.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
@@ -23,12 +18,10 @@ import type { UserDetailPayload } from './use-user-detail';
 
 const pageSize = 50;
 
-/** `user.displayUsername`: prefer a non-empty display name. */
 export function displayUsername(user: User): string {
 	return user.displayName ? user.displayName : user.username;
 }
 
-/** `cached.invalidateGlobal(paths: ["users", "users/*"])`. */
 export function invalidateUsersCache() {
 	cachedClient()?.invalidateGlobal(['users', 'users/*']);
 }
@@ -50,7 +43,6 @@ export function useUsersList() {
 	});
 	const { load } = list;
 
-	// `.task { await loadUsers() }` runs each time the list appears.
 	useFocusEffect(
 		useCallback(() => {
 			void load();
@@ -78,7 +70,6 @@ export function useUsersList() {
 			message: `Delete the user “${user.username}”? This permanently revokes their access.`,
 			icon: 'trash',
 			confirmTitle: 'Delete',
-			// The list stays on screen after confirming (it's pushed from More).
 			dismissOnConfirm: false,
 			onConfirm: () => void deleteUser(user)
 		})

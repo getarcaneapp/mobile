@@ -1,5 +1,3 @@
-// Port of ComposeEntryDraftTests, ComposeEntryNativeTransitionTests, the draft half of
-// ComposeNativeFieldsTests, EnvDocumentTests, ProjectDraftSnapshotTests and ComposePreviewSessionTests.
 import assert from 'node:assert/strict';
 import { describe, it } from 'vite-plus/test';
 

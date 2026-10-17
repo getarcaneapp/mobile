@@ -1,4 +1,3 @@
-/** Material rendering of `APIKeyRow` / `APIKeyStatusBadge` (APIKeysView.swift). Standalone. */
 import { Text, View } from 'react-native';
 
 import { colors, systemColors } from '@/theme/colors';

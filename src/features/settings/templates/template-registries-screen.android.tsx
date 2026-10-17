@@ -1,4 +1,3 @@
-/** Android rendering of `TemplateRegistriesView` (TemplateRegistriesView.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

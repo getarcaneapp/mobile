@@ -1,18 +1,12 @@
-/**
- * Port of the `URL` extensions in Client/ArcaneURLSessionTransport.swift.
- * `URLQueryItem` becomes `QueryItem`; order and duplicates are preserved.
- */
 export interface QueryItem {
 	name: string;
 	value?: string;
 }
 
-/** Shorthand for building query items: `q("force", true)`. */
 export function q(name: string, value: string | number | boolean | undefined): QueryItem {
 	return value === undefined ? { name } : { name, value: String(value) };
 }
 
-/** Swift `boolValue ? "true" : "false"`. */
 export function boolString(value: boolean): string {
 	return value ? 'true' : 'false';
 }
@@ -22,8 +16,6 @@ function trimSlashes(path: string): string {
 }
 
 function encodePathSegment(segment: string): string {
-	// URL.appendingPathComponent percent-encodes characters that are not valid
-	// in a path (including "%"), but keeps "/" separators in the component.
 	return segment
 		.split('/')
 		.map((part) =>
@@ -34,14 +26,12 @@ function encodePathSegment(segment: string): string {
 		.join('/');
 }
 
-/** Components of an absolute URL (no dependency on the RN `URL` polyfill). */
 export interface ParsedURL {
 	scheme: string;
 	user?: string;
 	password?: string;
 	host: string;
 	port?: number;
-	/** Percent-encoded path, always starting with "/". */
 	path: string;
 	query?: string;
 	fragment?: string;
@@ -73,10 +63,6 @@ export function parseURL(url: string): ParsedURL | undefined {
 	};
 }
 
-/**
- * Appends an API path to the base URL, inserting `/api` unless the base URL
- * already ends in `/api`. `appendingAPIPath("environments/0/containers")`.
- */
 export function appendingAPIPath(baseURL: string, path: string): string {
 	const cut = baseURL.search(/[?#]/);
 	const base = cut >= 0 ? baseURL.slice(0, cut) : baseURL;
@@ -88,7 +74,6 @@ export function appendingAPIPath(baseURL: string, path: string): string {
 	return `${normalizedBase}api/${trimmed}`;
 }
 
-/** Appends query items, keeping any query already present on the URL. */
 export function withQueryItems(url: string, items: readonly QueryItem[]): string {
 	if (items.length === 0) return url;
 	const encode = (value: string) =>
@@ -111,7 +96,6 @@ export function withQueryItems(url: string, items: readonly QueryItem[]): string
 	return `${base}${separator}${query}${hash}`;
 }
 
-/** `https` → `wss`, `http` → `ws`. */
 export function webSocketURL(url: string): string {
 	if (url.startsWith('https:')) return `wss:${url.slice('https:'.length)}`;
 	if (url.startsWith('http:')) return `ws:${url.slice('http:'.length)}`;

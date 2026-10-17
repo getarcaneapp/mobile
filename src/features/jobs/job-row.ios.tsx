@@ -1,6 +1,3 @@
-/**
- * Ports of `JobRow` and `JobBadge` (JobsListView.swift). SwiftUI-tree.
- */
 import { HStack, Spacer, Text, VStack, ZStack, useNativeState } from '@expo/ui/swift-ui';
 import { font, foregroundStyle, padding, symbolEffect } from '@expo/ui/swift-ui/modifiers';
 import { useEffect } from 'react';

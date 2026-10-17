@@ -2,7 +2,6 @@ import { Keys, useStoredString } from '@/core/storage';
 
 import { parseHex } from './colors';
 
-/** `AccentColorOption` from AppearanceSettingsView.swift. */
 export const AccentColorOptions = [
 	{ id: 'blue', displayName: 'Blue', hex: '#007AFF' },
 	{ id: 'indigo', displayName: 'Indigo', hex: '#5856D6' },
@@ -21,7 +20,6 @@ export type AccentColorOption = (typeof AccentColorOptions)[number];
 
 const purple = '#AF52DE';
 
-/** The saved accent, or purple when none is chosen. */
 export function useAccentColor(): string {
 	const [hex] = useStoredString(Keys.accentColorHex, '');
 	return parseHex(hex) ?? purple;

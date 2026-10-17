@@ -1,4 +1,3 @@
-/** Android rendering of `UserSettingsView` (UserSettingsView.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';

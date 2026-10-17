@@ -1,10 +1,3 @@
-/**
- * Port of `ScrollableTabBar` (ScrollableTabBar.swift): detached pills below
- * the navigation bar, centered when they fit and horizontally scrollable
- * otherwise; the selected pill scrolls to center.
- *
- * Standalone (Host).
- */
 import { Host } from '@/ui/host';
 import { Button, HStack, ScrollView, Text, useNativeState } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
@@ -47,7 +40,6 @@ export function ScrollableTabBar<Selection extends string>(
 	);
 }
 
-/** The same bar inside an existing SwiftUI tree (no `Host`). SwiftUI-tree. */
 export function ScrollableTabBarContent<Selection extends string>({
 	selection,
 	onSelectionChange,

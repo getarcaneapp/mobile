@@ -1,4 +1,3 @@
-/** Port of `AppSettingsView` (AppSettingsView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -200,7 +199,6 @@ function StorageSection({ model }: { model: AppSettingsModel }) {
 	);
 }
 
-/** Tapping the bottom footer copies the complete version string. */
 function VersionFooter({ model }: { model: AppSettingsModel }) {
 	const { appVersionString, appBuildString } = model;
 	return (

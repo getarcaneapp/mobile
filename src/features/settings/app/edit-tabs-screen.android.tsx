@@ -1,7 +1,3 @@
-/**
- * Android rendering of `EditTabsView` (SettingsView.swift). Tapping a row
- * opens its replacements; the arrow buttons stand in for drag-to-reorder.
- */
 import { MenuView } from '@react-native-menu/menu';
 import { Stack } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';

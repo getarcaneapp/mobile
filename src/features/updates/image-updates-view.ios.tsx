@@ -1,10 +1,3 @@
-/**
- * Port of `AllEnvironmentsImageUpdatesView` (AllEnvironmentsImageUpdatesView.swift):
- * per-environment cards of pending image updates (or one flat list in All
- * Environments mode), with the filter, detail, and updater-run sheets.
- *
- * iOS: SwiftUI tree; sheets are SwiftUI `BottomSheet`s so they read live state.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -444,8 +437,6 @@ function AllEnvironmentsUpdatesList({ model }: { model: ImageUpdatesModel }) {
 	);
 }
 
-// MARK: - Detail sheet
-
 function DetailRow({
 	label,
 	value,
@@ -657,7 +648,6 @@ function ImageDetailSheet({
 				]}
 			>
 				<VStack spacing={16} modifiers={[padding({ all: 16 })]}>
-					{/* Status hero */}
 					<HStack
 						spacing={14}
 						modifiers={[
@@ -700,7 +690,6 @@ function ImageDetailSheet({
 						<Spacer minLength={0} />
 					</HStack>
 
-					{/* Full details — nothing truncated, everything selectable. */}
 					<VStack
 						alignment="leading"
 						spacing={0}
@@ -714,7 +703,6 @@ function ImageDetailSheet({
 						))}
 					</VStack>
 
-					{/* Consumers with individual update actions. */}
 					{consumers.length > 0 ? (
 						<VStack alignment="leading" spacing={4}>
 							<Text
@@ -757,7 +745,6 @@ function ImageDetailSheet({
 						/>
 					) : null}
 
-					{/* Actions */}
 					<HStack spacing={10} modifiers={[padding({ top: 4 })]}>
 						<Button
 							onPress={() => void model.recheck(bucket, item.ref)}
@@ -852,14 +839,10 @@ function FilterSheet({ model }: { model: ImageUpdatesModel }) {
 	);
 }
 
-// MARK: - Screen
-
 export type ImageUpdatesViewProps = {
-	/** True when presented as a sheet (dashboard): starting an update dismisses it. */
 	dismissOnOperationStart?: boolean;
 	onDismiss?: () => void;
 	historyAction?: ActionButtonItem;
-	/** Extra SwiftUI sheets hosted in this tree (UpdatesView's updater + picker sheets). */
 	sheets?: ReactNode;
 };
 
@@ -921,7 +904,6 @@ export function ImageUpdatesView({
 		);
 	}
 
-	// Keep the last target while a sheet animates out.
 	const lastDetailTarget = useRef(model.detailTarget);
 	if (model.detailTarget) lastDetailTarget.current = model.detailTarget;
 	const lastUpdaterRunTarget = useRef(model.updaterRunTarget);

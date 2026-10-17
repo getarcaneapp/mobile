@@ -1,4 +1,3 @@
-/** State behind `SwarmView` (SwarmView.swift) and `SwarmSetupView` (SwarmClusterView.swift). */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -14,7 +13,6 @@ import { optionalTrimmed, swarmChanged, useCan, useSwarmVersion } from './swarm-
 
 export function useSwarmHub(environmentID: EnvironmentID) {
 	const client = useClientManager((s) => s.client);
-	/** undefined until the first load finishes. */
 	const [isActive, setIsActive] = useState<boolean>();
 	const [info, setInfo] = useState<SwarmInfo>();
 	const [errorMessage, setErrorMessage] = useState<string>();
@@ -26,8 +24,6 @@ export function useSwarmHub(environmentID: EnvironmentID) {
 		if (!current || isLoading.current) return;
 		isLoading.current = true;
 		try {
-			// The server's `status` is a stored flag refreshed on sync, so it can lag
-			// right after an init or join; cluster info succeeding is authoritative.
 			const fetched = await current.swarm.info({ envID: environmentID }).catch(() => undefined);
 			if (fetched) {
 				setInfo(fetched);

@@ -1,4 +1,3 @@
-/** Route params for the System Prune sheet: `envID`, and `all=1` for Prune All Environments. */
 import { useLocalSearchParams } from 'expo-router';
 
 import { useClientManager } from '@/stores/client-manager';

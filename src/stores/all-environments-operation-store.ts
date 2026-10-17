@@ -1,10 +1,3 @@
-/**
- * Port of `AllEnvironmentsOperationStore.swift`: runs one operation across
- * every enabled environment in turn, with a persistent progress toast and a
- * summary toast at the end. Only `runWithToast` (used by the dashboard's
- * Prune All) is ported so far; `performMaintenance` / `performPrune` belong to
- * the screens that use them.
- */
 import { create } from 'zustand';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -13,7 +6,6 @@ import { environmentDisplayName } from '@/stores/environments-store';
 import { showToast, Toasts } from '@/ui/toast';
 import { systemColors } from '@/theme/colors';
 
-/** Port of `EnvironmentOperationResult`. */
 export type EnvironmentOperationResult = {
 	id: string;
 	name: string;

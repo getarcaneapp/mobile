@@ -1,7 +1,3 @@
-/**
- * Port of `RemoteDataLimits.swift`: hard caps on what the app accepts from a
- * server, plus bounded body reads. Pure TS apart from the SDK client type.
- */
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { RequestBody } from '@/sdk/client/ArcaneTransport';
 import { parseArcaneJSON } from '@/sdk/http/json';
@@ -22,14 +18,10 @@ export const RemoteDataLimits = {
 	maximumTerminalFrameBytes: 256 * 1_024
 } as const;
 
-/** Swift `ByteCountFormatter.string(fromByteCount:countStyle: .file)` (decimal units). */
 export function formatFileBytes(bytes: number): string {
-	// ByteCountFormatter spells out zero ("Zero KB") and singularizes one byte.
 	if (bytes === 0) return 'Zero KB';
 	if (bytes === 1) return '1 byte';
 	if (bytes < 1_000) return `${bytes} bytes`;
-	// Adaptive digits like ByteCountFormatter: KB 0, MB 1, GB and up 2 (trailing zeros
-	// trimmed: "8.3 GB", "33.59 GB"); a value that rounds to 1000 rolls into the next unit.
 	const units = ['KB', 'MB', 'GB', 'TB', 'PB'];
 	const digits = [0, 1, 2, 2, 2];
 	let value = bytes / 1_000;
@@ -47,7 +39,6 @@ export type RemoteDataLimitErrorKind =
 	| { kind: 'responseTooLarge'; maximumBytes: number }
 	| { kind: 'httpStatus'; status: number };
 
-/** Port of `RemoteDataLimitError`; `message` is the Swift `errorDescription`. */
 export class RemoteDataLimitError extends Error {
 	readonly detail: RemoteDataLimitErrorKind;
 
@@ -87,7 +78,6 @@ export function isHTTPStatusError(error: unknown, status: number): boolean {
 	);
 }
 
-/** Port of `RemoteDataLimits.boundedData`: streams a body and stops at `maximumBytes`. */
 export async function boundedData(
 	client: ArcaneClient,
 	path: string,
@@ -141,7 +131,6 @@ export async function boundedData(
 	return data;
 }
 
-/** Port of `boundedAPIResponse`: bounded read of a `{ success, data }` envelope. */
 export async function boundedAPIResponse<T>(
 	client: ArcaneClient,
 	path: string,
@@ -155,7 +144,6 @@ export async function boundedAPIResponse<T>(
 	return options.decode ? options.decode(envelope.data) : (envelope.data as T);
 }
 
-/** Port of `boundedDirectResponse`: bounded read of a bare JSON body. */
 export async function boundedDirectResponse<T>(
 	client: ArcaneClient,
 	path: string,
@@ -169,7 +157,6 @@ export async function boundedDirectResponse<T>(
 	return options.decode ? options.decode(raw) : (raw as T);
 }
 
-/** Port of `boundedText`: truncates to `maximumBytes` UTF-8 bytes with a marker. */
 export function boundedText(text: string, maximumBytes: number): string {
 	const encoder = new TextEncoder();
 	if (maximumBytes <= 0) return '';

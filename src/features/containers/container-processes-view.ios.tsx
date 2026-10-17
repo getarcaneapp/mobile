@@ -1,4 +1,3 @@
-/** Port of `ContainerProcessesView` (ContainerProcessesView.swift). */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import { ContentUnavailableView, HStack, List, Section, Text, VStack } from '@expo/ui/swift-ui';

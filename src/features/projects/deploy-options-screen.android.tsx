@@ -1,4 +1,3 @@
-/** Android rendering of `DeployOptionsSheet` (ProjectDetailView.swift). */
 import { Stack } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 

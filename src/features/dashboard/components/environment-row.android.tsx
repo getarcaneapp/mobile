@@ -1,10 +1,3 @@
-/**
- * Android (Material 3) rendering of `EnvironmentListRow`: one environment card
- * with counts, version line and CPU / memory / disk rings; long press opens
- * the actions menu.
- *
- * Standalone (RN view).
- */
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -19,7 +12,6 @@ import type { EnvironmentRowProps } from './environment-row.types';
 import { MaterialMenu } from './material-menu';
 import { MetricRing } from './metric-ring';
 
-// Read per render: colors follow the current appearance.
 const statusColors = () =>
 	({
 		orange: systemColors.orange,

@@ -1,12 +1,3 @@
-/**
- * Port of `ArcaneLaunchSplash` (ArcaneLaunchSplash.swift): the logo settles in
- * as a faint silhouette, traces itself on piece by piece and fills, a single
- * sheen crosses it, then the splash lifts toward the viewer and dissolves
- * (the `launchSplashExit` transition) before calling `onFinished`.
- * Reduce Motion: no settle/scale/sheen, a short fade in and out.
- *
- * Standalone (RN overlay, both platforms). Mount above the app root.
- */
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
@@ -45,14 +36,11 @@ import { animateTo } from './motion-views';
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const logoSize = { width: 150, height: 144 };
-/** The trace starts as the silhouette settles and ends when the last piece has filled. */
 const traceStart = 0.2;
 const traceEnd = traceStart + LogoTrace.duration(ArcaneLogoPaths.pieces.length);
-/** Half of the glow's breathing cycle (it used to follow `sin(t * 1.1)`). */
 const breathHalfPeriod = Math.PI / 1.1;
 const defaultHex = '#AF52DE';
 
-/** Aspect-fit transform from logo units into the 150×144 frame. */
 const fitScale = Math.min(
 	logoSize.width / ArcaneLogoPaths.width,
 	logoSize.height / ArcaneLogoPaths.height
@@ -61,7 +49,6 @@ const fitOffsetY = (logoSize.height - ArcaneLogoPaths.height * fitScale) / 2;
 const fitOffsetX = (logoSize.width - ArcaneLogoPaths.width * fitScale) / 2;
 const logoTransform = `translate(${fitOffsetX},${fitOffsetY}) scale(${fitScale}) translate(${ArcaneLogoPaths.translateX},${ArcaneLogoPaths.translateY})`;
 
-/** Mirrors a UI-thread blur radius into React state (svg filters can't animate natively). */
 function useBlurState(radius: SharedValue<number>, initial: number) {
 	const [blur, setBlur] = useState(initial);
 	useAnimatedReaction(
@@ -73,7 +60,6 @@ function useBlurState(radius: SharedValue<number>, initial: number) {
 	return blur;
 }
 
-/** The filled logo in the 150×144 frame, with an optional gaussian blur (SwiftUI `.blur(radius:)`). */
 function SplashLogo({
 	color,
 	blurRadius,
@@ -100,9 +86,7 @@ function SplashLogo({
 }
 
 export type ArcaneLaunchSplashProps = {
-	/** Saved `accentColorHex`; invalid values fall back to purple. */
 	accentColorHex: string;
-	/** Called once the exit has finished; unmount the splash then. */
 	onFinished: () => void;
 };
 
@@ -121,7 +105,6 @@ export function ArcaneLaunchSplash({ accentColorHex, onFinished }: ArcaneLaunchS
 	const finishedRef = useRef(onFinished);
 	finishedRef.current = onFinished;
 
-	// Settle-in blur (12 → 0) and exit blur (0 → 14), mirrored to the svg filter.
 	const initialBlur = reduceMotion ? 0 : 12;
 	const blurRadius = useSharedValue(initialBlur);
 	const blur = useBlurState(blurRadius, initialBlur);
@@ -146,13 +129,11 @@ export function ArcaneLaunchSplash({ accentColorHex, onFinished }: ArcaneLaunchS
 		};
 		const finish = (delayMs: number) =>
 			after(delayMs, () => {
-				// Swap the drawing for the identical static logo a frame before the lift.
 				setShowsFinishedLogo(true);
 				after(32, () => {
 					const token = reduceMotion ? Motion.reducedFallback : Motion.splashExit;
 					exit.value = animateTo(token, 1);
 					if (!reduceMotion) blurRadius.value = animateTo(token, 14);
-					// Springs settle visually well before they report completion.
 					after(reduceMotion ? Motion.reducedFallback.duration : 600, () => finishedRef.current());
 				});
 			});
@@ -161,8 +142,6 @@ export function ArcaneLaunchSplash({ accentColorHex, onFinished }: ArcaneLaunchS
 			sweepSheen(reduceMotion ? 0 : 450);
 			finish(reduceMotion ? 600 : 1500);
 		} else {
-			// Same timeline as the drawing: the sheen crosses the logo as the last
-			// pieces fill, then the logo lifts away over the app.
 			after((traceEnd - 0.35) * 1000, () => {
 				sweepSheen(0);
 				finish(900);
@@ -233,7 +212,6 @@ export function ArcaneLaunchSplash({ accentColorHex, onFinished }: ArcaneLaunchS
 			<Animated.View style={[{ width: logoSize.width, height: logoSize.height }, logoStyle]}>
 				{tracesNatively && !showsFinishedLogo ? (
 					<>
-						{/* A faint silhouette the trace draws over, so the logo has a presence before the drawing starts. */}
 						<Animated.View style={[StyleSheet.absoluteFill, { opacity: 0.12 }, settleStyle]}>
 							<SplashLogo color={accent} blurRadius={blur} filterID="silhouetteBlur" />
 						</Animated.View>
@@ -253,7 +231,6 @@ export function ArcaneLaunchSplash({ accentColorHex, onFinished }: ArcaneLaunchS
 					</Animated.View>
 				)}
 
-				{/* One soft highlight that crosses the filled logo. */}
 				<Svg width={logoSize.width} height={logoSize.height} style={StyleSheet.absoluteFill}>
 					<Defs>
 						<ClipPath id="logoMask">

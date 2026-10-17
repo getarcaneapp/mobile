@@ -2,10 +2,6 @@ import { Easing, type WithSpringConfig, type WithTimingConfig } from 'react-nati
 
 import type { MotionToken } from './tokens';
 
-/**
- * SwiftUI `.spring(response:dampingFraction:)` → Reanimated spring config.
- * stiffness = (2π / response)², damping = 4π · ζ / response (unit mass).
- */
 export function springConfig(response: number, dampingFraction: number): WithSpringConfig {
 	const stiffness = Math.pow((2 * Math.PI) / response, 2);
 	return {
@@ -19,7 +15,6 @@ const easings = {
 	easeOut: Easing.out(Easing.cubic),
 	easeInOut: Easing.inOut(Easing.cubic),
 	linear: Easing.linear,
-	// SwiftUI `.smooth` is a critically damped spring; this bezier is a close match.
 	smooth: Easing.bezier(0.25, 0.1, 0.25, 1)
 };
 

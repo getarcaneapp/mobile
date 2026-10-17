@@ -1,10 +1,3 @@
-/**
- * Port of `EnvironmentUpdateScene`, `EnvironmentUpdatePipeline`,
- * `EnvironmentUpdateConnector` and `EnvironmentUpdateBubble`
- * (Views/Environments/UpdateAllEnvironmentsView.swift).
- *
- * SwiftUI-tree: compose inside an existing `Host` (ScrollView/VStack …).
- */
 import {
 	Background,
 	Capsule,
@@ -68,7 +61,6 @@ import {
 	type EnvironmentUpdateTint
 } from './environment-update-scene.types';
 
-// Motion.swift tokens used by the update scene.
 const UpdateMotion = {
 	state: () => Animation.smooth({ duration: 0.25 }),
 	updateStage: () => Animation.spring({ response: 0.68, dampingFraction: 0.88 }),
@@ -92,7 +84,6 @@ function useTintColor(): (tint: EnvironmentUpdateTint) => string {
 	return (tint) => (tint === 'accent' ? accent : systemColors[tint]);
 }
 
-/** Bridges a React boolean into the observable state symbol effects need. */
 function useActiveState(active: boolean) {
 	const state = useNativeState<boolean>(active);
 	useEffect(() => {
@@ -220,7 +211,6 @@ export function EnvironmentUpdateScene({ model }: { model: EnvironmentUpdateScen
 				</VStack>
 			</VStack>
 			<Background.Content>
-				{/* Square so the glow is a true circle, never an oval behind the disc. */}
 				<Circle
 					modifiers={[
 						foregroundStyle({
@@ -241,10 +231,6 @@ export function EnvironmentUpdateScene({ model }: { model: EnvironmentUpdateScen
 	);
 }
 
-/**
- * Tinted disc carrying the phase symbol, or the percentage while the
- * all-environment updates with no single environment in flight.
- */
 function SceneFocus({
 	model,
 	tint,
@@ -373,10 +359,6 @@ function AnimatedSymbol({
 	);
 }
 
-/**
- * Left-to-right pipeline in processing order: each environment is a bubble,
- * joined by connector bars that fill as the run advances.
- */
 function EnvironmentUpdatePipeline({
 	environments,
 	activeEnvironmentID,
@@ -449,7 +431,6 @@ function EnvironmentUpdateConnector({ fill, tint }: { fill: number; tint: Enviro
 	);
 }
 
-/** 0.08…0.72 trim of a circle, as an angular gradient (no `trim` in @expo/ui). */
 function spinnerArcColors(color: string): string[] {
 	const stops = 50;
 	const clear = withOpacity(color, 0);
@@ -484,8 +465,6 @@ function EnvironmentUpdateBubble({
 	const showsSpinner = isActive && presentation === 'updating';
 	const emphasized = isActive || presentationTerminal;
 
-	// Floating drift: cycles through the five phases, each bubble starting from
-	// a different phase so the row doesn't move in lockstep.
 	const floats = !reduceMotion && !presentationTerminal;
 	const [phaseStep, setPhaseStep] = useState(0);
 	useEffect(() => {
@@ -503,7 +482,6 @@ function EnvironmentUpdateBubble({
 		: EnvironmentUpdateBubblePhases[0];
 	const floatScale = isActive ? 1.6 : 0.8;
 
-	// Spinner rotation: 0 → 360 linear, repeated while spinning.
 	const spins = !reduceMotion && showsSpinner;
 	const [rotation, setRotation] = useState(0);
 	useEffect(() => {

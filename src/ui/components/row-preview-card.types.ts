@@ -1,9 +1,8 @@
-export type PreviewBadge = { text: string; /** Hex. */ color: string };
+export type PreviewBadge = { text: string; color: string };
 export type PreviewDetail = { icon: string; label: string; value: string; monospaced?: boolean };
 
 export type RowPreviewCardProps = {
 	icon: string;
-	/** Hex. */
 	iconColor: string;
 	iconUrl?: string;
 	title: string;

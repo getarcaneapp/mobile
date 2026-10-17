@@ -1,4 +1,3 @@
-/** Port of Models/Backup/VolumeBackupPolicy.swift. */
 import { D } from '../base/decoding';
 import { BackupEntry } from '../volume/Backup';
 

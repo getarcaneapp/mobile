@@ -1,8 +1,3 @@
-/**
- * Ports of `ContainerRow` and `ContainerResourceMetrics` (ContainersView.swift).
- *
- * SwiftUI-tree.
- */
 import { Circle, HStack, RNHostView, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -74,11 +69,6 @@ function memoryPercent(sample: ContainerResourceSample) {
 		: 0;
 }
 
-/**
- * Live CPU and memory in the trailing column of running rows. A missing
- * sample keeps the column's space but stays invisible; the first sample fades
- * each line in.
- */
 export function ContainerResourceMetrics({ sample }: { sample?: ContainerResourceSample }) {
 	const reduceMotion = useReduceMotion();
 	const metric = (
@@ -262,7 +252,6 @@ export function ContainerRow({
 
 			<Spacer minLength={8} />
 
-			{/* Running rows trade the play icon for live usage; the dot already says it's running. */}
 			{metrics.kind === 'hidden' ? (
 				<StatusIcon status={container.status} isLive={running} />
 			) : (

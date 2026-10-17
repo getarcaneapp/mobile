@@ -1,4 +1,3 @@
-/** Port of `SwarmClusterView` (SwarmClusterView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Alert,

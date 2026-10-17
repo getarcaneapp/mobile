@@ -1,10 +1,3 @@
-/**
- * Android (Material 3) renderings of DashboardView.swift's small pieces:
- * stat tiles, section titles, the stream-failed banner, the two-tap Update All
- * button, the count-availability footnote, the greeting, and the skeleton.
- *
- * Standalone (RN views).
- */
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -34,7 +27,6 @@ export function DashboardStatTile({
 	icon: string;
 	tint: string;
 	onPress?: () => void;
-	/** The parent card's long-press menu (Android has no context menu over nested buttons). */
 	onLongPress?: () => void;
 }) {
 	return (
@@ -235,7 +227,6 @@ export function CountAvailabilityNote({
 	);
 }
 
-/** Greeting with the user's first name; types itself in once per launch. */
 export function DashboardGreeting({ userName }: { userName: string | undefined }) {
 	const reduceMotion = useReduceMotion();
 	const isSplashPresented = useLaunchSplash((s) => s.isPresented);

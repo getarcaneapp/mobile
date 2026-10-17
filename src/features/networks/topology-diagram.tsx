@@ -1,10 +1,3 @@
-/**
- * Port of `NetworkTopologyDiagram`, `TopologyGridBackground`,
- * `TopologyEdgeCanvas` and `TopologyNodeCard` (NetworkTopologyView.swift):
- * a pannable, zoomable graph of networks and their containers.
- *
- * Standalone (RN view: react-native-svg + gesture handler + Reanimated).
- */
 import { BlurView } from 'expo-blur';
 import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
@@ -38,7 +31,6 @@ import {
 const minimumScale = TopologyScale.minimum;
 const maximumScale = TopologyScale.maximum;
 
-/** `Color.secondary` at `opacity` as a hex string. */
 function useSecondary(opacity: number) {
 	const isDark = useIsDark();
 	return withOpacity(secondaryHex[isDark ? 'dark' : 'light'], 0.6 * opacity);
@@ -233,7 +225,6 @@ function NodeCard({
 	);
 }
 
-/** `TopologyGraphContent`: equatable on the layout revision, so pan/zoom never re-render the nodes. */
 const GraphContent = memo(
 	function GraphContent({
 		graph,
@@ -325,7 +316,6 @@ export function TopologyDiagram({
 		});
 	const pinch = Gesture.Pinch()
 		.onUpdate((event) => {
-			// Inline clamp: this runs as a UI-thread worklet.
 			scale.value = Math.min(Math.max(savedScale.value * event.scale, minimumScale), maximumScale);
 		})
 		.onEnd(() => {

@@ -1,12 +1,3 @@
-/**
- * Port of `Sparkline` (Sparkline.swift): a thin 1.5pt line over a soft
- * gradient fill (tint 18% → 2%). Fixed Y domain so new samples never rescale
- * the line; X uses real timestamps so gaps render honestly. Height is constant
- * with or without data (glass cards cache their shape). Fewer than two samples
- * draws a faint midline placeholder.
- *
- * Standalone (RN view, both platforms). SwiftUI trees: `SparklineSwiftUI`.
- */
 import { useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
@@ -15,9 +6,7 @@ export type SparklineSample = { timestamp: Date | number; value: number };
 
 export type SparklineProps = {
 	samples: SparklineSample[];
-	/** Hex tint. */
 	tint: string;
-	/** Fixed value domain; defaults to 0–100 for percentage series. */
 	range?: [number, number];
 	height?: number;
 };

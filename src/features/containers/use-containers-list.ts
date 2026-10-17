@@ -1,9 +1,3 @@
-/**
- * The platform-neutral model behind ContainersView.swift: loading and
- * pagination (one or all environments), search/filter/sort, sections, live
- * resource samples, pins, selection + bulk actions, power-all actions, prune,
- * and every confirmation. The `.ios` / `.android` screens only render it.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
@@ -79,7 +73,6 @@ const pageSize = 50;
 
 export type ContainerItem = EnvironmentItem<ContainerSummary>;
 
-/** Swift `ContainerDestructive`. */
 export type ContainerDestructive =
 	| { kind: 'prune' }
 	| { kind: 'stopAll' }
@@ -89,7 +82,6 @@ export type ContainerDestructive =
 
 type PowerAllAction = 'startAll' | 'startStopped' | 'stopAll';
 
-/** `ContainerRow.Metrics`. */
 export type ContainerRowMetrics =
 	| { kind: 'hidden' }
 	| { kind: 'loading' }
@@ -106,7 +98,6 @@ let listCounter = 0;
 export type ContainersListProps = {
 	environmentID: EnvironmentID;
 	environmentName: string;
-	/** All Environments preview: list and act on containers from every enabled environment. */
 	allEnvironments?: boolean;
 };
 
@@ -146,12 +137,9 @@ export function useContainersList({
 	const [pendingMaintenance, setPendingMaintenance] = useState<AllEnvironmentsMaintenanceAction>();
 	const isOperationRunning = useAllEnvironmentsOperationStore((s) => s.isRunning);
 
-	// Keep the filter sheet's Environment section in sync with the list.
 	useEffect(() => {
 		updateFilter(listKey, { environments: snapshot.environments });
 	}, [listKey, snapshot.environments, updateFilter]);
-
-	// MARK: Loading
 
 	const latest = useRef({
 		debouncedSearch,
@@ -206,7 +194,6 @@ export function useContainersList({
 		if (fetch) await list.loadMore(fetch);
 	}, [containersPage, list]);
 
-	// Reappearing (back from a detail) refreshes every loaded page in place; the first appear loads page one.
 	useFocusEffect(
 		useCallback(() => {
 			void loadContainers(true);
@@ -226,8 +213,6 @@ export function useContainersList({
 	useOnChange(debouncedLabel, () => void loadContainers());
 	useOnChange(resourceSortFor(filter.sort), () => void loadContainers(true));
 	useOnChange(client, () => void loadContainers());
-
-	// MARK: Live usage while the list is on screen and the app is in front
 
 	const isFocused = useIsScreenFocused();
 	const isActive = useAppIsActive();
@@ -260,8 +245,6 @@ export function useContainersList({
 		await Promise.all([refreshResourceSamples(), loadContainers()]);
 	}, [refreshResourceSamples, loadContainers]);
 
-	// MARK: Sections
-
 	const resourceSample = useCallback(
 		(item: ContainerItem) =>
 			samples.sample(item.value.id, item.environmentID) ?? item.value.resourceSample,
@@ -273,7 +256,6 @@ export function useContainersList({
 		return pinnedEnvironmentItemIDs('container', containers);
 	}, [containers, pinVersion]);
 
-	// Samples only reorder resource-sorted lists.
 	const sortSamplesRevision = resourceSortFor(filter.sort) !== undefined ? samplesRevision : 0;
 	const sections: ContainerSection<ContainerItem>[] = useMemo(() => {
 		void sortSamplesRevision;
@@ -315,7 +297,6 @@ export function useContainersList({
 		[samples, resourceSample, samplesRevision]
 	);
 
-	// Selection only keeps rows that still exist.
 	useEffect(() => {
 		const valid = new Set(containers.map((c) => c.id));
 		setSelection((current) => {
@@ -323,8 +304,6 @@ export function useContainersList({
 			return next.length === current.length ? current : next;
 		});
 	}, [containers]);
-
-	// MARK: Permissions + environments
 
 	useClientManager((s) => s.accessGeneration);
 	const isRBAC = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
@@ -345,8 +324,6 @@ export function useContainersList({
 		}),
 		[allEnvironments]
 	);
-
-	// MARK: Navigation
 
 	const openDetail = useCallback(
 		(item: ContainerItem) => nav.openDetail(item.environmentID, item.value, item.environmentName),
@@ -373,14 +350,11 @@ export function useContainersList({
 		[nav, listEnvironment]
 	);
 
-	// MARK: Row actions
-
 	const togglePin = useCallback((item: ContainerItem) => {
 		lightHaptic();
 		toggleEnvironmentItemPin(item, 'container');
 	}, []);
 
-	/** Lets the swipe row settle before the row moves sections. */
 	const togglePinAfterSwipe = useCallback(
 		(item: ContainerItem) => setTimeout(() => togglePin(item), 250),
 		[togglePin]
@@ -436,8 +410,6 @@ export function useContainersList({
 		},
 		[environmentName, exitSelectionMode]
 	);
-
-	// MARK: Bulk
 
 	const selectedContainers = containers.filter((c) => selection.includes(c.id));
 	const selectionEnvironmentID = (() => {
@@ -581,8 +553,6 @@ export function useContainersList({
 		return items;
 	})();
 
-	// MARK: Power all / prune
-
 	const runPowerAll = async (action: PowerAllAction) => {
 		const current = useClientManager.getState().client;
 		if (!current) return;
@@ -627,13 +597,10 @@ export function useContainersList({
 		}
 	};
 
-	// MARK: Confirmations
-
 	useItemDeleteConfirmation(
 		pendingDestructive,
 		setPendingDestructive,
 		(pending): DeleteConfirmationConfig => {
-			// The list stays on screen after confirming (it may be pushed from More).
 			switch (pending.kind) {
 				case 'prune':
 					return {
@@ -726,7 +693,6 @@ export function useContainersList({
 		loadContainers,
 		loadMore,
 		refresh,
-		// Row
 		openDetail,
 		openLogs,
 		openTerminal,
@@ -741,7 +707,6 @@ export function useContainersList({
 		requestKill: (item: ContainerItem) => setPendingDestructive({ kind: 'kill', container: item }),
 		requestRemove: (item: ContainerItem) =>
 			setPendingDestructive({ kind: 'remove', container: item }),
-		// Toolbar
 		createEnvironments,
 		presentCreateContainer,
 		canStartAll,
@@ -752,7 +717,6 @@ export function useContainersList({
 		requestPrune: () => setPendingDestructive({ kind: 'prune' }),
 		isOperationRunning,
 		selectMaintenance: setPendingMaintenance,
-		// Selection
 		isSelecting,
 		selection,
 		enterSelectionMode,

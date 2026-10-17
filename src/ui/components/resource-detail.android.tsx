@@ -1,9 +1,3 @@
-/**
- * Android ports of `AdaptiveMetadataGrid`, `MonospacedValue` and
- * `PartialDataNotice`.
- *
- * Standalone (RN views).
- */
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 

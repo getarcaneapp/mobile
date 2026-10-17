@@ -1,7 +1,3 @@
-/**
- * `RemoteDataLimits.boundedContainerInspect` / `boundedContainerInspectWithAutoUpdate`
- * (RemoteDataLimits.swift): inspect reads capped at 4 MB.
- */
 import { RemoteDataLimits, boundedData } from '@/core/networking/remote-data-limits';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -35,7 +31,6 @@ export async function boundedContainerInspect(
 	return ContainerDetails.decode(await readEnvelope(client, environmentID, containerID));
 }
 
-/** Inspect plus the server-computed `autoUpdateEnabled` flag (v2.14+); undefined when unreported. */
 export async function boundedContainerInspectWithAutoUpdate(
 	client: ArcaneClient,
 	environmentID: EnvironmentID,

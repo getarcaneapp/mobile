@@ -1,8 +1,3 @@
-/**
- * Port of `BusiestContainersStore.swift`: the Refreshed Dashboard's busiest
- * containers. Shared across dashboard instances and saved to disk, so the card
- * opens on the last known ranking and refreshes in the background.
- */
 import { Directory, File, Paths } from 'expo-file-system';
 import { create } from 'zustand';
 
@@ -18,9 +13,7 @@ import {
 	type BusiestRankings
 } from './busiest-containers-logic';
 
-/** Matches the server's sample cache TTL; polling faster returns the same sample. */
 export const busiestRefreshIntervalMs = 5_000;
-/** Per environment and sort: any of the top few overall can come from one environment. */
 const perEnvironmentLimit = 5;
 
 type Snapshot = { updatedAt: number; rankings: BusiestRankings };
@@ -31,7 +24,6 @@ function load(cacheKey: string): Snapshot | undefined {
 	try {
 		const file = new File(directory(), busiestCacheFileName(cacheKey));
 		if (!file.exists) return undefined;
-		// Rows are stored already decoded (plain JSON models; dates stay ISO strings).
 		const raw = JSON.parse(file.textSync()) as Snapshot;
 		return typeof raw.updatedAt === 'number' && typeof raw.rankings === 'object' ? raw : undefined;
 	} catch {
@@ -46,18 +38,13 @@ function persist(cacheKey: string, snapshot: Snapshot) {
 		const file = new File(dir, busiestCacheFileName(cacheKey));
 		if (!file.exists) file.create();
 		file.writeSync(JSON.stringify(snapshot));
-	} catch {
-		// Best effort, like Swift's `try?`.
-	}
+	} catch {}
 }
 
 type BusiestContainersState = {
 	rankings: BusiestRankings;
-	/** When the shown ranking was fetched (ms). Older than the session while it comes from disk. */
 	updatedAt: number | undefined;
-	/** True once this session received live data; until then rows are the disk cache. */
 	isLive: boolean;
-	/** Environments whose server predates the shared stats collector. */
 	unsupported: ReadonlySet<string>;
 
 	activate: (cacheKey: string) => void;
@@ -72,7 +59,6 @@ type BusiestContainersState = {
 		environments: readonly string[],
 		signal?: AbortSignal
 	) => Promise<void>;
-	/** App Settings › Clear Cache. */
 	clearCache: () => void;
 };
 
@@ -140,7 +126,6 @@ export const useBusiestContainersStore = create<BusiestContainersState>((set, ge
 			if (targets.length === 0) return;
 			const scoped = signal ? client.withSignal(signal) : client;
 			const sorts: ContainerResourceSort[] = ['cpuUsage', 'memoryUsage'];
-			// Each answer applies as it lands; a failed environment keeps its last ranking.
 			await Promise.all(
 				targets.flatMap((environmentID) =>
 					sorts.map(async (sort) => {
@@ -168,9 +153,7 @@ export const useBusiestContainersStore = create<BusiestContainersState>((set, ge
 			try {
 				const dir = directory();
 				if (dir.exists) dir.delete();
-			} catch {
-				// Best effort.
-			}
+			} catch {}
 		}
 	};
 });

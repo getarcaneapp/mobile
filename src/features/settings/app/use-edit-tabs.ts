@@ -1,11 +1,9 @@
-/** Shared state for `EditTabsView` (SettingsView.swift). */
 import { useMemo, useState } from 'react';
 
 import { AppTabIDs, canPinToBottomBar, type AppTab } from '@/core/app-tab';
 import { useClientManager } from '@/stores/client-manager';
 import { resolveTabs, useNavTabsStore } from '@/stores/nav-tabs-store';
 
-/** Swift `Array.move(fromOffsets:toOffset:)`. */
 export function moveItems<T>(
 	items: readonly T[],
 	sourceIndices: readonly number[],
@@ -20,7 +18,6 @@ export function moveItems<T>(
 export function useEditTabs() {
 	const canAccess = useClientManager((s) => s.canAccess);
 	const accessGeneration = useClientManager((s) => s.accessGeneration);
-	// `accessGeneration` bumps whenever `canAccess`'s answers change.
 	const availableTabs = useMemo(() => {
 		void accessGeneration;
 		return new Set<AppTab>(AppTabIDs.filter(canAccess));

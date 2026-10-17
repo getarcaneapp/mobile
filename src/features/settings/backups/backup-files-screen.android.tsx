@@ -1,4 +1,3 @@
-/** Android rendering of `BackupFilesView` (BackupFilesView.swift). */
 import { Stack } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 

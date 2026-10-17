@@ -104,7 +104,6 @@ describe('merge', () => {
 		);
 		assert.equal(ConnectionProfileSync.activeProfiles(merged).length, 25);
 		assert.equal(merged.records.find((r) => r.id === 'BAD')?.isDeleted, true);
-		// The two oldest are the ones retired.
 		assert.equal(merged.records.find((r) => r.id === 'ID00')?.isDeleted, true);
 		assert.deepEqual(
 			merged.records.map((r) => r.id),

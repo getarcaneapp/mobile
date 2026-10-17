@@ -1,9 +1,3 @@
-/**
- * Android ports of `PaginatedListFooter`, `ResourceListContainer`, `ListUX`
- * and `SafeExternalLink`.
- *
- * Standalone (RN views).
- */
 import { useEffect, type ReactElement } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
@@ -22,7 +16,6 @@ import { m3Type } from './type-scale';
 export { ListUX } from './paginated-list.types';
 
 function LoadMoreSpinner({ onLoadMore }: { onLoadMore: () => void }) {
-	// Same contract as SwiftUI `onAppear`: the footer appearing loads the next page.
 	useEffect(() => {
 		onLoadMore();
 	}, [onLoadMore]);

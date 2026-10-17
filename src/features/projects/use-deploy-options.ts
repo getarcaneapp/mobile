@@ -1,9 +1,3 @@
-/**
- * `DeployOptionsSheet` + `ProjectDeployOptionsDraft` +
- * `ProjectDeployOptionsPreferences` (ProjectDetailView.swift): pull policy and
- * recreation options, remembered per server and environment (same
- * UserDefaults keys as the reference app). Recreate Volumes never persists.
- */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -14,7 +8,6 @@ import { useClientManager } from '@/stores/client-manager';
 import { deployOptionsKeyPrefix } from './project-model';
 import { routePayloads, type DeployOptionsPayload } from './project-routes';
 
-/** `manager.parsedServerURL.flatMap(AppGroup.canonicalServerOrigin(for:)) ?? manager.serverURL`. */
 function currentServerOrigin(): string {
 	const { parsedServerURL, serverURL } = useClientManager.getState();
 	return (parsedServerURL ? canonicalServerOrigin(parsedServerURL) : undefined) ?? serverURL;
@@ -45,8 +38,6 @@ export function useDeployOptions() {
 		setRecreateVolumes(false);
 		defaults.set(`${keyPrefix}.pullPolicy`, pullPolicy);
 		defaults.set(`${keyPrefix}.forceRecreate`, forceRecreate);
-		// Dismiss first: starting the deployment pushes the stream sheet, which a later
-		// `router.back()` would pop instead of this sheet (Swift dismisses, then the store presents).
 		dismiss();
 		payload?.deploy(options);
 	};

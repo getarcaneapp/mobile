@@ -1,4 +1,3 @@
-/** Android renderings of `VolumeWorkspaceView` and its action sheet (VolumeWorkspaceView.swift). */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';

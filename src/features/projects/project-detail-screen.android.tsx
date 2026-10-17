@@ -1,4 +1,3 @@
-/** Android rendering of `ProjectDetailView` (ProjectDetailView.swift). */
 import { MenuView } from '@react-native-menu/menu';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';

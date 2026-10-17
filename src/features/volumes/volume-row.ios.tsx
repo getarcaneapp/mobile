@@ -1,8 +1,3 @@
-/**
- * Ports of `UsageBadge` and `VolumeRow` (VolumesView.swift).
- *
- * SwiftUI-tree.
- */
 import { HStack, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {

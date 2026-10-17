@@ -1,4 +1,3 @@
-/** Port of `AddRoleAssignmentSheet` (UserRoleAssignmentsView.swift). Presented as a sheet. */
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Button, Form, NavigationStack, Section, Toolbar, ToolbarItem } from '@expo/ui/swift-ui';

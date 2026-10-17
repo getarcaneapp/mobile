@@ -1,11 +1,3 @@
-/**
- * Android (Material 3) renderings of the views in `EnvironmentSettingsForm.swift`:
- * `SettingFieldRow`, `SettingsSectionsView`, `SettingsCategoryView` and
- * `ContainerMultiSelectView`. Same exports as the iOS file.
- *
- * Standalone (RN views). `SettingsSectionsView` renders grouped M3 sections
- * for a ScrollView.
- */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Fragment, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -52,8 +44,6 @@ import { M3Switch } from '@/ui/material/switch';
 function Divider() {
 	return <View style={{ height: 1, marginLeft: 16, backgroundColor: colors.separator }} />;
 }
-
-// MARK: - Field row
 
 export function SettingFieldRow({
 	field,
@@ -195,8 +185,6 @@ export function SettingFieldRow({
 	}
 }
 
-// MARK: - Settings sections
-
 function SettingsSection({
 	section,
 	draft,
@@ -281,8 +269,6 @@ export function SaveBarClearanceSection() {
 	return <View style={{ height: settingsSaveBarClearance }} />;
 }
 
-// MARK: - Server-wide settings page
-
 export function SettingsCategoryView({
 	category,
 	environmentID,
@@ -347,8 +333,6 @@ export function SettingsCategoryView({
 		</>
 	);
 }
-
-// MARK: - Excluded Containers Picker
 
 export function ContainerMultiSelectView({
 	title,

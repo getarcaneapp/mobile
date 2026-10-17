@@ -1,10 +1,3 @@
-/**
- * Renders a pushed native Compose editor screen from its `NavigationLink`
- * value, plus `ComposeNavigationStack` for sheets that push their own screens
- * (Swift: the `NavigationLink { destination }` closures in Views/Compose).
- *
- * SwiftUI-tree; import only from `.ios.tsx` files.
- */
 import { NavigationDestination, NavigationStack } from '@expo/ui/swift-ui';
 import type { ModifierConfig } from '@expo/ui/swift-ui/modifiers';
 import { useState, type ReactNode } from 'react';
@@ -68,7 +61,6 @@ export function ComposeDestinationContent({ destination }: { destination: Compos
 	}
 }
 
-/** A host `NavigationStack` path value, if it is a Compose editor screen. */
 export function ComposeDestinationView({ value }: { value: string }) {
 	const destination = decodeComposeDestination(value);
 	return destination ? <ComposeDestinationContent destination={destination} /> : null;
@@ -76,7 +68,6 @@ export function ComposeDestinationView({ value }: { value: string }) {
 
 export { isComposeDestination };
 
-/** A sheet's own `NavigationStack` that can push Compose editor screens. */
 export function ComposeNavigationStack({
 	children,
 	modifiers

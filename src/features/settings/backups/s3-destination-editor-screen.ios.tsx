@@ -1,4 +1,3 @@
-/** Port of `S3DestinationEditor` (S3DestinationsView.swift). */
 import { Button, Section, Text, Toggle } from '@expo/ui/swift-ui';
 import {
 	autocorrectionDisabled,
@@ -88,13 +87,11 @@ function S3DestinationEditor({
 	);
 }
 
-/** `NavigationLink { S3DestinationEditor(destination:) }`. */
 export function S3DestinationEditorScreen() {
 	const destination = useS3DestinationParam();
 	return <S3DestinationEditor destination={destination} presentation="push" />;
 }
 
-/** `.sheet { NavigationStack { S3DestinationEditor() } }` with Cancel. */
 export function S3DestinationCreateScreen() {
 	return <S3DestinationEditor destination={undefined} presentation="sheet" />;
 }

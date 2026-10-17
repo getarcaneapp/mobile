@@ -1,8 +1,3 @@
-/**
- * Shared logic for `AccountPreferencesView`
- * (Views/Settings/AccountPreferencesView.swift): server-stored account
- * preferences that change what the app shows.
- */
 import { useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -27,7 +22,6 @@ export function useAccountPreferences() {
 	const [isSaving, setIsSaving] = useState(false);
 	const savingRef = useRef(false);
 
-	/** Sends only the changed preference; the server keeps the rest. */
 	const save = async (preferences: UserPreferences) => {
 		const client = useClientManager.getState().client;
 		if (!client || savingRef.current) return;
@@ -39,8 +33,6 @@ export function useAccountPreferences() {
 				decode: User.decode
 			});
 			useClientManager.setState({ currentUser: updated });
-			// Icons are resolved into cached list responses; drop them so lists
-			// pick up the new catalog on their next load.
 			ResponseCache.invalidateAll();
 			showToast(Toasts.success('Preferences saved'));
 		} catch (error) {

@@ -1,10 +1,3 @@
-/**
- * Port of `ComposeSettingDraft` (Types/ComposeSettingDraft.swift): uncommitted
- * form values. Serialization uses the source-preserving editor.
- *
- * Swift's value-type struct becomes an immutable object; the mutating methods
- * return updated copies so React state stays simple.
- */
 import { ComposeDocument } from './compose-document';
 import { ComposeFormError } from './compose-errors';
 import type {
@@ -74,7 +67,6 @@ export function appendEntry(draft: ComposeSettingDraft): ComposeSettingDraft {
 		draft.kind === 'sequence' ? { index: draft.children.length } : { key: 'entry' }
 	];
 	let entry = makeSettingDraft('', path);
-	// Entries in a free-form dictionary start as ordinary name/value pairs.
 	if (draft.kind === 'mapping') entry = { ...entry, kind: 'string' };
 	entry = prepareFields(entry);
 	return { ...draft, children: [...draft.children, entry] };

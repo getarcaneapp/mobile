@@ -1,4 +1,3 @@
-/** State behind `SwarmTasksView` + `SwarmTaskRow` (SwarmTasksView.swift). */
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { SwarmTaskSummary } from '@/sdk/models/swarm/SwarmTask';
 
@@ -21,7 +20,6 @@ export function useSwarmTasks(environmentID: EnvironmentID, source: SwarmTaskSou
 	});
 }
 
-/** `SwarmTaskRow.title`. */
 export function taskTitle(task: SwarmTaskSummary, showsService: boolean) {
 	if (showsService && task.slot !== undefined) return `${task.serviceName}.${task.slot}`;
 	if (task.slot !== undefined) return `Slot ${task.slot}`;
@@ -34,7 +32,6 @@ export const taskNodeName = (task: SwarmTaskSummary) =>
 export const showsServiceFor = (source: SwarmTaskSource, task: SwarmTaskSummary) =>
 	!(source.kind === 'service' && source.id === task.serviceId);
 
-/** Route params → `SwarmTasksView.Source`. */
 export function taskSourceFromParams(source?: string, value?: string): SwarmTaskSource {
 	switch (source) {
 		case 'service':

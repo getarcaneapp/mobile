@@ -1,9 +1,3 @@
-/**
- * Port of `DashboardView` (DashboardView.swift): greeting, overview tiles,
- * pinned items, and environment cards (classic), or the Refreshed Dashboard
- * preview body; plus the Attention toolbar button, environment switcher,
- * Activity Center and System Prune toolbar actions.
- */
 import { Host } from '@/ui/host';
 import {
 	BottomSheet,
@@ -68,7 +62,6 @@ import { DashboardPinnedSection } from './components/pinned-section';
 import { displayName } from './dashboard-logic';
 import { useDashboardModel, type DashboardModel } from './use-dashboard-model';
 
-/** One column on iPhone, two on iPad. */
 const environmentColumnCount = Platform.OS === 'ios' && Platform.isPad ? 2 : 1;
 
 function chunk<T>(items: readonly T[], size: number): T[][] {
@@ -144,7 +137,6 @@ function OverviewSection({
 	setExpanded: (v: boolean) => void;
 }) {
 	const { view } = model;
-	// Docker info is the only count source that includes every container.
 	const running = view.liveCounts?.running;
 	const total = view.liveCounts?.total;
 	return (
@@ -261,7 +253,6 @@ function EnvironmentsSection({ model }: { model: DashboardModel }) {
 				{rows.map((row) => (
 					<Grid.Row key={row.map((r) => r.environment.id).join('|')}>
 						{row.map(({ environment, index }) => (
-							// Cascade only the first screenful.
 							<CardEntrance
 								key={environment.id}
 								id={`dashboard.environment.${environment.id}`}
@@ -322,11 +313,9 @@ export function DashboardScreen() {
 
 	return (
 		<>
-			{/* The greeting replaces the large title; "Dashboard" stays the title for back buttons. */}
 			<Stack.Screen
 				options={{ title: 'Dashboard', headerTitle: '', headerLargeTitleEnabled: false }}
 			/>
-			{/* Needs Attention lives in the toolbar: tap for a summary popover, hold for the Attention Center. */}
 			<AppToolbar placement="left">
 				<Stack.Toolbar.View>
 					<AttentionToolbarButton
@@ -357,7 +346,6 @@ export function DashboardScreen() {
 						onPress={model.openActivityCenter}
 					/>
 				) : null}
-				{/* Keep Activity Center and Prune as two separate glass buttons instead of one shared pill. */}
 				{model.canPrune ? (
 					<Stack.Toolbar.Button
 						icon="trash"

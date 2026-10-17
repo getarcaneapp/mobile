@@ -1,4 +1,3 @@
-/** Android renderings of the attestation detail sheet and the image config Env Vars / Labels pages. */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';

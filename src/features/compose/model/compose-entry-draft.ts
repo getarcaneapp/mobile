@@ -1,4 +1,3 @@
-/** Port of `ComposeEntryDraft` (Types/ComposeEntryDraft.swift): basic port, mount, key/value and network entries. */
 import { ComposeDocument } from './compose-document';
 import { ComposeDocumentError, ComposeFormError } from './compose-errors';
 
@@ -19,7 +18,6 @@ export class ComposeEntryDraft {
 		return [this.source, this.target, this.address, this.option, String(this.readOnly)];
 	}
 
-	/** `ComposeEntryDraft()` or `try ComposeEntryDraft(raw:kind:)`. */
 	constructor(raw?: string, kind?: ComposeEntryKind) {
 		if (raw === undefined || kind === undefined) return;
 		this.original = raw;
@@ -103,7 +101,6 @@ export class ComposeEntryDraft {
 		this.originalFields = this.fields;
 	}
 
-	/** A copy for React state updates (`var draft` mutations in SwiftUI). */
 	with(
 		changes: Partial<
 			Pick<ComposeEntryDraft, 'source' | 'target' | 'address' | 'option' | 'readOnly'>

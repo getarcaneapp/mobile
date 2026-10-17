@@ -1,9 +1,3 @@
-/**
- * Pure helpers for `EnvironmentDetailView` (EnvironmentDetailView.swift):
- * `EnvironmentDetailSection` and `EnvironmentDetails` (Types/EnvironmentDetails.swift),
- * the `DockerInfo` convenience accessors (Models.swift), and the Info tab's
- * row groups.
- */
 import { formatFileBytes } from '@/core/networking/remote-data-limits';
 import type { Environment, EnvironmentVersion } from '@/sdk/models/environment/EnvironmentModel';
 import type { DockerInfo } from '@/sdk/models/system/DockerInfo';
@@ -18,8 +12,6 @@ import {
 	sectionFields,
 	type SettingFieldDef
 } from '@/ui/components/settings-form.types';
-
-// MARK: - EnvironmentDetailSection
 
 export type EnvironmentDetailSection =
 	| 'Info'
@@ -53,7 +45,6 @@ export const environmentDetailSectionImage: Record<EnvironmentDetailSection, str
 	GitOps: 'arrow.triangle.merge'
 };
 
-/** Tabs that edit the environment's settings. */
 export const isSettingsSection = (section: EnvironmentDetailSection) =>
 	section === 'Features' ||
 	section === 'Storage' ||
@@ -61,7 +52,6 @@ export const isSettingsSection = (section: EnvironmentDetailSection) =>
 	section === 'Security' ||
 	section === 'Automations';
 
-/** Every settings field on the detail page (`allSettingsFields`). */
 export const allEnvironmentSettingsFields: SettingFieldDef[] = sectionFields([
 	...environmentFeatureSections,
 	...environmentStorageSections,
@@ -70,9 +60,6 @@ export const allEnvironmentSettingsFields: SettingFieldDef[] = sectionFields([
 	...environmentAutomationSections
 ]);
 
-// MARK: - EnvironmentDetails
-
-/** Adds tunnel measurements absent from the SDK without duplicating its environment model. */
 export type EnvironmentDetails = {
 	environment: Environment;
 	edgeDataPlane?: string;
@@ -93,8 +80,6 @@ export function decodeEnvironmentDetails(raw: unknown): EnvironmentDetails {
 			typeof o.edgeOpenStreams === 'number' ? Math.trunc(o.edgeOpenStreams) : undefined
 	};
 }
-
-// MARK: - DockerInfo accessors (Models.swift)
 
 const infoValue = (info: DockerInfo, key: string) => info.info?.[key];
 const infoInt = (info: DockerInfo, key: string) => JSONValue.int64Value(infoValue(info, key)) ?? 0;
@@ -118,24 +103,19 @@ function runtimeNames(info: DockerInfo): string[] {
 	return Object.keys(value).sort();
 }
 
-// MARK: - Info groups
-
 export type InfoRow = { label: string; value: string };
 export type InfoGroup = { title: string; rows: InfoRow[] };
 
-/** `DashboardInfoRow(label:value:)` with an optional value: nil/empty renders as "—". */
 const row = (label: string, value: string | undefined | null): InfoRow => {
 	const trimmed = (value ?? '').trim();
 	return { label, value: trimmed === '' ? '—' : trimmed };
 };
-/** `DashboardInfoRow(label:value:)` with a non-optional value (shown as-is). */
 const exact = (label: string, value: string): InfoRow => ({ label, value });
 
 const boolText = (value: boolean | undefined) => (value === undefined ? '—' : value ? 'Yes' : 'No');
 const nonEmpty = (value: string | undefined) => (value ? value : '—');
 const shortCommit = (commit: string) => (commit === '' ? '—' : commit.slice(0, 8));
 
-/** `systemInfoTab(_:)`. */
 export function systemInfoGroups(
 	info: DockerInfo,
 	version: EnvironmentVersion | undefined
@@ -178,7 +158,6 @@ export function systemInfoGroups(
 	return groups;
 }
 
-/** `dockerInfoTab(_:)`. */
 export function dockerInfoGroups(info: DockerInfo): InfoGroup[] {
 	const runtimes = runtimeNames(info).join(', ');
 	const groups: InfoGroup[] = [
@@ -232,7 +211,6 @@ export function dockerInfoGroups(info: DockerInfo): InfoGroup[] {
 	return groups;
 }
 
-/** Header status: unavailable / disabled / the environment's status. */
 export function headerStatus(
 	environment: Environment | undefined,
 	environmentError: string | undefined

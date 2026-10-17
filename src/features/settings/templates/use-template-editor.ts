@@ -1,11 +1,3 @@
-/**
- * Draft state, load and save for `TemplateEditorView` (TemplateEditorView.swift),
- * shared by both platforms.
- *
- * The native Compose editor preview (`ComposePreviewSession`,
- * `ComposePreviewEditor` / `EnvPreviewEditor`, `ProjectDraftSnapshot.validateSyntax`)
- * is not ported, so the files always open in the plain code editor.
- */
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -125,7 +117,6 @@ export function useTemplateEditor() {
 		}
 	}, [client, mode]);
 
-	// `.task { if !isLoaded { await load() } }`.
 	useEffect(() => {
 		if (!isLoaded) void load();
 	}, [load, isLoaded]);
@@ -239,7 +230,6 @@ export function useTemplateEditor() {
 		hasChanges,
 		canSave,
 		readOnly,
-		/** `interactiveDismissDisabled(hasChanges || isSaving)`. */
 		dismissDisabled: hasChanges || isSaving,
 		saveDisabled: !canSave || !hasChanges || isSaving,
 		retry: () => void load(),

@@ -1,7 +1,3 @@
-/**
- * Shared logic for `RecoveryCodesSaveView` (PasskeysMFAView.swift): the
- * one-time list of MFA recovery codes, presented as a non-dismissable sheet.
- */
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -14,7 +10,6 @@ import type { RecoveryCodesPayload } from './use-passkeys-mfa';
 export function useRecoveryCodes() {
 	const router = useRouter();
 	const { payload: token } = useLocalSearchParams<{ payload?: string }>();
-	// Read once: the payload is released as soon as the user confirms.
 	const [codes] = useState(() => settingsPayloads.get<RecoveryCodesPayload>(token)?.codes ?? []);
 
 	return {

@@ -1,7 +1,3 @@
-/**
- * Android: one native Compose editor screen per pushed route. iOS pushes the
- * same destinations inside its SwiftUI `NavigationStack` instead.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 

@@ -1,10 +1,3 @@
-/**
- * Port of `ScrollableTabBar` (Android): Material 3 filter chips in a
- * horizontally scrollable row, centered when they fit; the selected chip
- * scrolls into the middle.
- *
- * Standalone (RN view).
- */
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
 

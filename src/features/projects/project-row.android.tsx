@@ -1,4 +1,3 @@
-/** Android rendering of `ProjectRow` + `ProjectTagChips` (ProjectsView.swift). */
 import { Text, View } from 'react-native';
 
 import type { ProjectDetails } from '@/sdk/models/project/Project';

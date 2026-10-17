@@ -1,4 +1,3 @@
-/** Port of `CreateUserView` (CreateUserView.swift). Presented as a sheet. */
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import {

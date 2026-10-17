@@ -15,10 +15,6 @@ type Props = {
 	interactive?: boolean;
 };
 
-/**
- * `glassEffectCompat(in:)` for React Native trees: Liquid Glass on iOS 26+,
- * regular material on iOS 18, a tonal Material 3 surface on Android.
- */
 export function GlassSurface({ children, style, tint, interactive }: Props) {
 	if (canUseLiquidGlass) {
 		return (

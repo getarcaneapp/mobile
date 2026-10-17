@@ -1,11 +1,3 @@
-/**
- * Ports of NeedsAttentionSection.swift: `AttentionToolbarButton` (badge +
- * severity tint; tap → summary popover, long press → Attention Center),
- * `AttentionSummaryPopover`, `AttentionItemRow`, and `AttentionCenterView`.
- *
- * `AttentionToolbarButton` is Standalone (its own Host, for a
- * `Stack.Toolbar.View`); the rest are SwiftUI-tree.
- */
 import { Host } from '@/ui/host';
 import {
 	BottomSheet,
@@ -65,13 +57,11 @@ import {
 import { DashboardRowChevron } from './dashboard-parts';
 import { symbolRenderingMode } from '../../../../modules/arcane-swiftui-extras';
 
-/** Swift's `.secondary` is hierarchical: inside a tinted Button / toolbar popover it follows the accent foreground. */
 const hierarchicalSecondary = { type: 'hierarchical', style: 'secondary' } as const;
 
 const severityTint = (item: NeedsAttentionItem) =>
 	item.severity === 'critical' ? systemColors.red : systemColors.orange;
 
-/** Icon disc, title (+ optional detail), count pill, chevron. */
 export function AttentionItemRow({
 	item,
 	showsDetail = false
@@ -132,7 +122,6 @@ export function AttentionItemRow({
 
 const maximumRows = 4;
 
-/** Compact summary that expands out of the toolbar button. */
 function AttentionSummaryPopover({
 	items,
 	onSelect
@@ -142,9 +131,6 @@ function AttentionSummaryPopover({
 }) {
 	const accent = useAccentColor();
 	const visible = items.slice(0, maximumRows);
-	// Swift's popover hangs off a toolbar item, so its content inherits the
-	// toolbar's accent foreground: the title, "N items", and the hierarchical
-	// chevrons render accent-tinted (row titles stay `.primary`).
 	return (
 		<VStack
 			alignment="leading"
@@ -215,10 +201,6 @@ function AttentionSummaryPopover({
 	);
 }
 
-/**
- * Top-left toolbar entry point. Badge carries the item count, the glyph tint
- * follows the highest severity. Tap: summary popover. Long press: Attention Center.
- */
 export function AttentionToolbarButton({
 	items,
 	isPresented,
@@ -237,8 +219,6 @@ export function AttentionToolbarButton({
 		<Host matchContents>
 			<Popover isPresented={isPresented} onIsPresentedChange={setPresented} arrowEdge="top">
 				<Popover.Trigger>
-					{/* Swift: Button + simultaneousGesture(LongPress). Expo's onLongPressGesture on a
-              Button never wins over the tap, so a plain view takes both gestures (hold: center). */}
 					<ZStack
 						modifiers={[
 							contentShape(shapes.rectangle()),
@@ -247,7 +227,6 @@ export function AttentionToolbarButton({
 								setPresented(false);
 								onOpenCenter();
 							}, 0.4),
-							// A completed hold never also fires the tap, so no swallow flag is needed.
 							onTapGesture(() => setPresented(true)),
 							accessibilityElement('combine'),
 							accessibilityAddTraits(['isButton']),
@@ -294,7 +273,6 @@ export function AttentionToolbarButton({
 	);
 }
 
-/** Full Attention Center: every item grouped by severity, with its detail. */
 export function AttentionCenterSheet({
 	isPresented,
 	items,

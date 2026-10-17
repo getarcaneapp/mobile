@@ -1,4 +1,3 @@
-/** Port of `OIDCMappingFormSheet` (OIDCRoleMappingsView.swift). Presented as a sheet. */
 import { Host } from '@/ui/host';
 import {
 	Button,

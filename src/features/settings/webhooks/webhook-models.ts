@@ -1,8 +1,3 @@
-/**
- * Webhook form vocabulary (`CreateWebhook.TargetTypePayload` /
- * `ActionTypePayload` in libarcane-swift) and the route payloads WebhooksView's
- * sheets use. Pure TS.
- */
 import type { WebhookCreated } from '@/sdk/models/webhook/Webhook';
 
 export type WebhookTargetType = 'container' | 'project' | 'updater' | 'gitops';
@@ -24,7 +19,6 @@ export const webhookTargetTypes: { value: WebhookTargetType; title: string }[] =
 	{ value: 'gitops', title: 'GitOps' }
 ];
 
-/** `CreateWebhookView.actionsForTarget`. */
 export function actionsForTarget(targetType: WebhookTargetType): WebhookActionType[] {
 	switch (targetType) {
 		case 'container':

@@ -1,9 +1,3 @@
-/**
- * Port of `RowPreviewCard` (Android): the same summary as a Material 3 card,
- * for long-press previews / bottom-sheet headers.
- *
- * Standalone (RN view).
- */
 import { Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';

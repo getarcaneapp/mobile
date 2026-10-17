@@ -1,7 +1,3 @@
-/**
- * Port of `PaginationLoader.swift` (`ResourcePage`, `PaginationLoader`,
- * `ProgressivePaginationState`) and `ProgressiveFanOut.swift`. Pure TS.
- */
 import type { PaginationResponse } from '@/sdk/models/base/pagination';
 
 import { RemoteDataLimitError, RemoteDataLimits } from './remote-data-limits';
@@ -20,10 +16,6 @@ const maxSafeOffset = Number.MAX_SAFE_INTEGER;
 export const PaginationLoader = {
 	defaultPageSize: 50,
 
-	/**
-	 * Collects every page. The first page reports the total, so the remaining
-	 * pages are requested concurrently and merged in order.
-	 */
 	async collect<Element extends Identifiable>(
 		fetchPage: FetchPage<Element>,
 		options: { pageSize?: number; maximumItems?: number } = {}
@@ -45,7 +37,6 @@ export const PaginationLoader = {
 			}
 		};
 
-		/** The next page's offset, or undefined once `page` is the last one. */
 		const next = (
 			page: ResourcePage<Element>,
 			at: number
@@ -73,8 +64,6 @@ export const PaginationLoader = {
 			const following = next(page, start);
 			if (!following) return collected;
 
-			// A known total lets every remaining page load at once. Pages are
-			// merged in offset order, so the result matches a sequential walk.
 			if (usedKnownTotal || page.pagination.totalItems < 0) {
 				start = following.start;
 				continue;
@@ -90,8 +79,6 @@ export const PaginationLoader = {
 			}
 			const pages = await Promise.all(starts.map((pageStart) => fetchPage(pageStart, limit)));
 			for (const loaded of pages) append(loaded);
-			// The collection can grow while the pages load; keep walking from the
-			// last page if it isn't the end anymore.
 			const lastStart = starts[starts.length - 1];
 			const lastPage = pages[pages.length - 1];
 			if (lastStart === undefined || !lastPage) return collected;
@@ -121,7 +108,6 @@ export const PaginationLoader = {
 	}
 } as const;
 
-/** Port of `ProgressivePaginationState` (immutable: methods return the next state). */
 export interface ProgressivePaginationState {
 	readonly generation: number;
 	readonly nextStart: number;
@@ -150,7 +136,6 @@ export const ProgressivePaginationState = {
 		return state.generation === requestGeneration;
 	},
 
-	/** Returns the updated state, or `undefined` when the response is stale (Swift returns false). */
 	receive(
 		state: ProgressivePaginationState,
 		args: {
@@ -183,11 +168,6 @@ export const ProgressivePaginationState = {
 	}
 } as const;
 
-/**
- * Port of `ProgressiveFanOut.run`: one request per input, all at once, with
- * results handed to `deliver` as they arrive. Results landing within
- * `intervalMs` of the previous delivery are coalesced into one batch.
- */
 export async function progressiveFanOut<Input, Output>(
 	inputs: readonly Input[],
 	work: (input: Input) => Promise<Output>,
@@ -227,7 +207,6 @@ export async function progressiveFanOut<Input, Output>(
 			}
 		};
 		for (const input of inputs) {
-			// `work` must not reject (Swift's task group requires non-throwing work).
 			void work(input).then(onOutput);
 		}
 	});

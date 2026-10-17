@@ -1,8 +1,3 @@
-/**
- * Model behind `VolumeWorkspaceFileView` (VolumeWorkspaceFileView.swift):
- * load, edit with a baseline draft, revision-checked save, conflict review,
- * and download + share.
- */
 import { Directory, File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -28,7 +23,6 @@ import {
 } from './volume-support';
 import { useWorkspaceEntry, workspaceIdentity, WorkspaceStore } from './workspace-store';
 
-/** Payload for the "Server version" review sheet. */
 export type WorkspaceReviewPayload = {
 	latest: VolumeWorkspaceFileContent;
 	onKeep: () => void;
@@ -96,7 +90,6 @@ export function useVolumeWorkspaceFile(
 		void load();
 	}, [load, generation]);
 
-	// `.onDisappear`: drop the downloaded copy.
 	useEffect(() => () => removeItem(downloadRef.current?.directory), []);
 
 	const save = async () => {

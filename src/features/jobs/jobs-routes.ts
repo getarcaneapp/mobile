@@ -1,8 +1,3 @@
-/**
- * Navigation for the Jobs destinations. Every route lives once in the shared
- * tab group, so pushes stay in whichever tab stack is current
- * (Swift: `NavigationLink` on the presenting stack).
- */
 import { useRouter, useSegments, type Href } from 'expo-router';
 import { useMemo } from 'react';
 
@@ -21,7 +16,6 @@ function query(params: Params) {
 		: `?${entries.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
 }
 
-/** Routes relative to the current tab's stack. */
 export function useJobsNavigation() {
 	const router = useRouter();
 	const segments = useSegments() as string[];
@@ -31,21 +25,17 @@ export function useJobsNavigation() {
 		const href = (path: string, params: Params = {}) =>
 			`/(tabs)/${group}/${path}${query(params)}` as Href;
 		return {
-			/** `JobsListView(environmentID:allEnvironments:)`. */
 			openList(environmentID: EnvironmentID, allEnvironments: boolean) {
 				router.push(
 					href('jobs-list', { envID: environmentID, all: allEnvironments ? '1' : undefined })
 				);
 			},
-			/** `JobScheduleConfigView(environmentID:environmentName:)`. */
 			openSchedules(environmentID: EnvironmentID, environmentName?: string) {
 				router.push(href('job-schedules', { envID: environmentID, envName: environmentName }));
 			},
-			/** All Environments: pick the environment whose schedules to configure. */
 			openScheduleEnvironments() {
 				router.push(href('job-schedule-environments'));
 			},
-			/** `JobDetailView(environmentID:job:isRunning:onRun:)`. */
 			openDetail(item: JobItem) {
 				jobItemCache.set(item);
 				router.push(

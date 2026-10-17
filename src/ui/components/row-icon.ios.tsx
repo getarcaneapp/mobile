@@ -1,9 +1,3 @@
-/**
- * Ports of `RowIcon`, `ImageReferenceName`, `ImageReferenceLine` and
- * `TagChip` (RowIcon.swift).
- *
- * SwiftUI-tree.
- */
 import { HStack, Text } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -31,7 +25,6 @@ import { Radius } from '@/theme/tokens';
 import { imageReferenceParts, type ImageReferenceParts } from './image-reference';
 import type { RowIconProps, TextStyleName } from './row-icon.types';
 
-/** Leading symbol for list rows: a tinted glyph on a soft rounded-square well. */
 export function RowIcon({ systemImage, tint, size = 36, changeToken = '' }: RowIconProps) {
 	const accent = useAccentColor();
 	const color = tint ?? accent;
@@ -57,7 +50,6 @@ export function RowIcon({ systemImage, tint, size = 36, changeToken = '' }: RowI
 	);
 }
 
-/** An image reference with its namespace dimmed so the image's own name leads. */
 export function ImageReferenceName({
 	reference,
 	textStyle = 'body'
@@ -75,7 +67,6 @@ export function ImageReferenceName({
 	);
 }
 
-/** Secondary line naming a row's image: caption-size reference with its tag as a chip. */
 export function ImageReferenceLine({ reference }: { reference: string }) {
 	const parts = imageReferenceParts(reference);
 	return (
@@ -91,7 +82,6 @@ export function ImageReferenceLine({ reference }: { reference: string }) {
 	);
 }
 
-/** Small monospaced chip for tags, versions, and other literal identifiers. */
 export function TagChip({ text }: { text: string }) {
 	return (
 		<Text

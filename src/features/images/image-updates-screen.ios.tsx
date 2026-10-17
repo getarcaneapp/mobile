@@ -1,4 +1,3 @@
-/** Port of `ImageUpdatesView` and `UpdateRow` (ImageUpdatesView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

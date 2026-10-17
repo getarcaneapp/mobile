@@ -1,16 +1,3 @@
-/**
- * A tree-sitter-yaml shaped syntax tree built from the `yaml` package's CST.
- *
- * The reference app (`ComposeDocument.swift`) edits Compose files through a
- * tree-sitter YAML tree: node types (`block_mapping_pair`, `flow_node`, …),
- * source ranges, named/anonymous children, field names, and comment extras.
- * Hermes can't run tree-sitter (no WebAssembly), so this rebuilds the same
- * shape from `yaml`'s lossless CST, letting the editing code port line for line.
- *
- * Range rules mirror tree-sitter: a node spans its first to last real token;
- * comments are extras placed in the deepest node strictly containing them
- * (never as a node's leading or trailing child).
- */
 import { parseAllDocuments, Parser, type CST } from 'yaml';
 
 export type SyntaxNodeType =
@@ -66,7 +53,6 @@ export class SyntaxNode {
 	start: number;
 	end: number;
 	parent: SyntaxNode | null = null;
-	/** Named and anonymous children, in source order. */
 	readonly allChildren: SyntaxNode[] = [];
 	private readonly fields = new Map<string, SyntaxNode>();
 
@@ -79,7 +65,6 @@ export class SyntaxNode {
 	get isNamed() {
 		return !anonymousTypes.has(this.type);
 	}
-	/** `namedChild(at:)` for every index. */
 	get namedChildren(): SyntaxNode[] {
 		return this.allChildren.filter((child) => child.isNamed);
 	}
@@ -119,7 +104,6 @@ const isSourceToken = (token: unknown): token is SourceToken =>
 	typeof (token as SourceToken).source === 'string' &&
 	!('items' in token);
 
-/** Core-schema plain scalar kinds, matching tree-sitter-yaml's scanner. */
 function plainScalarKind(text: string): SyntaxNodeType {
 	if (text.includes('\n')) return 'string_scalar';
 	if (/^(null|Null|NULL|~)$/.test(text)) return 'null_scalar';
@@ -141,7 +125,6 @@ class Builder {
 		this.source = source;
 	}
 
-	/** Collects comment extras from token arrays (never block scalar headers). */
 	collect(tokens: readonly unknown[] | undefined) {
 		for (const token of tokens ?? []) {
 			if (isSourceToken(token) && token.type === 'comment') {
@@ -165,7 +148,6 @@ class Builder {
 			);
 	}
 
-	/** Wraps a content node and its properties in `block_node`/`flow_node`. */
 	wrap(content: SyntaxNode | null, props: SyntaxNode[]): SyntaxNode | null {
 		if (!content && props.length === 0) return null;
 		const block =
@@ -179,7 +161,6 @@ class Builder {
 		return wrapper;
 	}
 
-	/** The value node for `token` (no wrapper). */
 	content(token: Token | null | undefined): SyntaxNode | null {
 		if (!token) return null;
 		switch (token.type) {
@@ -226,12 +207,10 @@ class Builder {
 		const props = token.props.filter(isSourceToken);
 		const header = props.find((prop) => prop.type === 'block-scalar-header');
 		const start = header?.offset ?? token.offset;
-		// Header line (indicator and comment) without the line break.
 		const newline = props.find((prop) => prop.type === 'newline');
 		let headerEnd = newline ? newline.offset : start + (header?.source.length ?? 0);
 		while (headerEnd > start && /[ \t\r]/.test(this.source[headerEnd - 1]!)) headerEnd -= 1;
 		const bodyStart = newline ? newline.offset + newline.source.length : headerEnd;
-		// tree-sitter ends a block scalar at its last non-blank content line.
 		let end = headerEnd;
 		let cursor = bodyStart;
 		const bodyEnd = bodyStart + token.source.length;
@@ -245,7 +224,6 @@ class Builder {
 		return new SyntaxNode('block_scalar', start, end);
 	}
 
-	/** Splits a pair's `sep` into the tokens before and after the `:` indicator. */
 	splitSep(sep: readonly SourceToken[] | undefined) {
 		const tokens = sep ?? [];
 		const index = tokens.findIndex((token) => token.type === 'map-value-ind');
@@ -253,7 +231,6 @@ class Builder {
 		return { colon: tokens[index], before: tokens.slice(0, index), after: tokens.slice(index + 1) };
 	}
 
-	/** Properties that follow the last structural indicator in a `start` array. */
 	trailingProps(start: readonly SourceToken[]): SyntaxNode[] {
 		let index = start.length;
 		while (index > 0) {
@@ -274,7 +251,6 @@ class Builder {
 		const first = key ?? colonNode ?? value;
 		const last = value ?? colonNode ?? key;
 		if (!first || !last) return null;
-		// Properties between key and colon would belong to an explicit key; keep them as key props.
 		void before;
 		const pair = new SyntaxNode(type, first.start, last.end);
 		if (key) pair.append(key, 'key');
@@ -352,7 +328,6 @@ class Builder {
 		return node;
 	}
 
-	/** Places each comment extra in the deepest node strictly containing it. */
 	placeComments(root: SyntaxNode) {
 		for (const comment of this.comments) {
 			let container = root;
@@ -373,7 +348,6 @@ class Builder {
 
 export type ParsedSyntax = { root: SyntaxNode; documentCount: number };
 
-/** Parses `source`; throws `YAMLSyntaxError` (with a 1-based line) for invalid YAML. */
 export function parseSyntax(source: string): ParsedSyntax {
 	const documents = parseAllDocuments(source, { uniqueKeys: false, prettyErrors: true });
 	const list = Array.isArray(documents) ? documents : [documents];

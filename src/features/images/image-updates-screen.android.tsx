@@ -1,4 +1,3 @@
-/** Android rendering of `ImageUpdatesView` (ImageUpdatesView.swift). */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

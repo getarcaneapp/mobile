@@ -1,9 +1,3 @@
-/**
- * Android ports of the skeleton placeholders: the same neutral fill and
- * contained 1.6 s sweep, driven by Reanimated.
- *
- * Standalone (RN views).
- */
 import { use, useEffect, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import Animated, {

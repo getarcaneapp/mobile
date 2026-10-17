@@ -1,8 +1,3 @@
-/**
- * Port of `JobDetailView` (JobDetailView.swift): header, schedule, flags,
- * prerequisites and identifiers, with a Run Now toolbar button for jobs that
- * can run manually.
- */
 import { Host } from '@/ui/host';
 import {
 	ContentUnavailableView,

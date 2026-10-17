@@ -1,10 +1,3 @@
-/**
- * Port of `PermissionPickerView` (PermissionPickerView.swift): one Section per
- * resource with a `DisclosureGroup` of action toggles and a select-all
- * checkbox in its label. A non-empty search expands every matching resource.
- *
- * SwiftUI-tree (composes Sections into the surrounding `Form`).
- */
 import {
 	Button,
 	DisclosureGroup,

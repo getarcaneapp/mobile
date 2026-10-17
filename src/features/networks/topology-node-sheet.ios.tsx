@@ -1,4 +1,3 @@
-/** Port of `TopologyNodeDetailSheet` (NetworkTopologyView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

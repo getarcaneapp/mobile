@@ -1,4 +1,3 @@
-/** Access rules for `BackupSettingsView` (BackupSettingsView.swift). Shared by both platforms. */
 import { useBackupNavigation } from './backup-routes';
 import { useBackupSessionScope, useGlobalPermissions } from './backup-scope';
 

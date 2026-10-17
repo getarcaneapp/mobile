@@ -1,4 +1,3 @@
-/** Android rendering of `AddRoleAssignmentSheet` (UserRoleAssignmentsView.swift). Presented as a modal. */
 import { Stack } from 'expo-router';
 import { ScrollView } from 'react-native';
 

@@ -1,12 +1,3 @@
-/**
- * Port of `ArcaneLoadingView` (ArcaneLoadingView.swift): the Arcane logo
- * drawing itself on a loop, with an optional caption. Use in place of a
- * spinner wherever a screen or section is loading. Falls back to a system
- * spinner with Reduce Motion on.
- *
- * Standalone (RN view, both platforms). For SwiftUI trees use
- * `ArcaneLoadingViewSwiftUI` from `arcane-loading-view-swiftui`.
- */
 import { ActivityIndicator, Platform, Text, View } from 'react-native';
 
 import { useAccentColor } from '@/theme/accent';
@@ -19,7 +10,6 @@ export type ArcaneLoadingStyle = 'regular' | 'inline';
 
 export type ArcaneLoadingViewProps = {
 	label?: string;
-	/** `regular`: centered logo, caption underneath. `inline`: small logo beside the caption. */
 	variant?: ArcaneLoadingStyle;
 };
 

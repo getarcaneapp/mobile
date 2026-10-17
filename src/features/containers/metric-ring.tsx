@@ -1,8 +1,3 @@
-/**
- * Port of `MetricRing` (EnvironmentsView.swift): a track ring with a rounded
- * progress arc starting at 12 o'clock. RN svg, so it renders on both
- * platforms (SwiftUI trees host it in an `RNHostView`).
- */
 import { useEffect } from 'react';
 import Animated, { useAnimatedProps, useSharedValue, withSpring } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';

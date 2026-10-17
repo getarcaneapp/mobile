@@ -1,9 +1,3 @@
-/**
- * View-model for `LoginView` (Views/Auth/LoginView.swift), shared by the
- * SwiftUI and Material renderings. Holds the screen's `@State`, the
- * `@FocusState` (through a focus function the screen registers), and every
- * intent.
- */
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
@@ -31,7 +25,6 @@ export type SavedSignInOffer = {
 	credential: SavedConnectionCredential;
 };
 
-/** Android: profiles already offered a Google Password Manager pick this session. */
 const passwordManagerOffered = new Set<string>();
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -54,7 +47,6 @@ export function useLoginModel() {
 	const [savedSignInOffer, setSavedSignInOffer] = useState<SavedSignInOffer>();
 	const [isUsingSavedSignIn, setIsUsingSavedSignIn] = useState(false);
 	const [focusedField, setFocusedField] = useState<LoginField | null>(null);
-	/** Bumped when fields change programmatically so uncontrolled native fields resync. */
 	const [fieldsRevision, setFieldsRevision] = useState(0);
 	const pendingPasswordCredentialChange = useRef<PendingPasswordCredentialChange | undefined>(
 		undefined
@@ -67,12 +59,9 @@ export function useLoginModel() {
 	const isSetupMode = mode === 'setup' || showSetup;
 	const isLocalAuthAvailable = manager.isLocalAuthAvailable();
 	const isOIDCAvailable = manager.isOIDCAvailable();
-	// With OIDC enabled the password form hides behind a disclosure so the
-	// provider button is the primary action.
 	const shouldShowPasswordFields = isLocalAuthAvailable && (!isOIDCAvailable || showsPasswordForm);
 
 	const focus = (field: LoginField | null) => {
-		// Native focus events report the field once it really has focus.
 		if (field === null) setFocusedField(null);
 		focusImpl.current(field);
 	};
@@ -92,11 +81,8 @@ export function useLoginModel() {
 
 	const setServerURL = (value: string) => {
 		setServerURLState(value);
-		// Drop a stale validation error the moment the user edits the URL.
 		if (useClientManager.getState().errorMessage !== undefined) manager.setErrorMessage(undefined);
 	};
-
-	// MARK: - Saved sign-in
 
 	const resetPasswordSignIn = () => {
 		pendingPasswordCredentialChange.current = undefined;
@@ -119,12 +105,6 @@ export function useLoginModel() {
 		}
 	};
 
-	/**
-	 * Android, no sign-in on this device (e.g. profile restored from backup):
-	 * the system Password Manager picker stands in for the saved sign-in offer.
-	 * It shows nothing when the app has no saved passwords, and appears once
-	 * per profile per launch.
-	 */
 	const offerPasswordManagerCredential = (profile: ConnectionProfile) => {
 		if (passwordManagerOffered.has(profile.id)) return;
 		passwordManagerOffered.add(profile.id);
@@ -140,7 +120,6 @@ export function useLoginModel() {
 				profile.id
 			)
 				return;
-			// Picking in the system sheet is the consent; sign in right away.
 			useSavedSignIn({ profile, credential });
 		})();
 	};
@@ -211,16 +190,12 @@ export function useLoginModel() {
 		})();
 	};
 
-	// MARK: - Effects (Swift `.onAppear` / `.onChange` / `.task`)
-
 	useEffect(() => {
 		if (manager.isStartingDemo) focus(null);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [manager.isStartingDemo]);
 
 	useEffect(() => {
-		// Capabilities resolve after the initial focus fires; drop the keyboard
-		// if the fields it targeted just went behind OIDC.
 		if (!shouldShowPasswordFields) focus(null);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [shouldShowPasswordFields]);
@@ -234,7 +209,6 @@ export function useLoginModel() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isLocalAuthAvailable]);
 
-	// A saved sign-in that appears for the current server is offered once.
 	const previousCredentialIDs = useRef(credentialProfileIDs);
 	useEffect(() => {
 		const previous = previousCredentialIDs.current;
@@ -249,13 +223,11 @@ export function useLoginModel() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [credentialProfileIDs]);
 
-	// `.task(id: oidcRefreshTaskID)`.
 	useEffect(() => {
 		if (isSetupMode || !manager.serverURL) return;
 		void useClientManager.getState().refreshLoginCapabilities();
 	}, [isSetupMode, manager.serverURL, manager.clientGeneration]);
 
-	// `.task(id: isLaunchSplashPresented)`: initial focus and saved sign-in offer.
 	useEffect(() => {
 		if (isLaunchSplashPresented) {
 			focus(null);
@@ -284,8 +256,6 @@ export function useLoginModel() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isLaunchSplashPresented]);
 
-	// MARK: - Intents
-
 	const connectToServer = () => {
 		focus(null);
 		manager.configure(serverURL);
@@ -309,7 +279,6 @@ export function useLoginModel() {
 		useClientManager.getState().configure(profile.serverURL);
 		if (useClientManager.getState().errorMessage !== undefined) return;
 		setShowSetup(false);
-		// Let the profile picker finish dismissing before offering the saved sign-in.
 		setTimeout(() => {
 			const current = useConnectionProfileStore
 				.getState()
@@ -372,17 +341,14 @@ export function useLoginModel() {
 					: 'Sign in to continue',
 		showsServerChip: !isSetupMode && !manager.isStartingDemo && !manager.pendingMFAChallenge,
 		showsDemoBanner: !manager.pendingMFAChallenge,
-		/** Host (and port) only — the scheme is noise once connected. */
 		serverDisplayName: hostAndPort(manager.serverURL) ?? manager.serverURL,
 		secondaryDisabled: manager.isLoading || manager.isOIDCSigningIn || manager.isPasskeySigningIn,
 		savedSignInOffer,
 		savedSignInPrompt: ConnectionProfileCopy.savedSignInPrompt,
 
-		/** The screen registers how to move native focus (`@FocusState`). */
 		bindFocus: (impl: (field: LoginField | null) => void) => {
 			focusImpl.current = impl;
 		},
-		/** Native focus reports (keeps `focusedField` in sync for the Done accessory). */
 		setFocused: (field: LoginField, focused: boolean) => {
 			setFocusedField((current) => (focused ? field : current === field ? null : current));
 		},

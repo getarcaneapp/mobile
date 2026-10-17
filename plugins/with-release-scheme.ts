@@ -1,8 +1,3 @@
-// Makes the shared Xcode scheme run and archive the Release configuration.
-// Tools that build the scheme without an explicit configuration (Sqim,
-// plain xcodebuild) then get an app with the JS bundle embedded instead of
-// the Expo dev-client launcher that needs Metro. `pnpm expo run:ios` passes
-// `-configuration Debug` explicitly, so local development is unaffected.
 import fs from 'node:fs';
 import path from 'node:path';
 

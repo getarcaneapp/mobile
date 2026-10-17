@@ -1,7 +1,3 @@
-/**
- * Container lifecycle actions shared by the list and detail screens, with the
- * same toasts as ContainersView.swift / ContainerDetailView.swift.
- */
 import * as Haptics from 'expo-haptics';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -11,12 +7,10 @@ import { useClientManager } from '@/stores/client-manager';
 import { useResourceMutationStore } from '@/stores/resource-mutation-store';
 import { showToast, Toasts } from '@/ui/toast';
 
-/** `HapticsManager.light()`. */
 export function lightHaptic() {
 	void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 }
 
-/** `invalidateContainerCaches(_:)`: drops in-flight list/inspect requests for the environment. */
 export function invalidateContainerCaches(environmentID: EnvironmentID) {
 	const client = useClientManager.getState().client;
 	const cached = cachedClient();
@@ -27,7 +21,6 @@ export function invalidateContainerCaches(environmentID: EnvironmentID) {
 	]);
 }
 
-/** Invalidate + bump the containers mutation version so every list/detail reloads. */
 export function containersChanged(environmentID: EnvironmentID) {
 	invalidateContainerCaches(environmentID);
 	useResourceMutationStore.getState().markChanged('containers', environmentID);
@@ -35,7 +28,6 @@ export function containersChanged(environmentID: EnvironmentID) {
 
 export type ContainerLifecycleAction = 'start' | 'stop' | 'restart' | 'pause' | 'unpause' | 'kill';
 
-/** Detail-screen success titles (`ContainerAction.successTitle`). */
 export const lifecycleSuccessTitle: Record<ContainerLifecycleAction, string> = {
 	start: 'Container started',
 	stop: 'Container stopped',
@@ -52,7 +44,6 @@ const listFailureTitle: Partial<Record<ContainerLifecycleAction, string>> = {
 	kill: "Couldn't kill container"
 };
 
-/** Runs one lifecycle call. Throws on failure. */
 export async function runLifecycle(
 	action: ContainerLifecycleAction,
 	environmentID: EnvironmentID,
@@ -83,7 +74,6 @@ export async function runLifecycle(
 	}
 }
 
-/** List-row action (ContainersView `startContainer` / `stopContainer` / …): toast either way. */
 export async function performListAction(
 	action: ContainerLifecycleAction,
 	environmentID: EnvironmentID,
@@ -99,7 +89,6 @@ export async function performListAction(
 	}
 }
 
-/** ContainersView `removeContainer`. Returns whether it succeeded. */
 export async function removeContainer(environmentID: EnvironmentID, id: string): Promise<boolean> {
 	const client = useClientManager.getState().client;
 	if (!client) return false;

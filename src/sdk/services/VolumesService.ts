@@ -1,9 +1,3 @@
-/**
- * Port of Services/VolumesService.swift (+ `+BackupPolicies`, `+Workspace`).
- *
- * VolumesService groups all volume, browse, and backup endpoints registered
- * under `/environments/{id}/volumes`.
- */
 import type { ArcaneAuthorizedRequest } from '../client/ArcaneTransport';
 import type { EnvironmentID } from '../client/environment';
 import { q, boolString, type QueryItem } from '../client/url';
@@ -41,7 +35,6 @@ import type {
 } from '../models/volume/VolumeWorkspace';
 import type { PaginatedResponse } from '../pagination/PaginatedResponse';
 
-/** Swift `URL.lastPathComponent` for a file URI. */
 function lastPathComponent(uri: string): string {
 	const path = uri.replace(/[?#].*$/, '').replace(/\/+$/, '');
 	const component = path.slice(path.lastIndexOf('/') + 1);
@@ -59,9 +52,6 @@ export class VolumesService {
 		this.rest = rest;
 	}
 
-	// MARK: - Volumes
-
-	/** Paginated list of Docker volumes for the environment. */
 	list(
 		args: {
 			envID?: EnvironmentID;
@@ -82,14 +72,12 @@ export class VolumesService {
 		});
 	}
 
-	/** Get a single volume by name. */
 	inspect(args: { envID?: EnvironmentID; name: string }): Promise<Volume> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `volumes/${args.name}`), {
 			decode: Volume.decode
 		});
 	}
 
-	/** Create a new Docker volume. */
 	create(args: { envID?: EnvironmentID; request: CreateVolume }): Promise<Volume> {
 		return this.rest.post(this.rest.environmentPath(args.envID, 'volumes'), {
 			body: args.request,
@@ -97,7 +85,6 @@ export class VolumesService {
 		});
 	}
 
-	/** Remove a volume, optionally forcing removal even if it is in use. */
 	remove(args: { envID?: EnvironmentID; name: string; force?: boolean }): Promise<MessageResponse> {
 		const items: QueryItem[] = [];
 		if (args.force ?? false) items.push(q('force', 'true'));
@@ -107,19 +94,16 @@ export class VolumesService {
 		});
 	}
 
-	/** Prune unused volumes and return the prune report. */
 	prune(args: { envID?: EnvironmentID } = {}): Promise<VolumePruneReport> {
 		return this.rest.post(this.rest.environmentPath(args.envID, 'volumes/prune'), {
 			decode: VolumePruneReport.decode
 		});
 	}
 
-	/** Get container usage information for a single volume. */
 	usage(args: { envID?: EnvironmentID; name: string }): Promise<VolumeUsage> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `volumes/${args.name}/usage`));
 	}
 
-	/** Get aggregate usage counts (in use / unused / total). */
 	counts(
 		args: { envID?: EnvironmentID; includeInternal?: boolean } = {}
 	): Promise<VolumeUsageCounts> {
@@ -128,21 +112,16 @@ export class VolumesService {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'volumes/counts'), { query: items });
 	}
 
-	/** Compute disk usage sizes for all volumes (slow). */
 	sizes(args: { envID?: EnvironmentID } = {}): Promise<VolumeSizeInfo[]> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'volumes/sizes'));
 	}
 
-	// MARK: - Browse
-
-	/** List directory entries inside a volume. */
 	browse(args: { envID?: EnvironmentID; name: string; path?: string }): Promise<FileEntry[]> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `volumes/${args.name}/browse`), {
 			query: [q('path', args.path ?? '/')]
 		});
 	}
 
-	/** Get a preview of a file in a volume. */
 	fileContent(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -157,7 +136,6 @@ export class VolumesService {
 		);
 	}
 
-	/** Create a new directory inside a volume. */
 	createDirectory(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -172,7 +150,6 @@ export class VolumesService {
 		);
 	}
 
-	/** Delete a file or directory inside a volume. */
 	deleteFile(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -184,9 +161,6 @@ export class VolumesService {
 		});
 	}
 
-	// MARK: - Backups
-
-	/** Paginated list of backups for a volume. */
 	listBackups(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -204,7 +178,6 @@ export class VolumesService {
 		);
 	}
 
-	/** Create a new backup of a volume. */
 	createBackup(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -216,7 +189,6 @@ export class VolumesService {
 		});
 	}
 
-	/** Restore an entire backup over a volume. */
 	restoreBackup(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -231,10 +203,6 @@ export class VolumesService {
 		);
 	}
 
-	/**
-	 * Restore selected files from a backup.
-	 * Swift overload `restoreBackupFiles(envID:name:backupID:paths:)`.
-	 */
 	restoreBackupFilesWithPaths(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -249,7 +217,6 @@ export class VolumesService {
 		});
 	}
 
-	/** Delete a backup. */
 	deleteBackup(args: { envID?: EnvironmentID; backupID: string }): Promise<MessageResponse> {
 		return this.rest.delete(
 			this.rest.environmentPath(args.envID, `volumes/backups/${args.backupID}`),
@@ -259,7 +226,6 @@ export class VolumesService {
 		);
 	}
 
-	/** Discover volume backups stored on an S3 destination by this or other instances. */
 	discoverBackups(args: {
 		envID?: EnvironmentID;
 		s3DestinationId: string;
@@ -269,7 +235,6 @@ export class VolumesService {
 		});
 	}
 
-	/** Check whether a backup contains the given path. */
 	backupHasPath(args: {
 		envID?: EnvironmentID;
 		backupID: string;
@@ -283,16 +248,12 @@ export class VolumesService {
 		);
 	}
 
-	/** List the files contained inside a backup. */
 	listBackupFiles(args: { envID?: EnvironmentID; backupID: string }): Promise<string[]> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `volumes/backups/${args.backupID}/files`)
 		);
 	}
 
-	// MARK: - Binary uploads & downloads
-
-	/** Upload a file or directory into a volume at `path` (multipart upload). `fileURL` is a local file URI. */
 	uploadFile(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -311,10 +272,6 @@ export class VolumesService {
 		);
 	}
 
-	/**
-	 * Upload a backup tarball to a volume.
-	 * @deprecated Use `uploadAndRestoreBackup`; this endpoint returns a restore message, not a backup record.
-	 */
 	uploadBackup(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -332,10 +289,6 @@ export class VolumesService {
 		);
 	}
 
-	/**
-	 * Download the raw bytes of a file inside a volume.
-	 * @deprecated Use `downloadFileDownloadRequest` for potentially large files.
-	 */
 	downloadFile(args: { envID?: EnvironmentID; name: string; path: string }): Promise<Uint8Array> {
 		return this.rest.transport.downloadRaw(
 			this.rest.environmentPath(args.envID, `volumes/${args.name}/browse/download`),
@@ -343,7 +296,6 @@ export class VolumesService {
 		);
 	}
 
-	/** Authenticated request for downloading a volume file to disk (Swift `downloadFile(..., to:)`). */
 	downloadFileDownloadRequest(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -355,17 +307,12 @@ export class VolumesService {
 		);
 	}
 
-	/**
-	 * Download a backup tarball as raw bytes.
-	 * @deprecated Use `downloadBackupDownloadRequest` for large backup archives.
-	 */
 	downloadBackup(args: { envID?: EnvironmentID; backupID: string }): Promise<Uint8Array> {
 		return this.rest.transport.downloadRaw(
 			this.rest.environmentPath(args.envID, `volumes/backups/${args.backupID}/download`)
 		);
 	}
 
-	/** Authenticated request for downloading a backup tarball to disk (Swift `downloadBackup(..., to:)`). */
 	downloadBackupDownloadRequest(args: {
 		envID?: EnvironmentID;
 		backupID: string;
@@ -374,8 +321,6 @@ export class VolumesService {
 			this.rest.environmentPath(args.envID, `volumes/backups/${args.backupID}/download`)
 		);
 	}
-
-	// MARK: - Backup policies (VolumesService+BackupPolicies.swift)
 
 	backupPolicies(args: {
 		envID?: EnvironmentID;
@@ -437,7 +382,6 @@ export class VolumesService {
 		);
 	}
 
-	/** Restore selected files from a backup. */
 	restoreBackupFiles(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -467,7 +411,6 @@ export class VolumesService {
 		);
 	}
 
-	/** Consumes a complete volume-backup upload session and restores the archive into the volume. */
 	uploadAndRestoreBackup(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -482,10 +425,6 @@ export class VolumesService {
 		);
 	}
 
-	/**
-	 * Legacy multipart archive import for v1 servers. The response is a restore
-	 * message, not a backup record. Swift overload `uploadAndRestoreBackup(envID:name:fileURL:)`.
-	 */
 	uploadAndRestoreBackupFile(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -501,8 +440,6 @@ export class VolumesService {
 			}
 		);
 	}
-
-	// MARK: - Workspace (VolumesService+Workspace.swift)
 
 	workspace(args: { envID?: EnvironmentID; name: string }): Promise<VolumeWorkspace> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `volumes/${args.name}/workspace`), {
@@ -523,7 +460,6 @@ export class VolumesService {
 		);
 	}
 
-	/** Authenticated request for downloading a workspace file to disk (Swift `downloadWorkspaceFile(..., to:)`). */
 	downloadWorkspaceFileDownloadRequest(args: {
 		envID?: EnvironmentID;
 		name: string;
@@ -535,11 +471,6 @@ export class VolumesService {
 		);
 	}
 
-	/**
-	 * Atomically apply a revision-checked workspace manifest. Files are streamed
-	 * from disk (`files` are local file URIs). A conflict is returned to the
-	 * caller without refreshing or retrying the mutation.
-	 */
 	updateWorkspace(args: {
 		envID?: EnvironmentID;
 		name: string;

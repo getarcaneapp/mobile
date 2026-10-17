@@ -1,22 +1,10 @@
-/**
- * Port of `DeleteConfirmationPresenter` + the `.deleteConfirmation(...)`
- * modifiers (DeleteConfirmation.swift): one app-wide request, rendered by the
- * matching `DeleteConfirmationHost`. Each host has an ID so a confirmation
- * raised inside a sheet renders inside that sheet (mount another host there).
- */
 import { useNavigation } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
 
-/**
- * One actionable choice shown in addition to Cancel. Most callers pass one
- * (the destructive action); Projects passes two.
- */
 export type DeleteConfirmationAction = {
 	title: string;
-	/** Defaults to destructive. `null` is a plain (accent) action. */
 	role?: 'destructive' | null;
-	/** Capsule fill hex. Defaults to red for destructive, the app accent otherwise. */
 	tint?: string;
 	action: () => void;
 };
@@ -24,11 +12,9 @@ export type DeleteConfirmationAction = {
 export type DeleteConfirmationConfig = {
 	title: string;
 	message?: string;
-	/** SF Symbol shown above the title; `null` hides it. Defaults to `exclamationmark.triangle`. */
 	icon?: string | null;
 	actions: DeleteConfirmationAction[];
 	cancelTitle?: string;
-	/** Operations and draft edits can keep their presenting screen open. Defaults to true. */
 	dismissOnConfirm?: boolean;
 };
 
@@ -36,9 +22,7 @@ export type DeleteConfirmationRequest = {
 	id: string;
 	hostID: string;
 	config: DeleteConfirmationConfig;
-	/** Runs after a confirmed action when `dismissOnConfirm` (Swift: `dismiss()`). */
 	onConfirmDismiss: () => void;
-	/** Resets the source state once the card is gone so the trigger can fire again. */
 	onDismiss: () => void;
 };
 
@@ -54,7 +38,6 @@ export function presentDeleteConfirmation(
 	config: DeleteConfirmationConfig,
 	options: { hostID?: string; onConfirmDismiss?: () => void; onDismiss?: () => void } = {}
 ) {
-	// Defensively retire anything already showing so no source stays stuck "on".
 	useDeleteConfirmationPresenter.getState().request?.onDismiss();
 	useDeleteConfirmationPresenter.setState({
 		request: {
@@ -67,14 +50,12 @@ export function presentDeleteConfirmation(
 	});
 }
 
-/** Called by the host once the card has animated out. */
 export function clearDeleteConfirmation() {
 	const onDismiss = useDeleteConfirmationPresenter.getState().request?.onDismiss;
 	useDeleteConfirmationPresenter.setState({ request: undefined });
 	onDismiss?.();
 }
 
-/** `dismiss()` for the presenting screen: pops or closes the sheet it's in. */
 function useDismiss() {
 	const navigation = useNavigation();
 	return () => {
@@ -82,7 +63,6 @@ function useDismiss() {
 	};
 }
 
-/** Bool-driven, single destructive action. Mirrors `.deleteConfirmation(isPresented:title:...)`. */
 export function singleActionConfig({
 	title,
 	message,
@@ -109,10 +89,6 @@ export function singleActionConfig({
 	};
 }
 
-/**
- * Bool-driven confirmation. Presents when `isPresented` turns true and sets it
- * back to false once the card is gone.
- */
 export function useDeleteConfirmation(
 	isPresented: boolean,
 	setIsPresented: (value: boolean) => void,
@@ -132,10 +108,6 @@ export function useDeleteConfirmation(
 	}, [isPresented, hostID]);
 }
 
-/**
- * Item-driven confirmation. Mirrors `.deleteConfirmation(item:config:)`: drive
- * it from a `pending` value set by swipe / context-menu / row actions.
- */
 export function useItemDeleteConfirmation<Item>(
 	item: Item | undefined,
 	setItem: (value: Item | undefined) => void,

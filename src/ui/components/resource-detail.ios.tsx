@@ -1,9 +1,3 @@
-/**
- * Ports of `AdaptiveMetadataGrid`, `MonospacedValue` and `PartialDataNotice`
- * (ResourceDetailComponents.swift).
- *
- * SwiftUI-tree.
- */
 import { Grid, HStack, Label, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -30,10 +24,6 @@ import {
 	type ResourceMetadataItem
 } from './resource-detail.types';
 
-/**
- * Adaptive (min 145pt) grid of labeled values. @expo/ui has no `LazyVGrid`,
- * so the column count is derived from the measured width.
- */
 export function AdaptiveMetadataGrid({ items }: { items: ResourceMetadataItem[] }) {
 	const [width, setWidth] = useState(0);
 	const columns = width > 0 ? adaptiveColumns(width) : 2;

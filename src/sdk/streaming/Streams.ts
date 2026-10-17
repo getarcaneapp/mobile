@@ -1,8 +1,3 @@
-/**
- * Port of Streaming/Streams.swift: WebSocket-backed `LogStream` and
- * `StatsStream`. Each `for await` opens its own socket (single consumer);
- * breaking out of the loop closes it.
- */
 import { ArcaneError, CancellationError, normalizedTransportError } from '../errors/ArcaneError';
 import type { ArcaneTransport } from '../client/ArcaneTransport';
 import { boolString, type QueryItem } from '../client/url';
@@ -12,7 +7,6 @@ import type { LogLine } from '../types/streaming/LogLine';
 import { BufferingPolicy } from './AsyncQueue';
 import { WebSocketChannel, type WebSocketFactory, type WebSocketMessage } from './WebSocketChannel';
 
-/** @internal Shared stream options configured on the client. */
 export interface WebSocketStreamConfig {
 	factory?: WebSocketFactory;
 	idleTimeoutMs?: number;
@@ -58,7 +52,6 @@ function toLogLine(json: LogLineMessage): LogLine {
 	};
 }
 
-/** Swift `LogStream` decode of one frame. Exported for tests. */
 export function decodeLogFrame(message: WebSocketMessage): LogLine {
 	if (message.kind === 'string') {
 		const json = parseLogLineMessage(message.value);
@@ -91,7 +84,6 @@ export class LogStream implements AsyncIterable<LogLine> {
 	private readonly query: QueryItem[];
 	private readonly config: WebSocketStreamConfig;
 
-	/** @internal */
 	constructor(
 		transport: ArcaneTransport,
 		path: string,
@@ -125,7 +117,6 @@ export class LogStream implements AsyncIterable<LogLine> {
 		);
 	}
 
-	/** Swift `LogStream.query(follow:tail:since:timestamps:)`. */
 	static query(
 		follow: boolean,
 		tail: string,
@@ -149,7 +140,6 @@ export class StatsStream<Element> implements AsyncIterable<Element> {
 	private readonly decoder: Decoder<Element> | undefined;
 	private readonly config: WebSocketStreamConfig;
 
-	/** @internal */
 	constructor(
 		transport: ArcaneTransport,
 		path: string,
@@ -190,7 +180,6 @@ export class StatsStream<Element> implements AsyncIterable<Element> {
 					}
 				});
 			},
-			// Snapshot-style: never queue obsolete frames behind a slow consumer.
 			BufferingPolicy.bufferingNewest(1),
 			signal
 		);

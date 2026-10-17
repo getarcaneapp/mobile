@@ -1,13 +1,3 @@
-/**
- * Display name for a file returned by `File.pickFileAsync()`.
- *
- * On Android the picker hands back a `content://` URI, and `File.name` is its
- * last path segment (`msf:20`, `document:1234`), not the document's name, so
- * servers that check the extension reject it. Without access to the provider's
- * display name from JS, keep the real name when it has an extension and
- * otherwise name the file after its MIME type. iOS file URLs already carry the
- * real name and pass through unchanged.
- */
 import type { File } from 'expo-file-system';
 
 const extensionByType: Record<string, string> = {

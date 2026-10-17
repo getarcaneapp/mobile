@@ -1,9 +1,3 @@
-/**
- * Ports of `ContainerPortsSection` and `ContainerHealthSection`, plus the
- * row helpers ContainerDetailView uses (`row`, `linkRow`, `detailSection`).
- *
- * SwiftUI-tree.
- */
 import { Button, HStack, Label, LabeledContent, Section, Spacer, Text } from '@expo/ui/swift-ui';
 import {
 	buttonStyle,

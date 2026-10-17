@@ -1,7 +1,5 @@
-/** Port of Models/Port/PortMapping.swift. */
 import { D } from '../base/decoding';
 
-/** A port mapping between a container and its host. */
 export interface PortMapping {
 	id: string;
 	containerId: string;
@@ -9,7 +7,6 @@ export interface PortMapping {
 	hostIp?: string;
 	hostPort?: number;
 	containerPort: number;
-	/** JSON key `protocol`. */
 	protocolName: string;
 	isPublished: boolean;
 }

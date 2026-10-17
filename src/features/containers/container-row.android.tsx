@@ -1,9 +1,3 @@
-/**
- * Android rendering of `ContainerRow` / `ContainerResourceMetrics`
- * (ContainersView.swift) as a Material 3 list item.
- *
- * Standalone (RN views).
- */
 import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {

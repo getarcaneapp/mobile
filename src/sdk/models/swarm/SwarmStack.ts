@@ -1,7 +1,5 @@
-/** Port of Models/Swarm/SwarmStack.swift. */
 import type { ISODateString } from '../base/date';
 
-/** A swarm stack as listed by the stacks endpoint. */
 export interface SwarmStackSummary {
 	id: string;
 	name: string;
@@ -11,7 +9,6 @@ export interface SwarmStackSummary {
 	updatedAt: ISODateString;
 }
 
-/** A swarm stack inspect payload (no ID — stacks are keyed by name). */
 export interface SwarmStackInspect {
 	name: string;
 	namespace: string;
@@ -20,14 +17,11 @@ export interface SwarmStackInspect {
 	updatedAt: ISODateString;
 }
 
-/** A file synced alongside a swarm stack compose deployment. */
 export interface SwarmSyncFile {
 	relativePath: string;
-	/** Swift `Data`: base64-encoded file content. */
 	content: string;
 }
 
-/** Body for `POST /environments/{id}/swarm/stacks` to deploy a stack. */
 export interface SwarmStackDeployRequest {
 	name: string;
 	composeContent: string;
@@ -39,12 +33,10 @@ export interface SwarmStackDeployRequest {
 	workingDir?: string;
 }
 
-/** Result of `POST /environments/{id}/swarm/stacks`. */
 export interface SwarmStackDeployResponse {
 	name: string;
 }
 
-/** Persisted source for a deployed stack. */
 export interface SwarmStackSource {
 	name: string;
 	composeContent: string;
@@ -52,21 +44,18 @@ export interface SwarmStackSource {
 	files?: SwarmSyncFile[];
 }
 
-/** Update payload for the persisted stack source. */
 export interface SwarmStackSourceUpdateRequest {
 	composeContent: string;
 	envContent?: string;
 	files?: SwarmSyncFile[];
 }
 
-/** Render/validate request for a compose file before deploying. */
 export interface SwarmStackRenderConfigRequest {
 	name: string;
 	composeContent: string;
 	envContent?: string;
 }
 
-/** Result of rendering a compose config — normalized YAML plus referenced resources. */
 export interface SwarmStackRenderConfigResponse {
 	name: string;
 	renderedCompose: string;
@@ -79,7 +68,6 @@ export interface SwarmStackRenderConfigResponse {
 }
 
 export const SwarmStackRenderConfigResponse = {
-	/** Swift memberwise init defaults (empty resource lists). */
 	make(
 		args: Pick<SwarmStackRenderConfigResponse, 'name' | 'renderedCompose'> &
 			Partial<SwarmStackRenderConfigResponse>

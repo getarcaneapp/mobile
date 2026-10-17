@@ -1,8 +1,3 @@
-/**
- * Android rendering of `UpdatesView` + `EnvironmentPickerSheet`
- * (UpdatesView.swift): the image updates page with Run Updater / Updater
- * History in the top app bar and Material bottom sheets.
- */
 import { Text, View } from 'react-native';
 
 import { AndroidResourceActionsToolbar } from '@/features/containers/android-toolbar';

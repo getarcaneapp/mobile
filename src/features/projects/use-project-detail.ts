@@ -1,9 +1,3 @@
-/**
- * The platform-neutral model behind ProjectDetailView.swift: project, runtime
- * services, and workspace file loading; lifecycle actions (streaming ones go
- * through the project deployment store); per-service actions; archive,
- * delete; and the resource-actions toolbar items.
- */
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -73,12 +67,10 @@ export type ServiceAction = 'start' | 'stop' | 'restart' | 'remove';
 
 export type RuntimeRow = { id: string; service: RuntimeService; container?: ContainerSummary };
 
-/** Placeholder until the project loads (a route opened without a cached value). */
 function placeholderProject(id: string, name: string): ProjectDetails {
 	return ProjectDetails.make({ id, name, path: '', status: '', createdAt: '', updatedAt: '' });
 }
 
-/** Keeps the environment containers that belong to this project, running-first then by name. */
 function filterProjectContainers(all: ContainerSummary[], ids: Set<string>): ContainerSummary[] {
 	return all
 		.filter((container) => [...ids].some((id) => containerIDMatches(container.id, id)))
@@ -129,8 +121,6 @@ export function useProjectDetail(
 	const latest = useRef({ projectContainers, fileBrowserFiles, refreshedProject });
 	latest.current = { projectContainers, fileBrowserFiles, refreshedProject };
 
-	// MARK: Loading
-
 	const loadProject = useCallback(async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
@@ -170,10 +160,6 @@ export function useProjectDetail(
 		[environmentID, projectID]
 	);
 
-	/**
-	 * Loads runtime services first so Compose entries without containers remain
-	 * visible, then resolves their IDs against the complete cached container list.
-	 */
 	const loadServices = useCallback(async () => {
 		const client = useClientManager.getState().client;
 		const cached = cachedClient();
@@ -201,7 +187,6 @@ export function useProjectDetail(
 			);
 			setProjectContainers(filterProjectContainers(all, ids));
 		} catch {
-			// Non-fatal: the project info still renders; the Services section shows its empty state.
 		} finally {
 			setServicesLoading(false);
 		}
@@ -213,7 +198,6 @@ export function useProjectDetail(
 		await loadProjectFiles(true);
 	}, [loadProject, loadServices, loadProjectFiles]);
 
-	// `.task` ×3 (first appear), plus a refresh when coming back to the screen.
 	const hasAppeared = useRef(false);
 	useFocusEffect(
 		useCallback(() => {
@@ -228,15 +212,12 @@ export function useProjectDetail(
 	useOnChange(useResourceVersion('containers', environmentID), () => void loadServices());
 	useOnChange(useResourceVersion('projects', environmentID), () => void reloadAll());
 
-	// MARK: Derived
-
 	const fileBrowserEntries: ManagedProjectFileEntry[] = useMemo(
 		() =>
 			ProjectFileWorkspaceHelpers.apply(fileBrowserFiles ?? currentProject.projectFiles ?? [], []),
 		[fileBrowserFiles, currentProject.projectFiles]
 	);
 
-	/** Only compose override files earn a pinned row next to compose/.env. */
 	const pinnedFileBrowserEntries = useMemo(
 		() =>
 			fileBrowserEntries.filter(
@@ -264,8 +245,6 @@ export function useProjectDetail(
 		useEnvironmentsStore.getState().displayName(environmentID) ??
 		useClientManager.getState().activeEnvironmentName;
 
-	// MARK: Actions
-
 	const invalidate = () => {
 		const client = useClientManager.getState().client;
 		const cached = cachedClient();
@@ -286,11 +265,6 @@ export function useProjectDetail(
 		if (router.canGoBack()) router.back();
 	};
 
-	/**
-	 * Hands the operation to the app-level store: it owns the stream and the
-	 * sheet. Completion bumps the projects mutation version, which this screen
-	 * observes to reload itself.
-	 */
 	const startStreamingAction = (kind: ProjectDeploymentKind, deployOptions?: DeployOptions) => {
 		setErrorMessage(undefined);
 		setActionStatus(undefined);
@@ -453,9 +427,6 @@ export function useProjectDetail(
 	const openContainer = (container: ContainerSummary) =>
 		containerNav.openDetail(environmentID, container);
 
-	// MARK: Toolbar
-
-	/** State-aware centre action: Deploy when stopped, Stop when running. */
 	const actionPrimary: ActionButtonItem = isRunning
 		? {
 				id: 'stop',
@@ -553,7 +524,6 @@ export function useProjectDetail(
 			action: () => void archiveProject()
 		});
 	}
-	// `role: nil` + red tint: keeps the bespoke two-option delete confirmation.
 	actionOverflow.push({
 		id: 'delete',
 		title: 'Delete Project',
@@ -563,7 +533,6 @@ export function useProjectDetail(
 	});
 
 	useEffect(() => {
-		// Keep the cached value fresh for re-pushes (e.g. from the Dashboard).
 		if (refreshedProject) projectCache.set(environmentID, refreshedProject);
 	}, [environmentID, refreshedProject]);
 

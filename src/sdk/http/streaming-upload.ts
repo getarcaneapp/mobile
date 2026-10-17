@@ -1,21 +1,8 @@
-/**
- * Streams single-file multipart uploads from disk (Swift streams every
- * multipart file part from its URL through URLSession).
- *
- * `expo/fetch` (the global `fetch` under Expo) can only encode in-memory
- * parts, which would load multi-GB image tarballs into memory. When a
- * `FormData` body is exactly one file-URI part plus text fields, the request
- * goes through expo-file-system's native multipart upload instead, with the
- * same URL, method and headers (auth, proxy cookies). Everything else falls
- * through to the wrapped `fetch`.
- */
 import { CancellationError } from '../errors/ArcaneError';
 import type { FetchInitLike, FetchLike, FetchResponseLike } from './fetching';
 import { encodeUTF8 } from './json';
 import { singleURIPartUpload } from './multipart';
 
-// expo-file-system is required lazily (only when an upload actually streams) so the SDK stays
-// importable outside React Native, e.g. under `node --test`.
 type ExpoFileSystemLegacy = typeof import('expo-file-system/legacy');
 const legacyFileSystem = () => require('expo-file-system/legacy') as ExpoFileSystemLegacy;
 
@@ -31,12 +18,6 @@ function lastPathComponent(uri: string): string {
 	}
 }
 
-/**
- * The native upload names the file part after the URI's last path component.
- * When the request wants a different filename (e.g. an Android `content://`
- * picker URI), stage a copy under that name in the cache directory. Uses the
- * legacy API throughout: `copyAsync` reads SAF `content://` sources on Android.
- */
 async function stagedFileURI(
 	uri: string,
 	filename: string

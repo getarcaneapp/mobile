@@ -1,7 +1,3 @@
-/**
- * ContainersView's Filter sheet: sort, environment, state, updates, and
- * visibility for the list that opened it.
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

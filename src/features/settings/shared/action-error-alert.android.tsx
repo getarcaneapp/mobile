@@ -1,7 +1,3 @@
-/**
- * Android rendering of the action-failure `.alert(...)`: a Material dialog
- * with a single OK button. Renders nothing itself.
- */
 import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 

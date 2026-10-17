@@ -1,4 +1,3 @@
-/** Port of `PortsView` + `PortMappingRow` (PortsView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -53,7 +52,6 @@ import {
 const mono = (weight?: 'semibold') =>
 	font({ textStyle: 'subheadline', weight, design: 'monospaced' });
 
-/** `PortMappingRow`. */
 function PortMappingRow({
 	port,
 	environmentName,

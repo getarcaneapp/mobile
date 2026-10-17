@@ -1,4 +1,3 @@
-/** Android (Material 3) rendering of `EnvironmentColorSheet` (EnvironmentColorsView.swift). Presented as a modal. */
 import { Stack, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 

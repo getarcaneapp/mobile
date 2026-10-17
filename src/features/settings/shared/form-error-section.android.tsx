@@ -1,9 +1,3 @@
-/**
- * Android rendering of the Settings forms' inline failure row: an error-tinted
- * icon + message in its own group.
- *
- * Standalone (RN views).
- */
 import { Text, View } from 'react-native';
 
 import { m3 } from '@/ui/components/material-colors';

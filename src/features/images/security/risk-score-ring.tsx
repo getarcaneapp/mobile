@@ -1,12 +1,3 @@
-/**
- * SecurityOverviewView's patch-priority ring: a 14pt track with a rounded
- * score arc from 12 o'clock and the animated count-up (`AnimatedRiskScore`)
- * in the center. The count and arc reveal with `Motion.riskScoreReveal`
- * (`.timingCurve(0.22, 1, 0.36, 1, duration: 1.1)`), instant with Reduce
- * Motion.
- *
- * RN svg, so both platforms share it (SwiftUI trees host it in an `RNHostView`).
- */
 import { useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -14,10 +5,8 @@ import Svg, { Circle } from 'react-native-svg';
 import { colors } from '@/theme/colors';
 import { secondaryHex, useIsDark, useReduceMotion } from '@/ui/components/accessibility';
 
-/** `Motion.riskScoreReveal` (Motion.swift). */
 export const riskScoreReveal = { duration: 1100, x1: 0.22, y1: 1, x2: 0.36, y2: 1 } as const;
 
-/** CSS-style cubic bezier timing function (what SwiftUI's `timingCurve` uses). */
 function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
 	const cx = 3 * x1;
 	const bx = 3 * (x2 - x1) - cx;
@@ -64,11 +53,6 @@ const easing = cubicBezier(
 
 type RevealState = { displayed: number; hasAnimated: boolean };
 
-/**
- * `displayedScore` / `hasAnimatedScore` per overview instance, so switching
- * between Score and Trend doesn't replay the reveal. Release with
- * `releaseRiskScoreMemory` when the overview goes away.
- */
 const reveals = new Map<string, RevealState>();
 
 function revealState(key: string): RevealState {
@@ -92,12 +76,9 @@ export function RiskScoreRing({
 	size = 170,
 	lineWidth = 14
 }: {
-	/** 0...100. */
 	target: number;
 	unavailable: boolean;
-	/** Arc color (hex), or undefined for `.secondary`. */
 	color?: string;
-	/** Identifies the owning overview's `displayedScore` state. */
 	memoryKey: string;
 	size?: number;
 	lineWidth?: number;
@@ -134,7 +115,6 @@ export function RiskScoreRing({
 
 	const scheme = isDark ? 'dark' : 'light';
 	const secondary = secondaryHex[scheme];
-	// `.quaternary` (quaternaryLabel).
 	const track = isDark ? 'rgba(235,235,245,0.16)' : 'rgba(60,60,67,0.18)';
 	const radius = (size - lineWidth) / 2;
 	const circumference = 2 * Math.PI * radius;

@@ -1,8 +1,3 @@
-/**
- * Shared state and logic for `ProfileView` (Views/Settings/ProfileView.swift):
- * editable display name + email, password change, sign-out flavors, and the
- * single Save that applies whatever changed.
- */
 import { useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -13,7 +8,6 @@ import { showToast, Toasts } from '@/ui/toast';
 
 import { useSettingsNavigation } from '../shared/settings-routes';
 
-/** Which sign-out flavor is awaiting confirmation. */
 export type PendingSignOut = 'signOut' | 'signOutAndChangeServer';
 
 export const minimumPasswordLength = 8;
@@ -37,8 +31,6 @@ export function useProfile() {
 
 	const isOIDCUser = !!user?.oidcSubjectId;
 
-	// SSO profiles are owned by the identity provider — name and email are
-	// read-only, matching the web UI.
 	const profileChanged =
 		!!user &&
 		!isOIDCUser &&
@@ -52,7 +44,6 @@ export function useProfile() {
 	const canSave = profileChanged || (wantsPasswordChange && passwordValid);
 	const hasChanges = profileChanged || wantsPasswordChange;
 
-	// `.onAppear { seedFields() }`
 	useEffect(() => {
 		if (hasSeededFields || !user) return;
 		setHasSeededFields(true);
@@ -76,7 +67,6 @@ export function useProfile() {
 		setErrorMessage(undefined);
 	};
 
-	/** One Save applies whatever changed: profile fields, password, or both. */
 	const save = async () => {
 		const { client, currentUser } = useClientManager.getState();
 		if (!client || !currentUser) return;
@@ -136,7 +126,6 @@ export function useProfile() {
 		user,
 		isOIDCUser,
 		isAdmin: user ? User.isAdmin(user) : false,
-		/** `displayName` when set, else the username. */
 		headline: user?.displayName ? user.displayName : (user?.username ?? '—'),
 		handle: `@${user?.username ?? '—'}`,
 		readOnlyDisplayName: user?.displayName ? user.displayName : '—',

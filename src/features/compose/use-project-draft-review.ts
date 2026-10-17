@@ -1,8 +1,3 @@
-/**
- * `ProjectDraftReviewView` (ProjectDraftReviewView.swift) state: reviews source
- * changes without resolving variables or interpreting secret values. The
- * presenter's `onDismiss` runs once the sheet has closed, with the chosen action.
- */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -18,7 +13,6 @@ export function useProjectDraftReview() {
 	useEffect(
 		() => () => {
 			routePayloads.delete(token);
-			// `.sheet(onDismiss:)`: runs after the review closes.
 			if (chosen.current !== undefined) {
 				const deploy = chosen.current;
 				setTimeout(() => payload?.onDismiss(deploy), 0);

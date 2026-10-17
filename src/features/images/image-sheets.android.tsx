@@ -1,4 +1,3 @@
-/** Android renderings of the Pull, Upload, Prune, and Tag image sheets. */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
@@ -20,7 +19,6 @@ import { useImagePrune, useImageTag, usePullImage, useUploadImage } from './use-
 
 type Params = { envID?: string; id?: string };
 
-// Read per render: colors follow the current appearance.
 const screenStyle = () => ({ backgroundColor: colors.systemGroupedBackground });
 
 export function PullImageScreen() {

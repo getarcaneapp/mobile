@@ -1,4 +1,3 @@
-/** Port of `ProjectTagsSheet` (ProjectTagsSheet.swift). */
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 import {

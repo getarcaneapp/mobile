@@ -1,10 +1,3 @@
-/**
- * Port of `TemplateBrowserStore.swift` (+ `TemplateSourceSelection`).
- *
- * Swift keeps one `@State` store per `TemplateBrowserView`, so this is a
- * factory: each browser screen creates its own store with
- * `createTemplateBrowserStore()` and reads it with `useStore`.
- */
 import { createStore, type StoreApi } from 'zustand';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -65,7 +58,6 @@ export type TemplateBrowserState = {
 	loadMore: () => Promise<void>;
 };
 
-/** `queryKey`: trimmed search + source, e.g. `"|all"` for the unfiltered list. */
 export function templateBrowserQueryKey(
 	state: Pick<TemplateBrowserState, 'searchText' | 'source'>
 ): string {

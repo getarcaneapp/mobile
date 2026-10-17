@@ -1,4 +1,3 @@
-/** Port of `NetworkTopologyView` (NetworkTopologyView.swift). */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import { ContentUnavailableView } from '@expo/ui/swift-ui';
@@ -103,7 +102,6 @@ export function NetworkTopologyScreen({
 			</Host>
 		);
 	} else if (layout) {
-		// A new topology starts a fresh viewport (fit, zoom, pan).
 		content = (
 			<TopologyDiagram
 				key={model.layoutRevision}
@@ -126,7 +124,6 @@ export function NetworkTopologyScreen({
 				}}
 			/>
 			<TopologyToolbar model={model} />
-			{/* SwiftUI keeps the diagram above the tab bar (bottom safe area); the native safe-area view does the same. */}
 			<SafeAreaView
 				edges={{ bottom: true }}
 				style={{ flex: 1, backgroundColor: colors.systemBackground }}

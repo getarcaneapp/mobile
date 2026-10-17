@@ -1,9 +1,3 @@
-/**
- * Port of `ErrorBanner` (ErrorBanner.swift): tinted inline banner with an
- * optional Retry button.
- *
- * SwiftUI-tree.
- */
 import { Button, HStack, Spacer, Text } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {

@@ -1,4 +1,3 @@
-/** Port of Services/ImagesService.swift. */
 import type { ArcaneAuthorizedRequest } from '../client/ArcaneTransport';
 import type { EnvironmentID } from '../client/environment';
 import { boolString, q, type QueryItem } from '../client/url';
@@ -40,7 +39,6 @@ import type { PaginatedResponse } from '../pagination/PaginatedResponse';
 import { NDJSONStream } from '../streaming/NDJSONStream';
 import { OperationStreamEvent } from '../types/streaming/OperationStreamEvent';
 
-/** Swift `URL.lastPathComponent` for a file URI. */
 function lastPathComponent(uri: string): string {
 	const path = uri.replace(/[?#].*$/, '').replace(/\/+$/, '');
 	const component = path.slice(path.lastIndexOf('/') + 1);
@@ -54,14 +52,10 @@ function lastPathComponent(uri: string): string {
 export class ImagesService {
 	private readonly rest: RESTService;
 
-	/** @internal */
 	constructor(rest: RESTService) {
 		this.rest = rest;
 	}
 
-	// MARK: - Listing
-
-	/** Paginated list of images in an environment. */
 	async list(
 		args: {
 			envID?: EnvironmentID;
@@ -83,30 +77,20 @@ export class ImagesService {
 		return { success: response.success, data: response.data, pagination: response.pagination };
 	}
 
-	/** Aggregate counts of images (in use / unused / total / total size). */
 	usageCounts(args: { envID?: EnvironmentID } = {}): Promise<ImageUsageCounts> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'images/counts'));
 	}
 
-	/** Inspect a single image by ID. */
 	inspect(args: { envID?: EnvironmentID; id: string }): Promise<ImageDetailSummary> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `images/${args.id}`));
 	}
 
-	/** Docker layer history for an image ID or reference. */
 	history(args: { envID?: EnvironmentID; imageID: string }): Promise<ImageHistoryItem[]> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `images/${args.imageID}/history`), {
 			decode: decodeArray(ImageHistoryItem.decode)
 		});
 	}
 
-	/**
-	 * In-toto attestation statements attached to an image (provenance, SBOM, ...).
-	 *
-	 * @param platform restrict to one platform (e.g. `linux/amd64`).
-	 * @param predicateType restrict to one predicate type URI.
-	 * @param includeStatement also return the full statement payloads.
-	 */
 	attestations(args: {
 		envID?: EnvironmentID;
 		id: string;
@@ -123,21 +107,18 @@ export class ImagesService {
 		});
 	}
 
-	/** Remove an image, optionally forcing removal even if in use. */
 	remove(args: { envID?: EnvironmentID; id: string; force?: boolean }): Promise<void> {
 		return this.rest.deleteVoid(this.rest.environmentPath(args.envID, `images/${args.id}`), {
 			query: [q('force', boolString(args.force ?? false))]
 		});
 	}
 
-	/** Search Docker Hub repositories. */
 	search(args: { envID?: EnvironmentID; term: string }): Promise<ImageSearchResult[]> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'images/search'), {
 			query: [q('term', args.term)]
 		});
 	}
 
-	/** Add a repository tag to an image identified by its Docker image ID. */
 	tag(args: {
 		envID?: EnvironmentID;
 		imageID: string;
@@ -149,10 +130,6 @@ export class ImagesService {
 		});
 	}
 
-	/**
-	 * Replacement for Swift `export(envID:imageID:to:)`: authenticated URL +
-	 * headers for streaming the image archive to disk with expo-file-system.
-	 */
 	exportDownloadRequest(args: {
 		envID?: EnvironmentID;
 		imageID: string;
@@ -162,7 +139,6 @@ export class ImagesService {
 		);
 	}
 
-	/** Start a background patch. A returned `patching` record is not completion. */
 	patch(args: {
 		envID?: EnvironmentID;
 		imageID: string;
@@ -197,17 +173,10 @@ export class ImagesService {
 		});
 	}
 
-	// MARK: - Pull / Build (streaming endpoints)
-
-	/**
-	 * Initiate an image pull and drain its progress stream. Resolves when the
-	 * operation emits its terminal frame. Use `pullStream` for progress.
-	 */
 	async pull(args: { envID?: EnvironmentID; options: ImagePullOptions }): Promise<void> {
 		for await (const event of this.pullStream(args)) void event;
 	}
 
-	/** Initiate an image pull and stream NDJSON progress frames as they arrive. */
 	pullStream(args: {
 		envID?: EnvironmentID;
 		options: ImagePullOptions;
@@ -221,12 +190,10 @@ export class ImagesService {
 		});
 	}
 
-	/** Initiate an image build. Use `buildStream` for progress. */
 	async build(args: { envID?: EnvironmentID; request: ImageBuildRequest }): Promise<void> {
 		for await (const event of this.buildStream(args)) void event;
 	}
 
-	/** Initiate an image build and stream NDJSON progress frames as they arrive. */
 	buildStream(args: {
 		envID?: EnvironmentID;
 		request: ImageBuildRequest;
@@ -240,12 +207,6 @@ export class ImagesService {
 		});
 	}
 
-	// MARK: - Upload
-
-	/**
-	 * Upload a Docker image tarball as a multipart file. Returns the result of
-	 * loading the image into the local registry. `fileURL` is a local file URI.
-	 */
 	upload(args: {
 		envID?: EnvironmentID;
 		fileURL: string;
@@ -265,9 +226,6 @@ export class ImagesService {
 		);
 	}
 
-	// MARK: - Build history
-
-	/** Paginated list of historical builds for this environment. */
 	listBuilds(
 		args: {
 			envID?: EnvironmentID;
@@ -287,14 +245,10 @@ export class ImagesService {
 		});
 	}
 
-	/** Inspect a single build history entry. */
 	getBuild(args: { envID?: EnvironmentID; buildId: string }): Promise<ImageBuildRecord> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `images/builds/${args.buildId}`));
 	}
 
-	// MARK: - Prune
-
-	/** Prune unused images. `mode` is typically "all" or "dangling". */
 	prune(
 		args: {
 			envID?: EnvironmentID;
@@ -309,9 +263,6 @@ export class ImagesService {
 		});
 	}
 
-	// MARK: - Image updates
-
-	/** Check whether an update is available for an image referenced by repo:tag. */
 	checkUpdateByRef(args: {
 		envID?: EnvironmentID;
 		imageRef: string;
@@ -322,7 +273,6 @@ export class ImagesService {
 		});
 	}
 
-	/** Check whether an update is available for an image by its Docker image ID (GET). */
 	checkUpdateByID(args: { envID?: EnvironmentID; imageId: string }): Promise<ImageUpdateResponse> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `image-updates/check/${args.imageId}`),
@@ -332,10 +282,6 @@ export class ImagesService {
 		);
 	}
 
-	/**
-	 * Check whether an update is available for an image by its Docker image ID (POST).
-	 * The POST variant exists for clients that prefer non-idempotent semantics.
-	 */
 	checkUpdateByIDPost(args: {
 		envID?: EnvironmentID;
 		imageId: string;
@@ -348,7 +294,6 @@ export class ImagesService {
 		);
 	}
 
-	/** Batch update check for a list of image references. */
 	checkBatchUpdates(args: {
 		envID?: EnvironmentID;
 		imageRefs: string[];
@@ -364,7 +309,6 @@ export class ImagesService {
 		});
 	}
 
-	/** Check updates for all images in the environment. */
 	checkAllUpdates(
 		args: { envID?: EnvironmentID; credentials?: ContainerRegistryCredential[] } = {}
 	): Promise<ImageUpdateBatchResponse> {
@@ -375,10 +319,6 @@ export class ImagesService {
 		});
 	}
 
-	/**
-	 * Look up persisted update info for a set of image references. References
-	 * whose value is `null` on the wire are absent from the result.
-	 */
 	updateInfoByRefs(args: {
 		envID?: EnvironmentID;
 		imageRefs: string[];
@@ -388,7 +328,6 @@ export class ImagesService {
 		});
 	}
 
-	/** Aggregate summary of image updates for the environment. */
 	updateSummary(args: { envID?: EnvironmentID } = {}): Promise<ImageUpdateSummary> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'image-updates/summary'));
 	}

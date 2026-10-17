@@ -1,4 +1,3 @@
-/** Android rendering of `LogStatusBar` / `LogOptionsMenu` (LogsView.swift). */
 import { MenuView } from '@react-native-menu/menu';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 

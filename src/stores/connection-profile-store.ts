@@ -1,17 +1,3 @@
-/**
- * Port of `ConnectionProfileStore` + `ConnectionCredentialKeychainStore`.
- *
- * MMKV (profiles) and expo-secure-store (sign-ins) are the synchronous working
- * copy, so every intent stays synchronous like the Swift store. The cloud copy
- * (`connection-profile-cloud.ts`) is reconciled in the background through one
- * serial queue: on launch, after every change, and on a real return from the
- * background (Swift `refreshFromICloud()`).
- *
- * - iOS: the reference app's synchronizable iCloud Keychain items, shared
- *   with the Swift app.
- * - Android: profile payload in Block Store (restored on new-device setup);
- *   sign-ins offered to Google Password Manager.
- */
 import { randomUUID } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { AppState, Platform } from 'react-native';
@@ -42,7 +28,6 @@ export type {
 
 const payloadKey = 'arcane.connectionProfiles.v1';
 const credentialIndexKey = 'arcane.connectionCredentialIDs.v1';
-/** iOS: sign-ins confirmed in iCloud Keychain, so a missing cloud item means it was removed elsewhere. */
 const credentialCloudIndexKey = 'arcane.connectionCredentialCloudIDs.v1';
 const credentialService = 'com.getarcaneapp.ios.mobile.connection-credential.v1';
 const credentialOptions: SecureStore.SecureStoreOptions = {
@@ -75,8 +60,6 @@ const log = (message: string, error?: unknown) => {
 			...(error === undefined ? [] : [describeError(error)])
 		);
 };
-
-// MARK: - Local persistence
 
 const profilePersistence = {
 	load(): ConnectionProfilePayload {
@@ -111,7 +94,6 @@ const credentialPersistence = {
 	key(profileID: string) {
 		return `${credentialService}.${profileID}`;
 	},
-	/** secure-store can't enumerate items, so the IDs are indexed alongside. */
 	profileIDs: () => idSet(credentialIndexKey),
 	load(profileID: string): ConnectionCredentialRecord | undefined {
 		const raw = SecureStore.getItem(this.key(profileID), credentialOptions);
@@ -137,11 +119,8 @@ const sameCredential = (a: ConnectionCredentialRecord | undefined, b: Connection
 	a.username === b.username &&
 	a.password === b.password;
 
-// MARK: - Store
-
 type ConnectionProfileStoreState = {
 	profiles: ConnectionProfile[];
-	/** Profiles with a saved password sign-in (Swift `syncedCredentialProfileIDs`). */
 	credentialProfileIDs: ReadonlySet<string>;
 	syncState: ConnectionProfileSyncState;
 
@@ -163,17 +142,10 @@ type ConnectionProfileStoreState = {
 	delete: (profile: ConnectionProfile) => void;
 	saveCredential: (profile: ConnectionProfile, username: string, password: string) => void;
 	removeCredential: (profile: ConnectionProfile) => void;
-	/**
-	 * Android: lets the user pick a Google Password Manager sign-in for a
-	 * profile with none on this device (e.g. after restoring to a new phone).
-	 * Keeps it locally without offering to save it back.
-	 */
 	pickPasswordManagerCredential: (
 		profile: ConnectionProfile
 	) => Promise<SavedConnectionCredential | undefined>;
-	/** Swift `refreshFromICloud()`: merge the local and cloud copies. */
 	refreshFromCloud: () => Promise<void>;
-	/** Loads and canonicalizes the local copy synchronously (launch). */
 	loadLocal: () => void;
 };
 
@@ -182,7 +154,6 @@ const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
 
 export const useConnectionProfileStore = create<ConnectionProfileStoreState>((set, get) => {
 	let payload: ConnectionProfilePayload = ConnectionProfilePayload.empty;
-	/** One cloud operation at a time, in order, so uploads and refreshes never interleave. */
 	let cloudQueue: Promise<void> = Promise.resolve();
 
 	const enqueue = (label: string, operation: () => Promise<void>): Promise<void> => {
@@ -228,7 +199,6 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 			}
 			valid.add(profile.id);
 		}
-		// Drop index entries for profiles that no longer exist.
 		for (const id of stored)
 			if (!get().profiles.some((p) => p.id === id)) credentialPersistence.delete(id);
 		if (!sameSet(valid, get().credentialProfileIDs)) set({ credentialProfileIDs: valid });
@@ -246,7 +216,6 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 		}
 	};
 
-	/** iOS: reconcile local sign-ins with the iCloud Keychain items. */
 	const syncCredentials = async () => {
 		if (!credentialCloud.isSupported) return;
 		const cloudIDs = await credentialCloud.profileIDs();
@@ -261,7 +230,6 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 			if (cloudIDs.has(profile.id)) {
 				const remote = await credentialCloud.load(profile.id).catch(() => undefined);
 				if (!remote || !ConnectionCredentialRecord.credential(remote, profile)) {
-					// Swift drops an item that no longer matches its profile.
 					await credentialCloud.delete(profile.id);
 					if (local) credentialPersistence.delete(profile.id);
 					confirmed.delete(profile.id);
@@ -271,7 +239,6 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 				confirmed.add(profile.id);
 			} else if (local) {
 				if (confirmed.has(profile.id)) {
-					// It was in iCloud and is gone: removed on another device.
 					credentialPersistence.delete(profile.id);
 					confirmed.delete(profile.id);
 				} else {
@@ -288,10 +255,7 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 	const syncWithCloud = async () => {
 		const kind = await profileCloud.kind();
 		const remote = await profileCloud.load();
-		// Re-read local state after the await: a commit may have landed meanwhile.
 		const merged = ConnectionProfileSync.merge(payload, remote);
-		// `merge` sorts records by id; compare in merge order so an unchanged
-		// payload isn't rewritten (and re-synced) on every refresh.
 		const remoteInMergeOrder = {
 			version: remote.version,
 			records: [...remote.records].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -362,7 +326,6 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 		return saved;
 	};
 
-	/** Local copy only; returns whether the stored sign-in changed. */
 	const storeCredentialLocally = (record: ConnectionCredentialRecord): boolean => {
 		let existing: ConnectionCredentialRecord | undefined;
 		try {
@@ -432,7 +395,6 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 			const profile =
 				get().profiles.find((p) => p.serverURL === normalized) ??
 				get().save(ConnectionProfileSync.defaultName(normalized), normalized);
-			// A successful local login belongs to its connection profile.
 			if (credential) get().saveCredential(profile, credential.username, credential.password);
 			return profile;
 		},
@@ -482,8 +444,6 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 					set({ syncState: 'iCloudKeychain' });
 				});
 			} else if (changed && passwordManager.isSupported) {
-				// Shows the system "Save password?" sheet, so only for a new or
-				// changed sign-in, never on every login.
 				void passwordManager
 					.save(username, password)
 					.then((saved) => log(`password manager save: ${saved}`))
@@ -507,8 +467,6 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 					updateIDSet(credentialCloudIndexKey, profile.id, false);
 				});
 			}
-			// Google Password Manager entries aren't tied to a profile; the user
-			// manages them in Password Manager.
 		},
 
 		pickPasswordManagerCredential: async (profile) => {
@@ -534,12 +492,9 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 	return store;
 });
 
-// Swift's initializer loads immediately: local copy now, cloud copy next.
 useConnectionProfileStore.getState().loadLocal();
 void useConnectionProfileStore.getState().refreshFromCloud();
 
-// Arcane_MobileApp `.onChange(of: scenePhase)`: only a real return from the
-// background can bring another device's changes.
 {
 	let wasBackgrounded = false;
 	AppState.addEventListener('change', (next) => {

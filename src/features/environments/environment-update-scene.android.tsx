@@ -1,9 +1,3 @@
-/**
- * Android (Material 3) rendering of `EnvironmentUpdateScene` and its pipeline
- * (Views/Environments/UpdateAllEnvironmentsView.swift).
- *
- * Standalone RN view.
- */
 import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
@@ -81,7 +75,6 @@ export function EnvironmentUpdateScene({ model }: { model: EnvironmentUpdateScen
 				appearStyle
 			]}
 		>
-			{/* Soft glow behind the disc. */}
 			<View
 				pointerEvents="none"
 				importantForAccessibility="no-hide-descendants"
@@ -315,7 +308,6 @@ function EnvironmentUpdateBubble({
 	const showsSpinner = isActive && presentation === 'updating';
 	const emphasized = isActive || presentationTerminal;
 
-	// Floating drift through the five phases, offset per bubble.
 	const floats = !reduceMotion && !presentationTerminal;
 	const floatScale = isActive ? 1.6 : 0.8;
 	const dx = useSharedValue(0);

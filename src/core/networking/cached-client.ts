@@ -1,12 +1,3 @@
-/**
- * Port of `CachedFetch.swift` (`CachedClient`) and `LenientArray.swift`.
- *
- * Deduplicating wrapper around `client.rest.get`: concurrent callers for the
- * same resource share one in-flight request; every call returns a response
- * fetched after it was made (or joined while in flight), never a stored copy.
- *
- * Live streams (`…/stats`, `…/logs`) must NOT use this layer.
- */
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { Decoder } from '@/sdk/models/base/decoding';
@@ -15,10 +6,6 @@ import { PaginationLoader, type FetchPage, type Identifiable } from './paginatio
 import { RemoteDataLimits } from './remote-data-limits';
 import { ResponseCache, type CacheKey } from './response-cache';
 
-/**
- * Port of `LenientArray`: decodes element by element, dropping malformed
- * elements so one bad item can't take down a whole list.
- */
 export function lenientArray<E>(raw: unknown, decode?: Decoder<E>): E[] {
 	if (!Array.isArray(raw)) throw new Error('Expected an array');
 	if (raw.length > RemoteDataLimits.maximumCollectionItems)
@@ -50,12 +37,10 @@ export class CachedClient {
 		);
 	}
 
-	/** `get` for global (non-env-scoped) resources like `environments`, `users`, `settings/*`. */
 	getGlobal<T>(path: string, decode?: Decoder<T>): Promise<T> {
 		return this.get(path, CachedClient.globalEnvironment, decode);
 	}
 
-	/** List variant of `get`, decoded leniently (one bad element is skipped). */
 	getList<E>(path: string, envID: EnvironmentID, decode?: Decoder<E>): Promise<E[]> {
 		return this.getCustom(path, envID, (signal) =>
 			this.client
@@ -69,10 +54,6 @@ export class CachedClient {
 		return this.getList(path, CachedClient.globalEnvironment, decode);
 	}
 
-	/**
-	 * Fetches a complete paginated collection. The dedup key is intentionally
-	 * separate from the endpoint's first-page request.
-	 */
 	getAllPages<E extends Identifiable>(
 		path: string,
 		envID: EnvironmentID,
@@ -92,10 +73,6 @@ export class CachedClient {
 		return this.getAllPages(path, CachedClient.globalEnvironment, fetchPage, options);
 	}
 
-	/**
-	 * Same as `get`, but the caller supplies the fetcher. `signal` aborts when
-	 * the request is invalidated (pass it to `client.withSignal`).
-	 */
 	getCustom<T>(
 		path: string,
 		envID: EnvironmentID,
@@ -114,7 +91,6 @@ export class CachedClient {
 		return ResponseCache.coalesce(key, fetcher);
 	}
 
-	/** Invalidates in-flight entries by env + glob-style path patterns (`foo*` matches a prefix). */
 	invalidate(envID: EnvironmentID, paths: string[]) {
 		ResponseCache.invalidate(
 			(key) =>
@@ -126,7 +102,6 @@ export class CachedClient {
 		);
 	}
 
-	/** Invalidates non-environment-scoped paths (settings, webhooks, users, api-keys…). */
 	invalidateGlobal(paths: string[]) {
 		ResponseCache.invalidate(
 			(key) =>

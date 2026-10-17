@@ -1,4 +1,3 @@
-/** Android rendering of ProjectsView's Filter sheet. */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 

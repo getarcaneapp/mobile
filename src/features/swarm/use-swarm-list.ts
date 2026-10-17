@@ -1,7 +1,3 @@
-/**
- * The `EnvironmentPagedList` wiring every swarm list shares: one environment,
- * `.task { load() }`, `.refreshable`, reload on search / swarm changes.
- */
 import { useCallback, useEffect, useRef } from 'react';
 
 import type { Identifiable } from '@/core/networking/pagination-loader';

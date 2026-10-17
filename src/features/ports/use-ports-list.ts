@@ -1,7 +1,3 @@
-/**
- * The platform-neutral model behind PortsView.swift: paged port mappings
- * (one or all environments), server + local search, and per-container groups.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
@@ -24,7 +20,6 @@ const pageSize = 50;
 
 export type PortItem = EnvironmentItem<PortMapping>;
 
-/** One group per container. In All Environments lists the same container name in two environments stays two groups. */
 export type PortGroup = {
 	id: string;
 	container: string;
@@ -33,20 +28,17 @@ export type PortGroup = {
 	ports: PortItem[];
 };
 
-/** `displayHostIP(_:)`. */
 export function displayHostIP(value: string | undefined) {
 	const trimmed = (value ?? '').trim();
 	if (trimmed === '' || trimmed.toLowerCase() === 'invalid ip') return '0.0.0.0';
 	return trimmed;
 }
 
-/** `hostString(_:)`. */
 export function hostString(port: PortMapping) {
 	const ip = displayHostIP(port.hostIp);
 	return port.hostPort === undefined ? ip : `${ip}:${port.hostPort}`;
 }
 
-/** `PortMappingRow.protocolTint`. */
 export function protocolTint(port: PortMapping) {
 	switch (port.protocolName.toLowerCase()) {
 		case 'tcp':
@@ -75,7 +67,6 @@ function filteredPorts(ports: PortItem[], query: string) {
 	);
 }
 
-/** `rebuildSections()`. */
 export function portGroups(ports: PortItem[], query: string): PortGroup[] {
 	const groups = new Map<string, PortItem[]>();
 	for (const port of filteredPorts(ports, query)) {
@@ -153,7 +144,6 @@ export function usePortsList({ environmentID, allEnvironments = false }: PortsLi
 		if (fetch) await list.loadMore(fetch);
 	}, [portsPage, list]);
 
-	// Reappearing (back from a detail) refreshes every loaded page in place; the first appear loads page one.
 	useFocusEffect(
 		useCallback(() => {
 			void load(true);

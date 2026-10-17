@@ -1,7 +1,3 @@
-/**
- * Port of `PinnedItemsStore.swift`: per-environment pinned containers,
- * projects and volumes, persisted under the Swift UserDefaults keys.
- */
 import { create } from 'zustand';
 
 import { storage } from '@/core/storage';
@@ -19,14 +15,12 @@ function loadFromDefaults(key: string): Set<string> {
 }
 
 type PinnedItemsState = {
-	/** Bumped whenever any pin changes; subscribe to it to re-partition lists. */
 	version: number;
 	pinnedIDs: (kind: PinnedItemKind, envID: EnvironmentID) => ReadonlySet<string>;
 	isPinned: (id: string, kind: PinnedItemKind, envID: EnvironmentID) => boolean;
 	togglePin: (id: string, kind: PinnedItemKind, envID: EnvironmentID) => void;
 };
 
-/** Decoded pins per storage key, so rows don't re-read MMKV on every render. */
 const cache = new Map<string, Set<string>>();
 
 export const usePinnedItemsStore = create<PinnedItemsState>((set, get) => ({
@@ -53,7 +47,6 @@ export const usePinnedItemsStore = create<PinnedItemsState>((set, get) => ({
 	}
 }));
 
-/** Reactive pinned-ID set for one list. */
 export function usePinnedIDs(kind: PinnedItemKind, envID: EnvironmentID): ReadonlySet<string> {
 	usePinnedItemsStore((s) => s.version);
 	return usePinnedItemsStore.getState().pinnedIDs(kind, envID);

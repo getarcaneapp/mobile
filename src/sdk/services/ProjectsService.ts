@@ -1,13 +1,3 @@
-/**
- * Port of Services/ProjectsService.swift.
- *
- * ProjectsService exposes Docker Compose project management endpoints
- * registered under `/environments/{id}/projects`.
- *
- * The HTTP-streaming endpoints (`deploy`, `redeploy`, `build`, `pullImages`)
- * issue the request and block until the operation's terminal frame. Their
- * corresponding stream methods expose progress line-by-line.
- */
 import type { EnvironmentID } from '../client/environment';
 import { q } from '../client/url';
 import { ArcaneError, isArcaneError } from '../errors/ArcaneError';
@@ -54,35 +44,28 @@ interface ProjectWorkspaceManifestChange {
 	recursive?: boolean;
 }
 
-/** Swift `URL(fileURLWithPath: path).lastPathComponent`. */
 function lastPathComponent(path: string): string {
 	const trimmed = path.replace(/\/+$/, '');
 	if (trimmed === '') return path.startsWith('/') ? '/' : '';
 	return trimmed.slice(trimmed.lastIndexOf('/') + 1);
 }
 
-/** Swift `encodeOrNil(_:)`: JSON-encodes the body, or sends none. */
 function encodeOrNil(value: object | undefined): string | undefined {
 	return value === undefined ? undefined : encodeArcaneJSON(value);
 }
 
 async function drain(stream: AsyncIterable<unknown>): Promise<void> {
 	for await (const _ of stream) {
-		// Wait for the terminal frame.
 	}
 }
 
 export class ProjectsService {
 	private readonly rest: RESTService;
 
-	/** @internal */
 	constructor(rest: RESTService) {
 		this.rest = rest;
 	}
 
-	// MARK: - Listing
-
-	/** Paginated list of projects on the environment. */
 	list(
 		args: {
 			envID?: EnvironmentID;
@@ -109,21 +92,16 @@ export class ProjectsService {
 		});
 	}
 
-	/** Aggregate counts of projects by status. */
 	statusCounts(args: { envID?: EnvironmentID } = {}): Promise<ProjectStatusCounts> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'projects/counts'));
 	}
 
-	// MARK: - Single project read
-
-	/** Get a single project by ID (no extra detail flags). */
 	get(args: { envID?: EnvironmentID; projectID: string }): Promise<ProjectDetails> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `projects/${args.projectID}`), {
 			decode: ProjectDetails.decode
 		});
 	}
 
-	/** Get the project compose details (compose content, includes, configs). */
 	compose(args: { envID?: EnvironmentID; projectID: string }): Promise<ProjectDetails> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `projects/${args.projectID}/compose`),
@@ -133,7 +111,6 @@ export class ProjectsService {
 		);
 	}
 
-	/** Get the project's on-disk directory files. */
 	files(args: { envID?: EnvironmentID; projectID: string }): Promise<ProjectDetails> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `projects/${args.projectID}/files`),
@@ -143,12 +120,6 @@ export class ProjectsService {
 		);
 	}
 
-	/**
-	 * Get the project's editable workspace file tree.
-	 *
-	 * Arcane 2.8 moved project files under `/workspace`. The legacy fallback
-	 * keeps older v1 and v2 servers viewable through the same SDK surface.
-	 */
 	async workspace(args: { envID?: EnvironmentID; projectID: string }): Promise<ProjectWorkspace> {
 		try {
 			return await this.rest.get(
@@ -165,7 +136,6 @@ export class ProjectsService {
 		}
 	}
 
-	/** Get the project's runtime service state. */
 	runtime(args: { envID?: EnvironmentID; projectID: string }): Promise<ProjectDetails> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `projects/${args.projectID}/runtime`),
@@ -175,7 +145,6 @@ export class ProjectsService {
 		);
 	}
 
-	/** Get the project's image update summary. */
 	updates(args: { envID?: EnvironmentID; projectID: string }): Promise<ProjectDetails> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `projects/${args.projectID}/updates`),
@@ -185,7 +154,6 @@ export class ProjectsService {
 		);
 	}
 
-	/** Get the contents of a single project-related file by relative path. */
 	file(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -196,10 +164,6 @@ export class ProjectsService {
 		});
 	}
 
-	/**
-	 * Get the contents and editability metadata for one project workspace file.
-	 * Falls back to the pre-2.8 project file route when `/workspace/file` is absent.
-	 */
 	async workspaceFile(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -224,13 +188,6 @@ export class ProjectsService {
 		}
 	}
 
-	/**
-	 * Apply project workspace file changes.
-	 *
-	 * Current servers accept a multipart workspace manifest with file contents
-	 * as indexed uploads. Older servers receive their original JSON update
-	 * payload through the legacy project endpoint.
-	 */
 	async updateWorkspace(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -258,17 +215,6 @@ export class ProjectsService {
 		}
 	}
 
-	// MARK: - Mutations
-
-	/**
-	 * Create a new Docker Compose project.
-	 *
-	 * Arcane 2.8+ takes multipart/form-data (mirrors the web UI's
-	 * `projectService.createProject`): a `project` JSON part with the name and
-	 * compose/.env content, a `manifest` JSON part listing extra workspace files,
-	 * and one `files` upload per created file (matched by `uploadIndex`). Older
-	 * servers reject multipart with 415 and get their original JSON body.
-	 */
 	async create(args: {
 		envID?: EnvironmentID;
 		request: CreateProject;
@@ -291,7 +237,6 @@ export class ProjectsService {
 		}
 	}
 
-	/** @internal The multipart parts for `create` (exposed for tests). */
 	static createMultipartParts(request: CreateProject): {
 		fields: { project: string; manifest: string };
 		files: MultipartFile[];
@@ -328,7 +273,6 @@ export class ProjectsService {
 		return { fields: { project, manifest }, files };
 	}
 
-	/** Update a project's name and/or compose/env content. */
 	update(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -340,11 +284,6 @@ export class ProjectsService {
 		});
 	}
 
-	/**
-	 * Update a single include file inside a project.
-	 *
-	 * @deprecated Arcane 2.8+ removed `PUT …/includes` (404); use `updateWorkspace`.
-	 */
 	updateInclude(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -359,10 +298,6 @@ export class ProjectsService {
 		);
 	}
 
-	/**
-	 * Swift writes each file to a 0600 temp file and streams it; here the
-	 * content is uploaded from memory as a UTF-8 part.
-	 */
 	private updateCurrentWorkspace(args: {
 		envID: EnvironmentID | undefined;
 		projectID: string;
@@ -420,14 +355,6 @@ export class ProjectsService {
 		);
 	}
 
-	// MARK: - Lifecycle
-
-	/**
-	 * Deploy a project (docker compose up).
-	 *
-	 * The server streams NDJSON progress; this call resolves only when the
-	 * deploy is fully complete. Use `deployStream` for live progress.
-	 */
 	async deploy(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -436,7 +363,6 @@ export class ProjectsService {
 		await drain(this.deployStream(args));
 	}
 
-	/** Bring down a project (docker compose down). */
 	down(args: { envID?: EnvironmentID; projectID: string }): Promise<MessageResponse> {
 		return this.rest.post(
 			this.rest.environmentPath(args.envID, `projects/${args.projectID}/down`),
@@ -446,12 +372,10 @@ export class ProjectsService {
 		);
 	}
 
-	/** Redeploy a project (down + up). */
 	async redeploy(args: { envID?: EnvironmentID; projectID: string }): Promise<void> {
 		await drain(this.redeployStream(args));
 	}
 
-	/** Restart all containers in a project, or only the supplied Compose services. */
 	restart(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -466,10 +390,6 @@ export class ProjectsService {
 		);
 	}
 
-	/**
-	 * Destroy a project, optionally removing files and/or volumes.
-	 * Options are encoded in the DELETE body to preserve the server's safety contract.
-	 */
 	destroy(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -481,25 +401,18 @@ export class ProjectsService {
 		);
 	}
 
-	/** Archive a project (project must be stopped). */
 	archive(args: { envID?: EnvironmentID; projectID: string }): Promise<void> {
 		return this.rest.postVoid(
 			this.rest.environmentPath(args.envID, `projects/${args.projectID}/archive`)
 		);
 	}
 
-	/** Unarchive a project. */
 	unarchive(args: { envID?: EnvironmentID; projectID: string }): Promise<void> {
 		return this.rest.postVoid(
 			this.rest.environmentPath(args.envID, `projects/${args.projectID}/unarchive`)
 		);
 	}
 
-	/**
-	 * Pull all images for a project. The server streams progress as NDJSON;
-	 * the call resolves once the pull is complete. Use `pullImagesStream`
-	 * for live progress.
-	 */
 	async pullImages(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -508,11 +421,6 @@ export class ProjectsService {
 		await drain(this.pullImagesStream(args));
 	}
 
-	/**
-	 * Build compose services that declare a `build` directive. The server
-	 * streams build progress as NDJSON; this call resolves once the build is
-	 * complete. Use `buildStream` for live progress.
-	 */
 	async build(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -521,9 +429,6 @@ export class ProjectsService {
 		await drain(this.buildStream(args));
 	}
 
-	// MARK: - NDJSON progress streams
-
-	/** Deploy a project and stream NDJSON progress events. */
 	deployStream(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -538,7 +443,6 @@ export class ProjectsService {
 		});
 	}
 
-	/** Redeploy a project and stream NDJSON progress events. */
 	redeployStream(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -551,7 +455,6 @@ export class ProjectsService {
 		});
 	}
 
-	/** Pull a project's images and stream NDJSON progress events. */
 	pullImagesStream(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -566,7 +469,6 @@ export class ProjectsService {
 		});
 	}
 
-	/** Build a project's images and stream NDJSON progress events. */
 	buildStream(args: {
 		envID?: EnvironmentID;
 		projectID: string;
@@ -581,9 +483,6 @@ export class ProjectsService {
 		});
 	}
 
-	// MARK: - Streaming
-
-	/** Stream project logs over WebSocket. */
 	logs(args: {
 		envID?: EnvironmentID;
 		projectID: string;

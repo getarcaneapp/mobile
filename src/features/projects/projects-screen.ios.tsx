@@ -1,9 +1,3 @@
-/**
- * Port of `ProjectsView` (ProjectsView.swift).
- *
- * iOS: SwiftUI List with Pinned / Active / Stopped sections, swipe actions,
- * context menus with previews, and native toolbar menus.
- */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import { Button, ContextMenu, HStack, List, SwipeActions, VStack } from '@expo/ui/swift-ui';

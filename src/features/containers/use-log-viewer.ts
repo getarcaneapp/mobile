@@ -1,8 +1,3 @@
-/**
- * `LogsView` state: the `LogViewerStore` (shared between the embedded console
- * and its full-screen expansion), the timestamp / wrap preferences, and the
- * Copy All / Share All actions.
- */
 import * as Clipboard from 'expo-clipboard';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 
@@ -20,7 +15,6 @@ import { showToast, Toasts } from '@/ui/toast';
 import { routePayloads } from './container-routes';
 import { shareTextFile } from './share-file';
 
-/** `manager.client?.boundedContainerLogs(envID:id:timestamps: true)`. */
 export function containerLogStore(environmentID: EnvironmentID, containerID: string) {
 	return new LogViewerStore((signal) => {
 		const client = useClientManager.getState().client;
@@ -34,7 +28,6 @@ export function containerLogStore(environmentID: EnvironmentID, containerID: str
 	});
 }
 
-/** One store per mounted viewer, or the shared one handed over via `storeToken`. */
 export function useLogStore(make: () => LogViewerStore, storeToken?: string) {
 	const ref = useRef<LogViewerStore | null>(null);
 	ref.current ??= routePayloads.get<LogViewerStore>(storeToken) ?? make();
@@ -61,8 +54,6 @@ export function useLogViewer(
 		LogViewerPreferences.wrapsLinesByDefault
 	);
 
-	// `.onAppear { store.start() }` / `.onDisappear { store.stop() }`. A borrowed
-	// (expanded) viewer starts the stream if needed but leaves stopping to the owner.
 	useEffect(() => {
 		store.start();
 		if (lifecycle === 'owner') return () => store.stop();

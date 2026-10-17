@@ -1,8 +1,3 @@
-/**
- * Port of `ContainerTerminalView` (ContainerTerminalView.swift): full-screen
- * shell with streamed output, a key-shortcut row, and a command field. RN
- * views on both platforms (virtualized output, keyboard-aware input bar).
- */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
 import { useRef, useState, type ComponentRef } from 'react';
@@ -58,7 +53,6 @@ export function ContainerTerminalScreen() {
 	const userIsScrolling = useRef(false);
 
 	const keyboardHeight = useKeyboardState((state) => (state.isVisible ? state.height : 0));
-	// Distance from this screen's bottom edge to the window's (a modal inside a tab stack can stop above it).
 	const root = useRef<ComponentRef<typeof View>>(null);
 	const [bottomGap, setBottomGap] = useState(0);
 	const measureBottomGap = () =>
@@ -73,7 +67,6 @@ export function ContainerTerminalScreen() {
 
 	const sendInput = () => {
 		if (!terminal.isConnected) return;
-		// No local echo: the PTY shell echoes what we send.
 		terminal.send(`${input}\n`);
 		setInput('');
 	};
@@ -218,7 +211,6 @@ export function ContainerTerminalScreen() {
 						if (terminal.follow.isFollowing) list.current?.scrollToEnd({ animated: false });
 					}}
 				/>
-				{/* The bar rides on the keyboard; the list keeps its last lines above it. */}
 				<KeyboardStickyView offset={{ closed: 0, opened: bottomGap + homeIndicatorPadding }}>
 					<View style={[styles.inputBar, { paddingBottom: 6 + homeIndicatorPadding }]}>
 						<ScrollView

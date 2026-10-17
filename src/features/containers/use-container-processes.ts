@@ -1,4 +1,3 @@
-/** `ContainerProcessesView.load()`: `docker top`; a 409 means the container isn't running. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';

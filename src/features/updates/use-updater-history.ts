@@ -1,7 +1,3 @@
-/**
- * Data loading of `UpdaterHistoryView` (UpdaterHistoryView.swift): grows the
- * `limit` by a page at a time and filters locally by a debounced search.
- */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -28,7 +24,6 @@ export function useUpdaterHistory(environmentID: EnvironmentID) {
 	const state = useRef({ records, limit, hasMore, isLoading, isLoadingMore });
 	state.current = { records, limit, hasMore, isLoading, isLoadingMore };
 
-	// `.debounce(searchText, for: .milliseconds(200), into: $debouncedSearchText)`
 	useEffect(() => {
 		const timer = setTimeout(() => setDebouncedSearchText(searchText), 200);
 		return () => clearTimeout(timer);

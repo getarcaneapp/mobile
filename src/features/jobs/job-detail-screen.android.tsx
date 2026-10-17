@@ -1,7 +1,3 @@
-/**
- * Android rendering of `JobDetailView` (JobDetailView.swift): the same
- * sections as Material 3 grouped lists, with a Run Now top-app-bar action.
- */
 import { Stack } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 

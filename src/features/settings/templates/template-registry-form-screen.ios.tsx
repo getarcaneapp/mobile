@@ -1,4 +1,3 @@
-/** Port of `TemplateRegistryFormView` (TemplateRegistryFormView.swift): Add / Edit Template Registry sheet. */
 import { Host } from '@/ui/host';
 import {
 	Button,

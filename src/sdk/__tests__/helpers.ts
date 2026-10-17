@@ -1,4 +1,3 @@
-/** Test doubles shared by the SDK unit tests (no RN/Expo imports). */
 import type { FetchInitLike, FetchLike, FetchResponseLike } from '../http/fetching';
 
 export interface RecordedRequest {
@@ -12,7 +11,6 @@ export interface MockReply {
 	status: number;
 	body: unknown;
 	headers?: Record<string, string>;
-	/** Delay before the reply resolves (ms). */
 	delayMs?: number;
 }
 
@@ -30,7 +28,6 @@ export function jsonResponse(url: string, reply: MockReply): FetchResponseLike {
 	};
 }
 
-/** A fetch whose replies are produced by `handler`; records every request. */
 export function mockFetch(handler: (request: RecordedRequest) => MockReply | Promise<MockReply>) {
 	const requests: RecordedRequest[] = [];
 	const fetch: FetchLike = async (url: string, init?: FetchInitLike) => {

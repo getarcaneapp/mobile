@@ -2,11 +2,6 @@ import { useEffect, useState } from 'react';
 
 import type { InstallStreamStatus } from './install-stream.types';
 
-/**
- * Success sweep (DeploymentPillView.sweepToCheckmark): the border fills all
- * the way around in green, then the checkmark pops in and the border fades.
- * Reduce Motion goes straight to the checkmark.
- */
 export function useCompletionSweep(status: InstallStreamStatus, reduceMotion: boolean) {
 	const [completionFill, setCompletionFill] = useState<number>();
 	const [showsCheckmark, setShowsCheckmark] = useState(false);

@@ -1,9 +1,3 @@
-/**
- * The platform-neutral model behind ImagesView.swift: loading and pagination
- * (one or all environments), update-check decoration, search/filter/sort,
- * Used/Unused sections, selection + bulk delete, prune, and every
- * confirmation. The `.ios` / `.android` screens only render it.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
@@ -61,7 +55,6 @@ const pageSize = 50;
 
 export type ImageItem = EnvironmentItem<ImageSummary>;
 
-/** Swift `ImageRowModel`. */
 export type ImageRowModel = {
 	id: string;
 	image: ImageItem;
@@ -70,7 +63,6 @@ export type ImageRowModel = {
 	updateState: ImageUpdateState;
 };
 
-/** Swift `ImageDestructive`. */
 export type ImageDestructive =
 	| { kind: 'prune'; action: ResourcePruneAction }
 	| { kind: 'delete'; image: ImageItem }
@@ -79,7 +71,6 @@ export type ImageDestructive =
 export type ImagesListProps = {
 	environmentID: EnvironmentID;
 	environmentName: string;
-	/** All Environments preview: list and act on resources from every enabled environment. */
 	allEnvironments?: boolean;
 };
 
@@ -99,7 +90,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 	const [list, snapshot] = useEnvironmentPagedList<ImageSummary>(pageSize);
 	const images = snapshot.items;
 
-	/** Update check results per environment: the same reference can differ between environments. */
 	const [updateInfo, setUpdateInfo] = useState<
 		Record<EnvironmentID, Record<string, ImageUpdateResponse>>
 	>({});
@@ -118,7 +108,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 		updateFilter(listKey, { environments: snapshot.environments });
 	}, [listKey, snapshot.environments, updateFilter]);
 
-	/** The environments this list covers, known before the first load finishes. */
 	const listEnvironments: ListEnvironment[] = allEnvironments
 		? snapshot.environments
 		: [{ id: environmentID }];
@@ -132,8 +121,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 			{ text: 'OK', style: 'cancel' }
 		]);
 
-	// MARK: Loading
-
 	const imagesPage = useCallback((): EnvironmentFetch<ImageSummary> | undefined => {
 		const current = useClientManager.getState().client;
 		if (!current) return undefined;
@@ -143,7 +130,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 		};
 	}, []);
 
-	/** Fetches update results for `newImages`, one request per environment. */
 	const loadUpdateInfo = useCallback(async (newImages: readonly ImageItem[]) => {
 		const current = useClientManager.getState().client;
 		if (!current) return;
@@ -161,7 +147,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 		if (refsByEnvironment.size === 0) return;
 		await Promise.all(
 			[...refsByEnvironment].map(async ([envID, refs]) => {
-				// Update info is best-effort decoration — silent failure.
 				let map: Awaited<ReturnType<typeof current.images.updateInfoByRefs>>;
 				try {
 					map = await current.images.updateInfoByRefs({ envID, imageRefs: refs });
@@ -192,8 +177,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 				.listEnvironments(environmentID, allEnvironments);
 			await list.reload(environments, fetch, { preservingLoadedRange });
 			if (loadGeneration.current !== generation) return;
-			// Rows still shown keep their update badges until the refetch below
-			// replaces them, instead of flashing "Not checked".
 			const loaded = list.getSnapshot().items;
 			const shown = new Set(loaded.map((image) => image.environmentID));
 			setUpdateInfo((info) =>
@@ -214,7 +197,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 		await loadUpdateInfo(list.getSnapshot().items.filter((image) => !loadedIDs.has(image.id)));
 	}, [imagesPage, list, loadUpdateInfo]);
 
-	// Reappearing (back from a detail) refreshes every loaded page in place; the first appear loads page one.
 	useFocusEffect(
 		useCallback(() => {
 			void loadImages(true);
@@ -231,8 +213,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 	useOnChange(client, () => void loadImages());
 
 	const refresh = useCallback(() => loadImages(), [loadImages]);
-
-	// MARK: Sections
 
 	const sections: StableListSection<'used' | 'unused', ImageRowModel>[] = useMemo(() => {
 		const query = debouncedSearch.toLowerCase();
@@ -291,7 +271,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 		updateInfo
 	]);
 
-	// Selection only keeps rows that still exist.
 	useEffect(() => {
 		const valid = new Set(images.map((image) => image.id));
 		setSelection((current) => {
@@ -302,8 +281,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 
 	const activeFilterCount =
 		(filter.tagsFilter !== 'All' ? 1 : 0) + (filter.environmentFilter !== undefined ? 1 : 0);
-
-	// MARK: Selection
 
 	const enterSelectionMode = useCallback(() => {
 		lightHaptic();
@@ -335,8 +312,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 					tint: systemColors.red,
 					action: () => setPendingDestructive({ kind: 'bulkDelete', ids: selectedImageIDs })
 				};
-
-	// MARK: Actions
 
 	const pruneImages = async (action: ResourcePruneAction) => {
 		if (allEnvironments) {
@@ -411,13 +386,10 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 		}
 	};
 
-	// MARK: Confirmations
-
 	useItemDeleteConfirmation(
 		pendingDestructive,
 		setPendingDestructive,
 		(pending): DeleteConfirmationConfig => {
-			// The list stays on screen after confirming (it may be pushed from More).
 			switch (pending.kind) {
 				case 'prune':
 					return {
@@ -452,8 +424,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 	useAllEnvironmentsMaintenanceConfirmation(pendingMaintenance, setPendingMaintenance, (action) => {
 		void performAllEnvironmentsMaintenance(action, enabledEnvironments);
 	});
-
-	// MARK: Navigation
 
 	const openUpdates = (envID: EnvironmentID) =>
 		nav.openUpdates(
@@ -490,7 +460,6 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 		requestDelete: (image: ImageItem) => setPendingDestructive({ kind: 'delete', image }),
 		isOperationRunning,
 		selectMaintenance: setPendingMaintenance,
-		// Selection
 		isSelecting,
 		selection,
 		enterSelectionMode,

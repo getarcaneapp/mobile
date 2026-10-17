@@ -1,5 +1,3 @@
-// Minimal typings for the Node built-ins the SDK tests use, so the app's
-// `tsc` passes without adding @types/node to the React Native project.
 declare module 'node:test' {
 	type Body = () => void | Promise<void>;
 	export function describe(name: string, fn: Body): void;

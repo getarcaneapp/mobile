@@ -1,8 +1,3 @@
-/**
- * Navigation for the Swarm destinations. Every route lives once in the shared
- * tab group (`swarm-*`), so pushes stay in whichever tab stack is current.
- * Objects for a pushed screen's first render go through `screenCache`.
- */
 import { useMemo } from 'react';
 
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -13,7 +8,6 @@ import { screenCache, useTabRouter } from '@/features/networks/tab-routes';
 
 export type SwarmKeyValueKind = 'config' | 'secret';
 
-/** `SwarmKeyValueListView.Item`. */
 export type SwarmKeyValueItem = {
 	id: string;
 	spec: import('@/sdk/types/json').JSONValue;
@@ -21,7 +15,6 @@ export type SwarmKeyValueItem = {
 	updatedAt: string;
 };
 
-/** `SwarmTasksView.Source`. */
 export type SwarmTaskSource =
 	| { kind: 'all' }
 	| { kind: 'service'; id: string }
@@ -34,7 +27,6 @@ export const swarmKeys = {
 	node: (env: EnvironmentID, id: string) => `swarm-node:${env}/${id}`,
 	kvItem: (env: EnvironmentID, kind: SwarmKeyValueKind, id: string) =>
 		`swarm-kv:${env}/${kind}/${id}`,
-	/** Env / labels of a service draft for `EnvVarsView` / `LabelsView`. */
 	serviceVars: (env: EnvironmentID, id: string) => `swarm-service-vars:${env}/${id}`,
 	serviceLabels: (env: EnvironmentID, id: string) => `swarm-service-labels:${env}/${id}`
 };

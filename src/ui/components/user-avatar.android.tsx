@@ -1,10 +1,4 @@
-/**
- * Ports of `UserAvatarCircle` (synced profile picture, else accent initials
- * circle) and `UserAccountLabel` (avatar + display name + @username) for
- * Android.
- *
- * Standalone (RN views).
- */
+import { useEffect } from 'react';
 import { Image } from 'expo-image';
 import { Text, View } from 'react-native';
 
@@ -18,6 +12,11 @@ export function UserAvatarCircle({ size }: { size: number }) {
 	const accent = useAccentColor();
 	const user = useClientManager((s) => s.currentUser);
 	const avatarURI = useClientManager((s) => s.currentUserAvatarURI);
+	const refreshAvatar = useClientManager((s) => s.refreshCurrentUserAvatar);
+	const updatedAt = user?.updatedAt;
+	useEffect(() => {
+		void refreshAvatar();
+	}, [refreshAvatar, updatedAt]);
 	const source = user?.displayName ? user.displayName : (user?.username ?? '?');
 	if (avatarURI) {
 		return (

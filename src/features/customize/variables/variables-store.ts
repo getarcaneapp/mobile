@@ -1,8 +1,3 @@
-/**
- * Port of `VariablesStore` (VariablesView.swift): global variables, the
- * environments they can target, and their per-environment sync status.
- * An external store (one per screen) read through `useSyncExternalStore`.
- */
 import { randomUUID } from 'expo-crypto';
 import { useRef, useSyncExternalStore } from 'react';
 
@@ -47,7 +42,6 @@ const initialSnapshot: VariablesSnapshot = {
 	pollingRevision: 0
 };
 
-/** `ActivityBatchID.requestOptions()`: a fresh lowercase UUID batch per mutation. */
 function activityBatchOptions(): ArcaneRequestOptions {
 	return ArcaneRequestOptions.withActivityBatchID(randomUUID().toLowerCase());
 }
@@ -61,7 +55,6 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const isUnknownSyncState = (state: VariableSyncState) => !VariableSyncState.isKnown(state);
 
-/** `VariableSyncState.displayName`. */
 export function syncStateDisplayName(state: VariableSyncState): string {
 	const value = state
 		.replace(/_/g, ' ')
@@ -172,7 +165,6 @@ export class VariablesStore {
 		}
 	}
 
-	/** Polls every 2 s while any environment is pending, up to 30 times. */
 	async pollPendingSync(client: ArcaneClient, isCancelled: () => boolean) {
 		for (let attempt = 0; attempt <= 30; attempt++) {
 			if (attempt > 0) await sleep(2000);
@@ -217,7 +209,6 @@ export class VariablesStore {
 	}
 }
 
-/** `syncSummary`, `syncSummaryIcon`, `syncSummaryColor`. */
 export function syncSummary(statuses: EnvironmentSyncStatus[]) {
 	const failures = statuses.filter((s) => s.status === VariableSyncState.error).length;
 	const pending = statuses.filter((s) => s.status === VariableSyncState.pending).length;
@@ -250,7 +241,6 @@ export function syncSummary(statuses: EnvironmentSyncStatus[]) {
 	};
 }
 
-/** `VariableSyncStatusRow.color` / `.icon`; an undefined color is `.secondary`. */
 export function syncStatusPresentation(state: VariableSyncState): {
 	icon: string;
 	color: string | undefined;
@@ -267,7 +257,6 @@ export function syncStatusPresentation(state: VariableSyncState): {
 	}
 }
 
-/** One `VariablesStore` per component, plus its live snapshot. */
 export function useVariablesStore(): [VariablesStore, VariablesSnapshot] {
 	const ref = useRef<VariablesStore | null>(null);
 	ref.current ??= new VariablesStore();

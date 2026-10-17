@@ -1,7 +1,3 @@
-/**
- * Port of `FederatedCredentialForm` (Types/FederatedCredentialForm.swift):
- * the editable draft, its validation, and the create/update requests. Pure TS.
- */
 import { formatArcaneDate, parseArcaneDate } from '@/sdk/models/base/date';
 import type {
 	CreateFederatedCredential,
@@ -14,14 +10,12 @@ export interface FederatedCredentialForm {
 	description: string;
 	enabled: boolean;
 	issuerUrl: string;
-	/** One audience per line. */
 	audiences: string;
 	subjectClaim: string;
 	subjectMatch: string;
 	matchType: string;
 	roleId: string;
 	environmentId: string;
-	/** The token-lifetime field's text (Swift binds an `Int` through a number format). */
 	tokenTtlSeconds: string;
 	expires: boolean;
 	expiresAt: Date;
@@ -141,7 +135,6 @@ export const FederatedCredentialForm = {
 	}
 } as const;
 
-/** Route payloads for the pushed federated-credential screens. */
 export type FederatedCredentialDetailPayload = {
 	credential: FederatedCredential;
 	onSaved: () => Promise<void>;

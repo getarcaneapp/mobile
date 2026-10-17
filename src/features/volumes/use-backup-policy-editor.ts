@@ -1,7 +1,3 @@
-/**
- * Model behind the volume flavour of `BackupPolicyEditor`
- * (Views/Settings/Backups/BackupPolicyEditor.swift, `volumeName != nil`).
- */
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 

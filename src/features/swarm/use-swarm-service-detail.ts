@@ -1,4 +1,3 @@
-/** State and actions behind `SwarmServiceDetailView` (SwarmServiceDetailView.swift). */
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -86,7 +85,6 @@ export function useSwarmServiceDetail() {
 			} catch (error) {
 				setErrorMessage(friendlyErrorMessage(error));
 			}
-			// Replica counts only come from the list endpoint.
 			if (freshName) {
 				const response = await current.swarm
 					.listServices({ envID: environmentID, search: freshName, limit: 50 })
@@ -138,7 +136,6 @@ export function useSwarmServiceDetail() {
 			await current.swarm.deleteService({ serviceId: serviceID, envID: environmentID });
 			swarmChanged(environmentID);
 			showToast(Toasts.success('Service deleted'));
-			// The toolbar's confirmation already dismissed this screen.
 		} catch (error) {
 			showToast(Toasts.error(friendlyErrorMessage(error)));
 		} finally {
@@ -194,8 +191,6 @@ export function useSwarmServiceDetail() {
 					action: () => void deleteService()
 				}
 			];
-
-	// MARK: Overview rows
 
 	const mode: SwarmServiceMode | undefined =
 		draft?.mode ??

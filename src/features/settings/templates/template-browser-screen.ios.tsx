@@ -1,8 +1,3 @@
-/**
- * Port of `TemplateBrowserView` (TemplateBrowserView.swift). `embedded` is the
- * Settings / Projects push (no Done, gearshape into registry management); the
- * standalone form adds Done.
- */
 import { Host } from '@/ui/host';
 import { Button, Group, HStack, Label, List, RNHostView, Section, Text } from '@expo/ui/swift-ui';
 import {
@@ -41,7 +36,6 @@ import {
 } from './use-template-browser';
 
 const clearRow = listRowBackground('#00000000');
-/** The source tab bar row sits flush with the list edges (`listRowInsets` / clear background / hidden separator). */
 const tabBarRowModifiers = [
 	listRowInsets({ top: 4, leading: 0, bottom: 4, trailing: 0 }),
 	clearRow,
@@ -52,7 +46,6 @@ function TemplateLink({ model, template }: { model: TemplateBrowserModel; templa
 	if (!model.canReadTemplates) return <TemplateRow template={template} />;
 	return (
 		<Button onPress={() => model.openPreview(template)} modifiers={[buttonStyle('plain')]}>
-			{/* NavigationLink rows are tappable full-width. */}
 			<HStack modifiers={[contentShape(shapes.rectangle())]}>
 				<TemplateRow template={template} />
 				<DisclosureChevron />

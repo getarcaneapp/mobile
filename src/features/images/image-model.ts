@@ -1,9 +1,3 @@
-/**
- * Image helpers from Models.swift (`ImageSummary.displayName`),
- * Types/ImageUpdateState.swift (`resolve`, `checkedResults`),
- * Types/ResourceListFilters.swift (`ImageTagsFilter`), and the private
- * helpers of ImagesView / ImageDetailView / ImagePruneView. Pure TS.
- */
 import { formatFileBytes } from '@/core/networking/remote-data-limits';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import type { ImageDetailConfig } from '@/sdk/models/image/ImageDetail';
@@ -14,12 +8,10 @@ import type { ImageUpdateState } from '@/ui/components/labels.types';
 
 export const untaggedReference = '<none>:<none>';
 
-/** `ImageSummary.displayName`. */
 export function imageDisplayName(image: Pick<ImageSummary, 'repoTags' | 'id'>): string {
 	return image.repoTags.find((tag) => tag !== untaggedReference) ?? image.id.slice(0, 12);
 }
 
-/** Swift `Int64.byteString` (`ByteCountFormatter`, `.file`). */
 export function byteString(bytes: number): string {
 	return bytes === 0 ? 'Zero KB' : formatFileBytes(bytes);
 }
@@ -27,14 +19,9 @@ export function byteString(bytes: number): string {
 export const taggedReferences = (repoTags: readonly string[]) =>
 	repoTags.filter((tag) => tag !== untaggedReference);
 
-// MARK: - ImageTagsFilter
-
 export type ImageTagsFilter = 'All' | 'Tagged' | 'Untagged';
 export const ImageTagsFilters: ImageTagsFilter[] = ['All', 'Tagged', 'Untagged'];
 
-// MARK: - ImageUpdateState
-
-/** `ImageUpdateState(info:)`. */
 export function imageUpdateStateFromInfo(info: ImageUpdateInfo | undefined): ImageUpdateState {
 	if (!info) return { kind: 'unknown' };
 	if (info.hasUpdate) return { kind: 'hasUpdate' };
@@ -44,7 +31,6 @@ export function imageUpdateStateFromInfo(info: ImageUpdateInfo | undefined): Ima
 	return { kind: 'unknown' };
 }
 
-/** `ImageUpdateState.checkedResults(_:)`. */
 export function checkedUpdateResults(
 	info: Record<string, ImageUpdateInfo | undefined>
 ): Record<string, ImageUpdateResponse> {
@@ -57,7 +43,6 @@ export function checkedUpdateResults(
 	return results;
 }
 
-/** `ImageUpdateState.resolve(inline:references:results:)`. */
 export function resolveImageUpdateState(
 	inline: ImageUpdateInfo | undefined,
 	references: readonly string[],
@@ -75,7 +60,6 @@ export function resolveImageUpdateState(
 	return { kind: 'upToDate' };
 }
 
-/** ImageDetailView `updateState`: compact badge state from a fetched update response. */
 export function updateStateFromResponse(info: ImageUpdateResponse | undefined): ImageUpdateState {
 	if (!info) return { kind: 'unknown' };
 	if (info.error !== undefined && info.error !== '') return { kind: 'error', message: info.error };
@@ -83,14 +67,12 @@ export function updateStateFromResponse(info: ImageUpdateResponse | undefined): 
 	return { kind: 'upToDate' };
 }
 
-// MARK: - ImageDetailView helpers
-
 const normalizedID = (id: string) => (id.startsWith('sha256:') ? id.slice(7) : id);
 
 function normalizedRef(ref: string): string {
 	let r = ref;
 	const at = r.indexOf('@');
-	if (at >= 0) r = r.slice(0, at); // drop @sha256:… digest
+	if (at >= 0) r = r.slice(0, at);
 	for (const prefix of [
 		'index.docker.io/library/',
 		'index.docker.io/',
@@ -106,12 +88,10 @@ function normalizedRef(ref: string): string {
 	return r;
 }
 
-/** ImageDetailView `usesThisImage(_:)`. */
 export function containerUsesImage(
 	image: Pick<ImageSummary, 'id' | 'repoTags'>,
 	container: Pick<ContainerSummary, 'imageId' | 'image'>
 ): boolean {
-	// Primary: same resolved image id (sha), tolerant of short ids / prefix.
 	const imageHex = normalizedID(image.id);
 	const containerHex = normalizedID(container.imageId);
 	if (
@@ -123,13 +103,10 @@ export function containerUsesImage(
 	) {
 		return true;
 	}
-	// Fallback: the container's image ref matches one of this image's tags,
-	// ignoring implicit Docker Hub registry/namespace prefixes and any digest.
 	const containerRef = normalizedRef(container.image);
 	return image.repoTags.some((tag) => normalizedRef(tag) === containerRef);
 }
 
-/** ImageDetailView `ConfigRow`. */
 export type ImageConfigRow =
 	| { kind: 'value'; label: string; value: string }
 	| { kind: 'text'; label: string; value: string }
@@ -150,8 +127,6 @@ export function imageConfigRows(config: ImageDetailConfig): ImageConfigRow[] {
 	if (labelCount > 0) rows.push({ kind: 'link', title: `Labels (${labelCount})`, page: 'labels' });
 	return rows;
 }
-
-// MARK: - ImagePruneView
 
 export type ImagePruneMode = 'dangling' | 'all' | 'olderThan';
 
@@ -180,14 +155,9 @@ export function imagePruneResultMessage(report: ImagePruneReport): string {
 	return message;
 }
 
-// MARK: - Pull
-
-/** `DeploymentActivityStore.parseImageNameAndTag(_:)`. */
 export function parseImageNameAndTag(raw: string): { name: string; tag?: string } {
 	const trimmed = raw.trim();
 	const beforeDigest = trimmed.split('@')[0] ?? trimmed;
-	// The last ':' is a tag separator only when nothing after it contains '/'
-	// (otherwise it's the registry host:port).
 	const colon = beforeDigest.lastIndexOf(':');
 	if (colon >= 0 && !beforeDigest.slice(colon).includes('/')) {
 		const tag = beforeDigest.slice(colon + 1);
@@ -196,9 +166,6 @@ export function parseImageNameAndTag(raw: string): { name: string; tag?: string 
 	return { name: beforeDigest };
 }
 
-// MARK: - Updates
-
-/** UpdateRow `versionLine(_:)`. */
 export function updateVersionLine(info: ImageUpdateResponse): string {
 	const latest = info.latestVersion;
 	if (
@@ -213,9 +180,6 @@ export function updateVersionLine(info: ImageUpdateResponse): string {
 	return 'Update available';
 }
 
-// MARK: - Attestations
-
-/** Friendly names for well-known predicate type URIs (matches the web). */
 export function shortPredicateName(type: string): string {
 	if (type.includes('slsa.dev/provenance')) return 'SLSA Provenance';
 	if (type.includes('spdx')) return 'SPDX SBOM';
@@ -232,14 +196,12 @@ export function predicateIconName(type: string): string {
 	return 'doc.badge.ellipsis';
 }
 
-/** Swift `String.capitalized`: uppercases each word's first letter and lowercases the rest. */
 export function capitalizedWords(value: string): string {
 	return value
 		.toLowerCase()
 		.replace(/(^|[^\p{L}\p{N}'])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
 }
 
-/** `JSONEncoder` with `.prettyPrinted, .sortedKeys, .withoutEscapingSlashes`. */
 export function prettySortedJSON(value: unknown): string {
 	const sort = (input: unknown): unknown => {
 		if (Array.isArray(input)) return input.map(sort);
@@ -252,6 +214,5 @@ export function prettySortedJSON(value: unknown): string {
 		}
 		return input;
 	};
-	// Swift's pretty printer separates keys from values with " : ".
 	return JSON.stringify(sort(value), null, 2).replace(/^(\s*"(?:[^"\\]|\\.)*"): /gm, '$1 : ');
 }

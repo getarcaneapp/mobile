@@ -5,7 +5,6 @@ import { AppState } from 'react-native';
 import { useClientManager } from '@/stores/client-manager';
 import { useEnvironmentColorStore } from '@/stores/environment-color-store';
 
-/** `.debounce(value, for:into:)` (View+Debounce.swift). */
 export function useDebounced<T>(value: T, delayMs: number): T {
 	const [debounced, setDebounced] = useState(value);
 	useEffect(() => {
@@ -15,7 +14,6 @@ export function useDebounced<T>(value: T, delayMs: number): T {
 	return debounced;
 }
 
-/** `.onChange(of:)`: runs `effect` when `value` changes, never on mount. */
 export function useOnChange<T>(value: T, effect: (value: T, previous: T) => void) {
 	const previous = useRef(value);
 	const latest = useRef(effect);
@@ -28,7 +26,6 @@ export function useOnChange<T>(value: T, effect: (value: T, previous: T) => void
 	}, [value]);
 }
 
-/** `scenePhase == .active`. */
 export function useAppIsActive(): boolean {
 	const [active, setActive] = useState(AppState.currentState === 'active');
 	useEffect(() => {
@@ -40,7 +37,6 @@ export function useAppIsActive(): boolean {
 	return active;
 }
 
-/** Whether the screen is focused (on top of its stack and its tab selected). */
 export function useIsScreenFocused(): boolean {
 	const [focused, setFocused] = useState(false);
 	useFocusEffect(
@@ -52,7 +48,6 @@ export function useIsScreenFocused(): boolean {
 	return focused;
 }
 
-/** `.rowEnvironment(item)` + `EnvironmentLabel.color`: the row's environment color in All Environments mode. */
 export function useEnvironmentRowColor(
 	environmentID: string,
 	environmentName: string | undefined

@@ -1,7 +1,5 @@
-/** Port of Models/Image/ImageDetail.swift. */
 import type { JSONValue } from '../../types/json';
 
-/** The `config` block on an `ImageDetailSummary`. */
 export interface ImageDetailConfig {
 	exposedPorts?: Record<string, JSONValue>;
 	env?: string[];
@@ -14,7 +12,6 @@ export interface ImageDetailConfig {
 	labels?: Record<string, string>;
 }
 
-/** The `graphDriver` block on an `ImageDetailSummary`. */
 export interface ImageDetailGraphDriver {
 	data?: JSONValue;
 	name: string;
@@ -26,7 +23,6 @@ export const ImageDetailGraphDriver = {
 	}
 } as const;
 
-/** The `rootFs` block on an `ImageDetailSummary`. */
 export interface ImageDetailRootFs {
 	type: string;
 	layers: string[];
@@ -38,7 +34,6 @@ export const ImageDetailRootFs = {
 	}
 } as const;
 
-/** The `metadata` block on an `ImageDetailSummary`. */
 export interface ImageDetailMetadata {
 	lastTagTime: string;
 }
@@ -49,7 +44,6 @@ export const ImageDetailMetadata = {
 	}
 } as const;
 
-/** The `descriptor` block on an `ImageDetailSummary`. */
 export interface ImageDetailDescriptor {
 	mediaType: string;
 	digest: string;
@@ -62,7 +56,6 @@ export const ImageDetailDescriptor = {
 	}
 } as const;
 
-/** Detailed information about a single image (the `inspect` response shape). */
 export interface ImageDetailSummary {
 	id: string;
 	repoTags: string[];

@@ -1,4 +1,3 @@
-/** Shared state for `PreviewFeaturesView` (PreviewFeaturesView.swift). */
 import { useStoredBool } from '@/core/storage';
 import { composePreviewPreferenceKey } from '@/features/compose/model/compose-preview-session';
 import { useClientManager } from '@/stores/client-manager';
@@ -6,7 +5,6 @@ import { useClientManager } from '@/stores/client-manager';
 import { useSettingsNavigation } from '../shared/settings-routes';
 import { AppSettingsRoutes } from './app-settings-routes';
 
-/** Port of `ComposePreviewSession.preferenceKey` (ComposePreviewSession.swift). */
 export const ComposePreviewSession = {
 	preferenceKey: composePreviewPreferenceKey
 } as const;

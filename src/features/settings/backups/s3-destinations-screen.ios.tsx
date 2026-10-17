@@ -1,4 +1,3 @@
-/** Port of `S3DestinationsView` (S3DestinationsView.swift). */
 import { Host } from '@/ui/host';
 import {
 	Button,

@@ -1,10 +1,3 @@
-/**
- * Android (Material 3) rendering of `AllEnvironmentsDashboard` (the Refreshed
- * Dashboard preview): totals tiles (long press → Edit Tiles), live usage
- * chart, busiest containers, host rows, and the tiles editor sheet.
- *
- * Standalone (RN views + Compose sheets/menus).
- */
 import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -55,7 +48,6 @@ export type AllEnvironmentsDashboardProps = {
 	hostsAccessory: ReactNode;
 };
 
-/** Material 3 single-choice segmented buttons. */
 function Segmented<T extends string>({
 	options,
 	selection,
@@ -312,7 +304,6 @@ function TilesEditorSheet({
 								() => move(index, 1),
 								index === tiles.length - 1
 							)}
-							{/* Keep at least one tile; an empty list would fall back to the defaults. */}
 							{iconButton(
 								'minus.circle.fill',
 								'Remove',

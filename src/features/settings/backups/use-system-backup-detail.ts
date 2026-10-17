@@ -1,4 +1,3 @@
-/** Data for `SystemBackupDetailView` (SystemBackupDetailView.swift). Shared by both platforms. */
 import { useEffect, useState } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';

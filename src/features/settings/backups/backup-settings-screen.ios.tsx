@@ -1,4 +1,3 @@
-/** Port of `BackupSettingsView` (BackupSettingsView.swift). */
 import { Section } from '@expo/ui/swift-ui';
 
 import { BackupFormChrome } from './backup-form-chrome';

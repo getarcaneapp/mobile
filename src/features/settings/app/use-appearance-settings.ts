@@ -1,4 +1,3 @@
-/** Shared state for `AppearanceSettingsView` (AppearanceSettingsView.swift). */
 import { Keys, useStoredBool } from '@/core/storage';
 import { AccentColorOptions, useAccentColorHex } from '@/theme/accent';
 import { parseHex, systemColors } from '@/theme/colors';
@@ -19,9 +18,6 @@ export function useAppearanceSettings() {
 	const [showTabLabels, setShowTabLabels] = useStoredBool(Keys.showTabLabels, false);
 	const icon = useAppIconState();
 
-	// Derive the picker selection from the stored hex so the two cannot drift
-	// apart. An empty hex represents the purple default. `undefined` preserves a
-	// custom hex stored by an older build until the user chooses a preset.
 	const selectedOption =
 		accentColorHex === ''
 			? AccentColorOptions.find((option) => option.id === 'purple')
@@ -31,7 +27,6 @@ export function useAppearanceSettings() {
 
 	return {
 		selectedAccentColor: selectedOption?.hex ?? parseHex(accentColorHex) ?? systemColors.purple,
-		/** Picker selection never stores empty: empty hex means the purple default. */
 		accentPickerSelection: selectedOption?.hex ?? purpleHex,
 		setAccentColorHex,
 		resetAccentColor: () => setAccentColorHex(''),

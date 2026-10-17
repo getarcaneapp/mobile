@@ -1,11 +1,3 @@
-/**
- * Navigation for the Containers destinations. Every route lives once in the
- * shared tab group, so pushes stay in whichever tab stack is current
- * (Swift: `navigationDestination` on the presenting stack).
- *
- * Objects that can't travel as route params (an initial summary, a shared
- * log store, an `onSaved` callback) are handed over through `routePayloads`.
- */
 import { useRouter, useSegments, type Href } from 'expo-router';
 import { useMemo } from 'react';
 
@@ -15,7 +7,6 @@ import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 
 const containerKey = (environmentID: EnvironmentID, id: string) => `${environmentID}/${id}`;
 
-/** Last known summary/details per container, for a pushed screen's first render. */
 const summaries = new Map<string, ContainerSummary>();
 const details = new Map<string, ContainerDetails>();
 
@@ -33,7 +24,6 @@ export const containerCache = {
 const payloads = new Map<string, unknown>();
 let nextToken = 0;
 
-/** One-shot hand-off of non-serializable values to a pushed route. */
 export const routePayloads = {
 	put(this: void, value: unknown): string {
 		const token = `p${Date.now().toString(36)}${nextToken++}`;
@@ -59,7 +49,6 @@ function query(params: Params) {
 		: `?${entries.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
 }
 
-/** Routes relative to the current tab's stack. */
 export function useContainerNavigation() {
 	const router = useRouter();
 	const segments = useSegments() as string[];

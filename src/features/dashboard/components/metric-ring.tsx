@@ -1,10 +1,3 @@
-/**
- * Port of `MetricRing` (EnvironmentsView.swift): a small capacity ring, hairline
- * track plus a round-capped progress arc. Progress animates with
- * `Motion.follow` (or `Motion.gauge` when asked); Reduce Motion jumps.
- *
- * Standalone (RN svg, both platforms).
- */
 import { useEffect } from 'react';
 import Animated, {
 	useAnimatedProps,
@@ -29,7 +22,6 @@ export function MetricRing({
 	motion = 'follow'
 }: {
 	progress: number;
-	/** Hex tint. */
 	tint: string;
 	size?: number;
 	lineWidth?: number;

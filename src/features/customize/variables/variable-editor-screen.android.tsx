@@ -1,4 +1,3 @@
-/** Android rendering of `VariableEditorView` (VariablesView.swift). */
 import { Stack } from 'expo-router';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 

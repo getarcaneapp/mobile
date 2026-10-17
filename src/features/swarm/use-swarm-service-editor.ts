@@ -1,4 +1,3 @@
-/** State behind `SwarmServiceEditorView` (SwarmServiceEditorView.swift). */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 

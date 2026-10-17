@@ -1,4 +1,3 @@
-/** Shared state for `EnvironmentColorsView` / `EnvironmentColorPicker` (EnvironmentColorsView.swift). */
 import { useEffect } from 'react';
 
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
@@ -37,7 +36,6 @@ export function useEnvironmentColors() {
 	};
 }
 
-/** One environment's color: the stored hex (blue when unset), availability, and save. */
 export function useEnvironmentColor(environment: Environment) {
 	const serverURL = useClientManager((s) => s.serverURL);
 	const storedHex = useEnvironmentColorStore((s) => s.hex(serverURL, environment.id));
@@ -63,7 +61,6 @@ export function useEnvironmentColor(environment: Environment) {
 export const EnvironmentColorsCopy = {
 	footer:
 		'Colors apply to environment names and icons in resource lists. Swipe a row to reset its color.',
-	/** Android rows reset from a long-press menu instead of a swipe action. */
 	androidFooter:
 		'Colors apply to environment names and icons in resource lists. Touch and hold a row to reset its color.'
 } as const;

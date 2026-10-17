@@ -1,13 +1,3 @@
-// Alternate app icons (AppIconPickerView.swift), driven by modules/arcane-app-icon.
-//
-// iOS: copies the reference app's alternate `.appiconset`s from
-// assets/app-icons/ into the generated asset catalog (the picker's thumbnails
-// are bundled JS assets in assets/app-icons/previews/), and sets the same build settings as the Swift project so
-// actool compiles the alternates and lists them in `CFBundleAlternateIcons`.
-//
-// Android: renders each alternate into mipmaps (with `sips`), wraps it in an
-// adaptive icon, and moves the MAIN/LAUNCHER intent filter from MainActivity
-// onto one `<activity-alias>` per icon. Only the primary alias starts enabled.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,7 +12,6 @@ import {
 
 const ASSETS_DIR = 'assets/app-icons';
 
-/** Matches the Swift project's `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`. */
 export const ALTERNATE_APP_ICONS = [
 	'AppIcon-Liquid-Glass-Light',
 	'AppIcon-Liquid-Glass-Dark',
@@ -35,11 +24,8 @@ export const ALTERNATE_APP_ICONS = [
 	'AppIcon-Porcelain'
 ] as const;
 
-/** Meta-data key read by ArcaneAppIconModule.kt; value `AppIcon` is the primary icon. */
 const META_KEY = 'app.getarcane.appIcon';
 const PRIMARY = 'AppIcon';
-
-// ---------------------------------------------------------------- iOS
 
 const withIosIconAssets: ConfigPlugin = (config) =>
 	withDangerousMod(config, [
@@ -69,7 +55,6 @@ const withIosIconBuildSettings: ConfigPlugin = (config) =>
 		for (const value of Object.values(configurations)) {
 			if (typeof value !== 'object' || value === null) continue;
 			const settings = (value as { buildSettings?: Record<string, unknown> }).buildSettings;
-			// App target configurations only (the project-level ones have no bundle ID).
 			if (!settings || settings.PRODUCT_BUNDLE_IDENTIFIER === undefined) continue;
 			settings.ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = `"${ALTERNATE_APP_ICONS.join(' ')}"`;
 			settings.ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = 'YES';
@@ -77,9 +62,6 @@ const withIosIconBuildSettings: ConfigPlugin = (config) =>
 		return config;
 	});
 
-// ---------------------------------------------------------------- Android
-
-/** Launcher icon layer is 108dp; mdpi = 1px per dp. */
 const DENSITIES = {
 	mdpi: 1,
 	hdpi: 1.5,
@@ -91,7 +73,6 @@ const DENSITIES = {
 const resourceSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
 const aliasName = (name: string) => `.MainActivity_${name.replace(/[^A-Za-z0-9]+/g, '_')}`;
 
-/** The 1024px source image of an `.appiconset`. */
 function appIconSource(appiconset: string): string {
 	const contents = JSON.parse(fs.readFileSync(path.join(appiconset, 'Contents.json'), 'utf8')) as {
 		images?: { filename?: string }[];
@@ -132,8 +113,6 @@ const withAndroidIconResources: ConfigPlugin = (config) =>
 						}
 					);
 				}
-				// The full-bleed iOS artwork fills the 72dp visible viewport; the same
-				// image scaled to 108dp sits behind it so parallax never shows a gap.
 				const drawable = path.join(res, 'drawable');
 				fs.mkdirSync(drawable, { recursive: true });
 				fs.writeFileSync(

@@ -1,17 +1,3 @@
-// Material 3 app theme on Android.
-//
-// The Expo template's `AppTheme` is AppCompat, so platform UI that the app
-// doesn't draw itself (RN `Alert` dialogs, text selection handles, the
-// keyboard-adjacent widgets) renders as legacy AppCompat: uppercase teal
-// buttons on a square surface. This re-parents `AppTheme` onto Material 3
-// DayNight with dynamic color (wallpaper-based on Android 12+, the M3
-// baseline below), and gives AppCompat alert dialogs (what RN's
-// `AlertFragment` builds) the M3 dialog overlay and a 28dp rounded
-// surface-container-high background, like `MaterialAlertDialogBuilder`.
-//
-// `com.google.android.material` is already on the classpath transitively
-// (expo-router, react-native-screens); it is declared on the app module too
-// because the app's own resources now reference it.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -30,8 +16,6 @@ const APP_THEME_PARENT = 'Theme.Material3.DynamicColors.DayNight.NoActionBar';
 const DIALOG_OVERLAY = 'ThemeOverlay.App.AlertDialog';
 const DIALOG_BACKGROUND = 'app_alert_dialog_background';
 
-// M3 dialog surface: 28dp corners on surfaceContainerHigh, with
-// MaterialAlertDialogBuilder's default background insets.
 const DIALOG_BACKGROUND_XML = `<?xml version="1.0" encoding="utf-8"?>
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:insetLeft="24dp"
@@ -102,7 +86,6 @@ const withMaterialStyles: ConfigPlugin = (config) =>
 			name: 'alertDialogTheme',
 			value: `@style/${DIALOG_OVERLAY}`
 		});
-		// The template pins colorPrimary to its own resource; let the dynamic theme supply it.
 		styles = Styles.assignStylesValue(styles, {
 			add: false,
 			parent: appTheme,

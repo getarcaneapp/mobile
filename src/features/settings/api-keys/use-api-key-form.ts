@@ -1,6 +1,3 @@
-/**
- * Models for `CreateAPIKeyView` and `EditAPIKeyView` (CreateAPIKeyView.swift).
- */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -23,7 +20,6 @@ import {
 	type EditAPIKeyPayload
 } from './api-key-models';
 
-/** `formatValidationFields(_:)` (RBACModels.swift). */
 function formatValidationFields(fields: Record<string, string[]>): string {
 	return Object.keys(fields)
 		.sort()
@@ -43,11 +39,9 @@ const grants = (selected: ReadonlySet<string>): ApiKeyPermissionGrant[] =>
 const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
 	a.size === b.size && [...a].every((value) => b.has(value));
 
-/** `Date?` equality. */
 const sameInstant = (a: Date | undefined, b: Date | undefined) =>
 	a === undefined || b === undefined ? a === b : a.getTime() === b.getTime();
 
-/** `loadedManifest ?? manager.permissionsManifest`, fetched when missing. */
 function useManifest(enabled: boolean, onError?: (message: string) => void) {
 	const sessionManifest = useClientManager((s) => s.permissionsManifest);
 	const [loadedManifest, setLoadedManifest] = useState<PermissionsManifest>();
@@ -56,7 +50,6 @@ function useManifest(enabled: boolean, onError?: (message: string) => void) {
 	const latest = useRef({ enabled, hasManifest: manifest !== undefined, onError });
 	latest.current = { enabled, hasManifest: manifest !== undefined, onError };
 
-	// `.task { await loadManifestIfNeeded() }`.
 	useEffect(() => {
 		const client = useClientManager.getState().client;
 		if (!latest.current.enabled || latest.current.hasManifest || !client) return;
@@ -228,7 +221,6 @@ export function useEditAPIKey() {
 		metadata,
 		isLoadingPermissions,
 		showsPermissionPicker,
-		/** The key already expires: the toggle is hidden and the date can't be removed. */
 		hadExpiration: originalExpiresAt !== undefined,
 		name,
 		setName,

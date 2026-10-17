@@ -5,8 +5,7 @@ import withAppIcons from './plugins/with-app-icons.ts';
 import withMaterial3Theme from './plugins/with-material3-theme.ts';
 import withReleaseScheme from './plugins/with-release-scheme.ts';
 
-// Mirrors the native app's MARKETING_VERSION. Release notes key off this string.
-const MARKETING_VERSION = '0.10.2';
+const MARKETING_VERSION = '0.11.0';
 
 const config: ExpoConfig = {
 	name: 'Arcane',
@@ -46,8 +45,6 @@ const config: ExpoConfig = {
 			{
 				backgroundColor: '#FFFFFF',
 				dark: { backgroundColor: '#000000' },
-				// Swift's generated launch screen is the bare system background; the
-				// Arcane logo animates in afterwards (ArcaneLaunchSplash).
 				image: './assets/images/launch-blank.png',
 				imageWidth: 1
 			}

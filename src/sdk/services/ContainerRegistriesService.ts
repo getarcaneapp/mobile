@@ -1,4 +1,3 @@
-/** Port of Services/ContainerRegistriesService.swift. */
 import { q, type QueryItem } from '../client/url';
 import type { RESTService } from '../http/RESTService';
 import type { SortOrder } from '../models/base/pagination';
@@ -11,7 +10,6 @@ import {
 } from '../models/containerRegistry/ContainerRegistry';
 import type { PaginatedResponse } from '../pagination/PaginatedResponse';
 
-/** ContainerRegistriesService manages container image registry configurations. */
 export class ContainerRegistriesService {
 	private readonly rest: RESTService;
 
@@ -19,7 +17,6 @@ export class ContainerRegistriesService {
 		this.rest = rest;
 	}
 
-	/** List container registries with pagination. */
 	listPaginated(
 		args: { search?: string; sort?: string; order?: SortOrder; start?: number; limit?: number } = {}
 	): Promise<PaginatedResponse<ContainerRegistry>> {
@@ -35,12 +32,10 @@ export class ContainerRegistriesService {
 		});
 	}
 
-	/** Get a container registry by ID. */
 	get(args: { id: string }): Promise<ContainerRegistry> {
 		return this.rest.get(`container-registries/${args.id}`, { decode: ContainerRegistry.decode });
 	}
 
-	/** Create a new container registry. */
 	create(args: { body: CreateContainerRegistry }): Promise<ContainerRegistry> {
 		return this.rest.post('container-registries', {
 			body: args.body,
@@ -48,7 +43,6 @@ export class ContainerRegistriesService {
 		});
 	}
 
-	/** Update an existing container registry. */
 	update(args: { id: string; body: UpdateContainerRegistry }): Promise<ContainerRegistry> {
 		return this.rest.put(`container-registries/${args.id}`, {
 			body: args.body,
@@ -56,24 +50,20 @@ export class ContainerRegistriesService {
 		});
 	}
 
-	/** Delete a container registry. */
 	delete(args: { id: string }): Promise<void> {
 		return this.rest.deleteVoid(`container-registries/${args.id}`);
 	}
 
-	/** Test connectivity and authentication for a container registry. */
 	test(args: { id: string }): Promise<void> {
 		return this.rest.postVoid(`container-registries/${args.id}/test`);
 	}
 
-	/** Sync container registries from a remote source (manager to agent). */
 	sync(args: { body: ContainerRegistrySyncRequest }): Promise<void> {
 		return this.rest.postVoid('container-registries/sync', {
 			body: ContainerRegistrySyncRequest.encode(args.body)
 		});
 	}
 
-	/** Get pull-usage and rate-limit visibility for configured registries. */
 	pullUsage(): Promise<ContainerRegistryPullUsageResponse> {
 		return this.rest.get('container-registries/pull-usage');
 	}

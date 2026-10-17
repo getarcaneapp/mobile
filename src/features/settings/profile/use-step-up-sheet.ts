@@ -1,4 +1,3 @@
-/** Sheet-local state for `StepUpAuthenticationSheet` (PasskeysMFAView.swift). */
 import { useState } from 'react';
 
 import type { StepUpSheetProps } from './step-up-sheet.types';

@@ -1,7 +1,3 @@
-/**
- * Port of `RecoveryCodesSaveView` (PasskeysMFAView.swift). Presented as a
- * sheet with interactive dismissal disabled; draws its own navigation bar.
- */
 import { Host } from '@/ui/host';
 import { Button, Label, List, NavigationStack, Section, Text } from '@expo/ui/swift-ui';
 import {
@@ -64,7 +60,6 @@ export function RecoveryCodesScreen() {
 					</List>
 				</NavigationStack>
 			</Host>
-			{/* `.safeAreaInset(edge: .bottom)` confirmation bar. */}
 			<Host matchContents={{ vertical: true }} style={{ width: '100%' }}>
 				<Button
 					label="I've Saved These Codes"

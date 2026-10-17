@@ -1,9 +1,3 @@
-/**
- * Port of `EnvironmentDetailView` (EnvironmentDetailView.swift): header card
- * and section tabs, then the selected tab — Info (system + Docker info),
- * Connection, the environment settings tabs (shared draft + floating save
- * bar), and GitOps.
- */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -79,7 +73,6 @@ import {
 } from './environment-detail-model';
 import { useEnvironmentDetail, type EnvironmentDetailModel } from './use-environment-detail';
 
-/** `Color(uiColor: .tertiarySystemFill)`. */
 const tertiaryFill = { light: '#7676801F', dark: '#7676803D' } as const;
 
 const flatRowModifiers = [
@@ -88,7 +81,6 @@ const flatRowModifiers = [
 	listRowSeparator('hidden')
 ];
 
-/** Full-width content without the grouped-row background. */
 function FlatRow({ children }: { children: ReactNode }) {
 	return (
 		<Section>
@@ -99,7 +91,6 @@ function FlatRow({ children }: { children: ReactNode }) {
 	);
 }
 
-/** `ArcaneLoadingView(label).frame(maxWidth: .infinity).padding(.top, 40)`. */
 function LoadingRow({ label }: { label: string }) {
 	return (
 		<VStack modifiers={[frame({ maxWidth: Infinity }), padding({ top: 40 })]}>
@@ -108,7 +99,6 @@ function LoadingRow({ label }: { label: string }) {
 	);
 }
 
-/** `DashboardInfoGroup(title:usesCardBackground: false)` + `DashboardInfoRow`s. */
 function InfoGroupView({ group }: { group: InfoGroup }) {
 	return (
 		<VStack alignment="leading" spacing={10}>
@@ -123,7 +113,6 @@ function InfoGroupView({ group }: { group: InfoGroup }) {
 								{row.label}
 							</Text>
 							<Spacer />
-							{/* Swift lets long values (Daemon ID) wrap; expo's row would otherwise truncate. */}
 							<Text
 								modifiers={[monospacedDigit(), fixedSize({ horizontal: false, vertical: true })]}
 							>
@@ -203,7 +192,6 @@ function NavigationRow({
 	);
 }
 
-/** Settings tab sections, or a placeholder while they load or when the environment can't be reached. */
 function SettingsContent({
 	model,
 	sections
@@ -374,7 +362,6 @@ export function EnvironmentDetailScreen(props: { id?: string; name?: string }) {
 						<Section>
 							<VStack spacing={0} modifiers={flatRowModifiers}>
 								<HeaderCard model={model} />
-								{/* RN host inside SwiftUI needs a fixed frame (AGENTS.md); ScrollableTabBar is 12 + 30pt pill + 12. */}
 								<VStack modifiers={[frame({ height: 54 })]}>
 									<RNHostView matchContents={{ vertical: true }}>
 										<View style={{ width: '100%' }}>

@@ -1,4 +1,3 @@
-/** Port of `VariablesView`, `VariableRow`, `VariableSyncStatusRow` (VariablesView.swift). */
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -57,7 +56,6 @@ function VariableRow({ variable, scopeLabel }: { variable: GlobalVariable; scope
 			modifiers={[contentShape(shapes.rectangle()), accessibilityElement('combine')]}
 		>
 			<HStack spacing={8}>
-				{/* Hierarchical `.primary`: inside the edit Button it resolves to the accent tint, like Swift. */}
 				<Text
 					modifiers={[
 						font({ textStyle: 'body', design: 'monospaced' }),

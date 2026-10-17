@@ -1,20 +1,7 @@
 import { NativeModule, requireOptionalNativeModule } from 'expo';
 
-/**
- * Platform cloud storage for small items.
- *
- * - iOS: synchronizable generic-password keychain items (iCloud Keychain).
- *   `accessGroup` / `accessible` select the keychain group and protection class.
- * - Android: Google Play services Block Store (backup restored on new-device
- *   setup, not a live sync); `accessGroup` / `accessible` are ignored. Password
- *   sign-ins use Credential Manager (`savePassword` / `getPassword`).
- *
- * Neither platform emits a change notification: refresh on foreground.
- */
 export type CloudSyncStatus = {
-	/** The store can be read and written. */
 	available: boolean;
-	/** Items leave the device (iCloud Keychain, or end-to-end encrypted Google backup). */
 	cloudBackup: boolean;
 };
 
@@ -42,8 +29,6 @@ declare class ArcaneCloudSyncNativeModule extends NativeModule {
 	getPassword?(): Promise<{ username: string; password: string } | null>;
 }
 
-// Optional so a dev client built before this module existed keeps working
-// with local-only storage instead of crashing.
 const native = requireOptionalNativeModule<ArcaneCloudSyncNativeModule>('ArcaneCloudSync');
 
 const unavailable = () => new Error("ArcaneCloudSync native module isn't in this build");
@@ -84,7 +69,6 @@ export const ArcaneCloudSync = {
 		return native.deleteItem(service, account, options.accessGroup ?? null);
 	},
 
-	/** account → value for every item under `service`. */
 	getAllItems(service: string, options: CloudItemOptions = {}): Promise<Record<string, string>> {
 		if (!native) return Promise.reject(unavailable());
 		return native.getAllItems(service, options.accessGroup ?? null);
@@ -95,11 +79,9 @@ export const ArcaneCloudSync = {
 		return native.listAccounts(service, options.accessGroup ?? null);
 	},
 
-	/** Android: offers to save to Google Password Manager. Resolves false when dismissed or unsupported. */
 	savePassword: async (username: string, password: string): Promise<boolean> =>
 		native?.savePassword ? native.savePassword(username, password) : false,
 
-	/** Android: lets the user pick a saved password for this app. Undefined when dismissed or none. */
 	getPassword: async (): Promise<{ username: string; password: string } | undefined> =>
 		(native?.getPassword ? await native.getPassword() : null) ?? undefined
 };

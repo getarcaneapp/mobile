@@ -1,4 +1,3 @@
-/** Port of Models/Project/Project.swift. */
 import type { JSONValue } from '../../types/json';
 import type { ContainerRegistryCredential } from '../containerRegistry/ContainerRegistry';
 import { D } from '../base/decoding';
@@ -7,17 +6,12 @@ import type { PaginationResponse } from '../base/pagination';
 import type { ProjectFile, ProjectFileChange, ProjectFileDraft } from './ProjectFiles';
 import type { ProjectTag } from './ProjectTag';
 
-/**
- * IncludeFile represents a project-related file (compose include, env file, or
- * other on-disk file shown in the project view).
- */
 export interface IncludeFile {
 	path: string;
 	relativePath: string;
 	content?: string;
 }
 
-/** CreateProject is the body for `POST /environments/{id}/projects`. */
 export interface CreateProject {
 	name: string;
 	composeContent: string;
@@ -25,7 +19,6 @@ export interface CreateProject {
 	projectFiles?: ProjectFileDraft[];
 }
 
-/** UpdateProject is the body for `PUT /environments/{id}/projects/{id}`. */
 export interface UpdateProject {
 	name?: string;
 	composeContent?: string;
@@ -34,7 +27,6 @@ export interface UpdateProject {
 	fileChanges?: ProjectFileChange[];
 }
 
-/** DeployOptions configures the deploy/up call. */
 export interface DeployOptions {
 	pullPolicy?: string;
 	forceRecreate?: boolean;
@@ -42,13 +34,11 @@ export interface DeployOptions {
 	recreateVolumes?: boolean;
 }
 
-/** UpdateIncludeFile is the body for the include file update endpoint. */
 export interface UpdateIncludeFile {
 	relativePath: string;
 	content: string;
 }
 
-/** RuntimeService contains live container state for one compose service. */
 export interface RuntimeService {
 	name: string;
 	image: string;
@@ -64,7 +54,6 @@ export interface RuntimeService {
 	redeployDisabled?: boolean;
 }
 
-/** ProjectUpdateInfo summarises image update status for the whole project. */
 export interface ProjectUpdateInfo {
 	status: string;
 	hasUpdate: boolean;
@@ -78,7 +67,6 @@ export interface ProjectUpdateInfo {
 	lastCheckedAt?: ISODateString;
 }
 
-/** ProjectCreateResponse is the response for `POST projects`. */
 export interface ProjectCreateResponse {
 	id: string;
 	name: string;
@@ -94,7 +82,6 @@ export interface ProjectCreateResponse {
 	archivedAt?: ISODateString;
 	createdAt: string;
 	updatedAt: string;
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -142,7 +129,6 @@ export const ProjectCreateResponse = {
 	}
 } as const;
 
-/** ProjectDetails is the full project view returned by the list/details endpoints. */
 export interface ProjectDetails {
 	id: string;
 	name: string;
@@ -178,7 +164,6 @@ export interface ProjectDetails {
 	gitOpsManagedBy?: string;
 	lastSyncCommit?: string;
 	gitRepositoryURL?: string;
-	/** JSON key `activityId`. */
 	activityID?: string;
 }
 
@@ -250,13 +235,11 @@ export const ProjectDetails = {
 	}
 } as const;
 
-/** DestroyProject is the body for the destroy endpoint. */
 export interface DestroyProject {
 	removeFiles?: boolean;
 	removeVolumes?: boolean;
 }
 
-/** ProjectStatusCounts summarises project status counts for an environment. */
 export interface ProjectStatusCounts {
 	runningProjects: number;
 	stoppedProjects: number;
@@ -275,12 +258,10 @@ export const ProjectStatusCounts = {
 	}
 } as const;
 
-/** ImagePullRequest is the body for `POST projects/{id}/pull`. */
 export interface ImagePullRequest {
 	credentials?: ContainerRegistryCredential[];
 }
 
-/** BuildProjectRequest is the body for `POST projects/{id}/build`. */
 export interface BuildProjectRequest {
 	services?: string[];
 	provider?: string;
@@ -288,7 +269,6 @@ export interface BuildProjectRequest {
 	load?: boolean;
 }
 
-/** ProjectListPage is the page envelope for `GET /environments/{id}/projects`. */
 export interface ProjectListPage {
 	success: boolean;
 	data: ProjectDetails[];

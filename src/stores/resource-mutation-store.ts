@@ -1,7 +1,3 @@
-/**
- * Port of `ResourceMutationStore.swift`: per-kind/per-environment change
- * counters so a list reloads after a mutation made elsewhere.
- */
 import { create } from 'zustand';
 
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -32,12 +28,10 @@ export const useResourceMutationStore = create<ResourceMutationState>((set, get)
 	}
 }));
 
-/** Reactive version for one kind/environment. */
 export function useResourceVersion(kind: ResourceKind, envID?: EnvironmentID): number {
 	return useResourceMutationStore((s) => s.versions[versionKey(kind, envID)] ?? 0);
 }
 
-/** Sum over `environments`, so an All Environments list reloads after a mutation in any of them. */
 export function useResourceVersionIn(
 	kind: ResourceKind,
 	environments: readonly { id: EnvironmentID }[]

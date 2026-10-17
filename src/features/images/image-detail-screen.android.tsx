@@ -1,4 +1,3 @@
-/** Android rendering of `ImageDetailView` (ImageDetailView.swift). */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';

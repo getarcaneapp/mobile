@@ -1,10 +1,3 @@
-/**
- * React Native ports of the `CardVocabulary.swift` surfaces, for RN trees on
- * both platforms. On Android they render as Material 3 tonal containers (no
- * glass, elevation from the tonal color instead of shadows).
- *
- * Standalone (RN views).
- */
 import type { ReactNode } from 'react';
 import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -15,7 +8,6 @@ import { GlassSurface, canUseLiquidGlass } from '@/ui/glass';
 
 import { groupedHex, useIsDark, useReduceTransparency } from './accessibility';
 
-/** `.floatingSurfaceShadow()` for RN views (iOS only; Android floats via elevation). */
 export const floatingSurfaceShadowStyle: ViewStyle = Platform.select({
 	ios: {
 		shadowColor: '#000',
@@ -28,7 +20,6 @@ export const floatingSurfaceShadowStyle: ViewStyle = Platform.select({
 
 type SurfaceProps = { cornerRadius?: number; style?: StyleProp<ViewStyle>; children?: ReactNode };
 
-/** `.dashboardCardBackground(cornerRadius:)`. */
 export function DashboardCard({ cornerRadius = Radius.card, style, children }: SurfaceProps) {
 	const isDark = useIsDark();
 	const legacyIOS = Platform.OS === 'ios' && !canUseLiquidGlass;
@@ -45,7 +36,6 @@ export function DashboardCard({ cornerRadius = Radius.card, style, children }: S
 					shadowOpacity: 0.06,
 					shadowRadius: 8,
 					shadowOffset: { width: 0, height: 3 },
-					// Top-edge highlight approximated with a top border.
 					borderTopWidth: 1,
 					borderTopColor: isDark ? '#FFFFFF12' : '#FFFFFF59'
 				},
@@ -57,7 +47,6 @@ export function DashboardCard({ cornerRadius = Radius.card, style, children }: S
 	);
 }
 
-/** Port of `GlassCardBackgroundModifier` for RN trees. */
 export function GlassCard({
 	cornerRadius = Radius.card,
 	isHighlighted = false,
@@ -105,7 +94,6 @@ export function GlassCard({
 	);
 }
 
-/** `.raisedChipBackground(in:)` for RN views. */
 export function RaisedChip({ cornerRadius = Radius.nested, style, children }: SurfaceProps) {
 	return (
 		<View

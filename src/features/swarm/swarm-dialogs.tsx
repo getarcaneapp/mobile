@@ -1,7 +1,3 @@
-/**
- * Material 3 text-entry dialog standing in for SwiftUI `.alert` with text
- * fields (Add Label, Unlock Swarm) on Android. Standalone (RN Modal).
- */
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 
 import { colors } from '@/theme/colors';

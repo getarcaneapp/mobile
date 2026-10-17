@@ -1,12 +1,3 @@
-/**
- * Navigation helpers shared by the Networks, Ports, Events and Swarm screens.
- * Every route lives once in the shared tab group, so pushes stay in the tab
- * stack that is current (Swift: `NavigationLink` / `navigationDestination`
- * on the presenting stack).
- *
- * Values that can't travel as route params (a summary for the pushed screen's
- * first render, a callback) go through `screenCache` / `routePayloads`.
- */
 import { useRouter, useSegments, type Href } from 'expo-router';
 import { useMemo } from 'react';
 
@@ -25,7 +16,6 @@ function query(params: Params) {
 
 const values = new Map<string, unknown>();
 
-/** Last known value per key (e.g. a list row's summary), read by the pushed screen. */
 export const screenCache = {
 	set<T>(key: string, value: T) {
 		values.set(key, value);
@@ -35,7 +25,6 @@ export const screenCache = {
 	}
 };
 
-/** `router.push` relative to the current tab's stack. */
 export function useTabRouter() {
 	const router = useRouter();
 	const segments = useSegments() as string[];

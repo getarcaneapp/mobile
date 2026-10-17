@@ -1,9 +1,3 @@
-/**
- * Port of Services/NetworksService.swift.
- *
- * NetworksService exposes the Docker network endpoints registered under
- * `/environments/{id}/networks` including topology and prune.
- */
 import type { EnvironmentID } from '../client/environment';
 import { q, boolString, type QueryItem } from '../client/url';
 import type { RESTService } from '../http/RESTService';
@@ -27,7 +21,6 @@ export class NetworksService {
 		this.rest = rest;
 	}
 
-	/** Paginated list of networks. */
 	list(
 		args: { envID?: EnvironmentID; query?: SearchPaginationSort; inUse?: boolean } = {}
 	): Promise<PaginatedResponse<NetworkSummary>> {
@@ -42,17 +35,14 @@ export class NetworksService {
 		});
 	}
 
-	/** Get aggregate usage counts for networks. */
 	counts(args: { envID?: EnvironmentID } = {}): Promise<NetworkUsageCounts> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'networks/counts'));
 	}
 
-	/** Build the network/container topology graph. */
 	topology(args: { envID?: EnvironmentID } = {}): Promise<NetworkTopology> {
 		return this.rest.get(this.rest.environmentPath(args.envID, 'networks/topology'));
 	}
 
-	/** Inspect a network by ID. */
 	inspect(args: {
 		envID?: EnvironmentID;
 		networkID: string;
@@ -68,7 +58,6 @@ export class NetworksService {
 		});
 	}
 
-	/** Create a new Docker network. */
 	create(args: {
 		envID?: EnvironmentID;
 		request: NetworkCreateRequest;
@@ -79,14 +68,12 @@ export class NetworksService {
 		});
 	}
 
-	/** Delete a network. */
 	delete(args: { envID?: EnvironmentID; networkID: string }): Promise<MessageResponse> {
 		return this.rest.delete(this.rest.environmentPath(args.envID, `networks/${args.networkID}`), {
 			decode: MessageResponse.decode
 		});
 	}
 
-	/** Prune unused networks. */
 	prune(args: { envID?: EnvironmentID } = {}): Promise<NetworkPruneReport> {
 		return this.rest.post(this.rest.environmentPath(args.envID, 'networks/prune'), {
 			decode: NetworkPruneReport.decode

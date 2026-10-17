@@ -1,4 +1,3 @@
-/** Model for VolumeBackupsView's Create Backup sheet, bound to the presenting screen's store. */
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
 import { useStore } from 'zustand';

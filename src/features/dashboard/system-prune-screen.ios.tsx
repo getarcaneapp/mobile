@@ -1,7 +1,3 @@
-/**
- * Port of `SystemPruneView` (DashboardView.swift): per-resource prune modes
- * for one environment, or "Prune All Environments". Presented as a sheet route.
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

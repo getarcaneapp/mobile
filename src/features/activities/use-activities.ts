@@ -1,8 +1,3 @@
-/**
- * Shared state for `ActivitiesView` and `ActivityDetailView`
- * (Views/Activities/ActivitiesView.swift): store lifetime, the `.task(id:)`
- * load/stream lifecycle, permissions, search debounce, confirmations.
- */
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,7 +19,6 @@ import { showToast, Toasts } from '@/ui/toast';
 import { ActivityDisplay } from './activity-display';
 import { useActivityNavigation } from './activity-routes';
 
-/** `scenePhase != .background` (Control Center and Face ID only pass through `.inactive`). */
 function useIsNotBackground(): boolean {
 	const [notBackground, setNotBackground] = useState(AppState.currentState !== 'background');
 	useEffect(() => {
@@ -36,7 +30,6 @@ function useIsNotBackground(): boolean {
 	return notBackground;
 }
 
-/** `.debounce(value, for:into:)`. */
 function useDebouncedEffect<T>(value: T, delayMs: number, apply: (value: T) => void) {
 	const latest = useRef(apply);
 	latest.current = apply;
@@ -48,7 +41,6 @@ function useDebouncedEffect<T>(value: T, delayMs: number, apply: (value: T) => v
 
 const transportIDs = new WeakMap<object, number>();
 let nextTransportID = 1;
-/** `ObjectIdentifier(client.transport).hashValue`. */
 function transportKey(transport: object | undefined): number {
 	if (!transport) return 0;
 	let id = transportIDs.get(transport);
@@ -59,7 +51,6 @@ function transportKey(transport: object | undefined): number {
 	return id;
 }
 
-/** Session inputs shared by both screens (`manager.supportsActivities`, client, task id). */
 function useActivitySession() {
 	const client = useClientManager((s) => s.client);
 	const supportsActivities = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
@@ -69,8 +60,6 @@ function useActivitySession() {
 	const taskID = `${supportsActivities}-${transportKey(client?.transport)}-${notBackground}`;
 	return { client, supportsActivities, currentUser, notBackground, taskID };
 }
-
-// MARK: - ActivitiesView
 
 export function useActivitiesScreen() {
 	const [store] = useState(createActivityCenterStore);
@@ -82,12 +71,10 @@ export function useActivitiesScreen() {
 	const [searchText, setSearchText] = useState('');
 	const [showClearConfirm, setShowClearConfirm] = useState(false);
 	const [expandedBatchIDs, setExpandedBatchIDs] = useState<ReadonlySet<string>>(new Set());
-	/** The task id the current list was loaded for. Returning from a pushed activity keeps the list and its stream. */
 	const loadedTaskID = useRef<string | undefined>(undefined);
 
 	useDebouncedEffect(searchText, 250, (value) => store.getState().setSearchText(value));
 
-	// `.onAppear { acquireStream() }` / `.onDisappear { releaseStream() }`.
 	useFocusEffect(
 		useCallback(() => {
 			store.getState().acquireStream();
@@ -95,7 +82,6 @@ export function useActivitiesScreen() {
 		}, [store])
 	);
 
-	// `.task(id: taskID)`.
 	const latestClient = useRef(client);
 	latestClient.current = client;
 	useEffect(() => {
@@ -189,8 +175,6 @@ export function useActivitiesScreen() {
 
 export type ActivitiesScreenModel = ReturnType<typeof useActivitiesScreen>;
 
-// MARK: - ActivityDetailView
-
 export function useActivityDetail(
 	initialActivity: Activity,
 	sharedStore: ActivityCenterStore | undefined
@@ -235,7 +219,6 @@ export function useActivityDetail(
 		}
 	}, [store, initialActivity]);
 
-	// `.task(id: taskID)`.
 	const latestClient = useRef(client);
 	latestClient.current = client;
 	const latestLoad = useRef(loadDetail);
@@ -251,7 +234,6 @@ export function useActivityDetail(
 		void latestLoad.current();
 	}, [taskID, supportsActivities, notBackground, store, isShared]);
 
-	// `.onAppear { sharedStore?.acquireStream() }` / `.onDisappear`.
 	useFocusEffect(
 		useCallback(() => {
 			sharedStore?.getState().acquireStream();

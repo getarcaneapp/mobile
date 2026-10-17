@@ -1,4 +1,3 @@
-/** Data for `BackupPolicyEditor` (BackupPolicyEditor.swift). Shared by both platforms. */
 import { useCallback, useEffect, useState } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -171,7 +170,6 @@ export function useBackupPolicyEditor(target: BackupPolicyEditorTarget) {
 		loaded,
 		busy,
 		errorMessage,
-		/** `volumeName != nil || systemVolumes`. */
 		showsStopContainers: volumeName !== undefined || systemVolumes,
 		systemVolumes,
 		update,

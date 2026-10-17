@@ -1,10 +1,3 @@
-/**
- * Port of `DashboardPinnedSection` (DashboardPinnedSection.swift): pinned
- * containers and projects for the active environment, each with a
- * start/stop quick action.
- *
- * SwiftUI-tree.
- */
 import {
 	Button,
 	Circle,

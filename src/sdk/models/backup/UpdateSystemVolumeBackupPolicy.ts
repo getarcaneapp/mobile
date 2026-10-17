@@ -1,5 +1,3 @@
-/** Port of Models/Backup/UpdateSystemVolumeBackupPolicy.swift. */
-
 export interface UpdateSystemVolumeBackupPolicy {
 	id?: string;
 	enabled: boolean;

@@ -1,11 +1,3 @@
-/**
- * Port of Streaming/NDJSONStream.swift.
- *
- * An `AsyncIterable` that consumes newline-delimited JSON (NDJSON /
- * x-json-stream, and SSE `data:` lines) and yields decoded values. Each
- * `for await` opens a new request, like Swift's `makeAsyncIterator()`.
- * Breaking out of the loop (or aborting the signal) cancels the request.
- */
 import {
 	ArcaneError,
 	CancellationError,
@@ -18,7 +10,6 @@ import type { Decoder } from '../models/base/decoding';
 import { decodeUTF8, parseArcaneJSON } from '../http/json';
 import type { MultipartEndpoint } from '../http/multipart';
 
-/** @internal */
 export type NDJSONStreamTerminalAction =
 	| { kind: 'continueStreaming' }
 	| { kind: 'finish' }
@@ -32,17 +23,14 @@ export interface NDJSONStreamInit<Element> {
 	path: string;
 	method: string;
 	body?: RequestBody;
-	/** Defaults to `application/json`; `null` sends no Content-Type (Swift `contentType: nil`). */
 	contentType?: string | null;
 	query?: QueryItem[];
-	/** Retried once at this path/query when the primary path returns 404 (v1/v2 route differences). */
 	notFoundFallback?: { path: string; query: QueryItem[] };
 	terminalAction?: (element: Element) => NDJSONStreamTerminalAction;
 	decode?: Decoder<Element>;
 	signal?: AbortSignal;
 }
 
-/** Splits a byte stream into lines (`\n`, `\r\n` or `\r`). */
 export async function* lines(
 	bytes: AsyncIterable<Uint8Array>
 ): AsyncGenerator<string, void, undefined> {
@@ -54,7 +42,6 @@ export async function* lines(
 		while ((index = buffer.search(/\r\n|\n|\r/)) >= 0) {
 			const line = buffer.slice(0, index);
 			const separatorLength = buffer.startsWith('\r\n', index) ? 2 : 1;
-			// A trailing "\r" might be the first half of "\r\n" split across chunks.
 			if (separatorLength === 1 && buffer[index] === '\r' && index === buffer.length - 1) break;
 			buffer = buffer.slice(index + separatorLength);
 			yield line;
@@ -65,23 +52,17 @@ export async function* lines(
 	if (rest !== '') yield rest;
 }
 
-/** Swift `decodeLine(_:using:)`. Exported for tests. */
 export function decodeNDJSONLine<Element>(
 	line: string,
 	decode?: Decoder<Element>
 ): Element | undefined {
 	let trimmed = line.trim();
-	// The multiplexed `/stream` endpoint is Server-Sent Events: each JSON
-	// payload arrives on a `data:` line. Other SSE fields fall through as
-	// non-JSON and are skipped.
 	if (trimmed.startsWith('data:')) trimmed = trimmed.slice(5).trim();
 	if (trimmed === '') return undefined;
 	try {
 		const raw = parseArcaneJSON(trimmed);
 		return decode ? decode(raw) : (raw as Element);
 	} catch (error) {
-		// Non-JSON heartbeats, comments, and status text are intentionally
-		// skipped. JSON decode failures indicate a schema mismatch.
 		if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return undefined;
 		throw ArcaneError.decoding(String(error));
 	}
@@ -98,7 +79,6 @@ export class NDJSONStream<Element> implements AsyncIterable<Element> {
 	private readonly decoder: Decoder<Element> | undefined;
 	private readonly signal: AbortSignal | undefined;
 
-	/** `multipartEndpoint` is internal (Swift `init(transport:multipart:)`). */
 	constructor(
 		transport: ArcaneTransport,
 		init: NDJSONStreamInit<Element>,
@@ -132,7 +112,6 @@ export class NDJSONStream<Element> implements AsyncIterable<Element> {
 		}
 	}
 
-	/** @internal Swift `init(transport:multipart:)`. */
 	static multipart<Element>(
 		transport: ArcaneTransport,
 		endpoint: MultipartEndpoint,
@@ -145,7 +124,6 @@ export class NDJSONStream<Element> implements AsyncIterable<Element> {
 		);
 	}
 
-	/** Same stream, cancelled when `signal` aborts. */
 	withSignal(signal: AbortSignal): NDJSONStream<Element> {
 		return new NDJSONStream<Element>(
 			this.transport.withSignal(signal),
@@ -154,7 +132,6 @@ export class NDJSONStream<Element> implements AsyncIterable<Element> {
 		);
 	}
 
-	/** Collects every element (convenience for finite streams). */
 	async collect(): Promise<Element[]> {
 		const out: Element[] = [];
 		for await (const element of this) out.push(element);

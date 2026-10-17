@@ -1,10 +1,3 @@
-/**
- * Port of `DeploymentPillView` (Android): the same floating capsule as a
- * Material 3 elevated surface with the progress border, caption, pulse and
- * swipe-down-to-dismiss for finished operations.
- *
- * Standalone (RN view).
- */
 import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';

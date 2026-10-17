@@ -1,9 +1,3 @@
-/**
- * `ContentUnavailableView` with an actions row (expo-ui's view has no
- * `actions:` slot, so the buttons stack below it).
- *
- * SwiftUI-tree.
- */
 import { Button, ContentUnavailableView, Group, ProgressView, VStack } from '@expo/ui/swift-ui';
 import type { ModifierConfig } from '@expo/ui/swift-ui/modifiers';
 import { disabled, fixedSize, font, frame, padding } from '@expo/ui/swift-ui/modifiers';
@@ -13,12 +7,6 @@ import type { UnavailableViewProps } from './unavailable-view.types';
 
 export type { UnavailableAction, UnavailableViewProps } from './unavailable-view.types';
 
-/**
- * Measured against the reference app's native `actions:` slot (Variables empty
- * state): actions sit ~38pt under the description in `.subheadline`, and the
- * group is centered ~7pt higher than a plain VStack centers it. expo-ui's
- * ContentUnavailableView keeps its own bottom padding, hence the negative spacing.
- */
 const actionsSpacing = -17;
 const actionsLift = 14;
 

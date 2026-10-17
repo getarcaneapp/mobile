@@ -1,4 +1,3 @@
-/** Port of `SystemBackupDetailView` (SystemBackupDetailView.swift). */
 import { Host } from '@/ui/host';
 import { Button, ConfirmationDialog, LabeledContent, List, Section, Text } from '@expo/ui/swift-ui';
 import { disabled, listStyle } from '@expo/ui/swift-ui/modifiers';

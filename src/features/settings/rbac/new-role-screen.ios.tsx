@@ -1,8 +1,3 @@
-/**
- * Port of `RoleDetailView(mode: .create)` presented from RolesView's `+`
- * (RolesView.swift): its own NavigationStack with Cancel, permission search
- * and the floating Create bar.
- */
 import { Host } from '@/ui/host';
 import { Button, NavigationStack, Toolbar, ToolbarItem, useNativeState } from '@expo/ui/swift-ui';
 import {

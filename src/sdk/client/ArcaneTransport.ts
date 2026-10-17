@@ -1,21 +1,3 @@
-/**
- * Port of Client/ArcaneURLSessionTransport.swift (+Streaming, +Download) and
- * the multipart helpers in HTTP/Multipart.swift.
- *
- * Behaviour carried over:
- * - `/api` prefix + environment-scoped paths (`appendingAPIPath`).
- * - Proxy/SSO gate detection and app-owned proxy cookies (`ProxyRequestSupport`).
- * - Auth headers from `AuthManager`; one reactive refresh + retry on 401,
- *   skipping the refresh when another request already rotated the token.
- * - Bounded retries with exponential backoff for idempotent methods on
- *   429/502/503/504 and retryable network errors.
- * - A 401 that survives refresh clears credentials, but only if they are
- *   still the generation the request was signed with.
- * - `ArcaneRequestOptions` headers (`X-Arcane-Batch-Id`, `X-Step-Up-Token`).
- *
- * TS additions: per-request `AbortSignal` (Swift task cancellation) and a
- * request timeout (URLSession `timeoutIntervalForRequest`).
- */
 import {
 	ArcaneError,
 	ArcaneTimeoutError,
@@ -59,23 +41,17 @@ export type RequestBody = string | ArrayBuffer | Uint8Array | Blob | FormData;
 export interface TransportConfig {
 	baseURL: string;
 	authManager: AuthManager;
-	/** Used for regular (buffered) requests. */
 	fetch: FetchLike;
-	/** Used for streaming responses; must expose `response.body.getReader()` (expo/fetch). */
 	streamingFetch: FetchLike;
 	retryPolicy?: RetryPolicy;
 	additionalHeaders?: Record<string, string>;
 	proxySession?: ArcaneProxySession;
-	/** Request timeout in ms; streams only time out until headers arrive. */
 	timeoutMs?: number;
 	defaultRequestOptions?: ArcaneRequestOptions;
-	/** Ambient cancellation for every request made through this transport. */
 	defaultSignal?: AbortSignal;
-	/** WebSocket factory / idle watchdog used by log, stats and terminal streams. */
 	webSocket?: WebSocketStreamConfig;
 }
 
-/** Common options for transport calls (Swift labels). */
 export interface TransportRequestOptions {
 	method?: string;
 	query?: QueryItem[];
@@ -89,11 +65,9 @@ export interface ArcaneAuthorizedRequest {
 	headers: Record<string, string>;
 }
 
-/** Swift `(URLSession.AsyncBytes, HTTPURLResponse)`. */
 export interface ByteStreamResult {
 	http: ArcaneHTTPResponseInfo;
 	bytes: AsyncIterable<Uint8Array>;
-	/** Cancels the underlying request (Swift `bytes.task.cancel()`). */
 	cancel(): void;
 }
 
@@ -103,8 +77,6 @@ interface AuthenticatedRequest {
 }
 
 function isRetryableNetworkError(error: unknown): boolean {
-	// Mirrors `shouldRetry(method:error:)`: cancellation and timeouts are
-	// never retried; other network failures (fetch `TypeError`) are.
 	if (error instanceof CancellationError || error instanceof ArcaneTimeoutError) return false;
 	return error instanceof TypeError;
 }
@@ -146,12 +118,9 @@ async function* readBody(response: FetchResponseLike): AsyncGenerator<Uint8Array
 		} finally {
 			try {
 				await reader.cancel();
-			} catch {
-				// Already closed.
-			}
+			} catch {}
 		}
 	}
-	// Platform fetch without streaming support: deliver the whole body once.
 	const buffer = await response.arrayBuffer();
 	if (buffer.byteLength > 0) yield new Uint8Array(buffer);
 }
@@ -160,7 +129,6 @@ export class ArcaneTransport {
 	readonly baseURL: string;
 	readonly authManager: AuthManager;
 	readonly retryPolicy: RetryPolicy;
-	/** @internal */
 	readonly proxySupport: ProxyRequestSupport;
 	readonly defaultRequestOptions: ArcaneRequestOptions;
 	readonly defaultSignal: AbortSignal | undefined;
@@ -174,7 +142,6 @@ export class ArcaneTransport {
 		this.config = config;
 		this.baseURL = config.baseURL;
 		this.authManager = config.authManager;
-		// Single-file multipart uploads stream from disk natively (see `withStreamingUploads`).
 		this.fetchImpl = withStreamingUploads(config.fetch);
 		this.streamingFetchImpl = withStreamingUploads(config.streamingFetch);
 		this.retryPolicy = config.retryPolicy ?? RetryPolicy.default;
@@ -189,19 +156,14 @@ export class ArcaneTransport {
 		);
 	}
 
-	/** Same transport with different default request options (shares auth + fetch). */
 	withRequestOptions(options: ArcaneRequestOptions): ArcaneTransport {
 		return new ArcaneTransport({ ...this.config, defaultRequestOptions: options });
 	}
 
-	/** Same transport whose requests are all cancelled when `signal` aborts. */
 	withSignal(signal: AbortSignal): ArcaneTransport {
 		return new ArcaneTransport({ ...this.config, defaultSignal: signal });
 	}
 
-	// MARK: - Decoding helpers
-
-	/** Swift `decoder.decode(T.self, from: data)` with `ArcaneError.decoding` wrapping. */
 	decode<T>(text: string, decode?: Decoder<T>): T {
 		try {
 			const raw = text.trim() === '' ? undefined : parseArcaneJSON(text);
@@ -212,7 +174,6 @@ export class ArcaneTransport {
 		}
 	}
 
-	/** Swift `decoder.decode(APIResponse<T>.self, from: data).data`. */
 	decodeEnvelope<T>(text: string, decode?: Decoder<T>): T {
 		try {
 			const raw = parseArcaneJSON(text);
@@ -229,9 +190,6 @@ export class ArcaneTransport {
 		}
 	}
 
-	// MARK: - JSON requests
-
-	/** Sends a JSON request and decodes the `{ success, data }` envelope. */
 	async request<T>(
 		path: string,
 		init: TransportRequestOptions & { body?: unknown; decode?: Decoder<T> } = {}
@@ -240,7 +198,6 @@ export class ArcaneTransport {
 		return this.decodeEnvelope(text, init.decode);
 	}
 
-	/** Appends `start`/`limit` and decodes a `PaginatedResponse<T>`. */
 	async paginated<T>(
 		path: string,
 		init: {
@@ -266,7 +223,6 @@ export class ArcaneTransport {
 		return this.decode(text, (raw) => decodePaginatedResponse(raw, init.decode));
 	}
 
-	/** JSON body in, response text out (Swift returns `Data`). */
 	async rawRequest(
 		path: string,
 		init: TransportRequestOptions & { body?: unknown } = {}
@@ -284,7 +240,6 @@ export class ArcaneTransport {
 		return decodeUTF8(bytes);
 	}
 
-	/** Sends already-encoded bytes through the standard authentication and retry handling. */
 	async rawDataRequest(
 		path: string,
 		init: TransportRequestOptions & {
@@ -384,10 +339,6 @@ export class ArcaneTransport {
 		}
 	}
 
-	/**
-	 * Returns the raw bytes of a `GET` response (mTLS bundles, backups, file
-	 * contents). Swift `downloadRaw(_:query:authorized:options:) -> Data`.
-	 */
 	downloadRaw(
 		path: string,
 		init: {
@@ -407,11 +358,6 @@ export class ArcaneTransport {
 		});
 	}
 
-	/**
-	 * Replacement for Swift's `downloadRaw(_:to:)` file download: returns the
-	 * fully authenticated URL + headers so the app can stream the response to
-	 * disk with expo-file-system. Proactively refreshes an expiring token.
-	 */
 	async downloadRequest(
 		path: string,
 		init: { query?: QueryItem[]; options?: ArcaneRequestOptions } = {}
@@ -423,7 +369,6 @@ export class ArcaneTransport {
 		return { url: request.url, headers: request.headers };
 	}
 
-	/** Authenticated WebSocket URL + headers (Swift `websocketRequest(path:query:options:)`). */
 	async websocketRequest(
 		path: string,
 		init: { query?: QueryItem[]; options?: ArcaneRequestOptions } = {}
@@ -440,12 +385,6 @@ export class ArcaneTransport {
 		return { url: request.url, headers: request.headers };
 	}
 
-	// MARK: - Streaming
-
-	/**
-	 * Opens a streaming response. Like Swift, the status is *not* validated;
-	 * callers check `http.status` and consume `bytes`.
-	 */
 	async byteStream(
 		path: string,
 		init: TransportRequestOptions & {
@@ -531,8 +470,6 @@ export class ArcaneTransport {
 			const prefix: Uint8Array[] = [];
 			let bytes: AsyncIterable<Uint8Array> = readBody(response);
 			if (info.status === 401 || info.status === 403) {
-				// Read a snippet to tell an Arcane 401 from a foreign auth wall,
-				// then replay it to the caller.
 				const iterator = (bytes as AsyncGenerator<Uint8Array>)[Symbol.asyncIterator]();
 				let size = 0;
 				while (size < 4096) {
@@ -570,7 +507,6 @@ export class ArcaneTransport {
 		}
 	}
 
-	/** Multipart upload whose response is the standard `APIResponse<T>` envelope. */
 	async multipartUpload<T>(
 		path: string,
 		init: {
@@ -606,8 +542,6 @@ export class ArcaneTransport {
 					const { response, info, release } = await send(this.fetchImpl, request, {
 						body,
 						signal: linked.signal,
-						// Uploads can be large; only time out waiting for headers. A streamed file upload
-						// only gets headers once the whole file is sent, so it relies on the native idle timeout.
 						timeoutMs: singleURIPartUpload(body) ? undefined : this.timeoutMs,
 						timeoutUntilHeaders: true
 					});
@@ -643,7 +577,6 @@ export class ArcaneTransport {
 		}
 	}
 
-	/** Multipart upload to an endpoint that responds with NDJSON progress. */
 	multipartUploadStream<Element>(
 		path: string,
 		init: {
@@ -669,7 +602,6 @@ export class ArcaneTransport {
 		);
 	}
 
-	/** @internal Multipart request returning a byte stream (Swift `multipartByteStream`). */
 	async multipartByteStream(
 		path: string,
 		init: {
@@ -709,8 +641,6 @@ export class ArcaneTransport {
 		}
 	}
 
-	// MARK: - Internals
-
 	private makeRequest(
 		path: string,
 		method: string,
@@ -732,14 +662,12 @@ export class ArcaneTransport {
 		accept: string,
 		options: ArcaneRequestOptions
 	): Promise<AuthenticatedRequest> {
-		// Content-Type (with boundary) is set by the platform from the FormData body.
 		const request = this.makeRequest(path, method, query, accept);
 		this.applyRequestOptions(request, options);
 		const credentialGeneration = await this.applyAuthenticationHeaders(request, true);
 		return { request, credentialGeneration };
 	}
 
-	/** @internal Returns the credential generation when an `Authorization` header was applied. */
 	async applyAuthenticationHeaders(
 		request: PreparedRequest,
 		authorized = true
@@ -751,7 +679,6 @@ export class ArcaneTransport {
 		return context.headers.Authorization === undefined ? undefined : context.credentialGeneration;
 	}
 
-	/** @internal */
 	async refreshAuthorizationIfNeeded(
 		statusCode: number,
 		authorized: boolean,
@@ -760,8 +687,6 @@ export class ArcaneTransport {
 	): Promise<boolean> {
 		if (statusCode !== 401 || !authorized || didRefresh) return false;
 		if (!(await this.authManager.hasRefreshCredential())) return false;
-		// A refresh finished while this request was in flight: retry with the
-		// rotated token instead of spending another single-use refresh token.
 		const current = this.authManager.currentAuthorizationHeader();
 		if (sentAuthorization !== undefined && current !== undefined && current !== sentAuthorization) {
 			return true;
@@ -770,7 +695,6 @@ export class ArcaneTransport {
 		return true;
 	}
 
-	/** @internal */
 	resolvedRequestOptions(options: ArcaneRequestOptions | undefined): ArcaneRequestOptions {
 		return options ?? this.defaultRequestOptions;
 	}
@@ -788,7 +712,6 @@ export class ArcaneTransport {
 		return IDEMPOTENT_METHODS.has(method.toUpperCase());
 	}
 
-	/** @internal */
 	shouldRetry(method: string, statusCode: number): boolean {
 		if (!this.isIdempotent(method)) return false;
 		return [429, 502, 503, 504].includes(statusCode);
@@ -798,7 +721,6 @@ export class ArcaneTransport {
 		return sleep(this.retryDelay(attempt), signal);
 	}
 
-	/** @internal Exponential backoff capped at `maxBackoffMs`. */
 	retryDelay(attempt: number): number {
 		const cap = Math.max(0, this.retryPolicy.maxBackoffMs);
 		let delay = Math.min(Math.max(0, this.retryPolicy.baseBackoffMs), cap);
@@ -812,7 +734,6 @@ export class ArcaneTransport {
 	}
 }
 
-/** Swift name. */
 export { ArcaneTransport as ArcaneURLSessionTransport };
 
 function concatBytes(chunks: Uint8Array[]): Uint8Array {
@@ -831,7 +752,6 @@ function formDataHasURIParts(form: FormData): boolean {
 	return Array.isArray(parts) && parts.some((part) => typeof part?.uri === 'string');
 }
 
-/** @internal Decoder for the paginated envelope. */
 export function decodePaginatedResponse<T>(
 	raw: unknown,
 	decode?: Decoder<T>

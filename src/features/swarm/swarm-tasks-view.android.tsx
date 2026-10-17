@@ -1,4 +1,3 @@
-/** Android rendering of `SwarmTasksView` + `SwarmTaskRow`. */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

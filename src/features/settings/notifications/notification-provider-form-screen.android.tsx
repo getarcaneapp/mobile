@@ -1,4 +1,3 @@
-/** Android rendering of `NotificationProviderFormView` (NotificationProviderFormView.swift). */
 import { Stack } from 'expo-router';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -115,7 +114,6 @@ function OptionPicker({
 const range = (from: number, to: number) =>
 	Array.from({ length: to - from + 1 }, (_, index) => String(from + index));
 
-/** `DisclosureGroup("Advanced")`. */
 function Advanced({
 	model,
 	children
@@ -666,7 +664,6 @@ function EventSection({ model }: { model: NotificationProviderFormModel }) {
 	);
 }
 
-/** `.confirmationDialog("Save Changes Before Testing?")` as a Material dialog. */
 function useSaveBeforeTestDialog(model: NotificationProviderFormModel) {
 	const latest = useRef(model);
 	latest.current = model;

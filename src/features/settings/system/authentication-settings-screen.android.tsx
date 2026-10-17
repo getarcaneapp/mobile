@@ -1,4 +1,3 @@
-/** Android rendering of `AuthenticationSettingsView` (AuthenticationSettingsView.swift). */
 import { Stack } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
@@ -19,7 +18,6 @@ import {
 	useAuthenticationSettings
 } from './use-authentication-settings';
 
-/** `appTabDestination(.authentication)`. */
 export function AuthenticationDestination() {
 	const model = useAuthenticationSettings();
 	const { form, update, oidcEnvForced } = model;

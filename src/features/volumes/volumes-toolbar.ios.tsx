@@ -1,7 +1,3 @@
-/**
- * VolumesView's toolbar (filter, options menu, create) and its selection
- * toolbar (bulk delete + Done). Native header items.
- */
 import { Stack } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
 import { ActivityIndicator } from 'react-native';

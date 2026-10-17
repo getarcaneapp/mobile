@@ -1,16 +1,9 @@
-/**
- * Base64url (RFC 4648 §5, unpadded) helpers — pure TS, no `Buffer`/`atob`.
- * Port of the `Data.base64URLEncodedString()` / `Data(base64URLEncoded:)`
- * extensions in ArcanePasskeyAuthenticator.swift.
- */
-
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
 const LOOKUP: Record<string, number> = Object.fromEntries(
 	Array.from(ALPHABET, (char, index) => [char, index])
 );
 
-/** Unpadded base64url encoding of `bytes`. */
 export function base64URLEncode(bytes: Uint8Array): string {
 	let output = '';
 	for (let i = 0; i < bytes.length; i += 3) {
@@ -27,11 +20,6 @@ export function base64URLEncode(bytes: Uint8Array): string {
 	return output;
 }
 
-/**
- * Decodes unpadded base64url. Returns `undefined` for any character outside
- * `[A-Za-z0-9_-]` (padding included) or an impossible length, like Swift's
- * failable `Data(base64URLEncoded:)`.
- */
 export function base64URLDecode(value: string): Uint8Array | undefined {
 	if (value.length % 4 === 1) return undefined;
 	const output = new Uint8Array(Math.floor((value.length * 3) / 4));

@@ -1,8 +1,3 @@
-/**
- * State and actions for `SystemPruneView` (DashboardView.swift): per-resource
- * prune modes seeded from the server's prune defaults, run for one
- * environment or (All Environments) every enabled one.
- */
 import { useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -67,7 +62,6 @@ export function useSystemPrune({
 	onDismiss
 }: {
 	environmentID: EnvironmentID;
-	/** Set for "Prune All Environments". */
 	environments?: Environment[];
 	onDismiss: () => void;
 }) {
@@ -89,7 +83,6 @@ export function useSystemPrune({
 		(m) => m !== 'none'
 	).length;
 
-	// Seed the pickers from the server's prune defaults (best effort).
 	useEffect(() => {
 		if (isAll) return;
 		const client = useClientManager.getState().client;
@@ -127,9 +120,7 @@ export function useSystemPrune({
 				if (isOneOf(pruneOptions.buildCache, b)) setBuildCacheMode(b);
 				const bu = until('pruneBuildCacheUntil');
 				if (bu) setBuildCacheAge(bu);
-			} catch {
-				// Older server or missing permission: pickers stay at "None".
-			}
+			} catch {}
 		})();
 		return () => {
 			cancelled = true;

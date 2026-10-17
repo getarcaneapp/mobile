@@ -1,7 +1,3 @@
-/**
- * `ContainerConfigurationView` model (ContainerConfigurationView.swift):
- * create a container, or edit one by recreating it after a review step.
- */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
@@ -64,7 +60,6 @@ export function useContainerConfiguration() {
 		router.back();
 	};
 
-	// `.onChange(of: clientGeneration / activeEnvironmentID)`: the context this form targets went away.
 	useEffect(() => {
 		if (generation !== initial.current.generation) dismiss();
 		else if (
@@ -145,7 +140,6 @@ export function useContainerConfiguration() {
 				Toasts.success(containerID === undefined ? 'Container created' : 'Container updated')
 			);
 			routePayloads.delete(token);
-			// `onSaved` may navigate (create opens the new container in place of this sheet).
 			if (onSaved?.(id) !== true) router.back();
 		} catch (e) {
 			if (controller.signal.aborted || isCancellation(e)) return;

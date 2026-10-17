@@ -1,8 +1,3 @@
-/**
- * Port of `ComposeFieldOptions` (Types/ComposeFieldOptions.swift): presentation
- * choices that supplement fields whose schema describes, but does not
- * enumerate, common values.
- */
 import { isKey, type ComposeFieldPath } from './compose-native-field';
 import { ComposeSchema } from './compose-schema';
 
@@ -13,7 +8,6 @@ const entry = (path: string, values: string[], custom = false): Entry => ({
 	custom
 });
 
-// Linux capability names, including Docker's ALL shorthand.
 const capabilities = [
 	'ALL',
 	'AUDIT_CONTROL',
@@ -99,20 +93,15 @@ const signals = [
 	...Array.from({ length: 14 }, (_, i) => `SIGRTMAX-${i + 1}`)
 ];
 
-/** `TimeZone.knownTimeZoneIdentifiers`. */
 function timeZones(): string[] {
 	try {
 		const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] })
 			.supportedValuesOf;
 		if (supported) return supported('timeZone');
-	} catch {
-		// Older engines; fall through.
-	}
+	} catch {}
 	return ['UTC'];
 }
 
-// Closed choices supplement omissions in compose-spec.json. Extensible drivers and
-// parameterized policies retain a custom entry. Paths never match dictionary contents.
 const catalog: Entry[] = (() => {
 	const result: Entry[] = [];
 	for (const root of ['services', 'jobs']) {
@@ -185,7 +174,6 @@ const catalog: Entry[] = (() => {
 	return result;
 })();
 
-/** Swift `String.capitalized`. */
 export function capitalized(value: string): string {
 	return value.replace(
 		/[^\s]+/g,

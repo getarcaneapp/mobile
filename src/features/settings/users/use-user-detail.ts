@@ -1,8 +1,3 @@
-/**
- * The model behind UserDetailView.swift: editable email / display name, the
- * v1 Administrator toggle (v2 servers link to Role Assignments instead), save
- * and revert. Shared by both platforms.
- */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -30,7 +25,6 @@ export function useUserDetail() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>();
 
-	// A cold route (no hand-off) loads the user itself.
 	useEffect(() => {
 		if (user || !params.id) return;
 		const client = useClientManager.getState().client;

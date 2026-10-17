@@ -1,4 +1,3 @@
-/** Android rendering of `FederatedCredentialDetailView` (FederatedCredentialsView.swift). */
 import { Stack } from 'expo-router';
 import { ScrollView } from 'react-native';
 

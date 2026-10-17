@@ -1,9 +1,3 @@
-/**
- * Ports of `SwarmStateBadge`, `SwarmListState`, `SwarmKeyValueRows`
- * (SwarmCommon.swift) and the copyable ID row used by the swarm detail screens.
- *
- * SwiftUI-tree.
- */
 import * as Clipboard from 'expo-clipboard';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -114,7 +108,6 @@ export async function copyToClipboard(value: string) {
 	showToast(Toasts.copied());
 }
 
-/** `copyRow(_:value:)`: the first 12 characters, tap to copy the full value. */
 export function CopyValueRow({ title, value }: CopyValueRowProps) {
 	return (
 		<LabeledContent label={title}>

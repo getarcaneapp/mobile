@@ -1,4 +1,3 @@
-/** Port of Models/Backup/S3Destination.swift. */
 import type { ISODateString } from '../base/date';
 
 export interface S3Destination {

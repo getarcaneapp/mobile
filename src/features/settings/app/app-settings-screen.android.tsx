@@ -1,4 +1,3 @@
-/** Android rendering of `AppSettingsView` (AppSettingsView.swift). */
 import { Stack } from 'expo-router';
 import { Linking, Pressable, ScrollView, Text } from 'react-native';
 
@@ -111,7 +110,6 @@ export function AppSettingsScreen() {
 					/>
 				</M3Section>
 
-				{/* Tapping the bottom footer copies the complete version string. */}
 				<Pressable
 					onPress={model.copyVersion}
 					accessibilityRole="button"

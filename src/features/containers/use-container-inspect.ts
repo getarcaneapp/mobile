@@ -1,4 +1,3 @@
-/** `ContainerInspectView` model: pretty, key-sorted inspect JSON with a debounced line filter. */
 import * as Clipboard from 'expo-clipboard';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -11,7 +10,6 @@ import { showToast, Toasts } from '@/ui/toast';
 import { boundedContainerInspect } from './container-inspect';
 import { useDebounced } from './hooks';
 
-/** `JSONEncoder` with `.prettyPrinted, .sortedKeys, .withoutEscapingSlashes`. */
 export function prettySortedJSON(value: unknown): string {
 	const sort = (input: unknown): unknown => {
 		if (Array.isArray(input)) return input.map(sort);
@@ -25,7 +23,6 @@ export function prettySortedJSON(value: unknown): string {
 		}
 		return input;
 	};
-	// Foundation's pretty printer separates keys from values with " : ".
 	return JSON.stringify(sort(value), null, 2).replace(/^(\s*"(?:[^"\\]|\\.)*"): /gm, '$1 : ');
 }
 

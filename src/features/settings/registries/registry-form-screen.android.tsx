@@ -1,4 +1,3 @@
-/** Android rendering of `RegistryFormView` (RegistryFormView.swift): Material 3 form with save / revert FABs. */
 import { Stack } from 'expo-router';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 

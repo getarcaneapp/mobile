@@ -1,4 +1,3 @@
-/** Port of Models/Role/RoleAssignment.swift. */
 import type { ISODateString } from '../base/date';
 
 export type RoleAssignmentSource = 'manual' | 'oidc';
@@ -6,7 +5,6 @@ export type RoleAssignmentSource = 'manual' | 'oidc';
 export const RoleAssignmentSource = {
 	manual: 'manual',
 	oidc: 'oidc',
-	/** Swift `RoleAssignmentSource(rawValue:)`. */
 	fromRawValue(raw: string): RoleAssignmentSource | undefined {
 		return raw === 'manual' || raw === 'oidc' ? raw : undefined;
 	}
@@ -22,7 +20,6 @@ export interface RoleAssignment {
 }
 
 export const RoleAssignment = {
-	/** Swift `RoleAssignment.init(...)`; `source` defaults to `"manual"`. */
 	make(init: {
 		id: string;
 		userId: string;
@@ -49,12 +46,10 @@ export const RoleAssignment = {
 export interface RoleAssignmentSummary {
 	roleId: string;
 	environmentId?: string;
-	/** Defaults to `"manual"` in the Swift initializer. */
 	source: string;
 }
 
 export const RoleAssignmentSummary = {
-	/** Swift `RoleAssignmentSummary.init(...)`; `source` defaults to `"manual"`. */
 	make(init: { roleId: string; environmentId?: string; source?: string }): RoleAssignmentSummary {
 		return {
 			roleId: init.roleId,

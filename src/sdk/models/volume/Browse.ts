@@ -1,7 +1,5 @@
-/** Port of Models/Volume/Browse.swift. */
 import type { ISODateString } from '../base/date';
 
-/** FileEntry represents a single file or directory inside a volume. */
 export interface FileEntry {
 	name: string;
 	path: string;
@@ -19,7 +17,6 @@ export const FileEntry = {
 	}
 } as const;
 
-/** FileMetadata extends `FileEntry` with MIME and text/binary hints. */
 export interface FileMetadata {
 	name: string;
 	path: string;
@@ -40,9 +37,7 @@ export const FileMetadata = {
 	}
 } as const;
 
-/** FileContent is the response payload returned by `GET volumes/{name}/browse/content`. */
 export interface FileContent {
-	/** Base64-encoded file bytes. */
 	content: string;
 	mimeType: string;
 }

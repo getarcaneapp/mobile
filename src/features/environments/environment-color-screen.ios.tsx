@@ -1,4 +1,3 @@
-/** Port of `EnvironmentColorSheet` (EnvironmentColorsView.swift). Presented as a medium sheet. */
 import { Host } from '@/ui/host';
 import {
 	Button,

@@ -1,9 +1,6 @@
-/** Port of Models/Activity/Activity.swift. */
 import type { JSONValue } from '../../types/json';
 import type { ISODateString } from '../base/date';
 import { D } from '../base/decoding';
-
-// MARK: - ActivityStatus
 
 export type ActivityStatus =
 	| 'queued'
@@ -35,8 +32,6 @@ export const ActivityStatus = {
 		return D.str(raw);
 	}
 } as const;
-
-// MARK: - ActivityType
 
 export type ActivityType =
 	| 'image_pull'
@@ -117,8 +112,6 @@ export const ActivityType = {
 	}
 } as const;
 
-// MARK: - ActivityMessageLevel
-
 export type ActivityMessageLevel = 'info' | 'warning' | 'error' | 'success' | (string & {});
 
 const activityMessageLevelCases = ['info', 'warning', 'error', 'success'] as const;
@@ -145,8 +138,6 @@ export const ActivityMessageLevel = {
 		return D.str(raw);
 	}
 } as const;
-
-// MARK: - ActivityStreamEventType
 
 export type ActivityStreamEventType =
 	| 'snapshot'
@@ -191,8 +182,6 @@ export const ActivityStreamEventType = {
 	}
 } as const;
 
-// MARK: - Models
-
 export interface ActivityStartedBy {
 	userId?: string;
 	username: string;
@@ -201,17 +190,13 @@ export interface ActivityStartedBy {
 
 export interface Activity {
 	id: string;
-	/** JSON key `environmentId`. */
 	environmentID: string;
-	/** JSON key `batchId`. */
 	batchID?: string;
-	/** JSON key `sourceEnvironmentId`. */
 	sourceEnvironmentID?: string;
 	sourceEnvironmentName?: string;
 	type: ActivityType;
 	status: ActivityStatus;
 	resourceType?: string;
-	/** JSON key `resourceId`. */
 	resourceID?: string;
 	resourceName?: string;
 	progress?: number;
@@ -228,7 +213,6 @@ export interface Activity {
 }
 
 export const Activity = {
-	/** Swift memberwise init defaults (`step` / `latestMessage` default to `""`). */
 	make(
 		this: void,
 		init: Omit<Activity, 'step' | 'latestMessage'> & { step?: string; latestMessage?: string }
@@ -236,7 +220,6 @@ export const Activity = {
 		return { ...init, step: init.step ?? '', latestMessage: init.latestMessage ?? '' };
 	},
 
-	/** Synthesized `Codable` with `CodingKeys` renames. */
 	decode(this: void, raw: unknown): Activity {
 		const o = D.object(raw, 'Activity');
 		return {
@@ -278,7 +261,6 @@ export const Activity = {
 
 export interface ActivityMessage {
 	id: string;
-	/** JSON key `activityId`. */
 	activityID: string;
 	level: ActivityMessageLevel;
 	message: string;
@@ -333,9 +315,7 @@ export const ActivityDetail = {
 
 export interface ActivityStreamEvent {
 	type: ActivityStreamEventType;
-	/** JSON key `environmentId`. */
 	environmentID?: string;
-	/** JSON key `activityId`. */
 	activityID?: string;
 	activity?: Activity;
 	activities: Activity[];
@@ -352,10 +332,6 @@ export const ActivityStreamEvent = {
 		return { ...init, activities: init.activities ?? [] };
 	},
 
-	/**
-	 * Swift `init(from:)`: unwraps the multiplexed `/stream` envelope
-	 * (`{ channel: "activities", activity: {...} }`) before decoding.
-	 */
 	decode(this: void, raw: unknown): ActivityStreamEvent {
 		const envelope = D.object(raw, 'ActivityStreamEvent');
 		if (D.optString(envelope, 'channel') === 'activities') {

@@ -1,9 +1,3 @@
-/**
- * Port of `DemoBanner` (Android): a Material 3 tonal card with the live
- * countdown (orange under a minute) and a tonal End button.
- *
- * Standalone (RN view).
- */
 import { Pressable, Text, View } from 'react-native';
 
 import { useAccentColor } from '@/theme/accent';

@@ -1,7 +1,3 @@
-/**
- * Ports of `UpdaterHistoryView`, `UpdaterHistoryRow`, `UpdaterStatusBadge`,
- * and `UpdaterHistoryDetailView` (UpdaterHistoryView.swift).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

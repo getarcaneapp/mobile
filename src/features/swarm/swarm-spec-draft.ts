@@ -1,9 +1,3 @@
-/**
- * Port of `SwarmServiceSpecDraft` (Types/Swarm/SwarmServiceSpecDraft.swift):
- * an editable view of a Docker swarm `ServiceSpec`. Edits are applied back
- * onto the original spec JSON so fields the form doesn't expose (resources,
- * placement, update config, secrets, …) survive a round trip.
- */
 import type { JSONValue } from '@/sdk/types/json';
 
 import { swarmArray, swarmField, swarmObject, swarmString, type JSONObject } from './swarm-common';
@@ -69,13 +63,11 @@ export function emptyDraft(): SwarmServiceSpecDraft {
 	};
 }
 
-/** `numberString(_:)`. */
 export function numberString(value: JSONValue | undefined): string {
 	if (typeof value !== 'number' || !Number.isFinite(value)) return '';
 	return String(Math.trunc(value));
 }
 
-/** Joins argv for display, quoting arguments that contain whitespace. */
 export function joinArguments(value: JSONValue | undefined): string {
 	return (swarmArray(value) ?? [])
 		.map(swarmString)
@@ -86,7 +78,6 @@ export function joinArguments(value: JSONValue | undefined): string {
 		.join(' ');
 }
 
-/** Splits a command line into argv, honouring single and double quotes. */
 export function splitArguments(line: string): string[] {
 	const args: string[] = [];
 	let current = '';
@@ -188,7 +179,6 @@ export function draftFromSpec(spec: JSONValue): SwarmServiceSpecDraft {
 export const draftIsValid = (draft: SwarmServiceSpecDraft) =>
 	trimmed(draft.name) !== '' && trimmed(draft.image) !== '';
 
-/** Equality ignoring row identities (Swift compares UUIDs too, but drafts are only ever compared to their own origin). */
 export function draftsEqual(a: SwarmServiceSpecDraft, b: SwarmServiceSpecDraft) {
 	return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -213,14 +203,12 @@ function objectFromPairs(pairs: DraftPair[]): JSONValue {
 const arrayValue = (strings: string[]): JSONValue | undefined =>
 	strings.length === 0 ? undefined : strings;
 
-/** `UInt32(string)`. */
 function uint32(value: string): number | undefined {
 	if (!/^\+?\d+$/.test(value)) return undefined;
 	const parsed = Number(value);
 	return parsed <= 0xffffffff ? parsed : undefined;
 }
 
-/** Writes the draft onto `original` (or a fresh spec), keeping unknown keys. */
 export function applyDraft(
 	draft: SwarmServiceSpecDraft,
 	original: JSONValue | undefined

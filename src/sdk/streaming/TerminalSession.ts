@@ -1,4 +1,3 @@
-/** Port of Streaming/TerminalSession.swift. */
 import { encodeUTF8 } from '../http/json';
 import type { ArcaneTransport } from '../client/ArcaneTransport';
 import { WebSocketChannel } from './WebSocketChannel';
@@ -12,7 +11,6 @@ export class TerminalSession {
 		this.channel = channel;
 	}
 
-	/** Raw terminal output (Swift `AsyncThrowingStream<Data, Error>`). Single consumer. */
 	get output(): AsyncIterable<Uint8Array> {
 		this.outputStream ??= this.channel.messages();
 		return this.outputStream;

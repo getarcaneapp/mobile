@@ -1,4 +1,3 @@
-/** Draft state + save for `RegistryFormView` (RegistryFormView.swift), shared by both platforms. */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -15,7 +14,6 @@ import { settingsPayloads } from '../shared/settings-routes';
 
 export type RegistryFormPayload = { registry?: ContainerRegistry; onSuccess: () => Promise<void> };
 
-/** Swift `StableStringRow`: an editable string with a stable identity. */
 export type StableStringRow = { id: string; value: string };
 
 let nextRowID = 0;
@@ -23,7 +21,6 @@ const makeRow = (value = ''): StableStringRow => ({ id: `row-${nextRowID++}`, va
 
 const nilIfEmpty = (value: string) => (value === '' ? undefined : value);
 
-/** `registryRepositoryNames(rows:supported:)`. */
 export function registryRepositoryNames(
 	rows: StableStringRow[],
 	supported: boolean
@@ -102,7 +99,6 @@ export function useRegistryForm() {
 			repositoryNameRows: transform(current.repositoryNameRows)
 		}));
 	const isAWS = draft.registryType === 'ecr';
-	// Picker selects between generic and ecr; legacy "custom" maps to generic.
 	const typeSelection: 'generic' | 'ecr' = isAWS ? 'ecr' : 'generic';
 
 	const repositoryNames = draft.repositoryNameRows

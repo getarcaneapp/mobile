@@ -17,7 +17,6 @@ import { ToastHost } from '@/ui/toast';
 
 void SplashScreen.preventAutoHideAsync();
 
-/** Port of `ArcaneMobileApp` + `ContentView`: routes on `manager.authState`. */
 export default function RootLayout() {
 	const scheme = useColorScheme();
 	const accent = useAccentColor();
@@ -28,12 +27,10 @@ export default function RootLayout() {
 	const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
 	const appearanceKey = useAppearanceRemountKey();
 
-	// ContentView `.task { await manager.checkExistingAuth() }`.
 	useEffect(() => {
 		void useClientManager.getState().checkExistingAuth();
 	}, []);
 
-	// ContentView `.onChange(of: scenePhase)`: retry a bootstrap that failed offline.
 	useEffect(() => {
 		const subscription = AppState.addEventListener('change', (state) => {
 			if (state === 'active') void useClientManager.getState().retryConnectionBootstrapIfNeeded();
@@ -41,8 +38,6 @@ export default function RootLayout() {
 		return () => subscription.remove();
 	}, []);
 
-	// The animated splash covers the authenticating state itself; without it,
-	// the native splash stays up until auth resolves.
 	useEffect(() => {
 		if (showsLaunchSplash || authState !== 'authenticating') void SplashScreen.hideAsync();
 	}, [authState, showsLaunchSplash]);
@@ -80,7 +75,6 @@ export default function RootLayout() {
 								animation: Platform.OS === 'ios' ? 'default' : 'slide_from_bottom'
 							}}
 						/>
-						{/* `WhatsNewPresentationView`: a large `.sheet` (no grabber), from More or after an update. */}
 						<Stack.Screen
 							name="whats-new"
 							options={{

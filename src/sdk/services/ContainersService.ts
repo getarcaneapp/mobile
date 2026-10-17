@@ -1,4 +1,3 @@
-/** Port of Services/ContainersService.swift. */
 import type { ArcaneAuthorizedRequest } from '../client/ArcaneTransport';
 import type { EnvironmentID } from '../client/environment';
 import { boolString, q, type QueryItem } from '../client/url';
@@ -23,14 +22,10 @@ import { TerminalSession } from '../streaming/TerminalSession';
 export class ContainersService {
 	private readonly rest: RESTService;
 
-	/** @internal */
 	constructor(rest: RESTService) {
 		this.rest = rest;
 	}
 
-	// MARK: - Listing
-
-	/** Paginated list of containers in an environment. */
 	async list(
 		args: {
 			envID?: EnvironmentID;
@@ -61,7 +56,6 @@ export class ContainersService {
 		return this.rest.transport.decode(text, ContainerListResponse.decode);
 	}
 
-	/** Container counts by status for an environment. */
 	statusCounts(
 		args: { envID?: EnvironmentID; includeInternal?: boolean; includeHidden?: boolean } = {}
 	): Promise<ContainerStatusCounts> {
@@ -75,28 +69,22 @@ export class ContainersService {
 		});
 	}
 
-	// MARK: - CRUD
-
-	/** Inspect a single container. */
 	inspect(args: { envID?: EnvironmentID; id: string }): Promise<ContainerDetails> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `containers/${args.id}`), {
 			decode: ContainerDetails.decode
 		});
 	}
 
-	/** Create a new container. */
 	create(args: { envID?: EnvironmentID; body: ContainerCreate }): Promise<ContainerCreated> {
 		return this.rest.post(this.rest.environmentPath(args.envID, 'containers'), { body: args.body });
 	}
 
-	/** Load the editable configuration, including Compose ownership and edit restrictions. */
 	editConfig(args: { envID?: EnvironmentID; id: string }): Promise<ContainerEditConfig> {
 		return this.rest.get(
 			this.rest.environmentPath(args.envID, `containers/${args.id}/edit-config`)
 		);
 	}
 
-	/** Apply the supplied fields and recreate the container. The result contains its new ID. */
 	edit(args: {
 		envID?: EnvironmentID;
 		id: string;
@@ -108,7 +96,6 @@ export class ContainersService {
 		});
 	}
 
-	/** Create an image from the container's filesystem. */
 	commit(args: {
 		envID?: EnvironmentID;
 		id: string;
@@ -119,7 +106,6 @@ export class ContainersService {
 		});
 	}
 
-	/** Generate a Compose document from selected containers. */
 	generateCompose(args: {
 		envID?: EnvironmentID;
 		body: ContainerGenerateComposeRequest;
@@ -129,7 +115,6 @@ export class ContainersService {
 		});
 	}
 
-	/** Delete a container, optionally forcing removal of running containers and removing associated volumes. */
 	delete(args: {
 		envID?: EnvironmentID;
 		id: string;
@@ -146,8 +131,6 @@ export class ContainersService {
 		});
 	}
 
-	// MARK: - Lifecycle
-
 	start(args: { envID?: EnvironmentID; id: string }): Promise<MessageResponse> {
 		return this.lifecycle(args, 'start');
 	}
@@ -160,27 +143,20 @@ export class ContainersService {
 		return this.lifecycle(args, 'restart');
 	}
 
-	/**
-	 * Redeploy a container: pulls the latest image and recreates the container.
-	 * Returns the new container's details.
-	 */
 	redeploy(args: { envID?: EnvironmentID; id: string }): Promise<ContainerDetails> {
 		return this.rest.post(this.rest.environmentPath(args.envID, `containers/${args.id}/redeploy`), {
 			decode: ContainerDetails.decode
 		});
 	}
 
-	/** Pause a running container. */
 	pause(args: { envID?: EnvironmentID; id: string }): Promise<MessageResponse> {
 		return this.lifecycle(args, 'pause');
 	}
 
-	/** Resume a paused container. */
 	unpause(args: { envID?: EnvironmentID; id: string }): Promise<MessageResponse> {
 		return this.lifecycle(args, 'unpause');
 	}
 
-	/** Send a signal to a running container (default: SIGKILL). */
 	kill(args: { envID?: EnvironmentID; id: string; signal?: string }): Promise<MessageResponse> {
 		return this.rest.post(this.rest.environmentPath(args.envID, `containers/${args.id}/kill`), {
 			query: [q('signal', args.signal ?? 'SIGKILL')],
@@ -188,7 +164,6 @@ export class ContainersService {
 		});
 	}
 
-	/** Rename an existing container. */
 	rename(args: { envID?: EnvironmentID; id: string; newName: string }): Promise<void> {
 		return this.rest.postVoid(
 			this.rest.environmentPath(args.envID, `containers/${args.id}/rename`),
@@ -198,7 +173,6 @@ export class ContainersService {
 		);
 	}
 
-	/** Enable or disable auto-update for a specific container. */
 	setAutoUpdate(args: { envID?: EnvironmentID; id: string; enabled: boolean }): Promise<void> {
 		return this.rest.putVoid(
 			this.rest.environmentPath(args.envID, `containers/${args.id}/auto-update`),
@@ -208,19 +182,12 @@ export class ContainersService {
 		);
 	}
 
-	// MARK: - WebSocket streams
-
-	/** Download every log line Docker retains for the container as raw bytes. */
 	downloadLogs(args: { envID?: EnvironmentID; id: string }): Promise<Uint8Array> {
 		return this.rest.transport.downloadRaw(
 			this.rest.environmentPath(args.envID, `containers/${args.id}/logs/download`)
 		);
 	}
 
-	/**
-	 * Replacement for Swift `downloadLogs(envID:id:to:)`: authenticated URL +
-	 * headers for streaming the logs to disk with expo-file-system.
-	 */
 	downloadLogsDownloadRequest(args: {
 		envID?: EnvironmentID;
 		id: string;
@@ -230,10 +197,6 @@ export class ContainersService {
 		);
 	}
 
-	/**
-	 * Stream container log lines. Returns an `AsyncIterable` that finishes when the
-	 * remote closes the WebSocket.
-	 */
 	logs(args: {
 		envID?: EnvironmentID;
 		id: string;
@@ -256,7 +219,6 @@ export class ContainersService {
 		);
 	}
 
-	/** Stream container resource usage stats over WebSocket. */
 	stats(args: { envID?: EnvironmentID; id: string }): StatsStream<ContainerStatsPayload> {
 		const env = args.envID ?? this.rest.defaultEnvironmentID;
 		return new StatsStream<ContainerStatsPayload>(
@@ -267,7 +229,6 @@ export class ContainersService {
 		);
 	}
 
-	/** Open an interactive terminal session against a running container. */
 	exec(args: { envID?: EnvironmentID; id: string; shell?: string }): Promise<TerminalSession> {
 		const env = args.envID ?? this.rest.defaultEnvironmentID;
 		return TerminalSession.connect(

@@ -1,8 +1,3 @@
-/**
- * Android rendering of `ActivitiesView` (Views/Activities/ActivitiesView.swift):
- * Material 3 grouped list with the same Running / History sections, batch
- * expansion, search, filters, live stream, pagination and Clear History.
- */
 import { Stack } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -350,7 +345,6 @@ function toolbarItems(model: ActivitiesScreenModel): ActivityToolbarItem[] {
 	return items;
 }
 
-/** `onDone`: shown as the Activity Center sheet (Android dismisses with system back). */
 export function ActivitiesScreen(_props: { onDone?: () => void } = {}) {
 	const model = useActivitiesScreen();
 	const { state } = model;

@@ -1,9 +1,3 @@
-/**
- * iOS stand-in for SwiftUI `.contextMenu` on rows drawn outside a SwiftUI tree
- * (the log console's lines): tap runs `onPress`, long-press opens the row's
- * actions in a native action sheet. `@react-native-menu/menu` is Android-only
- * (it isn't autolinked on iOS), so the Android file's `MenuView` can't be used here.
- */
 import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
 import { ActionSheetIOS, Pressable, type StyleProp, type ViewStyle } from 'react-native';

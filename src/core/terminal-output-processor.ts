@@ -1,10 +1,3 @@
-/**
- * Port of Utils/TerminalOutputProcessor.swift: a byte-level terminal frame
- * decoder (UTF-8 with replacement, ANSI CSI/OSC stripping, DSR detection), a
- * bounded line buffer, and the follow-the-bottom behavior.
- *
- * Pure TS (no React Native imports).
- */
 import { RemoteDataLimits } from '@/core/networking/remote-data-limits';
 
 export type TerminalDecodedChunk = { text: string; dsrReplyCount: number };
@@ -164,7 +157,6 @@ export type TerminalOutputLine = { id: number; text: string };
 
 export type TerminalOutputSnapshot = { lines: TerminalOutputLine[]; fullText: string };
 
-/** Follows the bottom until the user scrolls away; reaching the bottom resumes. */
 export class TerminalOutputFollowBehavior {
 	isFollowing = true;
 
@@ -245,7 +237,6 @@ export class TerminalOutputBuffer {
 		let characterCount = this.retainedCharacterCount();
 		let drop = 0;
 		while (this.lines.length - drop > 1 && characterCount > this.maxCharacters) {
-			// Removing a line removes its characters plus one joining newline.
 			characterCount -= Array.from(this.lines[drop]!.text).length + 1;
 			drop += 1;
 		}
@@ -268,12 +259,10 @@ export class TerminalOutputBuffer {
 	}
 }
 
-/** The Swift actor, as a plain class (JS is single-threaded). */
 export class TerminalOutputProcessor {
 	private decoder = new TerminalFrameDecoder();
 	private buffer = new TerminalOutputBuffer();
 
-	/** Appends a frame and returns how many cursor-position (DSR) replies it asked for. */
 	append(data: Uint8Array): number {
 		const decoded = this.decoder.decode(data);
 		this.buffer.append(decoded.text);

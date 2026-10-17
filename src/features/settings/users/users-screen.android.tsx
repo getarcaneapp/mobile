@@ -1,8 +1,3 @@
-/**
- * Android rendering of `UsersView` (UsersView.swift): Material 3 grouped list
- * with search, pull-to-refresh, pagination, and a long-press Delete menu in
- * place of the context menu.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';

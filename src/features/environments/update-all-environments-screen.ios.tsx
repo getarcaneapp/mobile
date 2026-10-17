@@ -1,8 +1,3 @@
-/**
- * Port of `UpdateAllEnvironmentsView` (Views/Environments/UpdateAllEnvironmentsView.swift).
- * Presented as a sheet from the dashboard's Environments section; the dashboard
- * confirms on its own button, so the route starts the run immediately.
- */
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -179,8 +174,6 @@ function PhaseContent({ model }: { model: UpdateAllEnvironmentsModel }) {
 	return null;
 }
 
-// MARK: - Ready (confirmation step)
-
 function ReadyDetails({
 	lastJob,
 	onTrigger
@@ -262,8 +255,6 @@ function LastRunRow({ job }: { job: EnvironmentUpdateJob }) {
 		</VStack>
 	);
 }
-
-// MARK: - Finished
 
 function FinishedDetails({ job }: { job: EnvironmentUpdateJob }) {
 	const counts = resultCounts(resultsInProcessingOrder(job.results ?? []));

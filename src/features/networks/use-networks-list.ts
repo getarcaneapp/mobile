@@ -1,8 +1,3 @@
-/**
- * The platform-neutral model behind NetworksView.swift: loading and
- * pagination (one or all environments), search/filter/sort, the built-in /
- * custom partition, delete, prune, and their confirmations.
- */
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
@@ -41,7 +36,6 @@ type NetworkDestructive = { kind: 'prune' } | { kind: 'delete'; network: Network
 export type NetworksListProps = {
 	environmentID: EnvironmentID;
 	environmentName: string;
-	/** All Environments preview: list and act on resources from every enabled environment. */
 	allEnvironments?: boolean;
 };
 
@@ -50,7 +44,6 @@ let listCounter = 0;
 export const networkCacheKey = (environmentID: EnvironmentID, id: string) =>
 	`network:${environmentID}/${id}`;
 
-/** `.alert("Action Failed", …)`. */
 export function showActionFailed(message: string, title = 'Action Failed') {
 	Alert.alert(title, message, [{ text: 'OK', style: 'cancel' }]);
 }
@@ -78,8 +71,6 @@ export function useNetworksList({ environmentID, allEnvironments = false }: Netw
 		? snapshot.environments
 		: [{ id: environmentID }];
 
-	// MARK: Loading
-
 	const networksPage = useCallback((): EnvironmentFetch<NetworkSummary> | undefined => {
 		const current = useClientManager.getState().client;
 		if (!current) return undefined;
@@ -106,7 +97,6 @@ export function useNetworksList({ environmentID, allEnvironments = false }: Netw
 		if (fetch) await list.loadMore(fetch);
 	}, [networksPage, list]);
 
-	// Reappearing (back from a detail) refreshes every loaded page in place; the first appear loads page one.
 	useFocusEffect(
 		useCallback(() => {
 			void loadNetworks(true);
@@ -122,8 +112,6 @@ export function useNetworksList({ environmentID, allEnvironments = false }: Netw
 	useOnChange(mutationVersion, () => void loadNetworks(true));
 	useOnChange(client, () => void loadNetworks());
 
-	// MARK: Sections
-
 	const { system, user } = useMemo(
 		() =>
 			partitionNetworks(networks, {
@@ -134,8 +122,6 @@ export function useNetworksList({ environmentID, allEnvironments = false }: Netw
 			}),
 		[networks, debouncedSearch, filter.environmentFilter, filter.typeFilter, filter.sortOrder]
 	);
-
-	// MARK: Actions
 
 	const deleteNetwork = async (network: NetworkItem) => {
 		try {

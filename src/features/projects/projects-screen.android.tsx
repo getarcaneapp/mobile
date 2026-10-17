@@ -1,9 +1,3 @@
-/**
- * Android rendering of `ProjectsView` (ProjectsView.swift): Material 3
- * grouped list with the same sections, search, filters, pull-to-refresh,
- * pagination and actions. Swipe actions and context menus become the row's
- * long-press menu.
- */
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';

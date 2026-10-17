@@ -1,10 +1,3 @@
-/**
- * Port of `PreviewWalkthrough` (PreviewWalkthrough.swift): a paged
- * introduction with a Preview badge, title and message per page over an
- * illustration card, and an Enable Preview button on the last page.
- *
- * Standalone screen (draws its own SwiftUI navigation bar; presented as a sheet).
- */
 import { Host } from '@/ui/host';
 import {
 	Button,

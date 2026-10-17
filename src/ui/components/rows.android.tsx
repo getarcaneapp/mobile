@@ -1,9 +1,3 @@
-/**
- * Android ports of `RunEndpointButton` (Material 3 filled button, error
- * container when destructive) and `DynamicNavigationRow` (two-line list item).
- *
- * Standalone (RN views).
- */
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 

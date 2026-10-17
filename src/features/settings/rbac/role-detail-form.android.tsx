@@ -1,10 +1,3 @@
-/**
- * Android rendering of `RoleDetailView` (RolesView.swift), shared by the pushed
- * detail and the New Role modal: Role Info, the permission picker, the mode
- * footer, inline error, permission search and the floating save bar.
- *
- * Standalone (a full screen body).
- */
 import { Stack } from 'expo-router';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 

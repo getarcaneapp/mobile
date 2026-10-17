@@ -1,4 +1,3 @@
-/** Android renderings of `SwarmStacksView`, `SwarmStackDetailView` and `SwarmStackEditorView`. */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';

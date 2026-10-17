@@ -55,7 +55,6 @@ const groups: MoreDestinationGroup[] = [
 	}
 ];
 
-/** Shared state for the More tab (`SettingsView`). */
 export function useMoreDestinations(search: string) {
 	const router = useRouter();
 	const canAccess = useClientManager((s) => s.canAccess);
@@ -83,7 +82,6 @@ export function useMoreDestinations(search: string) {
 		});
 	}, [search, available]);
 
-	/** Pinned destinations switch tabs; everything else pushes onto More's stack. */
 	const open = (tab: AppTab) => {
 		if (!available.has(tab)) return;
 		if (visibleTabs.has(tab)) {

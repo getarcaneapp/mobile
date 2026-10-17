@@ -1,7 +1,3 @@
-/**
- * Pure pieces of `ArcaneClientManager`: `LoginCapabilities` and
- * `canAccess(_:)`. Kept free of RN imports so they're unit-testable.
- */
 import {
 	accessSurfaceIDs,
 	isEnvironmentScoped,
@@ -14,7 +10,6 @@ import { PermissionsManifest } from '@/sdk/models/role/PermissionsManifest';
 import type { PublicSetting } from '@/sdk/models/settings/Settings';
 import { User } from '@/sdk/models/user/User';
 
-/** Port of `LoginCapabilities`. */
 export interface LoginCapabilities {
 	localAuthEnabled: boolean;
 	oidcEnabled: boolean;
@@ -28,8 +23,6 @@ export const LoginCapabilities = {
 		for (const setting of publicSettings) values.set(setting.key, setting.value);
 		const localAuthValue = values.get('authLocalEnabled')?.trim().toLowerCase();
 		return {
-			// Older servers do not publish authLocalEnabled, so only an explicit
-			// false disables the password path.
 			localAuthEnabled: localAuthValue !== 'false',
 			oidcEnabled: values.get('oidcEnabled')?.trim().toLowerCase() === 'true',
 			oidcProviderName: values.get('oidcProviderName') ?? '',
@@ -46,11 +39,6 @@ export interface AccessContext {
 	allEnvironmentsPreview: boolean;
 }
 
-/**
- * Port of `canAccess(_:)`. v2 servers publish access-surface policy in the
- * permissions manifest; v1 servers and older v2 servers without that
- * metadata keep the admin/non-admin fallback.
- */
 export function canAccessTab(tab: AppTab, context: AccessContext): boolean {
 	const supportsV2 = context.serverCapabilities?.mode === 'rbac';
 	const user = context.currentUser;

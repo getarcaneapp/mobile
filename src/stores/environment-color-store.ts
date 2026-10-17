@@ -1,7 +1,3 @@
-/**
- * Port of `EnvironmentColorStore.swift`: a distinct color per environment,
- * per server, persisted under `arcane.environmentColors`.
- */
 import { create } from 'zustand';
 
 import { ConnectionProfileSync } from '@/core/connection-profiles/connection-profile-sync';
@@ -34,7 +30,6 @@ function loadColors(): Record<string, string> {
 	);
 }
 
-/** Rows look colors up per render; normalize each server URL once. */
 const normalizedServers = new Map<string, string>();
 
 function key(server: string, environmentID: string): string {
@@ -53,9 +48,8 @@ function key(server: string, environmentID: string): string {
 function availableColor(used: ReadonlySet<string>): string {
 	const color = palette.find((candidate) => !used.has(candidate));
 	if (color) return color;
-	// Walk the RGB space without repeating colors once the palette is exhausted.
 	for (let index = 1; index <= 0xffffff; index++) {
-		const value = (index * 0x9e3779) % 0x1000000; // exact: the product stays below 2^53
+		const value = (index * 0x9e3779) % 0x1000000;
 		const candidate = '#' + value.toString(16).toUpperCase().padStart(6, '0');
 		if (!used.has(candidate)) return candidate;
 	}
@@ -79,7 +73,6 @@ export const useEnvironmentColorStore = create<EnvironmentColorState>((setState,
 		const colors = get().colors;
 		const prefix = key(server, '');
 		const used = new Set<string>();
-		// Include saved environments that are temporarily absent, so their colors stay reserved.
 		const keys = new Set([
 			...Object.keys(colors).filter((k) => k.startsWith(prefix)),
 			...environmentIDs.map((id) => key(server, id))
@@ -96,7 +89,6 @@ export const useEnvironmentColorStore = create<EnvironmentColorState>((setState,
 				used.add(color);
 			}
 		}
-		// Only publish (and re-render every colored row) when something changed.
 		const changed =
 			Object.keys(next).length !== Object.keys(colors).length ||
 			Object.entries(next).some(([k, v]) => colors[k] !== v);

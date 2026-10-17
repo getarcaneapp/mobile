@@ -1,4 +1,3 @@
-/** Derived values for `SecurityOverviewView` (SecurityOverviewView.swift). Pure TS. */
 import type {
 	VulnerabilityRiskFinding,
 	VulnerabilityRiskOverview
@@ -22,7 +21,6 @@ export const TrendRanges = [
 export function overviewPresentation(overview: VulnerabilityRiskOverview) {
 	const scoreUnavailable = overview.scoreStatus === 'unavailable';
 	const scoreTarget = scoreUnavailable ? 0 : Math.min(Math.max(overview.riskScore, 0), 100);
-	/** Undefined is `.secondary`. */
 	const scoreColor = scoreUnavailable ? undefined : riskBandColor(overview.riskBand);
 	const bandLabel = scoreUnavailable ? 'Unavailable' : capitalized(overview.riskBand);
 	const threatDataAvailable =
@@ -52,21 +50,17 @@ export function overviewPresentation(overview: VulnerabilityRiskOverview) {
 	};
 }
 
-/** The trend card's 7-day delta label. */
 export function deltaPresentation(delta: number) {
 	return {
 		title: delta === 0 ? 'No change in 7 days' : `${Math.abs(delta)} in 7 days`,
 		systemImage: delta > 0 ? 'arrow.up.right' : delta < 0 ? 'arrow.down.right' : 'minus',
-		/** Undefined is `.secondary`. */
 		color: delta > 0 ? systemColors.orange : undefined
 	};
 }
 
-/** `overview.trend.suffix(trendDays)`. */
 export const trendPoints = (overview: VulnerabilityRiskOverview, days: number) =>
 	overview.trend.slice(-days);
 
-/** The driver row's comparison with seven days ago, when it changed. */
 export function driverChange(count: number, previous: number | undefined) {
 	if (previous === undefined || count === previous) return undefined;
 	return {
@@ -76,7 +70,6 @@ export function driverChange(count: number, previous: number | undefined) {
 	};
 }
 
-/** The finding row's trailing value. */
 export function findingValue(finding: VulnerabilityRiskFinding, rankByPrevalence: boolean) {
 	return {
 		value: String(rankByPrevalence ? finding.imagesAffected : Math.round(finding.risk * 10)),

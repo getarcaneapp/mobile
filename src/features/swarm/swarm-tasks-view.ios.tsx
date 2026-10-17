@@ -1,4 +1,3 @@
-/** Port of `SwarmTasksView` + `SwarmTaskRow` (SwarmTasksView.swift). */
 import { Host } from '@/ui/host';
 import { HStack, Label, List, Section, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import {
@@ -90,7 +89,6 @@ export function SwarmTaskRow({
 	);
 }
 
-/** `SwarmTasksView`: render inside a `Host`. */
 export function SwarmTasksList({
 	environmentID,
 	source
@@ -144,7 +142,6 @@ export function SwarmTasksList({
 	);
 }
 
-/** Standalone route: "Tasks", or the pushing screen's title (e.g. "Tasks on node-1"). */
 export function SwarmTasksScreen() {
 	const {
 		envID = '0',

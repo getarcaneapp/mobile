@@ -1,8 +1,3 @@
-/**
- * Port of `LogsView` (LogsView.swift): the embedded console in Container
- * Detail (with Expand) and the dedicated full-screen viewer, sharing one
- * `LogViewerStore` between them.
- */
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
 import { useEffect, useRef, useState } from 'react';
@@ -19,7 +14,6 @@ import { logOptionsMenuItems, logOptionsToolbarMenu } from './log-options-toolba
 import { LogStatusBar } from './log-status-bar';
 import { containerLogStore, useLogStore, useLogViewer } from './use-log-viewer';
 
-/** Embedded `LogsView(..., embedded: true)`: status bar with Expand + options, then the console. */
 export function EmbeddedContainerLogs({
 	environmentID,
 	containerID,
@@ -51,7 +45,6 @@ export function EmbeddedContainerLogs({
 	);
 }
 
-/** `LogViewerDedicatedView`: full-screen, Done + options in the navigation bar. */
 export function ContainerLogsScreen() {
 	const router = useRouter();
 	const accent = useAccentColor();

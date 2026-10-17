@@ -1,14 +1,3 @@
-/**
- * Port of `PushNotificationCoordinator.swift`: owns the device side of native
- * push — APNs registration, enrollment and pairing with the push relay, the
- * per-server device record on the Arcane server, and the Keychain-backed
- * credentials that tie them together.
- *
- * The relay is talked to with plain `fetch` calls that omit cookies and carry
- * no Arcane tokens; the relay never learns the server URL.
- *
- * The relay only speaks APNs, so the coordinator is iOS-only (`isSupported`).
- */
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -41,7 +30,6 @@ export type PushCredentials = {
 	bindings: Record<string, PushServerBinding>;
 };
 
-/** Swift `PushNotificationCoordinator.PushError`. */
 export class PushError extends Error {
 	static serverDisabled = () =>
 		new PushError("Your Arcane admin hasn't enabled mobile push notifications.");
@@ -54,9 +42,6 @@ export class PushError extends Error {
 	static notSignedIn = () => new PushError('Sign in to enable push notifications.');
 }
 
-// MARK: - Keychain
-
-/** Single item holding the relay credentials (Swift `PushKeychain`, service `com.arcane.mobile.push`). */
 const keychainKey = 'com.arcane.mobile.push.relay';
 const keychainOptions: SecureStore.SecureStoreOptions = {
 	keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK
@@ -80,17 +65,12 @@ const PushKeychain = {
 			if (!credentials) await SecureStore.deleteItemAsync(keychainKey, keychainOptions);
 			else
 				await SecureStore.setItemAsync(keychainKey, JSON.stringify(credentials), keychainOptions);
-		} catch {
-			// Best effort, like the Swift `SecItem*` calls.
-		}
+		} catch {}
 	}
 };
 
-// MARK: - APNs environment
-
 let apnsEnvironmentPromise: Promise<string> | undefined;
 
-/** Reads the provisioning profile's `aps-environment` once per process. */
 function detectAPNSEnvironment(): Promise<string> {
 	apnsEnvironmentPromise ??= (async () => {
 		if (!Device.isDevice) return 'sandbox';
@@ -125,8 +105,6 @@ function authorizationStatus(
 					: 'notDetermined';
 	}
 }
-
-// MARK: - Relay client
 
 type InstallationResponse = { installationId: string; installationSecret: string };
 type PairResponse = { recipientId: string; channelId: string };
@@ -164,9 +142,7 @@ async function relayData(
 			try {
 				const decoded = JSON.parse(text) as { error?: { message?: unknown } };
 				if (typeof decoded.error?.message === 'string') message = decoded.error.message;
-			} catch {
-				// Not JSON — keep the raw body.
-			}
+			} catch {}
 			throw PushError.relay(response.status, message);
 		}
 		return text;
@@ -201,8 +177,6 @@ function updateRelayToken(creds: PushCredentials) {
 	});
 }
 
-// MARK: - Store
-
 type PushNotificationState = {
 	authorizationStatus: PushAuthorizationStatus;
 	isBusy: boolean;
@@ -210,7 +184,6 @@ type PushNotificationState = {
 	errorMessage: string | undefined;
 	credentials: PushCredentials | undefined;
 
-	/** Native push needs the APNs relay, which only serves iOS. */
 	isSupported: boolean;
 	isEnabled: (origin: string | undefined) => boolean;
 	binding: (origin: string | undefined) => PushServerBinding | undefined;
@@ -335,7 +308,6 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 			set({ authorizationStatus: authorizationStatus(await Notifications.getPermissionsAsync()) });
 		},
 
-		/** Re-registers with APNs on every launch where permission was granted so token rotations reach the relay. */
 		registerIfAuthorized: async () => {
 			if (!get().isSupported) return;
 			await get().refreshAuthorizationStatus();
@@ -344,9 +316,7 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 			try {
 				const token = await Notifications.getDevicePushTokenAsync();
 				if (typeof token.data === 'string') await get().didRegister(token.data);
-			} catch {
-				// Swift `didFailToRegister` only records the error for a pending enable.
-			}
+			} catch {}
 		},
 
 		refreshServerStatus: async () => {
@@ -362,8 +332,6 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 			const status = await client.mobilePush.status().catch(() => undefined);
 			if (!useClientManager.getState().isCurrentAuthentication(generation)) return;
 			set({ serverStatus: status });
-			// The server forgot this device (admin disabled push, or it was pruned) —
-			// drop the stale local binding so the toggle reads correctly.
 			const binding = get().binding(origin);
 			const creds = get().credentials;
 			if (
@@ -455,14 +423,11 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 					});
 				} catch (error) {
 					checkSession();
-					// Stale relay pairing owned by another user (e.g. account switch on a
-					// shared device). Unpair it, pair fresh, retry once.
 					if (!isArcaneError(error, 'conflict')) throw error;
 					await relayRequestVoid(creds, 'POST', '/v1/unpair', {
 						recipientId: paired.recipientId
 					}).catch(() => undefined);
 					checkSession();
-					// Pairing tokens are single-use — fetch a fresh one.
 					const retryPairing = await client.mobilePush.pairingToken();
 					checkSession();
 					paired = await relayRequest<PairResponse>(
@@ -532,7 +497,6 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 			}
 		},
 
-		/** Unpairs at the relay first, then removes the server record. Safe with a client whose session is ending. */
 		tearDown: async (client, origin) => {
 			await credentialsLoaded;
 			const creds = get().credentials;
