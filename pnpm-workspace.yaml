@@ -1,0 +1,24 @@
+packages:
+  - .
+
+autoDedupe: true
+
+nodeLinker: hoisted
+
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@1.3.0
+  vite-plus: 1.3.0
+
+overrides:
+  vite: 'catalog:'
+
+patchedDependencies:
+  react-native-screens: patches/react-native-screens.patch
+
+# `vite` is aliased to Vite+'s core, whose version number doesn't satisfy
+# Vitest's `vite` peer range (same rule as the arcane repo).
+peerDependencyRules:
+  allowAny:
+    - vite
+  allowedVersions:
+    vite: '*'

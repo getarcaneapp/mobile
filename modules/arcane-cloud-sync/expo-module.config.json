@@ -1,0 +1,9 @@
+{
+	"platforms": ["apple", "android"],
+	"apple": {
+		"modules": ["ArcaneCloudSyncModule"]
+	},
+	"android": {
+		"modules": ["expo.modules.arcanecloudsync.ArcaneCloudSyncModule"]
+	}
+}

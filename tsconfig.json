@@ -1,0 +1,23 @@
+{
+	"extends": "expo/tsconfig.base.json",
+	"compilerOptions": {
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"paths": {
+			"@/*": ["./src/*"],
+			"@/assets/*": ["./assets/*"]
+		},
+		"moduleSuffixes": [".ios", ""]
+	},
+	"include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+	"exclude": [
+		"node_modules",
+		"ios",
+		"android",
+		"scripts",
+		"plugins",
+		"app.config.ts",
+		"vite.config.ts"
+	]
+}

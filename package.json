@@ -1,0 +1,85 @@
+{
+	"name": "arcane-mobile",
+	"version": "1.0.0",
+	"private": true,
+	"main": "expo-router/entry",
+	"scripts": {
+		"start": "expo start --dev-client",
+		"android": "expo run:android",
+		"ios": "expo run:ios",
+		"typecheck": "vp check --no-fmt --no-lint",
+		"ios:prepare": "./scripts/ios-prepare.sh",
+		"generate:logo": "node scripts/generate-logo-paths.mts",
+		"preinstall": "npx only-allow pnpm",
+		"check": "vp check",
+		"lint": "vp lint",
+		"fmt": "vp fmt",
+		"test": "vp test run"
+	},
+	"dependencies": {
+		"@expo/ui": "~58.0.20",
+		"@react-native-menu/menu": "^2.0.0",
+		"expo": "~58.0.14",
+		"expo-application": "~58.1.2",
+		"expo-auth-session": "~58.0.13",
+		"expo-blur": "~58.0.4",
+		"expo-build-properties": "~58.0.11",
+		"expo-clipboard": "~58.0.3",
+		"expo-constants": "~58.0.12",
+		"expo-crypto": "~58.0.7",
+		"expo-dev-client": "~58.0.14",
+		"expo-device": "~58.0.5",
+		"expo-file-system": "~58.0.9",
+		"expo-font": "~58.0.8",
+		"expo-glass-effect": "~58.0.4",
+		"expo-haptics": "~58.0.7",
+		"expo-image": "~58.0.15",
+		"expo-linking": "~58.0.13",
+		"expo-localization": "~58.0.4",
+		"expo-notifications": "~58.1.5",
+		"expo-router": "~58.0.23",
+		"expo-secure-store": "~58.0.2",
+		"expo-sharing": "~58.0.19",
+		"expo-splash-screen": "~58.0.10",
+		"expo-status-bar": "~58.0.3",
+		"expo-symbols": "~58.0.4",
+		"expo-system-ui": "~58.0.6",
+		"expo-web-browser": "~58.0.6",
+		"react": "19.3.0",
+		"react-dom": "19.3.0",
+		"react-native": "0.88.0",
+		"react-native-gesture-handler": "~3.3.0",
+		"react-native-keyboard-controller": "1.22.7",
+		"react-native-mmkv": "^4.3.2",
+		"react-native-nitro-modules": "^0.37.1",
+		"react-native-reanimated": "4.7.1",
+		"react-native-safe-area-context": "~5.10.1",
+		"react-native-screens": "~4.30.0",
+		"react-native-svg": "15.16.0",
+		"react-native-web": "~0.21.4",
+		"react-native-worklets": "0.13.0",
+		"yaml": "^2.9.1",
+		"zustand": "^5.0.15"
+	},
+	"devDependencies": {
+		"@types/react": "~19.3.0",
+		"typescript": "~7.0.2",
+		"vite": "catalog:",
+		"vite-plus": "catalog:"
+	},
+	"packageManager": "pnpm@12.14.0+sha512.c18ba6d87993d3d164cb5e8948f32b2c06ee854487e06cd8d86781342fb3e5bb4634367034711e86802baa9c37bea906ce1929ad08d70884c97d801df13389a6",
+	"expo": {
+		"autolinking": {
+			"ios": {
+				"exclude": [
+					"@react-native-menu/menu"
+				]
+			}
+		},
+		"install": {
+			"exclude": [
+				"typescript"
+			]
+		}
+	}
+}

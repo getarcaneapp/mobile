@@ -1,0 +1,13 @@
+{
+	"extends": "expo/tsconfig.base.json",
+	"compilerOptions": {
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"types": ["node"],
+		"allowImportingTsExtensions": true,
+		"noEmit": true,
+		"module": "nodenext",
+		"moduleResolution": "nodenext"
+	},
+	"include": ["scripts/**/*.mts", "plugins/**/*.ts", "app.config.ts", "vite.config.ts"]
+}

@@ -1,0 +1,9 @@
+{
+	"platforms": ["apple", "android"],
+	"apple": {
+		"modules": ["ArcaneAppIconModule"]
+	},
+	"android": {
+		"modules": ["expo.modules.arcaneappicon.ArcaneAppIconModule"]
+	}
+}

@@ -1,0 +1,82 @@
+diff --git a/ios/RNSBarButtonItem.mm b/ios/RNSBarButtonItem.mm
+index c435fdd1dab11f39dc78367860e8f568c953ea8c..ba48c0ff8a6a8ed8ebb2ca7783bd0b3751a198fb 100644
+--- a/ios/RNSBarButtonItem.mm
++++ b/ios/RNSBarButtonItem.mm
+@@ -130,7 +130,8 @@ - (instancetype)initWithConfig:(NSDictionary<NSString *, id> *)dict
+   if (@available(tvOS 17.0, *)) {
+     NSDictionary *menu = dict[@"menu"];
+     if (menu) {
+-      self.menu = [[self class] initUIMenuWithDict:menu menuAction:menuAction imageLoader:imageLoader];
++      // Arcane: UIKit menus ignore the bar item tint, so tint item symbols explicitly.
++      self.menu = [[self class] initUIMenuWithDict:menu menuAction:menuAction imageLoader:imageLoader tint:self.tintColor];
+     }
+   }
+ #endif
+@@ -179,6 +180,19 @@ + (void)resolveImageFromConfig:(NSDictionary *)dict
+ + (UIMenu *)initUIMenuWithDict:(NSDictionary<NSString *, id> *)dict
+                     menuAction:(RNSBarButtonMenuItemAction)menuAction
+                    imageLoader:(RCTImageLoader *)imageLoader
++{
++  return [self initUIMenuWithDict:dict menuAction:menuAction imageLoader:imageLoader tint:nil];
++}
++
+++ (UIImage *)arcaneTintedImage:(UIImage *)img tint:(UIColor *)tint
++{
++  return (tint && img) ? [img imageWithTintColor:tint renderingMode:UIImageRenderingModeAlwaysOriginal] : img;
++}
++
+++ (UIMenu *)initUIMenuWithDict:(NSDictionary<NSString *, id> *)dict
++                    menuAction:(RNSBarButtonMenuItemAction)menuAction
++                   imageLoader:(RCTImageLoader *)imageLoader
++                          tint:(UIColor *)tint
+ {
+   NSArray *items = dict[@"items"];
+   NSMutableArray<UIMenuElement *> *elements = [NSMutableArray new];
+@@ -186,10 +200,10 @@ + (UIMenu *)initUIMenuWithDict:(NSDictionary<NSString *, id> *)dict
+     for (NSDictionary *item in items) {
+       NSString *menuId = item[@"menuId"];
+       if (menuId) {
+-        UIAction *actionItem = [self createActionItemFromConfig:item menuAction:menuAction imageLoader:imageLoader];
++        UIAction *actionItem = [self createActionItemFromConfig:item menuAction:menuAction imageLoader:imageLoader tint:tint];
+         [elements addObject:actionItem];
+       } else {
+-        UIMenu *childMenu = [self initUIMenuWithDict:item menuAction:menuAction imageLoader:imageLoader];
++        UIMenu *childMenu = [self initUIMenuWithDict:item menuAction:menuAction imageLoader:imageLoader tint:tint];
+         if (childMenu) {
+           [elements addObject:childMenu];
+         }
+@@ -200,7 +214,7 @@ + (UIMenu *)initUIMenuWithDict:(NSDictionary<NSString *, id> *)dict
+   [self resolveImageFromConfig:dict
+                    imageLoader:imageLoader
+                completionBlock:^(UIImage *img) {
+-                 image = img;
++                 image = [self arcaneTintedImage:img tint:tint];
+                }];
+ 
+   UIMenu *menu = [UIMenu menuWithTitle:dict[@"title"]
+@@ -221,6 +235,16 @@ + (UIAction *)createActionItemFromConfig:(NSDictionary *)dict
+                               menuAction:(RNSBarButtonMenuItemAction)menuAction
+                              imageLoader:(RCTImageLoader *)imageLoader
+ {
++  return [self createActionItemFromConfig:dict menuAction:menuAction imageLoader:imageLoader tint:nil];
++}
++
+++ (UIAction *)createActionItemFromConfig:(NSDictionary *)dict
++                              menuAction:(RNSBarButtonMenuItemAction)menuAction
++                             imageLoader:(RCTImageLoader *)imageLoader
++                                    tint:(UIColor *)tint
++{
++  // Destructive items keep UIKit's red.
++  UIColor *itemTint = [dict[@"destructive"] boolValue] ? nil : tint;
+   NSString *menuId = dict[@"menuId"];
+ 
+   UIAction *actionElement = [UIAction actionWithTitle:dict[@"title"]
+@@ -233,7 +257,7 @@ + (UIAction *)createActionItemFromConfig:(NSDictionary *)dict
+   [self resolveImageFromConfig:dict
+                    imageLoader:imageLoader
+                completionBlock:^(UIImage *img) {
+-                 actionElement.image = img;
++                 actionElement.image = [self arcaneTintedImage:img tint:itemTint];
+                }];
+ 
+   NSString *discoverabilityLabel = dict[@"discoverabilityLabel"];

@@ -1,0 +1,45 @@
+/**
+ * Navigation for the Updates destinations. Routes live once in the shared
+ * tab group, so pushes stay in whichever tab stack is current
+ * (Swift: `navigationDestination` / `NavigationLink` on the presenting stack).
+ */
+import { useRouter, useSegments, type Href } from 'expo-router';
+import { useMemo } from 'react';
+
+import type { EnvironmentID } from '@/sdk/client/environment';
+import type { AutoUpdateRecord } from '@/sdk/models/updater/Updater';
+
+/** History records handed to the pushed detail screen (not serializable as params). */
+const records = new Map<string, AutoUpdateRecord>();
+
+export const updaterHistoryRecords = {
+	get: (key: string | undefined) => (key ? records.get(key) : undefined)
+};
+
+function recordKey(environmentID: EnvironmentID, record: AutoUpdateRecord) {
+	return `${environmentID}/${record.id}`;
+}
+
+export function useUpdatesNavigation() {
+	const router = useRouter();
+	const segments = useSegments() as string[];
+	const group =
+		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(updates)';
+	return useMemo(() => {
+		const href = (path: string, params: Record<string, string>) =>
+			`/(tabs)/${group}/${path}?${Object.entries(params)
+				.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+				.join('&')}` as Href;
+		return {
+			router,
+			openHistory(environmentID: EnvironmentID) {
+				router.push(href('updater-history', { envID: environmentID }));
+			},
+			openHistoryRecord(environmentID: EnvironmentID, record: AutoUpdateRecord) {
+				const key = recordKey(environmentID, record);
+				records.set(key, record);
+				router.push(href('updater-history-record', { key, title: record.resourceName }));
+			}
+		};
+	}, [router, group]);
+}

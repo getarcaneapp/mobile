@@ -1,0 +1,26 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'app.getarcane'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.arcanecloudsync"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // Block Store: small key/value blobs backed up (end-to-end encrypted when
+  // the device has a screen lock) and restored on new-device setup.
+  implementation 'com.google.android.gms:play-services-auth-blockstore:16.4.0'
+  implementation 'com.google.android.gms:play-services-base:18.5.0'
+  // Credential Manager for password sign-ins (Google Password Manager);
+  // the play-services-auth bridge covers Android 13 and below.
+  implementation 'androidx.credentials:credentials:1.5.0'
+  implementation 'androidx.credentials:credentials-play-services-auth:1.5.0'
+}
