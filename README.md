@@ -1,56 +1,29 @@
-# Welcome to your Expo app 👋
+<div align="center">
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+  <img src=".github/assets/img/PNG-3.png" alt="Arcane Logo" width="500" />
+  <p>Arcane Mobile — Manage your containers straight from your pocket.</p>
 
-## Get started
+<a href="https://github.com/getarcaneapp/mobile/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-BSD--3--Clause-blue.svg" alt="License"></a>
+<a href="https://discord.gg/WyXYpdyV3Z"><img src="https://img.shields.io/badge/discord-join-5865F2.svg?logo=discord&logoColor=white" alt="Discord"></a>
 
-1. Install dependencies
+<br />
 
-   ```bash
-   npm install
-   ```
+</div>
 
-2. Start the app
+## About
 
-   ```bash
-   npx expo start
-   ```
+Arcane Mobile is the official iOS and Android companion for [Arcane](https://github.com/getarcaneapp/arcane). It connects to any Arcane manager or agent and lets you browse and operate your Docker environments — containers, images, volumes, networks, and Compose projects — from your phone.
 
-In the output, you'll find options to open the app in a
+## Documentation
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+For setup instructions, configuration details, and development guides, visit the **[official documentation site](https://getarcane.app)**.
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Requirements
 
-## Get a fresh project
+- iOS 18 or later (the Liquid Glass interface is used on iOS 26+; iOS 18 falls back to materials)
+- Android 8.0 (API 26) or later
+- An Arcane server reachable over HTTPS
 
-When you're ready, run:
+## Reporting Issues
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Found a bug or have a feature request? [Open an issue on GitHub](https://github.com/getarcaneapp/mobile/issues).

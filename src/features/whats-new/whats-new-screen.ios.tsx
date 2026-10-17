@@ -23,8 +23,7 @@ import {
 	Text,
 	Toolbar,
 	ToolbarItem,
-	VStack,
-	ZStack
+	VStack
 } from '@expo/ui/swift-ui';
 import {
 	accessibilityElement,
@@ -36,7 +35,6 @@ import {
 	foregroundStyle,
 	frame,
 	listStyle,
-	luminanceToAlpha,
 	multilineTextAlignment,
 	navigationBarTitleDisplayMode,
 	navigationTitle,
@@ -244,18 +242,16 @@ function BadgedReleaseNote({ text, badge }: { text: string; badge: ReleaseNoteBa
 	const color = badgeColor[badge];
 	const label = badgeLabel[badge];
 	// Centered vertically on the card's top edge (`alignmentGuide(.top) { $0[.center] }`), inset 10 from the corner.
-	const [legendHeight, setLegendHeight] = useState(13);
-	const legend = (foreground: string, filled: boolean) => (
+	const [legendSize, setLegendSize] = useState({ width: 0, height: 13 });
+	const legend = (
 		<Text
 			modifiers={[
 				font({ textStyle: 'caption2', weight: 'semibold' }),
-				foregroundStyle(foreground),
+				foregroundStyle(color),
 				padding({ horizontal: 5 }),
 				fixedSize(),
-				...(filled
-					? [background(foreground)]
-					: [onGeometryChange((frame) => setLegendHeight(frame.height))]),
-				offset({ x: 10, y: -legendHeight / 2 })
+				onGeometryChange((frame) => setLegendSize({ width: frame.width, height: frame.height })),
+				offset({ x: 10, y: -legendSize.height / 2 })
 			]}
 		>
 			{label}
@@ -290,7 +286,11 @@ function BadgedReleaseNote({ text, badge }: { text: string; badge: ReleaseNoteBa
 					{text}
 				</Text>
 				<Overlay.Content>
-					{/* The label hides the outline behind it so the text interrupts the line. */}
+					{/*
+					 * The label hides the outline behind it so the text interrupts the line.
+					 * Swift cuts it with `.blendMode(.destinationOut)`; @expo/ui has no blend
+					 * modes, so the mask leaves a clear gap where the label's lower half sits.
+					 */}
 					<Mask>
 						<RoundedRectangle
 							cornerRadius={Radius.nested}
@@ -305,15 +305,21 @@ function BadgedReleaseNote({ text, badge }: { text: string; badge: ReleaseNoteBa
 							]}
 						/>
 						<Mask.Content>
-							<ZStack alignment="topLeading" modifiers={[luminanceToAlpha()]}>
-								<Rectangle modifiers={[foregroundStyle('#FFFFFF')]} />
-								{legend('#000000', true)}
-							</ZStack>
+							<VStack spacing={0}>
+								<HStack spacing={0} modifiers={[frame({ height: legendSize.height / 2 })]}>
+									<Rectangle modifiers={[frame({ width: 10 })]} />
+									<Rectangle
+										modifiers={[foregroundStyle('#00000000'), frame({ width: legendSize.width })]}
+									/>
+									<Rectangle />
+								</HStack>
+								<Rectangle />
+							</VStack>
 						</Mask.Content>
 					</Mask>
 				</Overlay.Content>
 			</Overlay>
-			<Overlay.Content>{legend(color, false)}</Overlay.Content>
+			<Overlay.Content>{legend}</Overlay.Content>
 		</Overlay>
 	);
 }
