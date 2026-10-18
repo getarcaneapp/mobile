@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { generateImageAsync } from '@expo/image-utils';
 import {
 	AndroidConfig,
 	withAndroidManifest,
@@ -85,8 +85,9 @@ function appIconSource(appiconset: string): string {
 const withAndroidIconResources: ConfigPlugin = (config) =>
 	withDangerousMod(config, [
 		'android',
-		(config) => {
-			const source = path.join(config.modRequest.projectRoot, ASSETS_DIR);
+		async (config) => {
+			const projectRoot = config.modRequest.projectRoot;
+			const source = path.join(projectRoot, ASSETS_DIR);
 			const res = path.join(config.modRequest.platformProjectRoot, 'app', 'src', 'main', 'res');
 			for (const name of ALTERNATE_APP_ICONS) {
 				const slug = `ic_launcher_${resourceSlug(name)}`;
@@ -94,24 +95,12 @@ const withAndroidIconResources: ConfigPlugin = (config) =>
 				for (const [density, scale] of Object.entries(DENSITIES)) {
 					const dir = path.join(res, `mipmap-${density}`);
 					fs.mkdirSync(dir, { recursive: true });
-					const size = String(Math.round(108 * scale));
-					execFileSync(
-						'sips',
-						[
-							'-s',
-							'format',
-							'png',
-							'-z',
-							size,
-							size,
-							image,
-							'--out',
-							path.join(dir, `${slug}_full.png`)
-						],
-						{
-							stdio: 'ignore'
-						}
+					const size = Math.round(108 * scale);
+					const { source: png } = await generateImageAsync(
+						{ projectRoot, cacheType: 'arcane-app-icons' },
+						{ src: image, width: size, height: size, resizeMode: 'cover' }
 					);
+					fs.writeFileSync(path.join(dir, `${slug}_full.png`), png);
 				}
 				const drawable = path.join(res, 'drawable');
 				fs.mkdirSync(drawable, { recursive: true });

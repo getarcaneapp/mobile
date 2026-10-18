@@ -63,6 +63,7 @@
 		"zustand": "^5.0.15"
 	},
 	"devDependencies": {
+		"@expo/image-utils": "0.12.5",
 		"@types/react": "~19.3.0",
 		"typescript": "~7.0.2",
 		"vite": "catalog:",

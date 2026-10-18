@@ -311,6 +311,9 @@ importers:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)
     devDependencies:
+      '@expo/image-utils':
+        specifier: 0.12.5
+        version: 0.12.5(supports-color@8.1.1)(typescript@7.0.2)
       '@types/react':
         specifier: ~19.3.0
         version: 19.3.0
