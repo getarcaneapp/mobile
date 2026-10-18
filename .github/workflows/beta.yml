@@ -46,12 +46,19 @@ jobs:
         run: |
           command -v pod >/dev/null || brew install cocoapods
           command -v fastlane >/dev/null || brew install fastlane
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods/repos
+          key: cocoapods-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: cocoapods-${{ runner.os }}-
       - name: Build number
         run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
       - name: Build
-        run: vpx eas-cli build --local --platform ios --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.ipa"
+        run: vpx eas-cli@latest build --local --platform ios --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.ipa"
       - name: Submit to TestFlight
-        run: vpx eas-cli submit --platform ios --profile beta --non-interactive --path "$RUNNER_TEMP/Arcane.ipa"
+        run: vpx eas-cli@latest submit --platform ios --profile beta --non-interactive --path "$RUNNER_TEMP/Arcane.ipa"
 
   android:
     needs: verify
@@ -69,9 +76,12 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-read-only: false
       - name: Build number
         run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
       - name: Build
-        run: vpx eas-cli build --local --platform android --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.aab"
+        run: vpx eas-cli@latest build --local --platform android --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.aab"
       - name: Submit to Google Play internal testing
-        run: vpx eas-cli submit --platform android --profile beta --non-interactive --path "$RUNNER_TEMP/Arcane.aab"
+        run: vpx eas-cli@latest submit --platform android --profile beta --non-interactive --path "$RUNNER_TEMP/Arcane.aab"
