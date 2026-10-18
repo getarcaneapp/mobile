@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { useClientManager } from '@/stores/client-manager';
@@ -16,13 +16,12 @@ export function useDebounced<T>(value: T, delayMs: number): T {
 
 export function useOnChange<T>(value: T, effect: (value: T, previous: T) => void) {
 	const previous = useRef(value);
-	const latest = useRef(effect);
-	latest.current = effect;
+	const onChange = useEffectEvent(effect);
 	useEffect(() => {
 		if (Object.is(previous.current, value)) return;
 		const old = previous.current;
 		previous.current = value;
-		latest.current(value, old);
+		onChange(value, old);
 	}, [value]);
 }
 
@@ -54,8 +53,6 @@ export function useEnvironmentRowColor(
 ): string | undefined {
 	const allEnvironments = useClientManager((s) => s.allEnvironmentsPreview);
 	const server = useClientManager((s) => s.serverURL);
-	const hex = useEnvironmentColorStore((s) => s.colors);
-	if (!allEnvironments || environmentName === undefined) return undefined;
-	void hex;
-	return useEnvironmentColorStore.getState().hex(server, environmentID);
+	const shows = allEnvironments && environmentName !== undefined;
+	return useEnvironmentColorStore((s) => (shows ? s.hex(server, environmentID) : undefined));
 }

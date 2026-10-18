@@ -2,6 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { ContainerDetails } from '@/sdk/models/container/ContainerDetails';
 import { useClientManager } from '@/stores/client-manager';
@@ -37,15 +38,18 @@ export function useContainerInspect(environmentID: EnvironmentID, containerID: s
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsLoading(true);
-		try {
-			const details = await boundedContainerInspect(client, environmentID, containerID);
-			setRawJSON(prettySortedJSON(ContainerDetails.encode(details)));
-			setErrorMessage(undefined);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const details = await boundedContainerInspect(client, environmentID, containerID);
+					setRawJSON(prettySortedJSON(ContainerDetails.encode(details)));
+					setErrorMessage(undefined);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	}, [environmentID, containerID]);
 
 	useEffect(() => {

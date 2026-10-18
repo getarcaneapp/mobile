@@ -11,13 +11,8 @@ import { resolveTabs, useNavTabsStore } from '@/stores/nav-tabs-store';
 import { useAccentColor } from '@/theme/accent';
 import { materialSymbol } from '@/ui/symbols';
 
-export default function TabsLayout() {
-	const accent = useAccentColor();
+function TabsNavigationObserver() {
 	useAutomaticWhatsNewPresentation();
-	const [showTabLabels] = useStoredBool(Keys.showTabLabels, false);
-	const pinned = useNavTabsStore((s) => s.pinnedTabs);
-	const canAccess = useClientManager((s) => s.canAccess);
-	useClientManager((s) => s.accessGeneration);
 
 	const segments = useSegments() as string[];
 	const selectedGroup = segments[1];
@@ -33,35 +28,48 @@ export default function TabsLayout() {
 		previousDepth.current = stackDepth;
 	}, [stackDepth]);
 
+	return null;
+}
+
+export default function TabsLayout() {
+	const accent = useAccentColor();
+	const [showTabLabels] = useStoredBool(Keys.showTabLabels, false);
+	const pinned = useNavTabsStore((s) => s.pinnedTabs);
+	const canAccess = useClientManager((s) => s.canAccess);
+	useClientManager((s) => s.accessGeneration);
+
 	const visible = useMemo(() => {
 		const available = new Set<AppTab>(AppTabIDs.filter(canAccess));
 		return resolveTabs(pinned, available);
 	}, [pinned, canAccess]);
 
 	return (
-		<NativeTabs
-			tintColor={accent}
-			minimizeBehavior="never"
-			labelVisibilityMode={showTabLabels ? 'labeled' : 'unlabeled'}
-		>
-			{[...visible, ...pinnableTabs.filter((tab) => !visible.includes(tab))].map((tab) => {
-				return (
-					<NativeTabs.Trigger key={tab} name={`(${tab})`} hidden={!visible.includes(tab)}>
-						<NativeTabs.Trigger.Label hidden={!showTabLabels}>
-							{tabBarTitle(tab)}
-						</NativeTabs.Trigger.Label>
-						<NativeTabs.Trigger.Icon
-							sf={systemImage[tab] as never}
-							md={materialSymbol(systemImage[tab]) as never}
-						/>
-					</NativeTabs.Trigger>
-				);
-			})}
-			<NativeTabs.Trigger name="(more)">
-				<NativeTabs.Trigger.Label hidden={!showTabLabels}>More</NativeTabs.Trigger.Label>
-				<NativeTabs.Trigger.Icon sf="ellipsis.circle.fill" md="more_horiz" />
-			</NativeTabs.Trigger>
-		</NativeTabs>
+		<>
+			<TabsNavigationObserver />
+			<NativeTabs
+				tintColor={accent}
+				minimizeBehavior="never"
+				labelVisibilityMode={showTabLabels ? 'labeled' : 'unlabeled'}
+			>
+				{[...visible, ...pinnableTabs.filter((tab) => !visible.includes(tab))].map((tab) => {
+					return (
+						<NativeTabs.Trigger key={tab} name={`(${tab})`} hidden={!visible.includes(tab)}>
+							<NativeTabs.Trigger.Label hidden={!showTabLabels}>
+								{tabBarTitle(tab)}
+							</NativeTabs.Trigger.Label>
+							<NativeTabs.Trigger.Icon
+								sf={systemImage[tab] as never}
+								md={materialSymbol(systemImage[tab]) as never}
+							/>
+						</NativeTabs.Trigger>
+					);
+				})}
+				<NativeTabs.Trigger name="(more)">
+					<NativeTabs.Trigger.Label hidden={!showTabLabels}>More</NativeTabs.Trigger.Label>
+					<NativeTabs.Trigger.Icon sf="ellipsis.circle.fill" md="more_horiz" />
+				</NativeTabs.Trigger>
+			</NativeTabs>
+		</>
 	);
 }
 

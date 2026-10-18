@@ -9,11 +9,11 @@ import { parseArcaneDate } from '@/sdk/models/base/date';
 import type { AutoUpdateRecord } from '@/sdk/models/updater/Updater';
 import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type, monoFamily } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import {
 	abbreviatedDuration,
@@ -51,6 +51,16 @@ function UpdaterStatusBadge({ text, tint }: { text: string; tint: string }) {
 	);
 }
 
+const historyRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 12,
+	paddingHorizontal: 16,
+	paddingVertical: 12
+};
+const historyBodyStyle = { flex: 1, gap: 3 };
+const listContentStyle = { paddingTop: 12, paddingBottom: 24 };
+
 function UpdaterHistoryRow({ record, onPress }: { record: AutoUpdateRecord; onPress: () => void }) {
 	const change = imageChange(
 		flattenVersions(record.oldImageVersions),
@@ -62,19 +72,13 @@ function UpdaterHistoryRow({ record, onPress }: { record: AutoUpdateRecord; onPr
 			onPress={onPress}
 			accessibilityRole="button"
 			android_ripple={{ color: colors.separator as string }}
-			style={{
-				flexDirection: 'row',
-				alignItems: 'center',
-				gap: 12,
-				paddingHorizontal: 16,
-				paddingVertical: 12
-			}}
+			style={historyRowStyle}
 		>
 			<RowIcon
 				systemImage={resourceTypeIcon(record.resourceType)}
 				tint={resourceTypeTint(record.resourceType)}
 			/>
-			<View style={{ flex: 1, gap: 3 }}>
+			<View style={historyBodyStyle}>
 				<Text style={[m3Type.titleSmall, { color: colors.label }]} numberOfLines={1}>
 					{record.resourceName}
 				</Text>
@@ -127,6 +131,18 @@ export function UpdaterHistoryScreen() {
 	const navigation = useUpdatesNavigation();
 	const [refreshing, setRefreshing] = useState(false);
 
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => {
+				setRefreshing(true);
+				void model.load(true).finally(() => setRefreshing(false));
+			}}
+			colors={[systemColors.blue]}
+		/>
+	);
+	const hasMore = model.hasMore && model.searchText === '';
+
 	let content: ReactNode;
 	if (model.isLoading && model.records.length === 0) {
 		content = (
@@ -144,26 +160,6 @@ export function UpdaterHistoryScreen() {
 		);
 	} else if (model.records.length === 0) {
 		content = <CenteredState icon="clock.arrow.circlepath" title="No Update History" />;
-	} else {
-		content = (
-			<View style={{ paddingTop: 12 }}>
-				<MaterialListGroup>
-					{model.displayedRecords.map((record) => (
-						<UpdaterHistoryRow
-							key={record.id}
-							record={record}
-							onPress={() => navigation.openHistoryRecord(envID, record)}
-						/>
-					))}
-				</MaterialListGroup>
-				<PaginatedListFooter
-					hasMore={model.hasMore && model.searchText === ''}
-					loadMoreError={model.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</View>
-		);
 	}
 
 	return (
@@ -190,23 +186,44 @@ export function UpdaterHistoryScreen() {
 					}
 				]}
 			/>
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => {
-							setRefreshing(true);
-							void model.load(true).finally(() => setRefreshing(false));
-						}}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{content === undefined ? (
+				<GroupedFlashList
+					data={model.displayedRecords.map((record, index) => ({
+						key: record.id,
+						type: 'item',
+						record,
+						grouped: groupPosition(index, model.displayedRecords.length)
+					}))}
+					renderEntry={({ record }) => (
+						<UpdaterHistoryRow
+							record={record}
+							onPress={() => navigation.openHistoryRecord(envID, record)}
+						/>
+					)}
+					footer={
+						<PaginatedListFooter
+							hasMore={hasMore}
+							loadMoreError={model.loadMoreError}
+							onRetry={() => void model.loadMore()}
+							onLoadMore={() => void model.loadMore()}
+						/>
+					}
+					onEndReached={
+						hasMore && model.loadMoreError === undefined ? () => void model.loadMore() : undefined
+					}
+					refreshControl={refreshControl}
+					contentContainerStyle={listContentStyle}
+				/>
+			) : (
+				<ScrollView
+					contentInsetAdjustmentBehavior="automatic"
+					style={{ backgroundColor: colors.systemGroupedBackground }}
+					contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+					refreshControl={refreshControl}
+				>
+					{content}
+				</ScrollView>
+			)}
 		</>
 	);
 }

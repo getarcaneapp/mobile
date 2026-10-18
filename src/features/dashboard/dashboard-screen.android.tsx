@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View, type ColorValue } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { useClientManager } from '@/stores/client-manager';
 import { DockerCounts } from '@/stores/dashboard-stream-logic';
@@ -320,11 +321,10 @@ export function DashboardScreen() {
 						colors={[m3.primary as string]}
 						onRefresh={async () => {
 							setRefreshing(true);
-							try {
-								await model.refresh();
-							} finally {
-								setRefreshing(false);
-							}
+							await withCleanup(
+								() => model.refresh(),
+								() => setRefreshing(false)
+							);
 						}}
 					/>
 				}

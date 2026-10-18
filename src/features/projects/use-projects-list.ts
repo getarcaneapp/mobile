@@ -1,11 +1,13 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 import { performAllEnvironmentsMaintenance } from '@/core/all-environments-actions';
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { cachedClient } from '@/core/networking/use-cached-client';
+import { nextInstanceKey } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ProjectDetails } from '@/sdk/models/project/Project';
 import { Permission } from '@/sdk/models/role/Permission';
@@ -43,8 +45,6 @@ const pageSize = 50;
 
 export type ProjectItem = EnvironmentItem<ProjectDetails>;
 
-let listCounter = 0;
-
 export type ProjectsListProps = {
 	environmentID: EnvironmentID;
 	environmentName: string;
@@ -66,7 +66,7 @@ export function invalidateProjectCaches(environmentID: EnvironmentID, includeCon
 export function useProjectsList({ environmentID, allEnvironments = false }: ProjectsListProps) {
 	const nav = useProjectNavigation();
 	const client = useClientManager((s) => s.client);
-	const [listKey] = useState(() => `projects-${++listCounter}`);
+	const [listKey] = useState(() => nextInstanceKey('projects'));
 	const filter = useProjectsFilter(listKey);
 	const updateFilter = useProjectsFilterStore((s) => s.update);
 	useEffect(() => () => useProjectsFilterStore.getState().remove(listKey), [listKey]);
@@ -94,7 +94,10 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 	}, [listKey, snapshot.environments, listEnvironments, updateFilter]);
 
 	const tagsRef = useRef(filter.tagFilter);
-	tagsRef.current = filter.tagFilter;
+	const tagFilter = filter.tagFilter;
+	useLayoutEffect(() => {
+		tagsRef.current = tagFilter;
+	});
 
 	const projectsPage = useCallback((): EnvironmentFetch<ProjectDetails> | undefined => {
 		const current = useClientManager.getState().client;
@@ -170,11 +173,15 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 	);
 
 	useClientManager((s) => s.accessGeneration);
-	const canBrowseTemplates =
-		hasPermission(Permission.Templates.list, null) &&
-		hasPermission(Permission.Templates.read, null);
-	const createEnvironments = listEnvironments.filter((e) =>
-		hasPermission(Permission.Projects.create, e.id)
+	const canBrowseTemplates = useClientManager(
+		() =>
+			hasPermission(Permission.Templates.list, null) &&
+			hasPermission(Permission.Templates.read, null)
+	);
+	const createEnvironments = useClientManager(
+		useShallow(() =>
+			listEnvironments.filter((e) => hasPermission(Permission.Projects.create, e.id))
+		)
 	);
 	const enabledEnvironments = environments.filter((e) => e.enabled);
 

@@ -1,12 +1,13 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { performAllEnvironmentsPrune } from '@/core/all-environments-actions';
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermissionCheck } from '@/core/auth/permissions';
 import { BulkActionRunner } from '@/core/bulk-action-runner';
 import { friendlyErrorMessage } from '@/core/errors';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import { ResourcePruneAction } from '@/core/resource-prune-action';
+import { nextInstanceKey, withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { Permission } from '@/sdk/models/role/Permission';
 import type { Volume, VolumeSizeInfo } from '@/sdk/models/volume/Volume';
@@ -53,7 +54,25 @@ export type VolumeDestructive =
 	| { kind: 'delete'; volume: VolumeItem }
 	| { kind: 'bulkDelete'; ids: string[] };
 
-let listCounter = 0;
+function withoutRemovedSizes(
+	sizes: Record<EnvironmentID, Record<string, number>>,
+	removed: VolumeItem[]
+) {
+	const next = { ...sizes };
+	for (const volume of removed) {
+		const map = next[volume.environmentID];
+		if (!map) continue;
+		const { [volume.value.name]: _removed, ...rest } = map;
+		next[volume.environmentID] = rest;
+	}
+	return next;
+}
+
+function volumeSizeMap(entries: VolumeSizeInfo[]) {
+	const map: Record<string, number> = {};
+	for (const entry of entries) map[entry.name] = entry.size;
+	return map;
+}
 
 export type VolumesListProps = {
 	environmentID: EnvironmentID;
@@ -64,7 +83,7 @@ export type VolumesListProps = {
 export function useVolumesList({ environmentID, allEnvironments = false }: VolumesListProps) {
 	const nav = useVolumeNavigation();
 	const client = useClientManager((s) => s.client);
-	const [listKey] = useState(() => `volumes-${++listCounter}`);
+	const [listKey] = useState(() => nextInstanceKey('volumes'));
 	const filter = useVolumesFilter(listKey);
 	const updateFilter = useVolumesFilterStore((s) => s.update);
 	useEffect(() => () => useVolumesFilterStore.getState().remove(listKey), [listKey]);
@@ -76,7 +95,9 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 	const volumes = snapshot.items;
 	const [sizes, setSizes] = useState<Record<EnvironmentID, Record<string, number>>>({});
 	const sizesRef = useRef(sizes);
-	sizesRef.current = sizes;
+	useLayoutEffect(() => {
+		sizesRef.current = sizes;
+	});
 
 	const pinVersion = usePinnedItemsStore((s) => s.version);
 	const allEnvironmentsList = useEnvironmentsStore((s) => s.environments);
@@ -108,8 +129,7 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		try {
 			const path = current.rest.environmentPath(environmentID, 'volumes/sizes');
 			const entries = await cached.get<VolumeSizeInfo[]>(path, environmentID);
-			const map: Record<string, number> = {};
-			for (const entry of entries) map[entry.name] = entry.size;
+			const map = volumeSizeMap(entries);
 			setSizes((s) => ({ ...s, [environmentID]: map }));
 		} catch {}
 	}, []);
@@ -199,12 +219,12 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		[sizes]
 	);
 
-	useClientManager((s) => s.accessGeneration);
+	const can = usePermissionCheck();
 	const listEnvironments: ListEnvironment[] = allEnvironments
 		? snapshot.environments
 		: [{ id: environmentID }];
 	const createEnvironments = allEnvironments
-		? listEnvironments.filter((e) => hasPermission(Permission.Volumes.create, e.id))
+		? listEnvironments.filter((e) => can(Permission.Volumes.create, e.id))
 		: listEnvironments;
 	const enabledEnvironments = allEnvironmentsList.filter((e) => e.enabled);
 
@@ -266,47 +286,41 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		if (!current) return;
 		setIsBulkRunning(true);
 		setBulkRunningActionID('bulk-delete');
-		try {
-			const targets = list.getSnapshot().items.filter((v) => ids.includes(v.id));
-			const byID = new Map(targets.map((t) => [t.id, t]));
-			const result = await BulkActionRunner.run(
-				targets.map((t) => t.id),
-				async (id) => {
-					const volume = byID.get(id);
-					if (!volume) return;
-					await current.volumes.remove({ envID: volume.environmentID, name: volume.value.name });
-				}
-			);
-			const failedIDs = new Set(result.failed.map((f) => f.id));
-			const removed = targets.filter((t) => !failedIDs.has(t.id));
-			const removedIDs = new Set(removed.map((t) => t.id));
-			list.updateItems((items) => items.filter((item) => !removedIDs.has(item.id)));
-			setSizes((s) => {
-				const next = { ...s };
-				for (const volume of removed) {
-					const map = next[volume.environmentID];
-					if (!map) continue;
-					const { [volume.value.name]: _removed, ...rest } = map;
-					next[volume.environmentID] = rest;
-				}
-				return next;
-			});
-			for (const environment of new Set(targets.map((t) => t.environmentID))) {
-				invalidateVolumeCaches(environment);
-				useResourceMutationStore.getState().markChanged('volumes', environment);
-			}
-			exitSelectionMode();
-			if (result.failed.length === 0) {
-				showToast(
-					Toasts.success(`Deleted ${result.succeeded} volume${result.succeeded === 1 ? '' : 's'}`)
+		await withCleanup(
+			async () => {
+				const targets = list.getSnapshot().items.filter((v) => ids.includes(v.id));
+				const byID = new Map(targets.map((t) => [t.id, t]));
+				const result = await BulkActionRunner.run(
+					targets.map((t) => t.id),
+					async (id) => {
+						const volume = byID.get(id);
+						if (!volume) return;
+						await current.volumes.remove({ envID: volume.environmentID, name: volume.value.name });
+					}
 				);
-			} else {
-				showToast(Toasts.error(`${result.failed.length} of ${targets.length} failed`));
+				const failedIDs = new Set(result.failed.map((f) => f.id));
+				const removed = targets.filter((t) => !failedIDs.has(t.id));
+				const removedIDs = new Set(removed.map((t) => t.id));
+				list.updateItems((items) => items.filter((item) => !removedIDs.has(item.id)));
+				setSizes((s) => withoutRemovedSizes(s, removed));
+				for (const environment of new Set(targets.map((t) => t.environmentID))) {
+					invalidateVolumeCaches(environment);
+					useResourceMutationStore.getState().markChanged('volumes', environment);
+				}
+				exitSelectionMode();
+				if (result.failed.length === 0) {
+					showToast(
+						Toasts.success(`Deleted ${result.succeeded} volume${result.succeeded === 1 ? '' : 's'}`)
+					);
+				} else {
+					showToast(Toasts.error(`${result.failed.length} of ${targets.length} failed`));
+				}
+			},
+			() => {
+				setIsBulkRunning(false);
+				setBulkRunningActionID(undefined);
 			}
-		} finally {
-			setIsBulkRunning(false);
-			setBulkRunningActionID(undefined);
-		}
+		);
 	};
 
 	useItemDeleteConfirmation(
@@ -376,7 +390,7 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		openDetail: (item: VolumeItem) => nav.openDetail(item.environmentID, item.value),
 		togglePin,
 		togglePinAfterSwipe,
-		canRename: (item: VolumeItem) => VolumeRename.isAvailable(item.value, item.environmentID),
+		canRename: (item: VolumeItem) => VolumeRename.isAvailable(item.value, item.environmentID, can),
 		rename: (item: VolumeItem) => nav.openRename(item.environmentID, item.value.name, false),
 		requestDelete: (item: VolumeItem) => setPendingDestructive({ kind: 'delete', volume: item }),
 		createEnvironments,

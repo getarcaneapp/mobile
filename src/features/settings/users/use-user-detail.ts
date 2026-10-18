@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { User, type UpdateUser } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
@@ -66,21 +67,27 @@ export function useUserDetail() {
 		if (!client || !user) return;
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			const body: UpdateUser = {
-				displayName: displayName === '' ? undefined : displayName,
-				email: email === '' ? undefined : email,
-				roles: supportsV2 ? undefined : isAdmin ? ['admin'] : []
-			};
-			await client.users.update({ id: user.id, body });
-			showToast(Toasts.success('User updated'));
+		const body: UpdateUser = {
+			displayName: displayName === '' ? undefined : displayName,
+			email: email === '' ? undefined : email,
+			roles: supportsV2 ? undefined : isAdmin ? ['admin'] : []
+		};
+		const notifyUpdate = async () => {
 			await payload?.onUpdate();
-			nav.back();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await client.users.update({ id: user.id, body });
+					showToast(Toasts.success('User updated'));
+					await notifyUpdate();
+					nav.back();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	const openRoleAssignments = () => {

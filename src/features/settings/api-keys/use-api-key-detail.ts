@@ -3,7 +3,9 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { escapedPathComponent } from '@/core/networking/server-identity';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { APIKey, APIKeyCreated } from '@/sdk/models/apiKey/APIKey';
 import type { ApiKeyPermissionGrant } from '@/sdk/models/role/ApiKeyPermissionGrant';
 import { useClientManager } from '@/stores/client-manager';
@@ -53,6 +55,35 @@ function decodeMetadata(raw: unknown): APIKeyServerMetadata | undefined {
 	};
 }
 
+async function revokeAPIKey(
+	client: ArcaneClient,
+	apiKey: APIKey,
+	isPersonal: boolean
+): Promise<boolean> {
+	try {
+		if (isPersonal)
+			await client.rest.deleteVoid(`auth/me/api-keys/${escapedPathComponent(apiKey.id)}`);
+		else await client.apiKeys.delete({ id: apiKey.id });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+async function rotateAPIKey(
+	client: ArcaneClient,
+	apiKey: APIKey,
+	isPersonal: boolean,
+	body: APIKeyMutationRequest
+): Promise<{ created: APIKeyCreated; oldKeyRevoked: boolean }> {
+	const created = await client.rest.post<APIKeyCreated>(
+		isPersonal ? 'auth/me/api-keys' : 'api-keys',
+		{ body }
+	);
+	const oldKeyRevoked = await revokeAPIKey(client, apiKey, isPersonal);
+	return { created, oldKeyRevoked };
+}
+
 export function useAPIKeyDetail() {
 	const { token } = useLocalSearchParams<{ token?: string }>();
 	const payload = settingsPayloads.get<APIKeyDetailPayload>(token);
@@ -81,14 +112,17 @@ export function useAPIKeyDetail() {
 			setMetadataLoaded(true);
 			return;
 		}
-		try {
-			const raw = await client.rest.get<unknown>(`api-keys/${escapedPathComponent(key.id)}`);
-			setMetadata(decodeMetadata(raw));
-		} catch {
-			setMetadata(undefined);
-		} finally {
-			setMetadataLoaded(true);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const raw = await client.rest.get<unknown>(`api-keys/${escapedPathComponent(key.id)}`);
+					setMetadata(decodeMetadata(raw));
+				} catch {
+					setMetadata(undefined);
+				}
+			},
+			() => setMetadataLoaded(true)
+		);
 	};
 
 	const initialLoad = useRef(loadMetadata);
@@ -131,16 +165,19 @@ export function useAPIKeyDetail() {
 		const client = useClientManager.getState().client;
 		if (!client || !apiKey) return;
 		setRunningActionID('delete');
-		try {
-			await client.apiKeys.delete({ id: apiKey.id });
-			invalidateAPIKeyCache();
-			showToast(Toasts.success('API key deleted'));
-			await onChanged();
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setRunningActionID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.apiKeys.delete({ id: apiKey.id });
+					invalidateAPIKeyCache();
+					showToast(Toasts.success('API key deleted'));
+					await onChanged();
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setRunningActionID(undefined)
+		);
 	};
 
 	const finishSecretPresentation = () => {
@@ -168,26 +205,18 @@ export function useAPIKeyDetail() {
 			expiresAt: apiKey.expiresAt,
 			permissions
 		};
-		try {
-			const created = await client.rest.post<APIKeyCreated>(
-				isPersonal ? 'auth/me/api-keys' : 'api-keys',
-				{ body }
-			);
-			let oldKeyRevoked = true;
-			try {
-				if (isPersonal)
-					await client.rest.deleteVoid(`auth/me/api-keys/${escapedPathComponent(apiKey.id)}`);
-				else await client.apiKeys.delete({ id: apiKey.id });
-			} catch {
-				oldKeyRevoked = false;
-			}
-			afterReveal.current = { refresh: true, dismiss: oldKeyRevoked };
-			presentSecret(APIKeySecretPresentation.rotated(created.key, oldKeyRevoked));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setRunningActionID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const { created, oldKeyRevoked } = await rotateAPIKey(client, apiKey, isPersonal, body);
+					afterReveal.current = { refresh: true, dismiss: oldKeyRevoked };
+					presentSecret(APIKeySecretPresentation.rotated(created.key, oldKeyRevoked));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setRunningActionID(undefined)
+		);
 	};
 
 	const showEditSheet = () => {

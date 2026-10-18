@@ -1,4 +1,5 @@
 import { createStore, useStore, type StoreApi } from 'zustand';
+import { deepEqual } from '@/core/deep-equal';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import {
@@ -100,7 +101,7 @@ function sortActivities(items: readonly Activity[]): Activity[] {
 }
 
 function sameActivity(a: Activity, b: Activity): boolean {
-	return a === b || JSON.stringify(a) === JSON.stringify(b);
+	return a === b || deepEqual(a, b);
 }
 
 function sameActivities(a: readonly Activity[], b: readonly Activity[]): boolean {
@@ -115,10 +116,6 @@ function sameActivities(a: readonly Activity[], b: readonly Activity[]): boolean
 
 function sameStrings(a: readonly string[], b: readonly string[]): boolean {
 	return a.length === b.length && a.every((value, index) => value === b[index]);
-}
-
-function itemSignature(items: readonly ActivityCenterItem[]): string {
-	return JSON.stringify(items);
 }
 
 function normalize(activity: Activity, environment: ActivityEnvironment): Activity {
@@ -245,8 +242,8 @@ export function createActivityCenterStore(): ActivityCenterStore {
 			const next: Partial<ActivityCenterState> = {};
 			if (filtered.length !== state.filteredActivityCount)
 				next.filteredActivityCount = filtered.length;
-			if (itemSignature(running) !== itemSignature(state.runningItems)) next.runningItems = running;
-			if (itemSignature(history) !== itemSignature(state.historyItems)) next.historyItems = history;
+			if (!deepEqual(running, state.runningItems)) next.runningItems = running;
+			if (!deepEqual(history, state.historyItems)) next.historyItems = history;
 			if (Object.keys(next).length > 0) set(next);
 		};
 

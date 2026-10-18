@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import { PaginationLoader, ProgressivePaginationState } from '@/core/networking/pagination-loader';
@@ -18,6 +19,10 @@ import type { RegistryFormPayload } from './use-registry-form';
 const pageSize = 50;
 
 export const registryCachePaths = ['container-registries', 'container-registries/*'];
+
+function invalidateRegistryCache() {
+	cachedClient()?.invalidateGlobal(registryCachePaths);
+}
 
 export function registryName(registry: ContainerRegistry): string {
 	if (registry.description) return registry.description;
@@ -61,9 +66,13 @@ export function useContainerRegistries() {
 	const pagination = useRef(ProgressivePaginationState.initial);
 	const isLoadingMore = useRef(false);
 	const registriesRef = useRef(registries);
-	registriesRef.current = registries;
+	useLayoutEffect(() => {
+		registriesRef.current = registries;
+	});
 	const searchRef = useRef(debouncedSearchText);
-	searchRef.current = debouncedSearchText;
+	useLayoutEffect(() => {
+		searchRef.current = debouncedSearchText;
+	});
 
 	useEffect(() => {
 		const timer = setTimeout(() => setDebouncedSearchText(searchText), ListUX.searchDebounce);
@@ -104,20 +113,26 @@ export function useContainerRegistries() {
 		if (registriesRef.current.length === 0) setIsLoading(true);
 		setErrorMessage(undefined);
 		setLoadMoreError(undefined);
-		try {
-			const search = searchRef.current;
-			const response = await client.registries.listPaginated({
-				search: search === '' ? undefined : search,
-				start: 0,
-				limit: pageSize
-			});
-			applyPage(response, true, 0, generation);
-		} catch (error) {
-			if (!ProgressivePaginationState.accepts(pagination.current, generation)) return;
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (ProgressivePaginationState.accepts(pagination.current, generation)) setIsLoading(false);
-		}
+		const search = searchRef.current;
+		const searchQuery = search === '' ? undefined : search;
+		await withCleanup(
+			async () => {
+				try {
+					const response = await client.registries.listPaginated({
+						search: searchQuery,
+						start: 0,
+						limit: pageSize
+					});
+					applyPage(response, true, 0, generation);
+				} catch (error) {
+					if (!ProgressivePaginationState.accepts(pagination.current, generation)) return;
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (ProgressivePaginationState.accepts(pagination.current, generation)) setIsLoading(false);
+			}
+		);
 	}, [isAdmin, client, applyPage]);
 
 	const loadMore = useCallback(async () => {
@@ -126,21 +141,27 @@ export function useContainerRegistries() {
 		setLoadMoreError(undefined);
 		const generation = pagination.current.generation;
 		const start = pagination.current.nextStart;
-		try {
-			const search = searchRef.current;
-			const response = await client.registries.listPaginated({
-				search: search === '' ? undefined : search,
-				start,
-				limit: pageSize
-			});
-			applyPage(response, false, start, generation);
-		} catch (error) {
-			if (!ProgressivePaginationState.accepts(pagination.current, generation)) return;
-			setLoadMoreError(friendlyErrorMessage(error));
-		} finally {
-			if (ProgressivePaginationState.accepts(pagination.current, generation))
-				isLoadingMore.current = false;
-		}
+		const search = searchRef.current;
+		const searchQuery = search === '' ? undefined : search;
+		await withCleanup(
+			async () => {
+				try {
+					const response = await client.registries.listPaginated({
+						search: searchQuery,
+						start,
+						limit: pageSize
+					});
+					applyPage(response, false, start, generation);
+				} catch (error) {
+					if (!ProgressivePaginationState.accepts(pagination.current, generation)) return;
+					setLoadMoreError(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (ProgressivePaginationState.accepts(pagination.current, generation))
+					isLoadingMore.current = false;
+			}
+		);
 	}, [client, applyPage]);
 
 	useEffect(() => {
@@ -166,7 +187,7 @@ export function useContainerRegistries() {
 			try {
 				await client.registries.delete({ id: registry.id });
 				setRegistries((current) => current.filter((item) => item.id !== registry.id));
-				cachedClient()?.invalidateGlobal(registryCachePaths);
+				invalidateRegistryCache();
 				await loadRegistries();
 				showToast(Toasts.success('Registry deleted'));
 			} catch (error) {

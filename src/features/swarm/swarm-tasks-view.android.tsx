@@ -1,15 +1,15 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { RefreshControl, Text, View } from 'react-native';
 
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { SwarmTaskSummary } from '@/sdk/models/swarm/SwarmTask';
 import { colors, systemColors } from '@/theme/colors';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { SectionTitle } from '@/features/networks/android-parts';
 
@@ -24,6 +24,12 @@ import {
 	useSwarmTasks
 } from './use-swarm-tasks';
 
+const taskRowStyle = { paddingHorizontal: 16, paddingVertical: 10, gap: 6 };
+const titleLineStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 };
+const metaStyle = { flexDirection: 'row' as const, gap: 12 };
+const metaItemStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4 };
+const listContentStyle = { paddingBottom: 32 };
+
 export function SwarmTaskRow({
 	task,
 	showsService = true
@@ -32,8 +38,8 @@ export function SwarmTaskRow({
 	showsService?: boolean;
 }) {
 	return (
-		<View style={{ paddingHorizontal: 16, paddingVertical: 10, gap: 6 }}>
-			<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+		<View style={taskRowStyle}>
+			<View style={titleLineStyle}>
 				<Text
 					numberOfLines={1}
 					ellipsizeMode="middle"
@@ -43,15 +49,15 @@ export function SwarmTaskRow({
 				</Text>
 				<SwarmStateBadge state={task.currentState} />
 			</View>
-			<View style={{ flexDirection: 'row', gap: 12 }}>
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+			<View style={metaStyle}>
+				<View style={metaItemStyle}>
 					<Icon name="server.rack" size={12} color={colors.secondaryLabel} />
 					<Text numberOfLines={1} style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
 						{taskNodeName(task)}
 					</Text>
 				</View>
 				{task.desiredState !== task.currentState ? (
-					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+					<View style={metaItemStyle}>
 						<Icon name="arrow.right.circle" size={12} color={colors.secondaryLabel} />
 						<Text
 							numberOfLines={1}
@@ -90,9 +96,41 @@ export function SwarmTasksList({
 			emptySystemImage="checklist"
 			retry={() => void load()}
 		>
-			<ScrollView
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ paddingBottom: 32 }}
+			<GroupedFlashList
+				data={items.map((item, index) => ({
+					key: String(item.id),
+					type: 'item',
+					task: item.value,
+					grouped: groupPosition(index, items.length)
+				}))}
+				renderEntry={(entry) => (
+					<SwarmTaskRow task={entry.task} showsService={showsServiceFor(source, entry.task)} />
+				)}
+				header={
+					<SectionTitle
+						title="Tasks"
+						trailing={
+							<ResourceCountLabel
+								loadedCount={items.length}
+								totalCount={snapshot.totalItems}
+								hasMore={snapshot.hasMore}
+							/>
+						}
+					/>
+				}
+				footer={
+					<PaginatedListFooter
+						hasMore={snapshot.hasMore}
+						loadMoreError={snapshot.loadMoreError}
+						onRetry={() => void loadMore()}
+						onLoadMore={() => void loadMore()}
+					/>
+				}
+				onEndReached={
+					snapshot.hasMore && snapshot.loadMoreError === undefined
+						? () => void loadMore()
+						: undefined
+				}
 				refreshControl={
 					<RefreshControl
 						refreshing={refreshing}
@@ -102,33 +140,8 @@ export function SwarmTasksList({
 						}}
 					/>
 				}
-			>
-				<SectionTitle
-					title="Tasks"
-					trailing={
-						<ResourceCountLabel
-							loadedCount={items.length}
-							totalCount={snapshot.totalItems}
-							hasMore={snapshot.hasMore}
-						/>
-					}
-				/>
-				<MaterialListGroup>
-					{items.map((item) => (
-						<SwarmTaskRow
-							key={item.id}
-							task={item.value}
-							showsService={showsServiceFor(source, item.value)}
-						/>
-					))}
-				</MaterialListGroup>
-				<PaginatedListFooter
-					hasMore={snapshot.hasMore}
-					loadMoreError={snapshot.loadMoreError}
-					onRetry={() => void loadMore()}
-					onLoadMore={() => void loadMore()}
-				/>
-			</ScrollView>
+				contentContainerStyle={listContentStyle}
+			/>
 		</SwarmListState>
 	);
 }

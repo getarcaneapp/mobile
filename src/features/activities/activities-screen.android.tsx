@@ -3,15 +3,21 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import type { Activity } from '@/sdk/models/activity/Activity';
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import { ErrorBanner } from '@/ui/components/error-banner';
+import {
+	GroupedFlashList,
+	groupPosition,
+	type GroupedListEntry
+} from '@/ui/components/grouped-flash-list';
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { ResourceStatusBadge } from '@/ui/components/resource-status-badge';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup, MaterialSectionHeader } from '@/ui/material/list';
+import { MaterialSectionHeader } from '@/ui/material/list';
 
 import {
 	ActivityBatch,
@@ -34,6 +40,23 @@ import {
 } from './activity-material';
 import { useActivitiesScreen, type ActivitiesScreenModel } from './use-activities';
 
+const rowBodyStyle = { flex: 1, gap: 6 };
+const memberBodyStyle = { flex: 1, gap: 4 };
+const titleLineStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'flex-start' as const,
+	gap: 8
+};
+const batchRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'flex-start' as const,
+	gap: 12,
+	paddingHorizontal: 16,
+	paddingVertical: 12
+};
+const bannerStyle = { paddingHorizontal: 16, paddingTop: 12 };
+const scrollContentStyle = { flexGrow: 1, paddingBottom: 24 };
+
 function Divider() {
 	return <View style={{ height: 1, marginLeft: 56, backgroundColor: colors.separator }} />;
 }
@@ -49,8 +72,8 @@ function ActivityRow({ activity }: { activity: Activity }) {
 	return (
 		<>
 			<ActivityIcon activity={activity} />
-			<View style={{ flex: 1, gap: 6 }}>
-				<View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+			<View style={rowBodyStyle}>
+				<View style={titleLineStyle}>
 					<Text style={[m3Type.bodyLarge, { flex: 1, color: colors.label }]}>
 						{ActivityDisplay.displayTitle(activity)}
 					</Text>
@@ -84,7 +107,7 @@ function ActivityBatchMemberRow({ activity }: { activity: Activity }) {
 	return (
 		<>
 			<ActivityIcon activity={activity} />
-			<View style={{ flex: 1, gap: 4 }}>
+			<View style={memberBodyStyle}>
 				<Text style={[m3Type.bodyLarge, { color: colors.label }]}>
 					{ActivityDisplay.displayTitle(activity)}
 				</Text>
@@ -141,119 +164,169 @@ function RowPressable({
 	);
 }
 
-function BatchItem({
+function BatchHeaderRow({
 	model,
-	batch
+	batch,
+	expanded
 }: {
 	model: ActivitiesScreenModel;
 	batch: ActivityBatchSummary;
+	expanded: boolean;
 }) {
-	const expanded = model.isExpanded(batch.id);
 	const status = ActivityBatch.status(batch);
 	const title = ActivityBatch.displayTitle(batch);
 	const completed = ActivityBatch.completedCount(batch);
 	const failed = ActivityBatch.failedCount(batch);
 	return (
-		<>
-			<Pressable
-				onPress={() => model.setExpanded(batch.id, !expanded)}
-				accessibilityRole="button"
-				accessibilityState={{ expanded }}
-				accessibilityLabel={`${title}, ${status}, ${completed} of ${batch.activities.length} completed`}
-				accessibilityHint="Expands related activities"
-				android_ripple={{ color: colors.separator as string }}
-				style={{
-					flexDirection: 'row',
-					alignItems: 'flex-start',
-					gap: 12,
-					paddingHorizontal: 16,
-					paddingVertical: 12
-				}}
-			>
-				<ActivitySymbol systemName="square.stack.3d.up.fill" tint={activityStatusTint(status)} />
-				<View style={{ flex: 1, gap: 6 }}>
-					<View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-						<Text style={[m3Type.bodyLarge, { flex: 1, color: colors.label }]}>{title}</Text>
-						<ResourceStatusBadge status={status} />
-					</View>
-					<Text
-						style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}
-					>{`${completed} of ${batch.activities.length} completed`}</Text>
-					{failed > 0 ? (
-						<Text
-							style={[m3Type.bodyMedium, { color: systemColors.red }]}
-						>{`${failed} failed`}</Text>
-					) : null}
-					<ActivityProgressView
-						progress={ActivityBatch.progress(batch)}
-						isActive={ActivityBatch.isActive(batch)}
-						tint={activityStatusTint(status)}
-					/>
-					<Caption
-						parts={[
-							relativeNamed(ActivityBatch.startedAt(batch)),
-							ActivityBatch.environmentLabel(batch)
-						]}
-					/>
+		<Pressable
+			onPress={() => model.setExpanded(batch.id, !expanded)}
+			accessibilityRole="button"
+			accessibilityState={{ expanded }}
+			accessibilityLabel={`${title}, ${status}, ${completed} of ${batch.activities.length} completed`}
+			accessibilityHint="Expands related activities"
+			android_ripple={{ color: colors.separator as string }}
+			style={batchRowStyle}
+		>
+			<ActivitySymbol systemName="square.stack.3d.up.fill" tint={activityStatusTint(status)} />
+			<View style={rowBodyStyle}>
+				<View style={titleLineStyle}>
+					<Text style={[m3Type.bodyLarge, { flex: 1, color: colors.label }]}>{title}</Text>
+					<ResourceStatusBadge status={status} />
 				</View>
-				<Icon
-					name={expanded ? 'chevron.up' : 'chevron.down'}
-					size={20}
-					color={colors.secondaryLabel}
+				<Text
+					style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}
+				>{`${completed} of ${batch.activities.length} completed`}</Text>
+				{failed > 0 ? (
+					<Text style={[m3Type.bodyMedium, { color: systemColors.red }]}>{`${failed} failed`}</Text>
+				) : null}
+				<ActivityProgressView
+					progress={ActivityBatch.progress(batch)}
+					isActive={ActivityBatch.isActive(batch)}
+					tint={activityStatusTint(status)}
 				/>
-			</Pressable>
-			{expanded
-				? batch.activities.map((activity) => (
-						<View key={`${ActivityDisplay.sourceEnvironmentKey(activity)}-${activity.id}`}>
-							<Divider />
-							<RowPressable onPress={() => model.openActivity(activity)} inset={24}>
-								<ActivityBatchMemberRow activity={activity} />
-							</RowPressable>
-						</View>
-					))
-				: null}
-		</>
+				<Caption
+					parts={[
+						relativeNamed(ActivityBatch.startedAt(batch)),
+						ActivityBatch.environmentLabel(batch)
+					]}
+				/>
+			</View>
+			<Icon
+				name={expanded ? 'chevron.up' : 'chevron.down'}
+				size={20}
+				color={colors.secondaryLabel}
+			/>
+		</Pressable>
 	);
 }
 
-function ActivitySection({
+type ActivityEntry = GroupedListEntry &
+	(
+		| { type: 'header'; title: string; showsCount: boolean }
+		| { type: 'activity'; activity: Activity; showsDivider: boolean }
+		| { type: 'batch'; batch: ActivityBatchSummary; expanded: boolean; showsDivider: boolean }
+		| { type: 'member'; activity: Activity }
+	);
+
+function appendSection(
+	entries: ActivityEntry[],
+	section: string,
+	title: string,
+	items: ActivityCenterItem[],
+	showsCount: boolean,
+	isExpanded: (id: string) => boolean
+) {
+	if (items.length === 0) return;
+	entries.push({ type: 'header', key: `header:${section}`, title, showsCount });
+	const rows: ActivityEntry[] = [];
+	items.forEach((item, index) => {
+		const itemKey = `${section}:${ActivityCenterItem.id(item)}`;
+		if (item.kind === 'activity') {
+			rows.push({
+				type: 'activity',
+				key: itemKey,
+				activity: item.activity,
+				showsDivider: index > 0
+			});
+			return;
+		}
+		const expanded = isExpanded(item.batch.id);
+		rows.push({
+			type: 'batch',
+			key: itemKey,
+			batch: item.batch,
+			expanded,
+			showsDivider: index > 0
+		});
+		if (!expanded) return;
+		for (const activity of item.batch.activities) {
+			rows.push({
+				type: 'member',
+				key: `${itemKey}:${ActivityDisplay.sourceEnvironmentKey(activity)}-${activity.id}`,
+				activity
+			});
+		}
+	});
+	rows.forEach((row, index) => {
+		entries.push({ ...row, grouped: groupPosition(index, rows.length) });
+	});
+}
+
+function activityEntries(
+	runningItems: ActivityCenterItem[],
+	historyItems: ActivityCenterItem[],
+	isExpanded: (id: string) => boolean
+) {
+	const entries: ActivityEntry[] = [];
+	appendSection(entries, 'running', 'Running', runningItems, true, isExpanded);
+	appendSection(entries, 'history', 'History', historyItems, runningItems.length === 0, isExpanded);
+	return entries;
+}
+
+function ActivityEntryView({
 	model,
-	title,
-	items,
-	showsCount
+	entry
 }: {
 	model: ActivitiesScreenModel;
-	title: string;
-	items: ActivityCenterItem[];
-	showsCount: boolean;
+	entry: ActivityEntry;
 }) {
-	return (
-		<View>
-			{showsCount ? (
+	switch (entry.type) {
+		case 'header':
+			return entry.showsCount ? (
 				<ResourceCountSectionHeader
-					title={title}
+					title={entry.title}
 					loadedCount={model.state.filteredActivityCount}
 					hasMore={model.state.hasMore}
 				/>
 			) : (
-				<MaterialSectionHeader title={title} />
-			)}
-			<MaterialListGroup>
-				{items.map((item, index) => (
-					<View key={ActivityCenterItem.id(item)}>
-						{index > 0 ? <Divider /> : null}
-						{item.kind === 'activity' ? (
-							<RowPressable onPress={() => model.openActivity(item.activity)}>
-								<ActivityRow activity={item.activity} />
-							</RowPressable>
-						) : (
-							<BatchItem model={model} batch={item.batch} />
-						)}
-					</View>
-				))}
-			</MaterialListGroup>
-		</View>
-	);
+				<MaterialSectionHeader title={entry.title} />
+			);
+		case 'activity':
+			return (
+				<>
+					{entry.showsDivider ? <Divider /> : null}
+					<RowPressable onPress={() => model.openActivity(entry.activity)}>
+						<ActivityRow activity={entry.activity} />
+					</RowPressable>
+				</>
+			);
+		case 'batch':
+			return (
+				<>
+					{entry.showsDivider ? <Divider /> : null}
+					<BatchHeaderRow model={model} batch={entry.batch} expanded={entry.expanded} />
+				</>
+			);
+		case 'member':
+			return (
+				<>
+					<Divider />
+					<RowPressable onPress={() => model.openActivity(entry.activity)} inset={24}>
+						<ActivityBatchMemberRow activity={entry.activity} />
+					</RowPressable>
+				</>
+			);
+	}
 }
 
 function toolbarItems(model: ActivitiesScreenModel): ActivityToolbarItem[] {
@@ -352,12 +425,27 @@ export function ActivitiesScreen(_props: { onDone?: () => void } = {}) {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.retry();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(model.retry, () => setRefreshing(false));
 	};
+
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
+	const streamBanner =
+		state.streamErrorMessage !== undefined ? (
+			<View style={bannerStyle}>
+				<ErrorBanner
+					message={state.streamErrorMessage}
+					severity="warning"
+					retry={() => void model.retry()}
+				/>
+			</View>
+		) : null;
+	const hasMore = state.hasMore && state.searchText === '';
 
 	let content: ReactNode;
 	let scrollable = false;
@@ -392,51 +480,16 @@ export function ActivitiesScreen(_props: { onDone?: () => void } = {}) {
 				message="Background work from your environments will appear here."
 			/>
 		);
-	} else {
+	} else if (state.runningItems.length === 0 && state.historyItems.length === 0) {
 		scrollable = true;
 		content = (
 			<>
-				{state.streamErrorMessage !== undefined ? (
-					<View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-						<ErrorBanner
-							message={state.streamErrorMessage}
-							severity="warning"
-							retry={() => void model.retry()}
-						/>
-					</View>
-				) : null}
-				{state.runningItems.length === 0 && state.historyItems.length === 0 ? (
-					<EmptyState
-						icon="line.3.horizontal.decrease.circle"
-						title="No Matching Activities"
-						message="Adjust the filters or search text."
-					/>
-				) : (
-					<>
-						{state.runningItems.length > 0 ? (
-							<ActivitySection
-								model={model}
-								title="Running"
-								items={state.runningItems}
-								showsCount
-							/>
-						) : null}
-						{state.historyItems.length > 0 ? (
-							<ActivitySection
-								model={model}
-								title="History"
-								items={state.historyItems}
-								showsCount={state.runningItems.length === 0}
-							/>
-						) : null}
-						<PaginatedListFooter
-							hasMore={state.hasMore && state.searchText === ''}
-							loadMoreError={state.loadMoreError}
-							onRetry={model.retryLoadMore}
-							onLoadMore={model.loadMore}
-						/>
-					</>
-				)}
+				{streamBanner}
+				<EmptyState
+					icon="line.3.horizontal.decrease.circle"
+					title="No Matching Activities"
+					message="Adjust the filters or search text."
+				/>
 			</>
 		);
 	}
@@ -454,23 +507,33 @@ export function ActivitiesScreen(_props: { onDone?: () => void } = {}) {
 				}}
 			/>
 			<ActivityToolbar items={toolbarItems(model)} />
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					scrollable ? (
-						<RefreshControl
-							refreshing={refreshing}
-							onRefresh={() => void onRefresh()}
-							colors={[systemColors.blue]}
+			{content === undefined ? (
+				<GroupedFlashList
+					data={activityEntries(state.runningItems, state.historyItems, model.isExpanded)}
+					renderEntry={(entry) => <ActivityEntryView model={model} entry={entry} />}
+					header={streamBanner}
+					footer={
+						<PaginatedListFooter
+							hasMore={hasMore}
+							loadMoreError={state.loadMoreError}
+							onRetry={model.retryLoadMore}
+							onLoadMore={model.loadMore}
 						/>
-					) : undefined
-				}
-			>
-				{content}
-			</ScrollView>
+					}
+					onEndReached={hasMore && state.loadMoreError === undefined ? model.loadMore : undefined}
+					refreshControl={refreshControl}
+				/>
+			) : (
+				<ScrollView
+					contentInsetAdjustmentBehavior="automatic"
+					style={{ backgroundColor: colors.systemGroupedBackground }}
+					contentContainerStyle={scrollContentStyle}
+					keyboardShouldPersistTaps="handled"
+					refreshControl={scrollable ? refreshControl : undefined}
+				>
+					{content}
+				</ScrollView>
+			)}
 		</>
 	);
 }

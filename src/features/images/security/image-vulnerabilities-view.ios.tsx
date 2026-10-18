@@ -128,8 +128,18 @@ function VulnerabilityLink({
 	);
 }
 
+function occurrenceKeys(items: readonly { id: string }[]): string[] {
+	const counts = new Map<string, number>();
+	return items.map((item) => {
+		const count = counts.get(item.id) ?? 0;
+		counts.set(item.id, count + 1);
+		return count === 0 ? item.id : `${item.id}#${count}`;
+	});
+}
+
 function ScanList({ model }: { model: ImageVulnerabilitiesModel }) {
 	const { summary, displayedVulnerabilities } = model;
+	const keys = occurrenceKeys(displayedVulnerabilities);
 	return (
 		<List modifiers={[listStyle('insetGrouped'), refreshable(model.reload)]}>
 			{summary ? (
@@ -179,9 +189,13 @@ function ScanList({ model }: { model: ImageVulnerabilitiesModel }) {
 						title="Findings"
 						loadedCount={displayedVulnerabilities.length}
 					/>
-					{displayedVulnerabilities.map((vulnerability) => (
-						<VulnerabilityLink key={vulnerability.id} model={model} vulnerability={vulnerability} />
-					))}
+					<List.ForEach
+						data={displayedVulnerabilities}
+						keyExtractor={(_, index) => keys[index] ?? String(index)}
+						estimatedItemSize={56}
+					>
+						{({ item }) => <VulnerabilityLink model={model} vulnerability={item} />}
+					</List.ForEach>
 					<PaginatedListFooter
 						hasMore={model.hasMore}
 						loadMoreError={model.loadMoreError}

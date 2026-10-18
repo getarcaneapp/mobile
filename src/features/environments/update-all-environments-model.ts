@@ -1,6 +1,6 @@
 import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
 import { cachedClient } from '@/core/networking/use-cached-client';
@@ -366,16 +366,19 @@ export function useUpdateAllEnvironments({
 		}
 	};
 
+	const startPreflight = useEffectEvent(() => {
+		void preflight();
+	});
+
 	useEffect(() => {
 		mounted.current = true;
 		if (!started.current && isAdmin) {
 			started.current = true;
-			void preflight();
+			startPreflight();
 		}
 		return () => {
 			mounted.current = false;
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isAdmin]);
 
 	return {

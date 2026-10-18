@@ -9,6 +9,7 @@ import { useEnvironmentRowColor } from '@/features/containers/hooks';
 import { LongPressMenu, type RowMenuItem } from '@/features/containers/long-press-menu';
 import { MaterialSheet } from '@/features/dashboard/components/material-sheet';
 import { ListSortOrder } from '@/core/list-sort-order';
+import { withCleanup } from '@/core/with-cleanup';
 import type { ImageUsedBy } from '@/sdk/models/image/ImageSummary';
 import type { ImageUpdateResponse } from '@/sdk/models/imageUpdate/ImageUpdate';
 import { environmentDisplayName } from '@/stores/environments-store';
@@ -772,11 +773,12 @@ export function ImageUpdatesView({
 	const [refreshing, setRefreshing] = useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.loadAll();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			async () => {
+				await model.loadAll();
+			},
+			() => setRefreshing(false)
+		);
 	};
 
 	let content: ReactNode;

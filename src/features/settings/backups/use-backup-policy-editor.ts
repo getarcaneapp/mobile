@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import type { S3Destination } from '@/sdk/models/backup/S3Destination';
 import { useClientManager } from '@/stores/client-manager';
@@ -133,30 +134,35 @@ export function useBackupPolicyEditor(target: BackupPolicyEditorTarget) {
 		const scope = backupRequestScope(() => alive.current);
 		if (!client) return;
 		setBusy(true);
-		try {
-			if (volumeName !== undefined) {
-				await client.volumes.updateBackupPolicies({
-					envID: environmentID,
-					name: volumeName,
-					request: { policies: policies.map(policyDraftUpdate) }
-				});
-			} else if (systemVolumes) {
-				await client.systemBackups.updateVolumePolicies({
-					request: { policies: policies.map(policyDraftVolumeUpdate) }
-				});
-			} else {
-				await client.systemBackups.updatePolicies({
-					request: { policies: policies.map(policyDraftUpdate) }
-				});
+		await withCleanup(
+			async () => {
+				try {
+					if (volumeName !== undefined) {
+						await client.volumes.updateBackupPolicies({
+							envID: environmentID,
+							name: volumeName,
+							request: { policies: policies.map(policyDraftUpdate) }
+						});
+					} else if (systemVolumes) {
+						await client.systemBackups.updateVolumePolicies({
+							request: { policies: policies.map(policyDraftVolumeUpdate) }
+						});
+					} else {
+						await client.systemBackups.updatePolicies({
+							request: { policies: policies.map(policyDraftUpdate) }
+						});
+					}
+					scope.check();
+					showToast(Toasts.success('Backup policies saved'));
+					dismiss();
+				} catch (error) {
+					if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (alive.current) setBusy(false);
 			}
-			scope.check();
-			showToast(Toasts.success('Backup policies saved'));
-			dismiss();
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+		);
 	};
 
 	const update = (id: string, patch: Partial<BackupPolicyDraft>) =>

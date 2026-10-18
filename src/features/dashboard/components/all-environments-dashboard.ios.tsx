@@ -79,7 +79,15 @@ import {
 	type AllEnvironmentsCounts,
 	type UsageMetric
 } from '../dashboard-logic';
-import { relativeNamed, useAllEnvironmentsDashboard } from '../use-all-environments-dashboard';
+import {
+	relativeNamed,
+	useAllEnvironmentsDashboard,
+	useBusiestCard,
+	useHostDiskPercent,
+	useTileValues,
+	useUsageCard,
+	type AllEnvironmentsDashboardModel
+} from '../use-all-environments-dashboard';
 import { DashboardRowChevron, DashboardSectionTitle, DashboardStatTile } from './dashboard-parts';
 import { MetricRing } from './metric-ring';
 import { UsageChart } from './usage-chart';
@@ -376,13 +384,15 @@ function DashboardTilesEditorSheet({
 	);
 }
 
-export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
-	const { environments, dockerInfo, counts, volumeCounts } = props;
-	const model = useAllEnvironmentsDashboard(environments, counts);
-	const reduceMotion = useReduceMotion();
-	const headlineValue = model.headline?.value ?? '—';
-
-	const totalsCard = (
+function TotalsCard({
+	model,
+	onOpenTile
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenTile: (tile: DashboardTotalsTile) => void;
+}) {
+	const values = useTileValues(model);
+	return (
 		<ContextMenu>
 			<ContextMenu.Trigger>
 				<GlassCardBackground>
@@ -391,16 +401,16 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 						spacing={8}
 						modifiers={[padding({ horizontal: 16, vertical: 14 })]}
 					>
-						{model.tiles.map((tile) => {
+						{model.tiles.map((tile, index) => {
 							const info = DashboardTotalsTile.info[tile];
 							return (
 								<DashboardStatTile
 									key={tile}
 									title={info.title}
-									value={model.tileValue(tile)}
+									value={values[index] ?? '—'}
 									icon={info.systemImage}
 									tint={systemColors[info.tint]}
-									onPress={info.opensDestination ? () => props.onOpenTile(tile) : undefined}
+									onPress={info.opensDestination ? () => onOpenTile(tile) : undefined}
 								/>
 							);
 						})}
@@ -416,8 +426,13 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 			</ContextMenu.Items>
 		</ContextMenu>
 	);
+}
 
-	const usageCard = (
+function UsageCard({ model }: { model: AllEnvironmentsDashboardModel }) {
+	const usage = useUsageCard(model);
+	const reduceMotion = useReduceMotion();
+	const headlineValue = usage.headline?.value ?? '—';
+	return (
 		<GlassCardBackground>
 			<VStack
 				alignment="leading"
@@ -436,14 +451,14 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 						>
 							{headlineValue}
 						</Text>
-						{model.headline ? (
+						{usage.headline ? (
 							<Text
 								modifiers={[
 									font({ textStyle: 'caption' }),
 									foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 								]}
 							>
-								{model.headline.detail}
+								{usage.headline.detail}
 							</Text>
 						) : null}
 					</VStack>
@@ -459,7 +474,7 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 					</Picker>
 				</HStack>
 
-				{model.waitingForStats ? (
+				{usage.waitingForStats ? (
 					<VStack modifiers={[frame({ maxWidth: Infinity, minHeight: 150 })]}>
 						<ArcaneLoadingViewSwiftUI label="Waiting for live stats…" variant="inline" />
 					</VStack>
@@ -467,15 +482,15 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 					<HStack modifiers={[frame({ maxWidth: Infinity, minHeight: 150, maxHeight: 150 })]}>
 						<RNHostView>
 							<View style={{ flex: 1, height: 150 }}>
-								<UsageChart lines={model.usageLines} metric={model.usageMetric} />
+								<UsageChart lines={usage.usageLines} metric={model.usageMetric} />
 							</View>
 						</RNHostView>
 					</HStack>
 				)}
 
-				{model.usageLines.length > 0 ? (
+				{usage.usageLines.length > 0 ? (
 					<Grid horizontalSpacing={10} verticalSpacing={8} alignment="leading">
-						{chunk(model.usageLines, 2).map((pair, rowIndex) => (
+						{chunk(usage.usageLines, 2).map((pair, rowIndex) => (
 							<Grid.Row key={rowIndex}>
 								{pair.map((line) => (
 									<HStack
@@ -518,21 +533,29 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 			</VStack>
 		</GlassCardBackground>
 	);
+}
 
-	const busiestSection = (
+function BusiestSection({
+	model,
+	onOpenContainer
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenContainer: (container: ContainerSummary, environmentID: string) => void;
+}) {
+	const busiest = useBusiestCard(model);
+	const reduceMotion = useReduceMotion();
+	return (
 		<VStack alignment="leading" spacing={14}>
 			<HStack>
 				<VStack alignment="leading" spacing={2}>
 					<DashboardSectionTitle title="Busiest Containers" />
-					{!model.busiestIsLive &&
-					model.busiestUpdatedAt !== undefined &&
-					model.busiestEntries.length > 0 ? (
+					{!busiest.isLive && busiest.updatedAt !== undefined && busiest.entries.length > 0 ? (
 						<Text
 							modifiers={[
 								font({ textStyle: 'caption' }),
 								foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 							]}
-						>{`Updated ${relativeNamed(model.busiestUpdatedAt)}`}</Text>
+						>{`Updated ${relativeNamed(busiest.updatedAt)}`}</Text>
 					) : null}
 				</VStack>
 				<Spacer />
@@ -553,12 +576,12 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 						padding({ vertical: 4 }),
 						...motionAwareAnimation(
 							Motion.reflow,
-							hashKey(model.busiestEntries.map((e) => e.id).join('|')),
+							hashKey(busiest.entries.map((e) => e.id).join('|')),
 							reduceMotion
 						)
 					]}
 				>
-					{model.busiestEntries.length === 0 ? (
+					{busiest.entries.length === 0 ? (
 						<VStack
 							modifiers={[
 								font({ textStyle: 'subheadline' }),
@@ -566,7 +589,7 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 								padding({ vertical: 20 })
 							]}
 						>
-							{model.busiestIsLive ? (
+							{busiest.isLive ? (
 								<Text modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>
 									No running containers.
 								</Text>
@@ -575,11 +598,11 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 							)}
 						</VStack>
 					) : (
-						model.busiestEntries.map((entry, index) => (
+						busiest.entries.map((entry, index) => (
 							<VStack key={entry.id} spacing={0}>
 								{index > 0 ? <Divider modifiers={[padding({ leading: 64 })]} /> : null}
 								<Button
-									onPress={() => props.onOpenContainer(entry.container, entry.environmentID)}
+									onPress={() => onOpenContainer(entry.container, entry.environmentID)}
 									modifiers={[cardRowLinkStyle()]}
 								>
 									<HStack
@@ -601,6 +624,111 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 			</GlassCardBackground>
 		</VStack>
 	);
+}
+
+function HostRow({
+	model,
+	environment,
+	index,
+	info,
+	volumes,
+	onOpenEnvironment
+}: {
+	model: AllEnvironmentsDashboardModel;
+	environment: Environment;
+	index: number;
+	info: DockerInfo | undefined;
+	volumes: number | undefined;
+	onOpenEnvironment: (environment: Environment) => void;
+}) {
+	const isOnline = environmentIsOnline(environment);
+	const disk = useHostDiskPercent(environment.id);
+	const running = info ? DockerCounts.containersRunning(info) : undefined;
+	const total = info ? DockerCounts.containers(info) : undefined;
+	const images = info ? DockerCounts.images(info) : undefined;
+	const label = [
+		displayName(environment),
+		isOnline ? 'online' : 'offline',
+		info ? `${running} of ${total} containers running` : undefined,
+		info ? `${images} images` : undefined,
+		volumes !== undefined ? `${volumes} volumes` : undefined,
+		disk !== undefined ? `disk ${disk.toFixed(0)} percent full` : undefined
+	]
+		.filter(Boolean)
+		.join(', ');
+	return (
+		<VStack spacing={0}>
+			{index > 0 ? <Divider modifiers={[padding({ leading: 16 })]} /> : null}
+			<Button onPress={() => onOpenEnvironment(environment)} modifiers={[cardRowLinkStyle()]}>
+				<VStack
+					alignment="leading"
+					spacing={10}
+					modifiers={[
+						padding({ horizontal: 16, vertical: 12 }),
+						contentShape(shapes.rectangle()),
+						accessibilityElement('ignore'),
+						accessibilityLabel(label),
+						accessibilityAddTraits(['isButton'])
+					]}
+				>
+					<HStack spacing={8}>
+						<Circle
+							modifiers={[
+								foregroundStyle(model.colorFor(environment, index)),
+								frame({ width: 8, height: 8 })
+							]}
+						/>
+						<Text
+							modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' }), lineLimit(1)]}
+						>
+							{displayName(environment)}
+						</Text>
+						<Spacer minLength={8} />
+						{!isOnline ? (
+							<Text
+								modifiers={[font({ textStyle: 'caption' }), foregroundStyle(systemColors.orange)]}
+							>
+								Offline
+							</Text>
+						) : null}
+						<DashboardRowChevron />
+					</HStack>
+					<HStack alignment="top" spacing={14}>
+						<HostStatColumn
+							title="Running"
+							value={info ? `${running}/${total}` : undefined}
+							meter={{
+								fraction: total !== undefined && total > 0 ? (running ?? 0) / total : undefined,
+								tint: systemColors.green
+							}}
+						/>
+						<HostStatColumn
+							title="Images"
+							value={images !== undefined ? String(images) : undefined}
+						/>
+						<HostStatColumn
+							title="Volumes"
+							value={volumes !== undefined ? String(volumes) : undefined}
+						/>
+						<HostStatColumn
+							title="Disk"
+							value={disk !== undefined ? percent0(disk) : undefined}
+							meter={{
+								fraction: disk !== undefined ? disk / 100 : undefined,
+								tint: systemColors.teal,
+								warnsAbove: 0.9
+							}}
+						/>
+					</HStack>
+				</VStack>
+			</Button>
+		</VStack>
+	);
+}
+
+export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
+	const { environments, dockerInfo, counts, volumeCounts } = props;
+	const model = useAllEnvironmentsDashboard(environments, counts);
 
 	const hostsSection = (
 		<VStack alignment="leading" spacing={14}>
@@ -619,103 +747,17 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 			</HStack>
 			<GlassCardBackground>
 				<VStack spacing={0} modifiers={[padding({ vertical: 4 })]}>
-					{environments.map((environment, index) => {
-						const info = dockerInfo[environment.id];
-						const isOnline = environmentIsOnline(environment);
-						const disk = model.diskPercent(environment.id);
-						const volumes = volumeCounts[environment.id];
-						const running = info ? DockerCounts.containersRunning(info) : undefined;
-						const total = info ? DockerCounts.containers(info) : undefined;
-						const images = info ? DockerCounts.images(info) : undefined;
-						const label = [
-							displayName(environment),
-							isOnline ? 'online' : 'offline',
-							info ? `${running} of ${total} containers running` : undefined,
-							info ? `${images} images` : undefined,
-							volumes !== undefined ? `${volumes} volumes` : undefined,
-							disk !== undefined ? `disk ${disk.toFixed(0)} percent full` : undefined
-						]
-							.filter(Boolean)
-							.join(', ');
-						return (
-							<VStack key={environment.id} spacing={0}>
-								{index > 0 ? <Divider modifiers={[padding({ leading: 16 })]} /> : null}
-								<Button
-									onPress={() => props.onOpenEnvironment(environment)}
-									modifiers={[cardRowLinkStyle()]}
-								>
-									<VStack
-										alignment="leading"
-										spacing={10}
-										modifiers={[
-											padding({ horizontal: 16, vertical: 12 }),
-											contentShape(shapes.rectangle()),
-											accessibilityElement('ignore'),
-											accessibilityLabel(label),
-											accessibilityAddTraits(['isButton'])
-										]}
-									>
-										<HStack spacing={8}>
-											<Circle
-												modifiers={[
-													foregroundStyle(model.colorFor(environment, index)),
-													frame({ width: 8, height: 8 })
-												]}
-											/>
-											<Text
-												modifiers={[
-													font({ textStyle: 'subheadline', weight: 'semibold' }),
-													lineLimit(1)
-												]}
-											>
-												{displayName(environment)}
-											</Text>
-											<Spacer minLength={8} />
-											{!isOnline ? (
-												<Text
-													modifiers={[
-														font({ textStyle: 'caption' }),
-														foregroundStyle(systemColors.orange)
-													]}
-												>
-													Offline
-												</Text>
-											) : null}
-											<DashboardRowChevron />
-										</HStack>
-										<HStack alignment="top" spacing={14}>
-											<HostStatColumn
-												title="Running"
-												value={info ? `${running}/${total}` : undefined}
-												meter={{
-													fraction:
-														total !== undefined && total > 0 ? (running ?? 0) / total : undefined,
-													tint: systemColors.green
-												}}
-											/>
-											<HostStatColumn
-												title="Images"
-												value={images !== undefined ? String(images) : undefined}
-											/>
-											<HostStatColumn
-												title="Volumes"
-												value={volumes !== undefined ? String(volumes) : undefined}
-											/>
-											<HostStatColumn
-												title="Disk"
-												value={disk !== undefined ? percent0(disk) : undefined}
-												meter={{
-													fraction: disk !== undefined ? disk / 100 : undefined,
-													tint: systemColors.teal,
-													warnsAbove: 0.9
-												}}
-											/>
-										</HStack>
-									</VStack>
-								</Button>
-							</VStack>
-						);
-					})}
+					{environments.map((environment, index) => (
+						<HostRow
+							key={environment.id}
+							model={model}
+							environment={environment}
+							index={index}
+							info={dockerInfo[environment.id]}
+							volumes={volumeCounts[environment.id]}
+							onOpenEnvironment={props.onOpenEnvironment}
+						/>
+					))}
 				</VStack>
 			</GlassCardBackground>
 		</VStack>
@@ -725,16 +767,16 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 		<VStack alignment="leading" spacing={36}>
 			<CardEntrance id="dashboard.all.totals" index={0}>
 				<VStack alignment="leading" spacing={10}>
-					{totalsCard}
+					<TotalsCard model={model} onOpenTile={props.onOpenTile} />
 					{props.totalsFootnote}
 				</VStack>
 			</CardEntrance>
 			<CardEntrance id="dashboard.all.usage" index={1}>
-				{usageCard}
+				<UsageCard model={model} />
 			</CardEntrance>
 			{model.showsBusiest ? (
 				<CardEntrance id="dashboard.all.busiest" index={2}>
-					{busiestSection}
+					<BusiestSection model={model} onOpenContainer={props.onOpenContainer} />
 				</CardEntrance>
 			) : null}
 			<CardEntrance id="dashboard.all.hosts" index={3}>

@@ -1,4 +1,4 @@
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermissionCheck } from '@/core/auth/permissions';
 import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import { Permission } from '@/sdk/models/role/Permission';
 import { User } from '@/sdk/models/user/User';
@@ -13,14 +13,13 @@ export type APIKeyAccess = {
 };
 
 export function useAPIKeyAccess(): APIKeyAccess {
-	useClientManager((s) => s.accessGeneration);
+	const can = usePermissionCheck();
 	const user = useClientManager((s) => s.currentUser);
 	const capabilities = useClientManager((s) => s.serverCapabilities);
 	const supportsRBAC =
 		capabilities !== undefined && ServerCapabilities.supportsRoleManagement(capabilities);
 	const isAdmin = user !== undefined && User.isAdmin(user);
-	const allowed = (permission: string) =>
-		supportsRBAC ? hasPermission(permission, null) : isAdmin;
+	const allowed = (permission: string) => (supportsRBAC ? can(permission, null) : isAdmin);
 	return {
 		supportsRBAC,
 		canCreate: allowed(Permission.ApiKeys.create),

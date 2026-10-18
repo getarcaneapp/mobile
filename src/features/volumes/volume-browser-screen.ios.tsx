@@ -183,6 +183,29 @@ function VolumeBrowserRow({ entry }: { entry: FileEntry }) {
 	);
 }
 
+function entryKey(entry: FileEntry) {
+	return entry.path;
+}
+
+function VolumeBrowserLink({ model, entry }: { model: VolumeBrowserModel; entry: FileEntry }) {
+	if (entry.isDirectory) {
+		return (
+			<Button onPress={() => model.openDirectory(entry)} modifiers={[buttonStyle('plain')]}>
+				<VolumeBrowserRow entry={entry} />
+			</Button>
+		);
+	}
+	return (
+		<Button onPress={() => model.openFile(entry)} modifiers={[buttonStyle('plain')]}>
+			<HStack modifiers={[contentShape(shapes.rectangle())]}>
+				<VolumeBrowserRow entry={entry} />
+				<Spacer />
+				<DisclosureChevron />
+			</HStack>
+		</Button>
+	);
+}
+
 function promptForPath(model: VolumeBrowserModel) {
 	Alert.prompt(
 		'Go to Path',
@@ -239,29 +262,9 @@ export function VolumeBrowserScreen() {
 						/>
 					</Section>
 				) : null}
-				{model.displayedEntries.map((entry) =>
-					entry.isDirectory ? (
-						<Button
-							key={entry.path}
-							onPress={() => model.openDirectory(entry)}
-							modifiers={[buttonStyle('plain')]}
-						>
-							<VolumeBrowserRow entry={entry} />
-						</Button>
-					) : (
-						<Button
-							key={entry.path}
-							onPress={() => model.openFile(entry)}
-							modifiers={[buttonStyle('plain')]}
-						>
-							<HStack modifiers={[contentShape(shapes.rectangle())]}>
-								<VolumeBrowserRow entry={entry} />
-								<Spacer />
-								<DisclosureChevron />
-							</HStack>
-						</Button>
-					)
-				)}
+				<List.ForEach data={model.displayedEntries} keyExtractor={entryKey} estimatedItemSize={44}>
+					{({ item }) => <VolumeBrowserLink model={model} entry={item} />}
+				</List.ForEach>
 			</List>
 		);
 	}

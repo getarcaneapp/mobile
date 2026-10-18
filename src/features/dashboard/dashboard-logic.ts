@@ -542,6 +542,16 @@ export function smoothed(samples: readonly SparklineSample[], weight = 0.35): Sp
 	});
 }
 
+const smoothedCache = new WeakMap<readonly SparklineSample[], SparklineSample[]>();
+
+export function smoothedSeries(samples: readonly SparklineSample[]): SparklineSample[] {
+	const cached = smoothedCache.get(samples);
+	if (cached) return cached;
+	const next = smoothed(samples);
+	smoothedCache.set(samples, next);
+	return next;
+}
+
 export function usageHeadline(
 	metric: UsageMetric,
 	stats: readonly SystemStats[]

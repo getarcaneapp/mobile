@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { EnvironmentID } from '@/sdk/client/environment';
 import type { PublicSetting } from '@/sdk/models/settings/Settings';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
+
+function isEnabledValue(value: string | undefined): boolean {
+	return value?.toLowerCase() === 'true';
+}
 
 export function useUserSettings() {
 	const [enableGravatar, setEnableGravatar] = useState(false);
@@ -33,31 +38,36 @@ export function useUserSettings() {
 		if (!client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const settings = await client.settings.getSettings({ envID: EnvironmentID.localDocker });
-			const values = new Map(settings.map((setting) => [setting.key, setting.value]));
-			if (!mounted.current) return;
+		await withCleanup(
+			async () => {
+				try {
+					const settings = await client.settings.getSettings({ envID: EnvironmentID.localDocker });
+					const values = new Map(settings.map((setting) => [setting.key, setting.value]));
+					if (!mounted.current) return;
 
-			const gravatarEnabled = values.get('enableGravatar')?.toLowerCase() === 'true';
-			setEnableGravatar(gravatarEnabled);
-			setOriginalEnableGravatar(gravatarEnabled);
+					const gravatarEnabled = isEnabledValue(values.get('enableGravatar'));
+					setEnableGravatar(gravatarEnabled);
+					setOriginalEnableGravatar(gravatarEnabled);
 
-			const uploadLimit = values.get('avatarMaxUploadSizeMb');
-			if (uploadLimit !== undefined) {
-				setAvatarMaxUploadSizeMb(uploadLimit);
-				setOriginalAvatarMaxUploadSizeMb(uploadLimit);
-				setSupportsAvatarUploadLimit(true);
-			} else {
-				setAvatarMaxUploadSizeMb('2');
-				setOriginalAvatarMaxUploadSizeMb('2');
-				setSupportsAvatarUploadLimit(false);
+					const uploadLimit = values.get('avatarMaxUploadSizeMb');
+					if (uploadLimit !== undefined) {
+						setAvatarMaxUploadSizeMb(uploadLimit);
+						setOriginalAvatarMaxUploadSizeMb(uploadLimit);
+						setSupportsAvatarUploadLimit(true);
+					} else {
+						setAvatarMaxUploadSizeMb('2');
+						setOriginalAvatarMaxUploadSizeMb('2');
+						setSupportsAvatarUploadLimit(false);
+					}
+				} catch (error) {
+					if (!mounted.current) return;
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (mounted.current) setIsLoading(false);
 			}
-		} catch (error) {
-			if (!mounted.current) return;
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (mounted.current) setIsLoading(false);
-		}
+		);
 	}, []);
 
 	useEffect(() => {
@@ -96,23 +106,28 @@ export function useUserSettings() {
 
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			const path = client.rest.environmentPath(EnvironmentID.localDocker, 'settings');
-			await client.rest.put<PublicSetting[]>(path, { body: changedSettings });
-			if (!mounted.current) return;
+		await withCleanup(
+			async () => {
+				try {
+					const path = client.rest.environmentPath(EnvironmentID.localDocker, 'settings');
+					await client.rest.put<PublicSetting[]>(path, { body: changedSettings });
+					if (!mounted.current) return;
 
-			const gravatarChanged = changedSettings.enableGravatar !== undefined;
-			setOriginalEnableGravatar(enableGravatar);
-			setOriginalAvatarMaxUploadSizeMb(limit);
-			showToast(Toasts.success('User settings saved'));
+					const gravatarChanged = changedSettings.enableGravatar !== undefined;
+					setOriginalEnableGravatar(enableGravatar);
+					setOriginalAvatarMaxUploadSizeMb(limit);
+					showToast(Toasts.success('User settings saved'));
 
-			if (gravatarChanged) await manager.refreshCurrentUserAvatar(true);
-		} catch (error) {
-			if (!mounted.current) return;
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (mounted.current) setIsSaving(false);
-		}
+					if (gravatarChanged) await manager.refreshCurrentUserAvatar(true);
+				} catch (error) {
+					if (!mounted.current) return;
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (mounted.current) setIsSaving(false);
+			}
+		);
 	};
 
 	return {

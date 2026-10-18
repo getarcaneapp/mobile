@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { PaginationLoader } from '@/core/networking/pagination-loader';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import type { ProjectDetails } from '@/sdk/models/project/Project';
@@ -73,23 +74,29 @@ export function useCreateWebhook() {
 		if (!client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const body: CreateWebhook = {
-				actionType,
-				name,
-				targetId: needsTargetId ? targetId : '',
-				targetType
-			};
-			const path = client.rest.environmentPath(manager.activeEnvironmentID, 'webhooks');
-			const created = await client.rest.post<WebhookCreated>(path, { body });
-			showToast(Toasts.success('Webhook created'));
+		const body: CreateWebhook = {
+			actionType,
+			name,
+			targetId: needsTargetId ? targetId : '',
+			targetType
+		};
+		const notifyCreated = (created: WebhookCreated) => {
 			payload?.onCreated(created);
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					const path = client.rest.environmentPath(manager.activeEnvironmentID, 'webhooks');
+					const created = await client.rest.post<WebhookCreated>(path, { body });
+					showToast(Toasts.success('Webhook created'));
+					notifyCreated(created);
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	return {

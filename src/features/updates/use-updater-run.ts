@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { UpdaterResult, UpdaterStatus } from '@/sdk/models/updater/Updater';
 import { useClientManager } from '@/stores/client-manager';
@@ -81,6 +83,12 @@ export function sceneModel(
 	}
 }
 
+async function refreshImageUpdateCount(environmentID: EnvironmentID, client: ArcaneClient) {
+	await useImageUpdateCountStore
+		.getState()
+		.refreshCount(environmentID, client, useClientManager.getState().currentUser?.id);
+}
+
 export function useUpdaterRun(environmentID: EnvironmentID) {
 	const [phase, setPhase] = useState<UpdaterRunPhase>({ kind: 'starting' });
 	const [liveStatus, setLiveStatus] = useState<UpdaterStatus>();
@@ -116,24 +124,25 @@ export function useUpdaterRun(environmentID: EnvironmentID) {
 		};
 		void pollLoop();
 
-		void (async () => {
-			try {
-				const result = await runBoundedUpdater(client, environmentID, run.signal);
-				await useImageUpdateCountStore
-					.getState()
-					.refreshCount(environmentID, client, useClientManager.getState().currentUser?.id);
-				useResourceMutationStore.getState().markChanged('images', environmentID);
-				poll.abort();
-				if (run.signal.aborted) return;
-				setPhase({ kind: 'completed', result });
-			} catch (error) {
-				poll.abort();
-				if (run.signal.aborted) return;
-				setPhase({ kind: 'failed', message: friendlyErrorMessage(error) });
-			} finally {
+		void withCleanup(
+			async () => {
+				try {
+					const result = await runBoundedUpdater(client, environmentID, run.signal);
+					await refreshImageUpdateCount(environmentID, client);
+					useResourceMutationStore.getState().markChanged('images', environmentID);
+					poll.abort();
+					if (run.signal.aborted) return;
+					setPhase({ kind: 'completed', result });
+				} catch (error) {
+					poll.abort();
+					if (run.signal.aborted) return;
+					setPhase({ kind: 'failed', message: friendlyErrorMessage(error) });
+				}
+			},
+			() => {
 				if (controller.current === run) controller.current = undefined;
 			}
-		})();
+		);
 	}, [environmentID]);
 
 	const cancel = useCallback(() => {

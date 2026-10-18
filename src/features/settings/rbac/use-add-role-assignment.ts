@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { Role } from '@/sdk/models/role/Role';
 import type { RoleAssignment, UserAssignmentInput } from '@/sdk/models/role/RoleAssignment';
@@ -59,17 +60,20 @@ export function useAddRoleAssignment() {
 		) {
 			inputs.push(added);
 		}
-		try {
-			await client.users.setRoleAssignments({ userId: payload.userId, assignments: inputs });
-			showToast(Toasts.success('Role assigned'));
-			await payload.onSaved();
-			nav.back();
-		} catch (error) {
-			const fields = validationFields(error);
-			setErrorMessage(fields ? formatValidationFields(fields) : friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.users.setRoleAssignments({ userId: payload.userId, assignments: inputs });
+					showToast(Toasts.success('Role assigned'));
+					await payload.onSaved();
+					nav.back();
+				} catch (error) {
+					const fields = validationFields(error);
+					setErrorMessage(fields ? formatValidationFields(fields) : friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	return {

@@ -42,6 +42,7 @@ import { ContainerRow } from './container-row';
 import { useEnvironmentRowColor } from './hooks';
 import { ContainersToolbar } from './containers-toolbar';
 import {
+	useContainerRowMetrics,
 	useContainersList,
 	type ContainerItem,
 	type ContainersListModel,
@@ -144,13 +145,14 @@ function ContainerPreview({ item }: { item: ContainerItem }) {
 function ContainerLink({ model, item }: { model: ContainersListModel; item: ContainerItem }) {
 	const isPinned = model.pinnedIDs.has(item.id);
 	const environmentColor = useEnvironmentRowColor(item.environmentID, item.environmentName);
+	const metrics = useContainerRowMetrics(model.samples, item);
 	const row = (
 		<ContainerRow
 			container={item.value}
 			isPinned={isPinned}
 			environmentName={item.environmentName}
 			environmentColor={environmentColor}
-			metrics={model.metrics(item)}
+			metrics={metrics}
 		/>
 	);
 	if (model.isSelecting) return row;
@@ -285,6 +287,7 @@ export function ContainersScreen(props: ContainersListProps) {
 							hasMore={snapshot.hasMore}
 						/>
 					)}
+					estimatedItemSize={72}
 					renderRow={(item) => <ContainerLink model={model} item={item} />}
 				/>
 				<PaginatedListFooter

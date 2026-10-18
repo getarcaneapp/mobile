@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import {
@@ -9,19 +10,23 @@ import {
 	EnvironmentLoadFailuresSection
 } from '@/ui/components/environment-label';
 import { environmentTitle } from '@/ui/components/environment-label.types';
+import {
+	GroupedFlashList,
+	groupPosition,
+	type GroupedListEntry
+} from '@/ui/components/grouped-flash-list';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { SectionTitle } from './android-parts';
 
 import { AndroidToolbar, type AndroidToolbarItem } from '@/features/containers/android-toolbar';
 import { CenteredMessage } from '@/features/containers/android-material';
 import { useEnvironmentRowColor } from '@/features/containers/hooks';
-import { LongPressMenu } from '@/features/containers/long-press-menu';
+import { LongPressMenu, type RowMenuItem } from '@/features/containers/long-press-menu';
 
 import { networkContainerCount, networkIsInternal, type NetworkItem } from './network-model';
 import {
@@ -29,6 +34,24 @@ import {
 	type NetworksListModel,
 	type NetworksListProps
 } from './use-networks-list';
+
+const networkRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 16,
+	flex: 1
+};
+const networkBodyStyle = { flex: 1, gap: 4 };
+const networkMetaStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 };
+const networkCountStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 3 };
+const listRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 16,
+	paddingHorizontal: 16,
+	paddingVertical: 10
+};
+const noMenuItems: RowMenuItem[] = [];
 
 export function NetworkRow({
 	network,
@@ -41,11 +64,11 @@ export function NetworkRow({
 }) {
 	const count = networkContainerCount(network);
 	return (
-		<View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 }}>
+		<View style={networkRowStyle}>
 			<RowIcon systemImage="network" tint={systemColors.teal} />
-			<View style={{ flex: 1, gap: 4 }}>
+			<View style={networkBodyStyle}>
 				<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{network.name}</Text>
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+				<View style={networkMetaStyle}>
 					<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
 						{network.driver}
 					</Text>
@@ -53,7 +76,7 @@ export function NetworkRow({
 						<Text style={[m3Type.bodyMedium, { color: systemColors.orange }]}>• Internal</Text>
 					) : null}
 					{count > 0 ? (
-						<View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+						<View style={networkCountStyle}>
 							<Icon name="cube.box.fill" size={14} color={systemColors.teal} />
 							<Text style={[m3Type.bodyMedium, { color: systemColors.teal }]}>{String(count)}</Text>
 						</View>
@@ -88,16 +111,10 @@ function NetworkListRow({
 								onPress: () => model.requestDelete(network)
 							}
 						]
-					: []
+					: noMenuItems
 			}
 			onPress={() => model.openDetail(network)}
-			style={{
-				flexDirection: 'row',
-				alignItems: 'center',
-				gap: 16,
-				paddingHorizontal: 16,
-				paddingVertical: 10
-			}}
+			style={listRowStyle}
 		>
 			<NetworkRow
 				network={network.value}
@@ -106,6 +123,48 @@ function NetworkListRow({
 			/>
 		</LongPressMenu>
 	);
+}
+
+type NetworkEntry = GroupedListEntry &
+	(
+		| { type: 'header'; title: string; showsCount: boolean }
+		| { type: 'item'; network: NetworkItem; deletable: boolean }
+		| { type: 'note' }
+	);
+
+function networkEntries(systemNetworks: NetworkItem[], userNetworks: NetworkItem[]) {
+	const entries: NetworkEntry[] = [];
+	if (systemNetworks.length > 0) {
+		entries.push({ type: 'header', key: 'header:system', title: 'Built-in', showsCount: true });
+		systemNetworks.forEach((network, index) => {
+			entries.push({
+				type: 'item',
+				key: `system:${network.id}`,
+				network,
+				deletable: false,
+				grouped: groupPosition(index, systemNetworks.length)
+			});
+		});
+		entries.push({ type: 'note', key: 'note:system' });
+	}
+	if (userNetworks.length > 0) {
+		entries.push({
+			type: 'header',
+			key: 'header:user',
+			title: 'Custom',
+			showsCount: systemNetworks.length === 0
+		});
+		userNetworks.forEach((network, index) => {
+			entries.push({
+				type: 'item',
+				key: `user:${network.id}`,
+				network,
+				deletable: true,
+				grouped: groupPosition(index, userNetworks.length)
+			});
+		});
+	}
+	return entries;
 }
 
 function NetworksToolbar({ model }: { model: NetworksListModel }) {
@@ -161,12 +220,16 @@ export function NetworksScreen(props: NetworksListProps) {
 	const [refreshing, setRefreshing] = useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(model.refresh, () => setRefreshing(false));
 	};
+
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
 
 	const count = (
 		<ResourceCountLabel
@@ -212,61 +275,67 @@ export function NetworksScreen(props: NetworksListProps) {
 				}
 			/>
 		);
-	} else {
-		content = (
-			<>
-				<EnvironmentLoadFailuresSection
-					failures={snapshot.failedEnvironments.map((failure) => ({
-						...failure,
-						id: failure.environment.id
-					}))}
-					retry={() => void model.loadNetworks()}
-				/>
-				{systemNetworks.length > 0 ? (
-					<View>
-						<SectionTitle title="Built-in" trailing={count} />
-						<MaterialListGroup>
-							{systemNetworks.map((network) => (
-								<NetworkListRow
-									key={network.id}
-									model={model}
-									network={network}
-									deletable={false}
-								/>
-							))}
-						</MaterialListGroup>
-						<Text
-							style={[
-								m3Type.bodySmall,
-								{ color: colors.secondaryLabel, paddingHorizontal: 32, paddingTop: 6 }
-							]}
-						>
-							Built-in Docker networks can't be removed.
-						</Text>
-					</View>
-				) : null}
-				{userNetworks.length > 0 ? (
-					<View>
-						<SectionTitle
-							title="Custom"
-							trailing={systemNetworks.length === 0 ? count : undefined}
-						/>
-						<MaterialListGroup>
-							{userNetworks.map((network) => (
-								<NetworkListRow key={network.id} model={model} network={network} deletable />
-							))}
-						</MaterialListGroup>
-					</View>
-				) : null}
-				<PaginatedListFooter
-					hasMore={snapshot.hasMore}
-					loadMoreError={snapshot.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</>
-		);
 	}
+
+	const list =
+		content === undefined ? (
+			<GroupedFlashList
+				data={networkEntries(systemNetworks, userNetworks)}
+				renderEntry={(entry) => {
+					if (entry.type === 'header')
+						return (
+							<SectionTitle title={entry.title} trailing={entry.showsCount ? count : undefined} />
+						);
+					if (entry.type === 'note')
+						return (
+							<Text
+								style={[
+									m3Type.bodySmall,
+									{ color: colors.secondaryLabel, paddingHorizontal: 32, paddingTop: 6 }
+								]}
+							>
+								Built-in Docker networks can't be removed.
+							</Text>
+						);
+					return (
+						<NetworkListRow model={model} network={entry.network} deletable={entry.deletable} />
+					);
+				}}
+				header={
+					<EnvironmentLoadFailuresSection
+						failures={snapshot.failedEnvironments.map((failure) => ({
+							...failure,
+							id: failure.environment.id
+						}))}
+						retry={() => void model.loadNetworks()}
+					/>
+				}
+				footer={
+					<PaginatedListFooter
+						hasMore={snapshot.hasMore}
+						loadMoreError={snapshot.loadMoreError}
+						onRetry={() => void model.loadMore()}
+						onLoadMore={() => void model.loadMore()}
+					/>
+				}
+				onEndReached={
+					snapshot.hasMore && snapshot.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				refreshControl={refreshControl}
+			/>
+		) : (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				style={{ backgroundColor: colors.systemGroupedBackground }}
+				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+				keyboardShouldPersistTaps="handled"
+				refreshControl={refreshControl}
+			>
+				{content}
+			</ScrollView>
+		);
 
 	return (
 		<>
@@ -281,21 +350,7 @@ export function NetworksScreen(props: NetworksListProps) {
 				}}
 			/>
 			<NetworksToolbar model={model} />
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{list}
 		</>
 	);
 }

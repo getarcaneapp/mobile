@@ -2,9 +2,10 @@ import { File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { localizedStandardCompare } from '@/core/list-sort-order';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ProjectFile } from '@/sdk/models/project/ProjectFiles';
 import { Permission } from '@/sdk/models/role/Permission';
@@ -31,11 +32,10 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 	const nav = useVolumeNavigation();
 	const state = useWorkspaceEntry(environmentID, volumeName);
 	const [directory, setDirectory] = useState('');
-	useClientManager((s) => s.accessGeneration);
 	const generation = useClientManager((s) => s.clientGeneration);
 	const userID = useClientManager((s) => s.currentUser?.id);
-	const canUpload = hasPermission(Permission.Volumes.upload, environmentID);
-	const canDelete = hasPermission(Permission.Volumes.delete, environmentID);
+	const canUpload = usePermission(Permission.Volumes.upload, environmentID);
+	const canDelete = usePermission(Permission.Volumes.delete, environmentID);
 
 	const identity = `${generation}|${userID ?? ''}|${environmentID}|${volumeName}`;
 	useEffect(() => {
@@ -162,24 +162,27 @@ export function useWorkspaceAction({
 		const path = actionFile?.relativePath ?? relativePath ?? joinedPath(directory, input);
 		if (action === 'create_file') {
 			const temp = makeTemporaryDirectory();
-			try {
-				const file = new File(temp, uuidString());
-				file.create();
-				if (
-					await WorkspaceStore.apply(
-						environmentID,
-						volumeName,
-						[{ operation: action, relativePath: path, uploadIndex: 0 }],
-						[file.uri]
-					)
-				) {
-					router.back();
-				}
-			} catch (error) {
-				showToast(Toasts.error(friendlyErrorMessage(error)));
-			} finally {
-				removeItem(temp);
-			}
+			await withCleanup(
+				async () => {
+					try {
+						const file = new File(temp, uuidString());
+						file.create();
+						if (
+							await WorkspaceStore.apply(
+								environmentID,
+								volumeName,
+								[{ operation: action, relativePath: path, uploadIndex: 0 }],
+								[file.uri]
+							)
+						) {
+							router.back();
+						}
+					} catch (error) {
+						showToast(Toasts.error(friendlyErrorMessage(error)));
+					}
+				},
+				() => removeItem(temp)
+			);
 		} else if (
 			await WorkspaceStore.apply(environmentID, volumeName, [
 				{

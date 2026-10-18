@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { ProjectTag } from '@/sdk/models/project/ProjectTag';
 import { useClientManager } from '@/stores/client-manager';
 
@@ -66,7 +67,7 @@ export function useProjectTags() {
 		if (!client || name === '') return;
 		setPendingName(name);
 		setErrorMessage(undefined);
-		try {
+		const applyTag = async () => {
 			const body: UpdateProjectTagRequest = { name, attached, color };
 			const response = await client.rest.patch<UpdateProjectTagResponse>(
 				client.rest.environmentPath(envID, `projects/${encodeURIComponent(projectID)}/tags`),
@@ -79,11 +80,17 @@ export function useProjectTags() {
 				setCatalog((current) => [...current, { name, color }]);
 			}
 			payload?.onChange(next);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setPendingName(undefined);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await applyTag();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setPendingName(undefined)
+		);
 	};
 
 	return {

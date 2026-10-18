@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { ResponseCache } from '@/core/networking/response-cache';
+import { withCleanup } from '@/core/with-cleanup';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { Permission } from '@/sdk/models/role/Permission';
 import type { DockerInfo } from '@/sdk/models/system/DockerInfo';
@@ -35,6 +36,7 @@ export function useEnvironmentRow(
 	const colorHex = useEnvironmentColorStore((s) => s.hex(serverURL, environment.id));
 	const [isSyncing, setIsSyncing] = useState(false);
 	const [canUpgrade, setCanUpgrade] = useState(false);
+	const canPrune = useClientManager(() => hasPermission(Permission.System.prune, environment.id));
 
 	const snapshot = loadedSnapshot(streamState);
 	const stats = series?.latest;
@@ -61,16 +63,19 @@ export function useEnvironmentRow(
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsSyncing(true);
-		try {
-			await client.environments.sync({ id: environment.id });
-			ResponseCache.invalidateEnvironment(environment.id);
-			await onRefresh();
-			showToast(Toasts.success('Environment synced'));
-		} catch {
-			showToast(Toasts.error('Sync failed'));
-		} finally {
-			setIsSyncing(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.environments.sync({ id: environment.id });
+					ResponseCache.invalidateEnvironment(environment.id);
+					await onRefresh();
+					showToast(Toasts.success('Environment synced'));
+				} catch {
+					showToast(Toasts.error('Sync failed'));
+				}
+			},
+			() => setIsSyncing(false)
+		);
 	};
 
 	const counts = environmentRowCounts(streamState, dockerInfo);
@@ -80,7 +85,7 @@ export function useEnvironmentRow(
 		colorHex,
 		isSyncing,
 		canUpgrade,
-		canPrune: hasPermission(Permission.System.prune, environment.id),
+		canPrune,
 		sync,
 		subtitle: environmentRowSubtitle(streamState, dockerInfo),
 		statusTint: environmentStatusTint(streamState, dockerInfo),

@@ -1,15 +1,17 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { randomUUID } from 'expo-crypto';
 import * as Sharing from 'expo-sharing';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { formattedISO8601 } from '@/core/date-formatting';
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import { useContainerNavigation } from '@/features/containers/container-routes';
 import { useOnChange } from '@/features/containers/hooks';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import type { ImageDetailSummary } from '@/sdk/models/image/ImageDetail';
@@ -72,6 +74,71 @@ export const imageDetailSections: {
 
 export const headerDate = (iso: string) => formattedISO8601(iso, 'abbreviated', 'omitted');
 
+async function loadUpdateInfo(
+	client: ArcaneClient,
+	environmentID: EnvironmentID,
+	refs: string[],
+	setUpdateInfo: (info: ImageUpdateResponse) => void
+) {
+	try {
+		const map = await client.images.updateInfoByRefs({ envID: environmentID, imageRefs: refs });
+		for (const tag of refs) {
+			const info = map[tag];
+			if (info) {
+				setUpdateInfo(ImageUpdateInfo.asUpdateResponse(info));
+				break;
+			}
+		}
+	} catch {}
+}
+
+async function downloadImageArchive({
+	client,
+	environmentID,
+	imageID,
+	directory,
+	abort,
+	startGeneration,
+	cleanupExport,
+	setExportedImage
+}: {
+	client: ArcaneClient;
+	environmentID: EnvironmentID;
+	imageID: string;
+	directory: Directory;
+	abort: AbortController;
+	startGeneration: number;
+	cleanupExport: () => void;
+	setExportedImage: (uri: string) => void;
+}) {
+	try {
+		directory.create({ intermediates: true });
+		const request = await client.images.exportDownloadRequest({
+			envID: environmentID,
+			imageID
+		});
+		const file = await File.downloadFileAsync(request.url, new File(directory, 'image.tar'), {
+			headers: request.headers,
+			idempotent: true
+		});
+		if (abort.signal.aborted || startGeneration !== useClientManager.getState().clientGeneration) {
+			try {
+				directory.delete();
+			} catch {}
+			return;
+		}
+		cleanupExport();
+		setExportedImage(file.uri);
+		showToast(Toasts.info('Image archive ready to share from the actions menu'));
+	} catch (error) {
+		try {
+			directory.delete();
+		} catch {}
+		if (!abort.signal.aborted)
+			showToast(Toasts.error(error instanceof Error ? error.message : String(error)));
+	}
+}
+
 export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 	const nav = useImageNavigation();
 	const containerNav = useContainerNavigation();
@@ -91,7 +158,9 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 	const [exporting, setExporting] = useState(false);
 	const exportController = useRef<AbortController | undefined>(undefined);
 	const exportedRef = useRef<string | undefined>(undefined);
-	exportedRef.current = exportedImage;
+	useLayoutEffect(() => {
+		exportedRef.current = exportedImage;
+	});
 	useClientManager((s) => s.accessGeneration);
 	const generation = useClientManager((s) => s.clientGeneration);
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
@@ -104,17 +173,19 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 		const cached = cachedClient();
 		if (!client || !cached) return;
 		setIsLoading(true);
-		try {
-			const loaded = await cached.get<ImageDetailSummary>(
-				client.rest.environmentPath(environmentID, `images/${imageID}`),
-				environmentID
-			);
-			imageCache.setDetails(environmentID, loaded, imageID);
-			setDetails(loaded);
-		} catch {
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const loaded = await cached.get<ImageDetailSummary>(
+						client.rest.environmentPath(environmentID, `images/${imageID}`),
+						environmentID
+					);
+					imageCache.setDetails(environmentID, loaded, imageID);
+					setDetails(loaded);
+				} catch {}
+			},
+			() => setIsLoading(false)
+		);
 	}, [environmentID, imageID]);
 
 	const loadUpdateStatus = useCallback(async () => {
@@ -122,16 +193,7 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 		if (!client) return;
 		const refs = taggedReferences(image.repoTags);
 		if (refs.length === 0) return;
-		try {
-			const map = await client.images.updateInfoByRefs({ envID: environmentID, imageRefs: refs });
-			for (const tag of refs) {
-				const info = map[tag];
-				if (info) {
-					setUpdateInfo(ImageUpdateInfo.asUpdateResponse(info));
-					break;
-				}
-			}
-		} catch {}
+		await loadUpdateInfo(client, environmentID, refs, setUpdateInfo);
 	}, [environmentID, image]);
 
 	const loadUsingContainers = useCallback(async () => {
@@ -164,15 +226,18 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsCheckingUpdate(true);
-		try {
-			setUpdateInfo(
-				await client.images.checkUpdateByIDPost({ envID: environmentID, imageId: image.id })
-			);
-		} catch (error) {
-			showError(error);
-		} finally {
-			setIsCheckingUpdate(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					setUpdateInfo(
+						await client.images.checkUpdateByIDPost({ envID: environmentID, imageId: image.id })
+					);
+				} catch (error) {
+					showError(error);
+				}
+			},
+			() => setIsCheckingUpdate(false)
+		);
 	};
 
 	const cleanupExport = useCallback(() => {
@@ -193,37 +258,20 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 		exportController.current = abort;
 		const directory = new Directory(Paths.cache, randomUUID());
 		setExporting(true);
-		try {
-			directory.create({ intermediates: true });
-			const request = await client.images.exportDownloadRequest({
-				envID: environmentID,
-				imageID: image.id
-			});
-			const file = await File.downloadFileAsync(request.url, new File(directory, 'image.tar'), {
-				headers: request.headers,
-				idempotent: true
-			});
-			if (
-				abort.signal.aborted ||
-				startGeneration !== useClientManager.getState().clientGeneration
-			) {
-				try {
-					directory.delete();
-				} catch {}
-				return;
-			}
-			cleanupExport();
-			setExportedImage(file.uri);
-			showToast(Toasts.info('Image archive ready to share from the actions menu'));
-		} catch (error) {
-			try {
-				directory.delete();
-			} catch {}
-			if (!abort.signal.aborted)
-				showToast(Toasts.error(error instanceof Error ? error.message : String(error)));
-		} finally {
-			setExporting(false);
-		}
+		await withCleanup(
+			() =>
+				downloadImageArchive({
+					client,
+					environmentID,
+					imageID: image.id,
+					directory,
+					abort,
+					startGeneration,
+					cleanupExport,
+					setExportedImage
+				}),
+			() => setExporting(false)
+		);
 	};
 
 	const shareExport = () => {
@@ -268,36 +316,43 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 		action: () => void checkForUpdate()
 	};
 
-	const overflow: ActionButtonItem[] = [];
-	if (hasPermission('images:tag', environmentID)) {
-		overflow.push({
-			id: 'tag',
-			title: 'Tag Image',
-			systemImage: 'tag',
-			tint: accent,
-			action: () => nav.openTag(environmentID, image.id)
-		});
-	}
-	if (hasPermission('images:read', environmentID)) {
-		overflow.push({
-			id: 'export',
-			title: exporting ? 'Exporting…' : 'Export Image',
-			systemImage: 'square.and.arrow.up',
-			tint: accent,
-			action: () => {
-				if (!exporting) void exportImage();
-			}
-		});
-	}
-	overflow.push({
-		id: 'remove',
-		title: 'Remove Image',
-		systemImage: 'trash',
-		tint: systemColors.red,
-		role: 'destructive',
-		confirmationMessage: 'This will remove the image from the host.',
-		action: () => void removeImage()
-	});
+	const canTag = useClientManager(() => hasPermission('images:tag', environmentID));
+	const canRead = useClientManager(() => hasPermission('images:read', environmentID));
+	const overflow: ActionButtonItem[] = [
+		...(canTag
+			? [
+					{
+						id: 'tag',
+						title: 'Tag Image',
+						systemImage: 'tag',
+						tint: accent,
+						action: () => nav.openTag(environmentID, image.id)
+					}
+				]
+			: []),
+		...(canRead
+			? [
+					{
+						id: 'export',
+						title: exporting ? 'Exporting…' : 'Export Image',
+						systemImage: 'square.and.arrow.up',
+						tint: accent,
+						action: () => {
+							if (!exporting) void exportImage();
+						}
+					}
+				]
+			: []),
+		{
+			id: 'remove',
+			title: 'Remove Image',
+			systemImage: 'trash',
+			tint: systemColors.red,
+			role: 'destructive',
+			confirmationMessage: 'This will remove the image from the host.',
+			action: () => void removeImage()
+		}
+	];
 
 	const metadataItems = (value: ImageDetailSummary): ResourceMetadataItem[] => [
 		{ label: 'Size', value: byteString(value.size), systemImage: 'internaldrive' },

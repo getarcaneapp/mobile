@@ -6,6 +6,11 @@ import type { PortMapping } from '@/sdk/models/port/PortMapping';
 import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import {
+	GroupedFlashList,
+	groupPosition,
+	type GroupedListEntry
+} from '@/ui/components/grouped-flash-list';
+import {
 	EnvironmentLabel,
 	EnvironmentLoadFailuresSection
 } from '@/ui/components/environment-label';
@@ -14,7 +19,6 @@ import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type, monoFamily } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { CenteredMessage } from '@/features/containers/android-material';
 import { AndroidToolbar } from '@/features/containers/android-toolbar';
@@ -24,9 +28,54 @@ import {
 	hostString,
 	protocolTint,
 	usePortsList,
+	type PortGroup,
 	type PortItem,
 	type PortsListProps
 } from './use-ports-list';
+
+const mono = { fontFamily: monoFamily, fontSize: 15, fontWeight: '600' as const };
+const mappingRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 16,
+	flex: 1
+};
+const mappingBodyStyle = { flex: 1, gap: 3 };
+const mappingLineStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 6,
+	flexWrap: 'wrap' as const
+};
+const listRowStyle = { paddingHorizontal: 16, paddingVertical: 10 };
+const groupHeaderStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 8,
+	paddingHorizontal: 32,
+	paddingTop: 20,
+	paddingBottom: 6
+};
+const spacerStyle = { flex: 1 };
+
+type PortEntry = GroupedListEntry &
+	({ type: 'header'; group: PortGroup; index: number } | { type: 'item'; port: PortItem });
+
+function portEntries(sections: PortGroup[]) {
+	const entries: PortEntry[] = [];
+	sections.forEach((group, index) => {
+		entries.push({ type: 'header', key: `header:${group.id}`, group, index });
+		group.ports.forEach((port, portIndex) => {
+			entries.push({
+				type: 'item',
+				key: `port:${group.id}:${port.id}`,
+				port,
+				grouped: groupPosition(portIndex, group.ports.length)
+			});
+		});
+	});
+	return entries;
+}
 
 function PortMappingRow({
 	port,
@@ -37,15 +86,14 @@ function PortMappingRow({
 	environmentName?: string;
 	environmentColor?: string;
 }) {
-	const mono = { fontFamily: monoFamily, fontSize: 15, fontWeight: '600' as const };
 	return (
-		<View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 }}>
+		<View style={mappingRowStyle}>
 			<RowIcon
 				systemImage={port.isPublished ? 'arrow.left.arrow.right' : 'lock.fill'}
 				tint={port.isPublished ? systemColors.green : systemColors.gray}
 			/>
-			<View style={{ flex: 1, gap: 3 }}>
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+			<View style={mappingBodyStyle}>
+				<View style={mappingLineStyle}>
 					{port.hostPort !== undefined ? (
 						<>
 							<Text style={[mono, { color: colors.label }]}>{hostString(port)}</Text>
@@ -93,7 +141,7 @@ function PortListRow({ port, onPress }: { port: PortItem; onPress: () => void })
 			onPress={onPress}
 			accessibilityRole="button"
 			android_ripple={{ color: colors.separator as string }}
-			style={{ paddingHorizontal: 16, paddingVertical: 10 }}
+			style={listRowStyle}
 		>
 			<PortMappingRow
 				port={port.value}
@@ -128,35 +176,35 @@ export function PortsScreen(props: PortsListProps) {
 		content = (
 			<CenteredMessage icon="point.3.connected.trianglepath.dotted" title="No Ports" message="" />
 		);
-	} else {
-		content = (
-			<>
-				<EnvironmentLoadFailuresSection
-					failures={snapshot.failedEnvironments.map((failure) => ({
-						...failure,
-						id: failure.environment.id
-					}))}
-					retry={() => void model.load()}
-				/>
-				{sections.map((group, index) => (
-					<View key={group.id}>
-						<View
-							style={{
-								flexDirection: 'row',
-								alignItems: 'center',
-								gap: 8,
-								paddingHorizontal: 32,
-								paddingTop: 20,
-								paddingBottom: 6
-							}}
-						>
+	}
+
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => {
+				setRefreshing(true);
+				void model.refresh().finally(() => setRefreshing(false));
+			}}
+			colors={[systemColors.blue]}
+		/>
+	);
+
+	const list =
+		content === undefined ? (
+			<GroupedFlashList
+				data={portEntries(sections)}
+				renderEntry={(entry) =>
+					entry.type === 'header' ? (
+						<View style={groupHeaderStyle}>
 							<Icon name="shippingbox.fill" size={12} color={systemColors.blue} />
-							<Text style={[m3Type.labelMedium, { color: colors.label }]}>{group.container}</Text>
+							<Text style={[m3Type.labelMedium, { color: colors.label }]}>
+								{entry.group.container}
+							</Text>
 							<Text
 								style={[m3Type.labelSmall, { color: colors.tertiaryLabel }]}
-							>{`(${group.ports.length})`}</Text>
-							<View style={{ flex: 1 }} />
-							{index === 0 ? (
+							>{`(${entry.group.ports.length})`}</Text>
+							<View style={spacerStyle} />
+							{entry.index === 0 ? (
 								<ResourceCountLabel
 									loadedCount={ports.length}
 									totalCount={snapshot.totalItems}
@@ -164,22 +212,45 @@ export function PortsScreen(props: PortsListProps) {
 								/>
 							) : null}
 						</View>
-						<MaterialListGroup>
-							{group.ports.map((port) => (
-								<PortListRow key={port.id} port={port} onPress={() => model.openDetail(port)} />
-							))}
-						</MaterialListGroup>
-					</View>
-				))}
-				<PaginatedListFooter
-					hasMore={snapshot.hasMore}
-					loadMoreError={snapshot.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</>
+					) : (
+						<PortListRow port={entry.port} onPress={() => model.openDetail(entry.port)} />
+					)
+				}
+				header={
+					<EnvironmentLoadFailuresSection
+						failures={snapshot.failedEnvironments.map((failure) => ({
+							...failure,
+							id: failure.environment.id
+						}))}
+						retry={() => void model.load()}
+					/>
+				}
+				footer={
+					<PaginatedListFooter
+						hasMore={snapshot.hasMore}
+						loadMoreError={snapshot.loadMoreError}
+						onRetry={() => void model.loadMore()}
+						onLoadMore={() => void model.loadMore()}
+					/>
+				}
+				onEndReached={
+					snapshot.hasMore && snapshot.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				refreshControl={refreshControl}
+			/>
+		) : (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				style={{ backgroundColor: colors.systemGroupedBackground }}
+				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+				keyboardShouldPersistTaps="handled"
+				refreshControl={refreshControl}
+			>
+				{content}
+			</ScrollView>
 		);
-	}
 
 	return (
 		<>
@@ -205,24 +276,7 @@ export function PortsScreen(props: PortsListProps) {
 					}
 				]}
 			/>
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => {
-							setRefreshing(true);
-							void model.refresh().finally(() => setRefreshing(false));
-						}}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{list}
 		</>
 	);
 }

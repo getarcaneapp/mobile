@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { CenteredMessage } from '@/features/containers/android-material';
 import { useAccentColor } from '@/theme/accent';
 import { colors, systemColors } from '@/theme/colors';
@@ -17,11 +18,10 @@ export function JobScheduleEnvironmentsScreen() {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			() => model.refresh(),
+			() => setRefreshing(false)
+		);
 	};
 
 	return (

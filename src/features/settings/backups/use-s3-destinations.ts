@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { CreateS3Destination } from '@/sdk/models/backup/CreateS3Destination';
 import type { S3Destination } from '@/sdk/models/backup/S3Destination';
 import { useClientManager } from '@/stores/client-manager';
@@ -16,6 +18,32 @@ import {
 	useSheetDismissListener
 } from './backup-scope';
 import { useDismiss } from './use-backup-forms';
+
+type S3DestinationsOutcome =
+	| { kind: 'stale' }
+	| { kind: 'page'; entries: S3Destination[]; hasMore: boolean }
+	| { kind: 'error'; message: string };
+
+async function fetchS3DestinationsPage(
+	client: ArcaneClient,
+	scope: { check(): void },
+	isCurrent: () => boolean,
+	more: boolean,
+	current: S3Destination[]
+): Promise<S3DestinationsOutcome> {
+	try {
+		const page = await client.s3Destinations.list({
+			query: { start: more ? current.length : 0, limit: 50 }
+		});
+		scope.check();
+		if (!isCurrent()) return { kind: 'stale' };
+		const next = more ? [...current, ...page.data] : page.data;
+		return { kind: 'page', entries: next, hasMore: next.length < page.pagination.totalItems };
+	} catch (error) {
+		if (isCancellation(error) || !isCurrent()) return { kind: 'stale' };
+		return { kind: 'error', message: friendlyErrorMessage(error) };
+	}
+}
 
 export function useS3Destinations() {
 	const client = useClientManager((s) => s.client);
@@ -34,12 +62,14 @@ export function useS3Destinations() {
 
 	const listIdentity = `${clientGeneration}`;
 	const identityRef = useRef(listIdentity);
-	identityRef.current = listIdentity;
 	const loadedIdentity = useRef('');
 	const loadingIdentity = useRef<string | undefined>(undefined);
 	const requestID = useRef(0);
 	const destinationsRef = useRef(destinations);
-	destinationsRef.current = destinations;
+	useLayoutEffect(() => {
+		identityRef.current = listIdentity;
+		destinationsRef.current = destinations;
+	});
 
 	const load = useCallback(
 		async (more = false) => {
@@ -59,27 +89,31 @@ export function useS3Destinations() {
 			setBusy(true);
 			setErrorMessage(undefined);
 			setLoadMoreError(undefined);
-			try {
-				const page = await client.s3Destinations.list({
-					query: { start: more ? current.length : 0, limit: 50 }
-				});
-				scope.check();
-				if (key !== identityRef.current || requestID.current !== request) return;
-				const next = more ? [...current, ...page.data] : page.data;
-				destinationsRef.current = next;
-				setDestinations(next);
-				setHasMore(next.length < page.pagination.totalItems);
-			} catch (error) {
-				if (isCancellation(error) || key !== identityRef.current || requestID.current !== request)
-					return;
-				if (more) setLoadMoreError(friendlyErrorMessage(error));
-				else setErrorMessage(friendlyErrorMessage(error));
-			} finally {
-				if (requestID.current === request) {
-					setBusy(false);
-					loadingIdentity.current = undefined;
+			const isCurrent = () => key === identityRef.current && requestID.current === request;
+			await withCleanup(
+				async () => {
+					const outcome = await fetchS3DestinationsPage(client, scope, isCurrent, more, current);
+					switch (outcome.kind) {
+						case 'page':
+							destinationsRef.current = outcome.entries;
+							setDestinations(outcome.entries);
+							setHasMore(outcome.hasMore);
+							break;
+						case 'error':
+							if (more) setLoadMoreError(outcome.message);
+							else setErrorMessage(outcome.message);
+							break;
+						case 'stale':
+							break;
+					}
+				},
+				() => {
+					if (requestID.current === request) {
+						setBusy(false);
+						loadingIdentity.current = undefined;
+					}
 				}
-			}
+			);
 		},
 		[alive, client]
 	);
@@ -175,35 +209,45 @@ export function useS3DestinationEditor(destination: S3Destination | undefined) {
 		const scope = backupRequestScope(() => alive.current);
 		if (!client) return;
 		setBusy(true);
-		try {
-			if (destination)
-				await client.s3Destinations.test({ id: destination.id, configuration: request });
-			else await client.s3Destinations.testConfiguration({ configuration: request });
-			scope.check();
-			showToast(Toasts.success('S3 connection test succeeded'));
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					if (destination)
+						await client.s3Destinations.test({ id: destination.id, configuration: request });
+					else await client.s3Destinations.testConfiguration({ configuration: request });
+					scope.check();
+					showToast(Toasts.success('S3 connection test succeeded'));
+				} catch (error) {
+					if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (alive.current) setBusy(false);
+			}
+		);
 	};
 
 	const save = async () => {
 		const scope = backupRequestScope(() => alive.current);
 		if (!client || !canSave) return;
 		setBusy(true);
-		try {
-			if (destination) await client.s3Destinations.update({ id: destination.id, request });
-			else await client.s3Destinations.create({ request });
-			setSecret('');
-			scope.check();
-			showToast(Toasts.success('S3 destination saved'));
-			dismiss();
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					if (destination) await client.s3Destinations.update({ id: destination.id, request });
+					else await client.s3Destinations.create({ request });
+					setSecret('');
+					scope.check();
+					showToast(Toasts.success('S3 destination saved'));
+					dismiss();
+				} catch (error) {
+					if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (alive.current) setBusy(false);
+			}
+		);
 	};
 
 	return {

@@ -13,6 +13,7 @@ import { formattedISO8601 } from '@/core/date-formatting';
 import type { FileEntry } from '@/sdk/models/volume/Browse';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { m3 } from '@/ui/components/material-colors';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type } from '@/ui/components/type-scale';
@@ -109,6 +110,18 @@ function BreadcrumbBar({ model }: { model: VolumeBrowserModel }) {
 	);
 }
 
+const browserRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 12,
+	paddingHorizontal: 16,
+	paddingVertical: 10
+};
+const browserBodyStyle = { flex: 1, gap: 4 };
+const sectionSpacerStyle = { height: 12 };
+const scrollStyle = { flex: 1 };
+const scrollContentStyle = { flexGrow: 1, paddingBottom: 24 };
+
 function BrowserRow({ entry, onPress }: { entry: FileEntry; onPress: () => void }) {
 	const meta = [
 		entry.isDirectory ? 'Folder' : byteString(entry.size),
@@ -120,20 +133,14 @@ function BrowserRow({ entry, onPress }: { entry: FileEntry; onPress: () => void 
 			onPress={onPress}
 			accessibilityRole="button"
 			android_ripple={{ color: colors.separator as string }}
-			style={{
-				flexDirection: 'row',
-				alignItems: 'center',
-				gap: 12,
-				paddingHorizontal: 16,
-				paddingVertical: 10
-			}}
+			style={browserRowStyle}
 		>
 			<RowIcon
 				systemImage={entry.isDirectory ? 'folder.fill' : 'doc.fill'}
 				tint={entry.isDirectory ? undefined : (colors.secondaryLabel as string)}
 				size={30}
 			/>
-			<View style={{ flex: 1, gap: 4 }}>
+			<View style={browserBodyStyle}>
 				<Text numberOfLines={1} style={[m3Type.titleSmall, { color: colors.label }]}>
 					{entry.name}
 				</Text>
@@ -188,29 +195,17 @@ export function VolumeBrowserScreen() {
 					message="Check the spelling or try a new search."
 				/>
 			);
-	} else {
-		content = (
-			<>
-				{model.errorMessage !== undefined ? (
-					<M3Section>
-						<TextRow text={model.errorMessage} color={systemColors.orange} />
-					</M3Section>
-				) : null}
-				<M3Section>
-					{model.displayedEntries.map((entry) => (
-						<BrowserRow
-							key={entry.path}
-							entry={entry}
-							onPress={() =>
-								entry.isDirectory ? model.openDirectory(entry) : model.openFile(entry)
-							}
-						/>
-					))}
-				</M3Section>
-			</>
-		);
 	}
 
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => {
+				setRefreshing(true);
+				void model.loadEntries().finally(() => setRefreshing(false));
+			}}
+		/>
+	);
 	return (
 		<>
 			<Stack.Screen
@@ -236,22 +231,44 @@ export function VolumeBrowserScreen() {
 			/>
 			<View style={{ flex: 1, backgroundColor: colors.systemGroupedBackground }}>
 				<BreadcrumbBar model={model} />
-				<ScrollView
-					style={{ flex: 1 }}
-					contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-					keyboardShouldPersistTaps="handled"
-					refreshControl={
-						<RefreshControl
-							refreshing={refreshing}
-							onRefresh={() => {
-								setRefreshing(true);
-								void model.loadEntries().finally(() => setRefreshing(false));
-							}}
-						/>
-					}
-				>
-					{content}
-				</ScrollView>
+				{content === undefined ? (
+					<GroupedFlashList
+						data={model.displayedEntries.map((entry, index) => ({
+							key: entry.path,
+							type: 'item',
+							entry,
+							grouped: groupPosition(index, model.displayedEntries.length)
+						}))}
+						renderEntry={({ entry }) => (
+							<BrowserRow
+								entry={entry}
+								onPress={() =>
+									entry.isDirectory ? model.openDirectory(entry) : model.openFile(entry)
+								}
+							/>
+						)}
+						header={
+							<>
+								{model.errorMessage !== undefined ? (
+									<M3Section>
+										<TextRow text={model.errorMessage} color={systemColors.orange} />
+									</M3Section>
+								) : null}
+								<View style={sectionSpacerStyle} />
+							</>
+						}
+						refreshControl={refreshControl}
+					/>
+				) : (
+					<ScrollView
+						style={scrollStyle}
+						contentContainerStyle={scrollContentStyle}
+						keyboardShouldPersistTaps="handled"
+						refreshControl={refreshControl}
+					>
+						{content}
+					</ScrollView>
+				)}
 			</View>
 			<TextPromptDialog
 				visible={showPathDialog}

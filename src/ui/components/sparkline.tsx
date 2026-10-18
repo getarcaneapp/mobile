@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
+import { nextInstanceKey } from '@/core/with-cleanup';
+
 export type SparklineSample = { timestamp: Date | number; value: number };
 
 export type SparklineProps = {
@@ -13,11 +15,9 @@ export type SparklineProps = {
 
 const time = (t: Date | number) => (typeof t === 'number' ? t : t.getTime()) / 1000;
 
-let gradientID = 0;
-
 export function Sparkline({ samples, tint, range = [0, 100], height = 36 }: SparklineProps) {
 	const [width, setWidth] = useState(0);
-	const [id] = useState(() => `sparkline-${gradientID++}`);
+	const [id] = useState(() => nextInstanceKey('sparkline'));
 
 	let content = null;
 	if (width > 0) {

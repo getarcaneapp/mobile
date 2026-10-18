@@ -43,6 +43,7 @@ import { DestructiveLabel, ResourceCountSectionHeader } from '@/ui/components/la
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { MonospacedValue } from '@/ui/components/resource-detail';
 import { RowIcon } from '@/ui/components/row-icon';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { ResourceActionsToolbar } from '@/ui/components/toolbar';
 import { DisclosureChevron } from '@/ui/settings-row';
 
@@ -81,9 +82,9 @@ export function SwarmNodeRow({ node }: { node: SwarmNode }) {
 			</VStack>
 			<Spacer minLength={8} />
 			<VStack alignment="trailing" spacing={4}>
-				<SwarmStateBadge state={node.status} />
+				<SwarmStateBadge key={`${node.id}/status`} state={node.status} />
 				{node.availability.toLowerCase() !== 'active' ? (
-					<SwarmStateBadge state={node.availability} />
+					<SwarmStateBadge key={`${node.id}/availability`} state={node.availability} />
 				) : null}
 			</VStack>
 		</HStack>
@@ -210,9 +211,9 @@ export function SwarmNodesScreen() {
 								/>
 							}
 						>
-							{items.map((item) => (
-								<NodeLink key={item.id} model={model} node={item.value} />
-							))}
+							<List.ForEach data={items} keyExtractor={stableItemKey} estimatedItemSize={52}>
+								{({ item }) => <NodeLink model={model} node={item.value} />}
+							</List.ForEach>
 							<PaginatedListFooter
 								hasMore={snapshot.hasMore}
 								loadMoreError={snapshot.loadMoreError}

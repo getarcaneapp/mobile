@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
-import { useRef, useState, type ComponentRef } from 'react';
+import { memo, useRef, useState, type ComponentRef } from 'react';
 import {
 	Dimensions,
 	FlatList,
@@ -11,6 +11,7 @@ import {
 	Text,
 	TextInput,
 	View,
+	type ListRenderItemInfo,
 	type NativeScrollEvent,
 	type NativeSyntheticEvent
 } from 'react-native';
@@ -25,6 +26,8 @@ import { Icon } from '@/ui/Icon';
 import { AndroidToolbar } from './android-toolbar';
 import { lightHaptic } from './container-actions';
 import { StandaloneErrorBanner } from './standalone-error-banner';
+import type { TerminalOutputLine } from '@/core/terminal-output-processor';
+
 import { terminalShells, useContainerTerminal } from './use-container-terminal';
 
 const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
@@ -38,6 +41,20 @@ const shortcuts: { label: string; sequence: string }[] = [
 	{ label: '↓', sequence: '\u001b[B' }
 ];
 
+const TerminalLine = memo(function TerminalLine({ text }: { text: string }) {
+	return (
+		<Text selectable style={styles.line}>
+			{text === '' ? ' ' : text}
+		</Text>
+	);
+});
+
+const renderTerminalLine = ({ item }: ListRenderItemInfo<TerminalOutputLine>) => (
+	<TerminalLine text={item.text} />
+);
+
+const terminalLineKey = (line: TerminalOutputLine) => String(line.id);
+
 export function ContainerTerminalScreen() {
 	const router = useRouter();
 	const accent = useAccentColor();
@@ -49,7 +66,7 @@ export function ContainerTerminalScreen() {
 	} = useLocalSearchParams<{ id?: string; envID?: string; title?: string }>();
 	const terminal = useContainerTerminal(envID, id);
 	const [input, setInput] = useState('');
-	const list = useRef<FlatList>(null);
+	const list = useRef<FlatList<TerminalOutputLine>>(null);
 	const userIsScrolling = useRef(false);
 
 	const keyboardHeight = useKeyboardState((state) => (state.isVisible ? state.height : 0));
@@ -180,12 +197,11 @@ export function ContainerTerminalScreen() {
 				<FlatList
 					ref={list}
 					data={terminal.outputLines}
-					keyExtractor={(line) => String(line.id)}
-					renderItem={({ item }) => (
-						<Text selectable style={styles.line}>
-							{item.text === '' ? ' ' : item.text}
-						</Text>
-					)}
+					keyExtractor={terminalLineKey}
+					renderItem={renderTerminalLine}
+					initialNumToRender={40}
+					maxToRenderPerBatch={60}
+					windowSize={11}
 					ListEmptyComponent={
 						<Text
 							style={[styles.line, { color: colors.secondaryLabel }]}

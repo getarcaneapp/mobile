@@ -1,11 +1,15 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { boundedAPIResponse, RemoteDataLimits } from '@/core/networking/remote-data-limits';
+import type { CachedClient } from '@/core/networking/cached-client';
 import { cachedClient } from '@/core/networking/use-cached-client';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import {
@@ -84,6 +88,70 @@ function filterProjectContainers(all: ContainerSummary[], ids: Set<string>): Con
 		});
 }
 
+async function runServiceAction(
+	client: ArcaneClient,
+	environmentID: EnvironmentID,
+	projectID: string,
+	action: ServiceAction,
+	row: RuntimeRow
+): Promise<boolean> {
+	const id = row.container?.id;
+	switch (action) {
+		case 'start':
+			if (!id) return false;
+			await client.containers.start({ envID: environmentID, id });
+			break;
+		case 'stop':
+			if (!id) return false;
+			await client.containers.stop({ envID: environmentID, id });
+			break;
+		case 'restart':
+			await client.projects.restart({
+				envID: environmentID,
+				projectID,
+				services: [row.service.name]
+			});
+			break;
+		case 'remove':
+			if (!id) return false;
+			await client.containers.delete({ envID: environmentID, id, force: true });
+			break;
+	}
+	return true;
+}
+
+async function loadProjectServices(
+	client: ArcaneClient,
+	cached: CachedClient,
+	environmentID: EnvironmentID,
+	projectID: string,
+	setters: {
+		setRuntimeServices: (services: RuntimeService[]) => void;
+		setProjectContainers: (containers: ContainerSummary[]) => void;
+	}
+) {
+	try {
+		const runtime = await client.projects.runtime({ envID: environmentID, projectID });
+		const services = runtime.runtimeServices ?? [];
+		setters.setRuntimeServices(services);
+		const ids = new Set(
+			services.map((s) => s.containerId).filter((id): id is string => id !== undefined && id !== '')
+		);
+		const all = await cached.getAllPages<ContainerSummary>(
+			client.rest.environmentPath(environmentID, 'containers'),
+			environmentID,
+			async (start, limit) => {
+				const response = await client.containers.list({
+					envID: environmentID,
+					query: { start, limit }
+				});
+				return { items: response.data, pagination: response.pagination };
+			}
+		);
+		setters.setProjectContainers(filterProjectContainers(all, ids));
+	} catch {}
+}
+
 export function useProjectDetail(
 	environmentID: EnvironmentID,
 	projectID: string,
@@ -119,26 +187,31 @@ export function useProjectDetail(
 	const displayName = projectDisplayName(currentProject);
 
 	const latest = useRef({ projectContainers, fileBrowserFiles, refreshedProject });
-	latest.current = { projectContainers, fileBrowserFiles, refreshedProject };
+	useLayoutEffect(() => {
+		latest.current = { projectContainers, fileBrowserFiles, refreshedProject };
+	});
 
 	const loadProject = useCallback(async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		if (latest.current.refreshedProject === undefined) setIsLoading(true);
-		try {
-			const path = client.rest.environmentPath(environmentID, `projects/${projectID}`);
-			const result = await boundedAPIResponse(client, path, {
-				maximumBytes: RemoteDataLimits.maximumInspectBytes,
-				decode: ProjectDetails.decode
-			});
-			projectCache.set(environmentID, result);
-			setRefreshedProject(result);
-			setErrorMessage(undefined);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const path = client.rest.environmentPath(environmentID, `projects/${projectID}`);
+					const result = await boundedAPIResponse(client, path, {
+						maximumBytes: RemoteDataLimits.maximumInspectBytes,
+						decode: ProjectDetails.decode
+					});
+					projectCache.set(environmentID, result);
+					setRefreshedProject(result);
+					setErrorMessage(undefined);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	}, [environmentID, projectID]);
 
 	const loadProjectFiles = useCallback(
@@ -147,15 +220,19 @@ export function useProjectDetail(
 			if (!client) return;
 			if (latest.current.fileBrowserFiles === undefined) setFileBrowserLoading(true);
 			setFileBrowserErrorMessage(undefined);
-			try {
-				const workspace = await client.projects.workspace({ envID: environmentID, projectID });
-				setFileBrowserFiles(workspace.files);
-			} catch (error) {
-				if (refresh || latest.current.fileBrowserFiles === undefined)
-					setFileBrowserErrorMessage(friendlyErrorMessage(error));
-			} finally {
-				setFileBrowserLoading(false);
-			}
+			await withCleanup(
+				async () => {
+					try {
+						const workspace = await client.projects.workspace({ envID: environmentID, projectID });
+						setFileBrowserFiles(workspace.files);
+					} catch (error) {
+						if (refresh) setFileBrowserErrorMessage(friendlyErrorMessage(error));
+						else if (latest.current.fileBrowserFiles === undefined)
+							setFileBrowserErrorMessage(friendlyErrorMessage(error));
+					}
+				},
+				() => setFileBrowserLoading(false)
+			);
 		},
 		[environmentID, projectID]
 	);
@@ -165,31 +242,14 @@ export function useProjectDetail(
 		const cached = cachedClient();
 		if (!client || !cached) return;
 		if (latest.current.projectContainers.length === 0) setServicesLoading(true);
-		try {
-			const runtime = await client.projects.runtime({ envID: environmentID, projectID });
-			const services = runtime.runtimeServices ?? [];
-			setRuntimeServices(services);
-			const ids = new Set(
-				services
-					.map((s) => s.containerId)
-					.filter((id): id is string => id !== undefined && id !== '')
-			);
-			const all = await cached.getAllPages<ContainerSummary>(
-				client.rest.environmentPath(environmentID, 'containers'),
-				environmentID,
-				async (start, limit) => {
-					const response = await client.containers.list({
-						envID: environmentID,
-						query: { start, limit }
-					});
-					return { items: response.data, pagination: response.pagination };
-				}
-			);
-			setProjectContainers(filterProjectContainers(all, ids));
-		} catch {
-		} finally {
-			setServicesLoading(false);
-		}
+		await withCleanup(
+			() =>
+				loadProjectServices(client, cached, environmentID, projectID, {
+					setRuntimeServices,
+					setProjectContainers
+				}),
+			() => setServicesLoading(false)
+		);
 	}, [environmentID, projectID]);
 
 	const reloadAll = useCallback(async () => {
@@ -286,24 +346,29 @@ export function useProjectDetail(
 		setRunningActionID(actionID);
 		setActionStatus(`${label}…`);
 		setErrorMessage(undefined);
-		try {
-			await client.rest.post<unknown>(
-				client.rest.environmentPath(environmentID, `projects/${projectID}/${suffix}`)
-			);
-			setActionStatus('Done.');
-			invalidate();
-			markChanged('projects');
-			await loadProject();
-			await loadServices();
-			showToast(Toasts.success('Action complete'));
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-			setActionStatus(undefined);
-			void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
-		} finally {
-			setIsActioning(false);
-			setRunningActionID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.rest.post<unknown>(
+						client.rest.environmentPath(environmentID, `projects/${projectID}/${suffix}`)
+					);
+					setActionStatus('Done.');
+					invalidate();
+					markChanged('projects');
+					await loadProject();
+					await loadServices();
+					showToast(Toasts.success('Action complete'));
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+					setActionStatus(undefined);
+					void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+				}
+			},
+			() => {
+				setIsActioning(false);
+				setRunningActionID(undefined);
+			}
+		);
 	};
 
 	const runAndDismiss = async (status: string, run: () => Promise<unknown>, success: string) => {
@@ -311,18 +376,21 @@ export function useProjectDetail(
 		setIsActioning(true);
 		setActionStatus(status);
 		setErrorMessage(undefined);
-		try {
-			await run();
-			invalidate();
-			markChanged('projects');
-			showToast(Toasts.success(success));
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-			setActionStatus(undefined);
-		} finally {
-			setIsActioning(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await run();
+					invalidate();
+					markChanged('projects');
+					showToast(Toasts.success(success));
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+					setActionStatus(undefined);
+				}
+			},
+			() => setIsActioning(false)
+		);
 	};
 
 	const deleteProject = (removeFiles: boolean) =>
@@ -369,28 +437,7 @@ export function useProjectDetail(
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		try {
-			const id = row.container?.id;
-			switch (action) {
-				case 'start':
-					if (!id) return;
-					await client.containers.start({ envID: environmentID, id });
-					break;
-				case 'stop':
-					if (!id) return;
-					await client.containers.stop({ envID: environmentID, id });
-					break;
-				case 'restart':
-					await client.projects.restart({
-						envID: environmentID,
-						projectID,
-						services: [row.service.name]
-					});
-					break;
-				case 'remove':
-					if (!id) return;
-					await client.containers.delete({ envID: environmentID, id, force: true });
-					break;
-			}
+			if (!(await runServiceAction(client, environmentID, projectID, action, row))) return;
 			invalidate();
 			markChanged('containers');
 			await loadServices();
@@ -400,12 +447,15 @@ export function useProjectDetail(
 		}
 	};
 
-	const servicePermissions = {
-		stop: hasPermission(Permission.Containers.stop, environmentID),
-		start: hasPermission(Permission.Containers.start, environmentID),
-		restart: hasPermission(Permission.Projects.restart, environmentID),
-		remove: hasPermission(Permission.Containers.delete, environmentID)
-	};
+	const servicePermissions = useClientManager(
+		useShallow(() => ({
+			stop: hasPermission(Permission.Containers.stop, environmentID),
+			start: hasPermission(Permission.Containers.start, environmentID),
+			restart: hasPermission(Permission.Projects.restart, environmentID),
+			remove: hasPermission(Permission.Containers.delete, environmentID)
+		}))
+	);
+	const canUpdateProject = useClientManager(() => hasPermission('projects:update', environmentID));
 
 	const openDeployOptions = () =>
 		nav.openDeployOptions(environmentID, {
@@ -498,7 +548,7 @@ export function useProjectDetail(
 		tint: systemColors.gray,
 		action: () => setWorkspaceSection('logs')
 	});
-	if (supportsPost26 && hasPermission('projects:update', environmentID)) {
+	if (supportsPost26 && canUpdateProject) {
 		actionOverflow.push({
 			id: 'tags',
 			title: 'Edit Tags',

@@ -1,4 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
+import { localizedStandardCompare } from '@/core/list-sort-order';
 import * as Haptics from 'expo-haptics';
 import { create } from 'zustand';
 
@@ -40,8 +41,7 @@ export function capitalized(value: string): string {
 	);
 }
 
-const standardCompare = (a: string, b: string) =>
-	a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+const standardCompare = localizedStandardCompare;
 
 const containsInsensitive = (haystack: string, needle: string) =>
 	haystack.toLocaleLowerCase().includes(needle.toLocaleLowerCase());

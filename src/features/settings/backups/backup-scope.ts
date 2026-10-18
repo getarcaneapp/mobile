@@ -1,7 +1,7 @@
 import { useNavigation } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermissionCheck } from '@/core/auth/permissions';
 import { CancellationError } from '@/sdk/errors/ArcaneError';
 import { User } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
@@ -52,12 +52,11 @@ export function useBackupSessionScope() {
 }
 
 export function useGlobalPermissions() {
-	useClientManager((s) => s.accessGeneration);
-	useClientManager((s) => s.activeEnvironmentID);
+	const can = usePermissionCheck();
 	const user = useClientManager((s) => s.currentUser);
 	return {
-		has: (perm: string) => hasPermission(perm, null),
-		hasInLocal: (perm: string) => hasPermission(perm, '0'),
+		has: (perm: string) => can(perm, null),
+		hasInLocal: (perm: string) => can(perm, '0'),
 		isAdmin: user ? User.isAdmin(user) : false,
 		isGlobalAdmin: user ? User.isGlobalAdmin(user) : false
 	};
@@ -88,7 +87,6 @@ export function useEmitOnDismiss(channel: 'history' | 's3', enabled = true) {
 }
 
 export function useSheetDismissListener(channel: 'history' | 's3', onDismiss: () => void) {
-	const latest = useRef(onDismiss);
-	latest.current = onDismiss;
-	useEffect(() => backupEvents.subscribe(channel, () => latest.current()), [channel]);
+	const handleDismiss = useEffectEvent(onDismiss);
+	useEffect(() => backupEvents.subscribe(channel, () => handleDismiss()), [channel]);
 }

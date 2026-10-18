@@ -96,7 +96,7 @@ export function BoundField({
 			return;
 		}
 		pending.current = [];
-		if (state.value !== value) state.value = value;
+		if (state.get() !== value) state.set(value);
 	}, [state, value]);
 	const emit = (next: string) => {
 		pending.current.push(next);

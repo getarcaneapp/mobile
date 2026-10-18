@@ -1,7 +1,8 @@
-import { router as globalRouter, useRouter, useSegments, type Href } from 'expo-router';
+import { router as globalRouter, useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
+import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { routePayloads } from '@/features/containers/container-routes';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { useClientManager } from '@/stores/client-manager';
@@ -39,6 +40,12 @@ export type IgnoreVulnerabilityPayload = {
 	onIgnored: (record: IgnoredVulnerability) => void;
 };
 
+export function useCanPatchImage(environmentID: EnvironmentID): boolean {
+	const permitted = usePermission('images:patch', environmentID);
+	const supportsActivities = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
+	return permitted && supportsActivities;
+}
+
 export function canPatchImage(environmentID: EnvironmentID): boolean {
 	return (
 		hasPermission('images:patch', environmentID) && useClientManager.getState().supportsActivities()
@@ -56,9 +63,7 @@ export function openImageVulnerabilities(
 
 export function useSecurityNavigation() {
 	const router = useRouter();
-	const segments = useSegments() as string[];
-	const group =
-		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(images)';
+	const group = useTabStackGroup('(images)');
 	return useMemo(() => {
 		const href = (path: string, params: Params = {}) => groupHref(group, path, params);
 		return {

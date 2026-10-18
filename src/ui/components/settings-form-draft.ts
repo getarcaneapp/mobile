@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { createStore, useStore, type StoreApi } from 'zustand';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -204,15 +204,22 @@ export function registeredSettingsDraft(
 	return token ? drafts.get(token) : undefined;
 }
 
+function makeSettingsDraftEntry(environmentID: EnvironmentID, environmentName: string) {
+	return {
+		environmentID,
+		draft: createEnvironmentSettingsDraft(environmentID, environmentName),
+		token: `d${Date.now().toString(36)}${nextToken++}`
+	};
+}
+
 export function useEnvironmentSettingsDraft(environmentID: EnvironmentID, environmentName: string) {
-	const { draft, token } = useMemo(
-		() => ({
-			draft: createEnvironmentSettingsDraft(environmentID, environmentName),
-			token: `d${Date.now().toString(36)}${nextToken++}`
-		}),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[environmentID]
-	);
+	const [entry, setEntry] = useState(() => makeSettingsDraftEntry(environmentID, environmentName));
+	let current = entry;
+	if (entry.environmentID !== environmentID) {
+		current = makeSettingsDraftEntry(environmentID, environmentName);
+		setEntry(current);
+	}
+	const { draft, token } = current;
 	useEffect(() => {
 		drafts.set(token, draft);
 		return () => {

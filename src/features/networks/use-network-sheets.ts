@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { localizedStandardCompare } from '@/core/list-sort-order';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -21,6 +22,36 @@ export const networkDrivers = [
 	{ label: 'Macvlan', value: 'macvlan' },
 	{ label: 'None', value: 'none' }
 ];
+
+function createNetworkBody(fields: {
+	name: string;
+	driver: string;
+	isInternal: boolean;
+	subnet: string;
+	gateway: string;
+	ipRange: string;
+}) {
+	const body: Record<string, unknown> = {
+		name: fields.name,
+		driver: fields.driver,
+		internal: fields.isInternal
+	};
+	const trimmedSubnet = fields.subnet.trim();
+	const trimmedGateway = fields.gateway.trim();
+	const trimmedRange = fields.ipRange.trim();
+	if (trimmedSubnet !== '' || trimmedGateway !== '' || trimmedRange !== '') {
+		const config: Record<string, string> = {};
+		if (trimmedSubnet !== '') config.subnet = trimmedSubnet;
+		if (trimmedGateway !== '') config.gateway = trimmedGateway;
+		if (trimmedRange !== '') config.ipRange = trimmedRange;
+		body.ipam = { config: [config] };
+	}
+	return body;
+}
+
+async function notifyConnected(payload: ConnectSheetPayload | undefined) {
+	await payload?.onConnected();
+}
 
 function useDismiss() {
 	const router = useRouter();
@@ -45,29 +76,22 @@ export function useCreateNetwork(environmentID: EnvironmentID) {
 		if (!client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const body: Record<string, unknown> = { name, driver, internal: isInternal };
-			const trimmedSubnet = subnet.trim();
-			const trimmedGateway = gateway.trim();
-			const trimmedRange = ipRange.trim();
-			if (trimmedSubnet !== '' || trimmedGateway !== '' || trimmedRange !== '') {
-				const config: Record<string, string> = {};
-				if (trimmedSubnet !== '') config.subnet = trimmedSubnet;
-				if (trimmedGateway !== '') config.gateway = trimmedGateway;
-				if (trimmedRange !== '') config.ipRange = trimmedRange;
-				body.ipam = { config: [config] };
-			}
-			await client.rest.post<unknown>(client.rest.environmentPath(environmentID, 'networks'), {
-				body
-			});
-			networksChanged(environmentID);
-			showToast(Toasts.success('Network created'));
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const body = createNetworkBody({ name, driver, isInternal, subnet, gateway, ipRange });
+					await client.rest.post<unknown>(client.rest.environmentPath(environmentID, 'networks'), {
+						body
+					});
+					networksChanged(environmentID);
+					showToast(Toasts.success('Network created'));
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	return {
@@ -164,26 +188,28 @@ export function useConnectNetworkContainer(args: {
 			.map((alias) => alias.trim())
 			.filter((alias) => alias !== '');
 		const address = ipv4.trim();
-		try {
-			await client.rest.postVoid(
-				client.rest.environmentPath(environmentID, `networks/${networkID}/connect`),
-				{
-					body: {
-						containerId: selectedID,
-						aliases: aliasList.length === 0 ? undefined : aliasList,
-						ipv4Address: address === '' ? undefined : address
-					}
+		const body = {
+			containerId: selectedID,
+			aliases: aliasList.length === 0 ? undefined : aliasList,
+			ipv4Address: address === '' ? undefined : address
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await client.rest.postVoid(
+						client.rest.environmentPath(environmentID, `networks/${networkID}/connect`),
+						{ body }
+					);
+					showToast(Toasts.success('Container connected'));
+					networkMembershipChanged(environmentID);
+					await notifyConnected(payload);
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
 				}
-			);
-			showToast(Toasts.success('Container connected'));
-			networkMembershipChanged(environmentID);
-			await payload?.onConnected();
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSubmitting(false);
-		}
+			},
+			() => setIsSubmitting(false)
+		);
 	};
 
 	return {

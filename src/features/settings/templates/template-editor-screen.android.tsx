@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { colors, systemColors } from '@/theme/colors';
@@ -47,7 +47,9 @@ export function TemplateEditorScreen() {
 	const [openFile, setOpenFile] = useState<OpenFile>();
 
 	const latest = useRef({ openFile, model });
-	latest.current = { openFile, model };
+	useLayoutEffect(() => {
+		latest.current = { openFile, model };
+	});
 	useEffect(() => {
 		const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
 			const { openFile: file, model: current } = latest.current;

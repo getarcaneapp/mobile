@@ -1,25 +1,35 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useStoredString } from '@/core/storage';
 import type { ContainerResourceSort } from '@/sdk/models/container/ContainerSummary';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
+import type { SystemStats } from '@/sdk/models/system/SystemStats';
 import {
 	busiestRefreshIntervalMs,
 	useBusiestContainersStore
 } from '@/stores/busiest-containers-store';
 import { useClientManager } from '@/stores/client-manager';
-import { environmentIsOnline, SystemStatsDisplay } from '@/stores/dashboard-stream-logic';
-import { useEnvironmentColorStore } from '@/stores/environment-color-store';
-import { maxStatsStreams, useSystemStatsHistoryStore } from '@/stores/system-stats-history-store';
+import { topBusiest } from '@/stores/busiest-containers-logic';
+import {
+	environmentIsOnline,
+	SystemStatsDisplay,
+	type StatsSeries
+} from '@/stores/dashboard-stream-logic';
+import { environmentColorHex, useEnvironmentColorStore } from '@/stores/environment-color-store';
+import {
+	useMaxStatsStreams,
+	useSystemStatsHistoryStore
+} from '@/stores/system-stats-history-store';
 import { parseHex, systemColors } from '@/theme/colors';
 
 import {
 	DashboardTotalsTile,
 	displayName,
 	fallbackEnvironmentColors,
-	smoothed,
+	smoothedSeries,
 	tileValue,
 	usageHeadline,
 	type AllEnvironmentsCounts,
@@ -36,8 +46,8 @@ export function useAllEnvironmentsDashboard(
 ) {
 	const serverURL = useClientManager((s) => s.serverURL);
 	const userID = useClientManager((s) => s.currentUser?.id);
-	useEnvironmentColorStore((s) => s.colors);
-	const seriesByID = useSystemStatsHistoryStore((s) => s.seriesByEnvironmentID);
+	const environmentColors = useEnvironmentColorStore((s) => s.colors);
+	const maxStreams = useMaxStatsStreams();
 	const [storedTiles, setStoredTiles] = useStoredString(
 		DashboardTotalsTile.preferenceKey,
 		DashboardTotalsTile.encode(DashboardTotalsTile.defaults)
@@ -46,9 +56,11 @@ export function useAllEnvironmentsDashboard(
 	const [busiestSort, setBusiestSort] = useState<ContainerResourceSort>('cpuUsage');
 	const [showsTileEditor, setShowsTileEditor] = useState(false);
 
-	const busiest = useBusiestContainersStore();
 	const environmentIDs = environments.map((e) => e.id);
 	const idsKey = environmentIDs.join(',');
+	const showsBusiest = useBusiestContainersStore((s) =>
+		environmentIDs.some((id) => !s.unsupported.has(id))
+	);
 
 	const [isActive, setIsActive] = useState(AppState.currentState === 'active');
 	useEffect(() => {
@@ -77,40 +89,19 @@ export function useAllEnvironmentsDashboard(
 	);
 
 	const colorFor = (environment: Environment, index: number): string => {
-		const hex = useEnvironmentColorStore.getState().hex(serverURL, environment.id);
+		const hex = environmentColorHex(environmentColors, serverURL, environment.id);
 		return (
 			(hex && parseHex(hex)) ||
 			systemColors[fallbackEnvironmentColors[index % fallbackEnvironmentColors.length]!]
 		);
 	};
 
-	const live = environments.flatMap((e) => {
-		const latest = seriesByID[e.id]?.latest;
-		return latest ? [latest] : [];
-	});
-
-	const tiles = DashboardTotalsTile.decode(storedTiles);
-
-	const usageLines: UsageLine[] = environments.flatMap((environment, index) => {
-		const series = seriesByID[environment.id];
-		if (!series?.latest) return [];
-		const samples = usageMetric === 'CPU' ? series.cpu : series.memory;
-		return [
-			{
-				id: environment.id,
-				name: displayName(environment),
-				color: colorFor(environment, index),
-				samples: smoothed(samples),
-				current: samples[samples.length - 1]?.value
-			}
-		];
-	});
-
 	const names = new Map(environments.map((e) => [e.id, displayName(e)]));
 
 	return {
-		tiles,
-		tileValue: (tile: DashboardTotalsTile) => tileValue(tile, counts, environments, live),
+		environments,
+		counts,
+		tiles: DashboardTotalsTile.decode(storedTiles),
 		storedTiles,
 		setStoredTiles,
 		showsTileEditor,
@@ -118,26 +109,86 @@ export function useAllEnvironmentsDashboard(
 
 		usageMetric,
 		setUsageMetric,
-		usageLines,
-		headline: usageHeadline(usageMetric, live),
-		waitingForStats: usageLines.every((line) => line.samples.length < 2),
-		showsStreamCapNote: environments.length > maxStatsStreams(),
-		maxStreams: maxStatsStreams(),
+		showsStreamCapNote: environments.length > maxStreams,
+		maxStreams,
 
-		showsBusiest: busiest.supportsAny(environmentIDs),
+		showsBusiest,
+		environmentIDs,
 		busiestSort,
 		setBusiestSort,
-		busiestEntries: busiest.top(busiestSort, busiestLimit, environmentIDs),
-		busiestIsLive: busiest.isLive,
-		busiestUpdatedAt: busiest.updatedAt,
 		environmentName: (id: string) => names.get(id),
 
 		onlineCount: environments.filter(environmentIsOnline).length,
-		colorFor,
-		hostStats: (environmentID: string) => seriesByID[environmentID]?.latest,
-		diskPercent: (environmentID: string) =>
-			SystemStatsDisplay.diskPercent(seriesByID[environmentID]?.latest)
+		colorFor
 	};
+}
+
+export type AllEnvironmentsDashboardModel = ReturnType<typeof useAllEnvironmentsDashboard>;
+
+function liveStats(
+	seriesByID: Readonly<Record<string, StatsSeries>>,
+	environments: readonly Environment[]
+): SystemStats[] {
+	return environments.flatMap((e) => {
+		const latest = seriesByID[e.id]?.latest;
+		return latest ? [latest] : [];
+	});
+}
+
+export function useTileValues(model: AllEnvironmentsDashboardModel): string[] {
+	const { tiles, counts, environments } = model;
+	return useSystemStatsHistoryStore(
+		useShallow((s) => {
+			const live = liveStats(s.seriesByEnvironmentID, environments);
+			return tiles.map((tile) => tileValue(tile, counts, environments, live));
+		})
+	);
+}
+
+export function useUsageCard(model: AllEnvironmentsDashboardModel) {
+	const { environments, usageMetric, colorFor } = model;
+	const seriesList = useSystemStatsHistoryStore(
+		useShallow((s) => environments.map((e) => s.seriesByEnvironmentID[e.id]))
+	);
+	const usageLines: UsageLine[] = environments.flatMap((environment, index) => {
+		const series = seriesList[index];
+		if (!series?.latest) return [];
+		const samples = usageMetric === 'CPU' ? series.cpu : series.memory;
+		return [
+			{
+				id: environment.id,
+				name: displayName(environment),
+				color: colorFor(environment, index),
+				samples: smoothedSeries(samples),
+				current: samples[samples.length - 1]?.value
+			}
+		];
+	});
+	const live = seriesList.flatMap((series) => (series?.latest ? [series.latest] : []));
+	return {
+		usageLines,
+		headline: usageHeadline(usageMetric, live),
+		waitingForStats: usageLines.every((line) => line.samples.length < 2)
+	};
+}
+
+export function useBusiestCard(model: AllEnvironmentsDashboardModel) {
+	const { environmentIDs, busiestSort } = model;
+	const rankings = useBusiestContainersStore((s) => s.rankings);
+	const isLive = useBusiestContainersStore((s) => s.isLive);
+	const updatedAt = useBusiestContainersStore((s) => (s.isLive ? undefined : s.updatedAt));
+	return {
+		entries: topBusiest(rankings, busiestSort, busiestLimit, environmentIDs),
+		isLive,
+		updatedAt
+	};
+}
+
+export function useHostDiskPercent(environmentID: string): number | undefined {
+	return useSystemStatsHistoryStore((s) => {
+		const percent = SystemStatsDisplay.diskPercent(s.seriesByEnvironmentID[environmentID]?.latest);
+		return percent === undefined ? undefined : Math.round(percent * 100) / 100;
+	});
 }
 
 export function relativeNamed(ms: number, now = Date.now()): string {

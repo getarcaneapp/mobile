@@ -1,12 +1,16 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
+import { nextInstanceKey, withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
+import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { EnvironmentVulnerabilitySummary } from '@/sdk/models/vulnerability/Vulnerability';
 import type { VulnerabilityRiskOverview } from '@/sdk/types/VulnerabilityRiskOverview';
 import { useClientManager } from '@/stores/client-manager';
@@ -15,7 +19,11 @@ import {
 	type EnvironmentFetch,
 	type EnvironmentItem
 } from '@/stores/environment-paged-list';
-import { useEnvironmentsStore, type ListEnvironment } from '@/stores/environments-store';
+import {
+	environmentDisplayName,
+	useEnvironmentsStore,
+	type ListEnvironment
+} from '@/stores/environments-store';
 import { useAccentColor } from '@/theme/accent';
 import { systemColors } from '@/theme/colors';
 import type { ScrollableTabOption } from '@/ui/components/scrollable-tab-bar.types';
@@ -44,7 +52,60 @@ export type AllVulnerabilitiesProps = {
 	allEnvironments?: boolean;
 };
 
-let listCounter = 0;
+const enabledEnvironmentsOf = (environments: Environment[]) =>
+	environments
+		.filter((e) => e.enabled)
+		.sort((a, b) =>
+			environmentDisplayName(a).localeCompare(environmentDisplayName(b), undefined, {
+				numeric: true
+			})
+		);
+
+async function exportVulnerabilities({
+	client,
+	targetEnvironmentID,
+	listKey,
+	search,
+	exportURI,
+	setExportURI,
+	showError
+}: {
+	client: ArcaneClient;
+	targetEnvironmentID: EnvironmentID;
+	listKey: string;
+	search: string | undefined;
+	exportURI: string | undefined;
+	setExportURI: (uri: string) => void;
+	showError: (message: string) => void;
+}) {
+	try {
+		const current = securityFilterSnapshot(listKey);
+		const data = await client.vulnerabilities.exportAll({
+			envID: targetEnvironmentID,
+			search,
+			severity: severityQuery(current.selectedSeverities),
+			imageName: current.selectedImage,
+			fixAvailable: current.onlyFixAvailable ? true : undefined
+		});
+		const file = new File(
+			Paths.cache,
+			`vulnerabilities-${targetEnvironmentID}-${Math.floor(Date.now() / 1000)}.csv`
+		);
+		if (file.exists) file.delete();
+		file.create();
+		await file.write(data);
+		if (exportURI !== undefined) {
+			try {
+				const old = new File(exportURI);
+				if (old.exists) old.delete();
+			} catch {}
+		}
+		setExportURI(file.uri);
+		showToast(Toasts.success('Vulnerabilities exported'));
+	} catch (error) {
+		showError(friendlyErrorMessage(error));
+	}
+}
 
 export function useAllVulnerabilities({
 	environmentID,
@@ -54,10 +115,10 @@ export function useAllVulnerabilities({
 	const accent = useAccentColor();
 	const supportsActivities = useClientManager((s) => s.supportsActivities());
 	useClientManager((s) => s.accessGeneration);
-	useEnvironmentsStore((s) => s.environments);
-	const enabledEnvironments = useEnvironmentsStore.getState().enabledEnvironments();
+	const storeEnvironments = useEnvironmentsStore((s) => s.environments);
+	const enabledEnvironments = enabledEnvironmentsOf(storeEnvironments);
 
-	const [listKey] = useState(() => `security-${++listCounter}`);
+	const [listKey] = useState(() => nextInstanceKey('security'));
 	const filter = useSecurityFilter(listKey);
 	const updateFilter = useSecurityFilterStore((s) => s.update);
 	useEffect(() => () => useSecurityFilterStore.getState().remove(listKey), [listKey]);
@@ -223,18 +284,23 @@ export function useAllVulnerabilities({
 		setCleared(true);
 	};
 
-	useEffect(() => {
+	const startInitialLoad = useEffectEvent(() => {
 		void loadInitial();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+	});
+
+	useEffect(() => {
+		startInitialLoad();
 	}, []);
 
 	const doneRevision = filter.doneRevision;
 	const lastDone = useRef(doneRevision);
+	const reloadAfterDone = useEffectEvent(() => {
+		void reload();
+	});
 	useEffect(() => {
 		if (lastDone.current === doneRevision) return;
 		lastDone.current = doneRevision;
-		void reload();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		reloadAfterDone();
 	}, [doneRevision]);
 
 	const selectOverviewEnvironment = (id: EnvironmentID) => {
@@ -269,35 +335,19 @@ export function useAllVulnerabilities({
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsExporting(true);
-		try {
-			const current = securityFilterSnapshot(listKey);
-			const data = await client.vulnerabilities.exportAll({
-				envID: targetEnvironmentID,
-				search: live.current.focusedVulnerabilityID,
-				severity: severityQuery(current.selectedSeverities),
-				imageName: current.selectedImage,
-				fixAvailable: current.onlyFixAvailable ? true : undefined
-			});
-			const file = new File(
-				Paths.cache,
-				`vulnerabilities-${targetEnvironmentID}-${Math.floor(Date.now() / 1000)}.csv`
-			);
-			if (file.exists) file.delete();
-			file.create();
-			await file.write(data);
-			if (exportURI !== undefined) {
-				try {
-					const old = new File(exportURI);
-					if (old.exists) old.delete();
-				} catch {}
-			}
-			setExportURI(file.uri);
-			showToast(Toasts.success('Vulnerabilities exported'));
-		} catch (error) {
-			showError(friendlyErrorMessage(error));
-		} finally {
-			setIsExporting(false);
-		}
+		await withCleanup(
+			() =>
+				exportVulnerabilities({
+					client,
+					targetEnvironmentID,
+					listKey,
+					search: live.current.focusedVulnerabilityID,
+					exportURI,
+					setExportURI,
+					showError
+				}),
+			() => setIsExporting(false)
+		);
 	};
 
 	const shareExport = () => {
@@ -313,18 +363,22 @@ export function useAllVulnerabilities({
 		{ value: 'findings', title: 'Findings', systemImage: 'list.bullet', tint: systemColors.orange }
 	];
 
-	const patchEnvironments = listEnvironments.filter((environment) =>
-		hasPermission('vulnerabilities:read', environment.id)
+	const patchEnvironments = useClientManager(
+		useShallow(() =>
+			listEnvironments.filter((environment) =>
+				hasPermission('vulnerabilities:read', environment.id)
+			)
+		)
+	);
+	const canReadVulnerabilities = useClientManager(() =>
+		hasPermission('vulnerabilities:read', environmentID)
 	);
 	const exportEnvironments = listEnvironments.filter((environment) =>
 		items.some((item) => item.environmentID === environment.id)
 	);
 	const toolbar = {
 		showsPatchEnvironmentAction: allEnvironments && supportsActivities,
-		showsPatchLink:
-			!allEnvironments &&
-			hasPermission('vulnerabilities:read', environmentID) &&
-			supportsActivities,
+		showsPatchLink: !allEnvironments && canReadVulnerabilities && supportsActivities,
 		showsOverviewEnvironmentPicker: allEnvironments && selectedSection === 'overview',
 		showsFindingsActions: selectedSection === 'findings',
 		exportDisabled: isExporting || items.length === 0

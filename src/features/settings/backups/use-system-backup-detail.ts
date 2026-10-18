@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { formatFileBytes } from '@/core/networking/remote-data-limits';
 import { EnvironmentID } from '@/sdk/client/environment';
@@ -17,6 +18,12 @@ import {
 	useGlobalPermissions
 } from './backup-scope';
 import { useDismiss } from './use-backup-forms';
+
+function performErrorMessage(operation: BackupOperation, error: unknown): string {
+	return operation === 'restore'
+		? `Restore response unavailable: ${friendlyErrorMessage(error)}. Reconnect and verify server state before retrying.`
+		: friendlyErrorMessage(error);
+}
 
 export function useSystemBackupDetail(entry: BackupHistoryEntry) {
 	const client = useClientManager((s) => s.client);
@@ -58,74 +65,81 @@ export function useSystemBackupDetail(entry: BackupHistoryEntry) {
 		const scope = backupRequestScope(() => alive.current);
 		if (!client) return;
 		setBusy(true);
-		try {
-			if (isVolume) {
-				await client.volumes.uploadBackupToS3({
-					envID: EnvironmentID.localDocker,
-					backupID: entry.id,
-					s3DestinationID: destinationID
-				});
-			} else {
-				await client.systemBackups.upload({
-					id: entry.id,
-					request: { s3DestinationId: destinationID, recoveryKey }
-				});
+		await withCleanup(
+			async () => {
+				try {
+					if (isVolume) {
+						await client.volumes.uploadBackupToS3({
+							envID: EnvironmentID.localDocker,
+							backupID: entry.id,
+							s3DestinationID: destinationID
+						});
+					} else {
+						await client.systemBackups.upload({
+							id: entry.id,
+							request: { s3DestinationId: destinationID, recoveryKey }
+						});
+					}
+					scope.check();
+					showToast(Toasts.info('Backup upload accepted'));
+				} catch (error) {
+					if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (alive.current) setBusy(false);
 			}
-			scope.check();
-			showToast(Toasts.info('Backup upload accepted'));
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+		);
 	};
 
 	const perform = async (operation: BackupOperation) => {
 		const scope = backupRequestScope(() => alive.current);
 		if (!client) return;
 		setBusy(true);
-		try {
-			if (operation === 'restore') {
-				if (isVolume) {
-					await client.volumes.restoreBackup({
-						envID: EnvironmentID.localDocker,
-						name: entry.resourceName,
-						backupID: entry.id
-					});
-				} else {
-					await client.systemBackups.restore({ id: entry.id, request: { recoveryKey } });
+		const deleteRecoveryKey = recoveryKey === '' ? undefined : recoveryKey;
+		await withCleanup(
+			async () => {
+				try {
+					if (operation === 'restore') {
+						if (isVolume) {
+							await client.volumes.restoreBackup({
+								envID: EnvironmentID.localDocker,
+								name: entry.resourceName,
+								backupID: entry.id
+							});
+						} else {
+							await client.systemBackups.restore({ id: entry.id, request: { recoveryKey } });
+						}
+						scope.check();
+						showToast(
+							Toasts.info('Restore request accepted. Refresh server state before further changes.')
+						);
+					} else {
+						if (isVolume) {
+							await client.volumes.deleteBackup({
+								envID: EnvironmentID.localDocker,
+								backupID: entry.id
+							});
+						} else {
+							await client.systemBackups.delete({
+								id: entry.id,
+								recoveryKey: deleteRecoveryKey
+							});
+						}
+						scope.check();
+						showToast(Toasts.info('Backup deletion accepted'));
+					}
+					setRecoveryKey('');
+					dismiss();
+				} catch (error) {
+					if (isCancellation(error)) return;
+					setErrorMessage(performErrorMessage(operation, error));
 				}
-				scope.check();
-				showToast(
-					Toasts.info('Restore request accepted. Refresh server state before further changes.')
-				);
-			} else {
-				if (isVolume) {
-					await client.volumes.deleteBackup({
-						envID: EnvironmentID.localDocker,
-						backupID: entry.id
-					});
-				} else {
-					await client.systemBackups.delete({
-						id: entry.id,
-						recoveryKey: recoveryKey === '' ? undefined : recoveryKey
-					});
-				}
-				scope.check();
-				showToast(Toasts.info('Backup deletion accepted'));
+			},
+			() => {
+				if (alive.current) setBusy(false);
 			}
-			setRecoveryKey('');
-			dismiss();
-		} catch (error) {
-			if (isCancellation(error)) return;
-			setErrorMessage(
-				operation === 'restore'
-					? `Restore response unavailable: ${friendlyErrorMessage(error)}. Reconnect and verify server state before retrying.`
-					: friendlyErrorMessage(error)
-			);
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+		);
 	};
 
 	const openFiles = () =>

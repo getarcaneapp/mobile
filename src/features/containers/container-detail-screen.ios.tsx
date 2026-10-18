@@ -55,7 +55,7 @@ function StatusHeader({ model }: { model: ContainerDetailModel }) {
 	const reduceMotion = useReduceMotion();
 	const pulsing = useNativeState(model.isRunning && !reduceMotion);
 	useEffect(() => {
-		pulsing.value = model.isRunning && !reduceMotion;
+		pulsing.set(model.isRunning && !reduceMotion);
 	}, [pulsing, model.isRunning, reduceMotion]);
 	const indicator =
 		model.statusIndicatorColor ?? withOpacity(secondaryHex[isDark ? 'dark' : 'light'], 0.3);

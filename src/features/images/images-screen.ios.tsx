@@ -202,6 +202,7 @@ export function ImagesScreen(props: ImagesListProps) {
 							hasMore={snapshot.hasMore}
 						/>
 					)}
+					estimatedItemSize={60}
 					renderRow={(row) => <ImageLink model={model} row={row} />}
 				/>
 				<PaginatedListFooter

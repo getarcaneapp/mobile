@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { localizedStandardCompare } from '@/core/list-sort-order';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { FileEntry } from '@/sdk/models/volume/Browse';
@@ -18,6 +20,34 @@ export function pathSegments(path: string): string[] {
 	return path.split('/').filter((part) => part.trim() !== '');
 }
 
+async function fetchVolumeEntries(params: {
+	client: ArcaneClient;
+	environmentID: EnvironmentID;
+	volumeName: string;
+	requestedPath: string;
+	generation: number;
+	loadGeneration: { current: number };
+	currentPathRef: { current: string };
+	setEntries: (value: FileEntry[]) => void;
+	setErrorMessage: (value: string) => void;
+}) {
+	const { client, environmentID, volumeName, requestedPath, generation, loadGeneration } = params;
+	try {
+		const nextEntries = await client.volumes.browse({
+			envID: environmentID,
+			name: volumeName,
+			path: requestedPath
+		});
+		if (loadGeneration.current !== generation || requestedPath !== params.currentPathRef.current)
+			return;
+		params.setEntries(nextEntries);
+	} catch (error) {
+		if (loadGeneration.current !== generation || isCancellation(error)) return;
+		params.setErrorMessage(friendlyErrorMessage(error));
+		params.setEntries([]);
+	}
+}
+
 export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: string) {
 	const nav = useVolumeNavigation();
 	const [segments, setSegments] = useState<string[]>([]);
@@ -28,13 +58,15 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 	const debouncedSearchText = useDebounced(searchText, 200);
 	const loadGeneration = useRef(0);
 	const entriesRef = useRef(entries);
-	entriesRef.current = entries;
 	const capabilities = useClientManager((s) => s.serverCapabilities);
-	useClientManager((s) => s.accessGeneration);
+	const canReadVolumes = usePermission(Permission.Volumes.read, environmentID);
 
 	const currentPath = segments.length === 0 ? '/' : `/${segments.join('/')}`;
 	const currentPathRef = useRef(currentPath);
-	currentPathRef.current = currentPath;
+	useLayoutEffect(() => {
+		entriesRef.current = entries;
+		currentPathRef.current = currentPath;
+	});
 
 	const displayedEntries = useMemo(() => {
 		const query = debouncedSearchText.trim();
@@ -56,21 +88,23 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 		const requestedPath = currentPathRef.current;
 		if (entriesRef.current.length === 0) setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const nextEntries = await client.volumes.browse({
-				envID: environmentID,
-				name: volumeName,
-				path: requestedPath
-			});
-			if (loadGeneration.current !== generation || requestedPath !== currentPathRef.current) return;
-			setEntries(nextEntries);
-		} catch (error) {
-			if (loadGeneration.current !== generation || isCancellation(error)) return;
-			setErrorMessage(friendlyErrorMessage(error));
-			setEntries([]);
-		} finally {
-			if (loadGeneration.current === generation) setIsLoading(false);
-		}
+		await withCleanup(
+			() =>
+				fetchVolumeEntries({
+					client,
+					environmentID,
+					volumeName,
+					requestedPath,
+					generation,
+					loadGeneration,
+					currentPathRef,
+					setEntries,
+					setErrorMessage
+				}),
+			() => {
+				if (loadGeneration.current === generation) setIsLoading(false);
+			}
+		);
 	}, [environmentID, volumeName]);
 
 	useEffect(() => {
@@ -87,7 +121,7 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 	const canManageFiles =
 		capabilities !== undefined &&
 		ServerCapabilities.supportsRoleManagement(capabilities) &&
-		hasPermission(Permission.Volumes.read, environmentID);
+		canReadVolumes;
 
 	return {
 		environmentID,

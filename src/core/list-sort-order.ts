@@ -1,8 +1,9 @@
 export type ListSortOrder = 'ascending' | 'descending';
 
-export function localizedStandardCompare(lhs: string, rhs: string): number {
-	return lhs.localeCompare(rhs, undefined, { numeric: true, sensitivity: 'base' });
-}
+const standardCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+export const localizedStandardCompare: (lhs: string, rhs: string) => number =
+	standardCollator.compare;
 
 export const ListSortOrder = {
 	allCases: ['ascending', 'descending'] as const,

@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { AndroidToolbar } from '@/features/containers/android-toolbar';
 import { M3Section, TextButtonRow } from '@/features/containers/android-material';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -66,11 +67,10 @@ export function JobScheduleConfigView({
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			() => model.refresh(),
+			() => setRefreshing(false)
+		);
 	};
 
 	return (

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import {
 	boundedAPIResponse,
@@ -7,6 +8,7 @@ import {
 	RemoteDataLimits
 } from '@/core/networking/remote-data-limits';
 import { cachedClient } from '@/core/networking/use-cached-client';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { TemplateRegistry } from '@/sdk/models/template/Template';
 import { useClientManager } from '@/stores/client-manager';
 import { useItemDeleteConfirmation } from '@/ui/components/delete-confirmation';
@@ -23,6 +25,20 @@ export const templateRegistryCachePaths = [
 	'templates/all'
 ];
 
+function invalidateTemplateRegistryCache() {
+	cachedClient()?.invalidateGlobal(templateRegistryCachePaths);
+}
+
+async function fetchTemplateRegistries(client: ArcaneClient): Promise<TemplateRegistry[]> {
+	const loaded = await boundedAPIResponse<TemplateRegistry[]>(client, 'templates/registries', {
+		maximumBytes: RemoteDataLimits.maximumTemplateBytes
+	});
+	if (loaded.length > RemoteDataLimits.maximumTemplateRegistries) {
+		throw RemoteDataLimitError.collectionTooLarge(RemoteDataLimits.maximumTemplateRegistries);
+	}
+	return loaded;
+}
+
 export function useTemplateRegistries() {
 	const client = useClientManager((s) => s.client);
 	const permissions = useTemplatePermissions();
@@ -38,7 +54,9 @@ export function useTemplateRegistries() {
 	const [pendingDeleteRegistry, setPendingDeleteRegistry] = useState<TemplateRegistry>();
 	const [isAddingCommunity, setIsAddingCommunity] = useState(false);
 	const registriesRef = useRef(registries);
-	registriesRef.current = registries;
+	useLayoutEffect(() => {
+		registriesRef.current = registries;
+	});
 
 	const hasCommunityRegistry = registries.some(
 		(registry) => registry.url.toLowerCase() === communityRegistryURL.toLowerCase()
@@ -49,24 +67,18 @@ export function useTemplateRegistries() {
 			if (!canViewRegistries || !client) return;
 			if (registriesRef.current.length === 0) setIsLoading(true);
 			if (refresh) setErrorMessage(undefined);
-			try {
-				const loaded = await boundedAPIResponse<TemplateRegistry[]>(
-					client,
-					'templates/registries',
-					{
-						maximumBytes: RemoteDataLimits.maximumTemplateBytes
+			await withCleanup(
+				async () => {
+					try {
+						const loaded = await fetchTemplateRegistries(client);
+						setRegistries(loaded);
+						setErrorMessage(undefined);
+					} catch (error) {
+						setErrorMessage(friendlyErrorMessage(error));
 					}
-				);
-				if (loaded.length > RemoteDataLimits.maximumTemplateRegistries) {
-					throw RemoteDataLimitError.collectionTooLarge(RemoteDataLimits.maximumTemplateRegistries);
-				}
-				setRegistries(loaded);
-				setErrorMessage(undefined);
-			} catch (error) {
-				setErrorMessage(friendlyErrorMessage(error));
-			} finally {
-				setIsLoading(false);
-			}
+				},
+				() => setIsLoading(false)
+			);
 		},
 		[canViewRegistries, client]
 	);
@@ -76,30 +88,33 @@ export function useTemplateRegistries() {
 	}, [loadRegistries]);
 
 	const afterSave = useCallback(async () => {
-		cachedClient()?.invalidateGlobal(templateRegistryCachePaths);
+		invalidateTemplateRegistryCache();
 		await loadRegistries(true);
 	}, [loadRegistries]);
 
 	const addCommunityRegistry = async () => {
 		if (!canCreateRegistries || !client) return;
 		setIsAddingCommunity(true);
-		try {
-			await client.templates.createRegistry({
-				body: {
-					name: 'Arcane Community Templates',
-					url: communityRegistryURL,
-					description: 'Official Arcane community template registry',
-					enabled: true
+		await withCleanup(
+			async () => {
+				try {
+					await client.templates.createRegistry({
+						body: {
+							name: 'Arcane Community Templates',
+							url: communityRegistryURL,
+							description: 'Official Arcane community template registry',
+							enabled: true
+						}
+					});
+					invalidateTemplateRegistryCache();
+					await loadRegistries(true);
+					showToast(Toasts.success('Community registry added'));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
 				}
-			});
-			cachedClient()?.invalidateGlobal(templateRegistryCachePaths);
-			await loadRegistries(true);
-			showToast(Toasts.success('Community registry added'));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setIsAddingCommunity(false);
-		}
+			},
+			() => setIsAddingCommunity(false)
+		);
 	};
 
 	const deleteTemplateRegistry = async (registry: TemplateRegistry) => {
@@ -107,7 +122,7 @@ export function useTemplateRegistries() {
 		try {
 			await client.templates.deleteRegistry({ id: registry.id });
 			setRegistries((current) => current.filter((item) => item.id !== registry.id));
-			cachedClient()?.invalidateGlobal(templateRegistryCachePaths);
+			invalidateTemplateRegistryCache();
 			showToast(Toasts.success('Template registry deleted'));
 		} catch (error) {
 			showToast(Toasts.error(friendlyErrorMessage(error)));

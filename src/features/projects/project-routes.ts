@@ -1,5 +1,6 @@
-import { useRouter, useSegments, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
+import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { DeployOptions, ProjectDetails } from '@/sdk/models/project/Project';
@@ -72,45 +73,42 @@ function query(params: Params) {
 
 export function useProjectNavigation() {
 	const router = useRouter();
-	const segments = useSegments() as string[];
-	const group =
-		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(projects)';
+	const group = useTabStackGroup('(projects)');
 	return useMemo(() => {
 		const href = (path: string, params: Params = {}) =>
 			`/(tabs)/${group}/${path}${query(params)}` as Href;
 		const projectPath = (id: string, suffix = '') => `project/${encodeURIComponent(id)}${suffix}`;
 		return {
 			router,
-			openDetail(this: void, environmentID: EnvironmentID, project: ProjectDetails) {
+			openDetail: (environmentID: EnvironmentID, project: ProjectDetails) => {
 				projectCache.set(environmentID, project);
 				router.push(href(projectPath(project.id), { envID: environmentID, name: project.name }));
 			},
-			openLogs(
-				this: void,
+			openLogs: (
 				environmentID: EnvironmentID,
 				projectID: string,
 				title: string,
 				storeToken?: string
-			) {
+			) => {
 				router.push(
 					href(projectPath(projectID, '/logs'), { envID: environmentID, title, store: storeToken })
 				);
 			},
-			openFilter(this: void, listKey: string) {
+			openFilter: (listKey: string) => {
 				router.push(href('projects-filter', { key: listKey }));
 			},
-			openArchived(this: void, environmentID: EnvironmentID) {
+			openArchived: (environmentID: EnvironmentID) => {
 				router.push(href('archived-projects', { envID: environmentID }));
 			},
-			openTemplates(this: void) {
+			openTemplates: () => {
 				router.push(href('templateRegistries'));
 			},
-			openCreate(this: void, environmentID: EnvironmentID, payload: CreateProjectPayload = {}) {
+			openCreate: (environmentID: EnvironmentID, payload: CreateProjectPayload = {}) => {
 				router.push(
 					href('create-project', { envID: environmentID, token: routePayloads.put(payload) })
 				);
 			},
-			openDeployOptions(this: void, environmentID: EnvironmentID, payload: DeployOptionsPayload) {
+			openDeployOptions: (environmentID: EnvironmentID, payload: DeployOptionsPayload) => {
 				router.push(
 					href('project-deploy-options', {
 						envID: environmentID,
@@ -118,12 +116,7 @@ export function useProjectNavigation() {
 					})
 				);
 			},
-			openTags(
-				this: void,
-				environmentID: EnvironmentID,
-				projectID: string,
-				payload: ProjectTagsPayload
-			) {
+			openTags: (environmentID: EnvironmentID, projectID: string, payload: ProjectTagsPayload) => {
 				router.push(
 					href('project-tags', {
 						envID: environmentID,
@@ -132,12 +125,11 @@ export function useProjectNavigation() {
 					})
 				);
 			},
-			openFiles(
-				this: void,
+			openFiles: (
 				environmentID: EnvironmentID,
 				project: ProjectDetails,
 				selection: ProjectFilesDestination
-			) {
+			) => {
 				projectCache.set(environmentID, project);
 				router.push(
 					href('project-files', {
@@ -147,21 +139,21 @@ export function useProjectNavigation() {
 					})
 				);
 			},
-			openDraftReview(this: void, payload: DraftReviewPayload) {
+			openDraftReview: (payload: DraftReviewPayload) => {
 				router.push(href('project-draft-review', { token: routePayloads.put(payload) }));
 			},
-			openComposeEditor(this: void, destination: string) {
+			openComposeEditor: (destination: string) => {
 				router.push(href('compose-editor', { destination }));
 			},
-			openRenderCompose(this: void, environmentID: EnvironmentID, payload: RenderComposePayload) {
+			openRenderCompose: (environmentID: EnvironmentID, payload: RenderComposePayload) => {
 				router.push(
 					href('render-compose', { envID: environmentID, token: routePayloads.put(payload) })
 				);
 			},
-			openFileDialog(this: void, payload: ProjectFileDialogPayload) {
+			openFileDialog: (payload: ProjectFileDialogPayload) => {
 				router.push(href('project-file-dialog', { token: routePayloads.put(payload) }));
 			},
-			openDeployment(this: void) {
+			openDeployment: () => {
 				router.push(href(deploymentSheetPath));
 			}
 		};

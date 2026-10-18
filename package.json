@@ -19,6 +19,7 @@
 	"dependencies": {
 		"@expo/ui": "~58.0.20",
 		"@react-native-menu/menu": "^2.0.0",
+		"@shopify/flash-list": "2.3.2",
 		"expo": "~58.0.14",
 		"expo-application": "~58.1.2",
 		"expo-auth-session": "~58.0.13",

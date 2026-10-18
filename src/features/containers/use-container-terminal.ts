@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { boundedExec, type BoundedTerminalSession } from '@/core/networking/bounded-streams';
@@ -16,6 +16,39 @@ export const terminalShells = ['/bin/sh', '/bin/bash', '/bin/zsh', '/bin/ash'] a
 
 const flushIntervalMs = 50;
 
+type PumpResult = { kind: 'finished' } | { kind: 'stale' } | { kind: 'failed'; message: string };
+
+async function pumpTerminalOutput(
+	terminal: BoundedTerminalSession,
+	processor: TerminalOutputProcessor,
+	publish: () => void,
+	isCurrent: () => boolean
+): Promise<PumpResult> {
+	let lastFlush: number | undefined;
+	let pendingTimer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		for await (const chunk of terminal.output) {
+			if (!isCurrent()) return { kind: 'stale' };
+			const replies = processor.append(chunk);
+			for (let i = 0; i < replies; i++) void terminal.send('\u001b[1;1R').catch(() => {});
+			const now = Date.now();
+			if (lastFlush === undefined || now - lastFlush >= flushIntervalMs) {
+				publish();
+				lastFlush = now;
+			} else if (pendingTimer === undefined) {
+				pendingTimer = setTimeout(() => {
+					pendingTimer = undefined;
+					if (isCurrent()) publish();
+				}, flushIntervalMs);
+			}
+		}
+	} catch (error) {
+		if (!isCurrent() || isCancellation(error)) return { kind: 'stale' };
+		return { kind: 'failed', message: friendlyErrorMessage(error) };
+	}
+	return { kind: 'finished' };
+}
+
 export function useContainerTerminal(environmentID: EnvironmentID, containerID: string) {
 	const [outputLines, setOutputLines] = useState<TerminalOutputLine[]>([]);
 	const [outputRevision, setOutputRevision] = useState(0);
@@ -23,12 +56,14 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 	const [connectError, setConnectError] = useState<string>();
 	const [isConnecting, setIsConnecting] = useState(false);
 	const [isConnected, setIsConnected] = useState(false);
-	const processor = useRef(new TerminalOutputProcessor()).current;
-	const follow = useRef(new TerminalOutputFollowBehavior()).current;
+	const [processor] = useState(() => new TerminalOutputProcessor());
+	const [follow] = useState(() => new TerminalOutputFollowBehavior());
 	const session = useRef<BoundedTerminalSession | undefined>(undefined);
 	const generation = useRef(0);
 	const state = useRef({ isConnected, isConnecting });
-	state.current = { isConnected, isConnecting };
+	useLayoutEffect(() => {
+		state.current = { isConnected, isConnecting };
+	});
 
 	const publish = useCallback(() => {
 		setOutputLines(processor.lineSnapshot());
@@ -46,30 +81,11 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 
 	const consumeOutput = useCallback(
 		async (terminal: BoundedTerminalSession, run: number) => {
-			let lastFlush: number | undefined;
-			let pendingTimer: ReturnType<typeof setTimeout> | undefined;
 			const isCurrent = () => run === generation.current;
-			try {
-				for await (const chunk of terminal.output) {
-					if (!isCurrent()) return;
-					const replies = processor.append(chunk);
-					for (let i = 0; i < replies; i++) void terminal.send('\u001b[1;1R').catch(() => {});
-					const now = Date.now();
-					if (lastFlush === undefined || now - lastFlush >= flushIntervalMs) {
-						publish();
-						lastFlush = now;
-					} else if (pendingTimer === undefined) {
-						pendingTimer = setTimeout(() => {
-							pendingTimer = undefined;
-							if (isCurrent()) publish();
-						}, flushIntervalMs);
-					}
-				}
-			} catch (error) {
-				if (!isCurrent() || isCancellation(error)) return;
-				setConnectError(`Disconnected: ${friendlyErrorMessage(error)}`);
-			}
+			const ended = await pumpTerminalOutput(terminal, processor, publish, isCurrent);
 			if (!isCurrent()) return;
+			if (ended.kind === 'failed') setConnectError(`Disconnected: ${ended.message}`);
+			if (ended.kind === 'stale') return;
 			processor.finish();
 			publish();
 			setIsConnected(false);
@@ -107,10 +123,11 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 		}
 	}, [environmentID, containerID, shell, processor, follow, consumeOutput]);
 
+	const connectOnMount = useEffectEvent(() => void connect());
+	const teardownOnUnmount = useEffectEvent(() => void teardown());
 	useEffect(() => {
-		void connect();
-		return () => void teardown();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		connectOnMount();
+		return () => teardownOnUnmount();
 	}, []);
 
 	const send = (text: string) => {

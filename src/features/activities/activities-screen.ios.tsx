@@ -46,6 +46,7 @@ import {
 	ActivityDisplay,
 	ActivityStatusFilter,
 	activityDisplayName,
+	activityItemKey,
 	activityStatusTint,
 	dateMs,
 	relativeNamed,
@@ -236,6 +237,32 @@ function ActivityLink({
 	);
 }
 
+type ActivitySegment =
+	| { kind: 'activities'; key: string; activities: Activity[] }
+	| { kind: 'batch'; key: string; batch: ActivityBatchSummary };
+
+function activitySegments(items: ActivityCenterItem[]): ActivitySegment[] {
+	const segments: ActivitySegment[] = [];
+	let run: Activity[] | undefined;
+	for (const item of items) {
+		if (item.kind === 'activity') {
+			if (run === undefined) {
+				run = [];
+				segments.push({
+					kind: 'activities',
+					key: `activities-${segments.length}`,
+					activities: run
+				});
+			}
+			run.push(item.activity);
+		} else {
+			run = undefined;
+			segments.push({ kind: 'batch', key: ActivityCenterItem.id(item), batch: item.batch });
+		}
+	}
+	return segments;
+}
+
 function ActivitySection({
 	model,
 	title,
@@ -261,21 +288,30 @@ function ActivitySection({
 				)
 			}
 		>
-			{items.map((item) =>
-				item.kind === 'activity' ? (
-					<ActivityLink key={ActivityCenterItem.id(item)} model={model} activity={item.activity}>
-						<ActivityRow activity={item.activity} />
-					</ActivityLink>
+			{activitySegments(items).map((segment) =>
+				segment.kind === 'activities' ? (
+					<List.ForEach
+						key={segment.key}
+						data={segment.activities}
+						keyExtractor={activityItemKey}
+						estimatedItemSize={96}
+					>
+						{({ item }) => (
+							<ActivityLink model={model} activity={item}>
+								<ActivityRow activity={item} />
+							</ActivityLink>
+						)}
+					</List.ForEach>
 				) : (
 					<DisclosureGroup
-						key={ActivityCenterItem.id(item)}
-						isExpanded={model.isExpanded(item.batch.id)}
-						onIsExpandedChange={(expanded) => model.setExpanded(item.batch.id, expanded)}
+						key={segment.key}
+						isExpanded={model.isExpanded(segment.batch.id)}
+						onIsExpandedChange={(expanded) => model.setExpanded(segment.batch.id, expanded)}
 					>
 						<DisclosureGroup.Label>
-							<ActivityBatchRow batch={item.batch} />
+							<ActivityBatchRow batch={segment.batch} />
 						</DisclosureGroup.Label>
-						{item.batch.activities.map((activity) => (
+						{segment.batch.activities.map((activity) => (
 							<ActivityLink
 								key={`${ActivityDisplay.sourceEnvironmentKey(activity)}-${activity.id}`}
 								model={model}

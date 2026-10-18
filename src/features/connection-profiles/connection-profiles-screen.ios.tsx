@@ -50,7 +50,7 @@ import {
 	type ModifierConfig
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 import { View } from 'react-native';
 
 import type { ConnectionProfile } from '@/core/connection-profiles/connection-profile-sync';
@@ -284,27 +284,36 @@ export function ConnectionProfileEditorScreen() {
 	const serverRef = useRef<TextFieldRef>(null);
 	const usernameRef = useRef<TextFieldRef>(null);
 	const passwordRef = useRef<SecureFieldRef>(null);
+	const focusField = useEffectEvent((field: 'server' | 'username' | 'password') => {
+		const ref = field === 'server' ? serverRef : field === 'username' ? usernameRef : passwordRef;
+		void ref.current?.focus().catch(() => {});
+	});
 
 	const { name, serverURL, username, password } = model;
 	const nameText = useNativeState(name);
 	const serverText = useNativeState(serverURL);
 	const usernameText = useNativeState(username);
 	const passwordText = useNativeState(password);
+	const syncTexts = useEffectEvent(
+		(values: { name: string; serverURL: string; username: string; password: string }) => {
+			if (nameText.get() !== values.name) nameText.set(values.name);
+			if (serverText.get() !== values.serverURL) serverText.set(values.serverURL);
+			if (usernameText.get() !== values.username) usernameText.set(values.username);
+			if (passwordText.get() !== values.password) passwordText.set(values.password);
+		}
+	);
 	useEffect(() => {
-		if (nameText.get() !== name) nameText.set(name);
-		if (serverText.get() !== serverURL) serverText.set(serverURL);
-		if (usernameText.get() !== username) usernameText.set(username);
-		if (passwordText.get() !== password) passwordText.set(password);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		syncTexts({ name, serverURL, username, password });
 	}, [name, serverURL, username, password]);
 
+	const initialFocusField = useEffectEvent(() => model.initialFocus);
 	useEffect(() => {
+		const field = initialFocusField();
 		const timer = setTimeout(
-			() => (model.initialFocus === 'name' ? nameRef : serverRef).current?.focus().catch(() => {}),
+			() => (field === 'name' ? nameRef : serverRef).current?.focus().catch(() => {}),
 			350
 		);
 		return () => clearTimeout(timer);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return (
@@ -327,7 +336,7 @@ export function ConnectionProfileEditorScreen() {
 									modifiers={[
 										accessibilityLabel('Name'),
 										submitLabel('next'),
-										onSubmit(() => void serverRef.current?.focus().catch(() => {}))
+										onSubmit(() => focusField('server'))
 									]}
 								/>
 								<TextField
@@ -342,7 +351,7 @@ export function ConnectionProfileEditorScreen() {
 										keyboardType('url'),
 										textContentType('URL'),
 										submitLabel('next'),
-										onSubmit(() => void usernameRef.current?.focus().catch(() => {}))
+										onSubmit(() => focusField('username'))
 									]}
 								/>
 							</Section>
@@ -368,7 +377,7 @@ export function ConnectionProfileEditorScreen() {
 												autocorrectionDisabled(),
 												textContentType('username'),
 												submitLabel('next'),
-												onSubmit(() => void passwordRef.current?.focus().catch(() => {}))
+												onSubmit(() => focusField('password'))
 											]}
 										/>
 										<SecureField

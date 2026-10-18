@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { hasPermission } from '@/core/auth/permissions';
 import { ResponseCache } from '@/core/networking/response-cache';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { ArcaneError } from '@/sdk/errors/ArcaneError';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
@@ -56,6 +58,109 @@ export const pruneOptions = {
 const isOneOf = <T extends string>(options: { value: T }[], raw: string | undefined): raw is T =>
 	raw !== undefined && options.some((o) => o.value === raw);
 
+async function loadPruneDefaults(
+	client: ArcaneClient,
+	environmentID: EnvironmentID,
+	isCancelled: () => boolean,
+	setters: {
+		setContainerMode: (mode: PruneContainerMode) => void;
+		setContainerAge: (age: string) => void;
+		setImageMode: (mode: PruneImageMode) => void;
+		setImageAge: (age: string) => void;
+		setVolumeMode: (mode: PruneVolumeMode) => void;
+		setNetworkMode: (mode: PruneNetworkMode) => void;
+		setNetworkAge: (age: string) => void;
+		setBuildCacheMode: (mode: PruneBuildCacheMode) => void;
+		setBuildCacheAge: (age: string) => void;
+	}
+) {
+	try {
+		const text = await client.transport.rawRequest(
+			client.rest.environmentPath(environmentID, 'settings')
+		);
+		const settings = JSON.parse(text) as PublicSetting[] | { data?: PublicSetting[] };
+		const list = Array.isArray(settings) ? settings : (settings.data ?? []);
+		if (isCancelled()) return;
+		const dict = new Map(list.map((s) => [s.key, s.value]));
+		const mode = (key: string) => dict.get(key);
+		const until = (key: string) => {
+			const value = dict.get(key);
+			return value ? value : undefined;
+		};
+		const c = mode('pruneContainerMode');
+		if (isOneOf(pruneOptions.containers, c)) setters.setContainerMode(c);
+		const cu = until('pruneContainerUntil');
+		if (cu) setters.setContainerAge(cu);
+		const i = mode('pruneImageMode');
+		if (isOneOf(pruneOptions.images, i)) setters.setImageMode(i);
+		const iu = until('pruneImageUntil');
+		if (iu) setters.setImageAge(iu);
+		const v = mode('pruneVolumeMode');
+		if (isOneOf(pruneOptions.volumes, v)) setters.setVolumeMode(v);
+		const n = mode('pruneNetworkMode');
+		if (isOneOf(pruneOptions.networks, n)) setters.setNetworkMode(n);
+		const nu = until('pruneNetworkUntil');
+		if (nu) setters.setNetworkAge(nu);
+		const b = mode('pruneBuildCacheMode');
+		if (isOneOf(pruneOptions.buildCache, b)) setters.setBuildCacheMode(b);
+		const bu = until('pruneBuildCacheUntil');
+		if (bu) setters.setBuildCacheAge(bu);
+	} catch {}
+}
+
+async function performPrune({
+	clientGeneration,
+	client,
+	environments,
+	environmentID,
+	request,
+	supportsActivities,
+	onDismiss,
+	markChanged
+}: {
+	clientGeneration: number;
+	client: ArcaneClient;
+	environments: Environment[] | undefined;
+	environmentID: EnvironmentID;
+	request: PruneAllRequest;
+	supportsActivities: boolean;
+	onDismiss: () => void;
+	markChanged: (id: EnvironmentID) => void;
+}) {
+	try {
+		if (environments) {
+			const session = clientGeneration;
+			const isCurrent = () => session === useClientManager.getState().clientGeneration;
+			onDismiss();
+			await useAllEnvironmentsOperationStore.getState().runWithToast({
+				title: 'Cleaning up…',
+				completionTitle: 'Cleanup complete',
+				symbol: 'trash',
+				isDestructive: true,
+				environments,
+				isCurrent,
+				operation: async (id) => {
+					if (!hasPermission(Permission.System.prune, id))
+						throw ArcaneError.transport('Not run: no prune permission');
+					const result = await client.system.prune({ options: request, envID: id });
+					if (!isCurrent()) return 'Completed on previous connection';
+					ResponseCache.invalidateEnvironment(id);
+					markChanged(id);
+					return formatPruneResult(result);
+				}
+			});
+			return;
+		}
+		const result = await client.system.prune({ options: request, envID: environmentID });
+		ResponseCache.invalidateEnvironment(environmentID);
+		markChanged(environmentID);
+		if (!supportsActivities) showToast(Toasts.success(formatPruneResult(result)));
+		onDismiss();
+	} catch (error) {
+		showToast(Toasts.error(friendlyErrorMessage(error)));
+	}
+}
+
 export function useSystemPrune({
 	environmentID,
 	environments,
@@ -88,40 +193,17 @@ export function useSystemPrune({
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		let cancelled = false;
-		void (async () => {
-			try {
-				const text = await client.transport.rawRequest(
-					client.rest.environmentPath(environmentID, 'settings')
-				);
-				const settings = JSON.parse(text) as PublicSetting[] | { data?: PublicSetting[] };
-				const list = Array.isArray(settings) ? settings : (settings.data ?? []);
-				if (cancelled) return;
-				const dict = new Map(list.map((s) => [s.key, s.value]));
-				const mode = (key: string) => dict.get(key);
-				const until = (key: string) => {
-					const value = dict.get(key);
-					return value ? value : undefined;
-				};
-				const c = mode('pruneContainerMode');
-				if (isOneOf(pruneOptions.containers, c)) setContainerMode(c);
-				const cu = until('pruneContainerUntil');
-				if (cu) setContainerAge(cu);
-				const i = mode('pruneImageMode');
-				if (isOneOf(pruneOptions.images, i)) setImageMode(i);
-				const iu = until('pruneImageUntil');
-				if (iu) setImageAge(iu);
-				const v = mode('pruneVolumeMode');
-				if (isOneOf(pruneOptions.volumes, v)) setVolumeMode(v);
-				const n = mode('pruneNetworkMode');
-				if (isOneOf(pruneOptions.networks, n)) setNetworkMode(n);
-				const nu = until('pruneNetworkUntil');
-				if (nu) setNetworkAge(nu);
-				const b = mode('pruneBuildCacheMode');
-				if (isOneOf(pruneOptions.buildCache, b)) setBuildCacheMode(b);
-				const bu = until('pruneBuildCacheUntil');
-				if (bu) setBuildCacheAge(bu);
-			} catch {}
-		})();
+		void loadPruneDefaults(client, environmentID, () => cancelled, {
+			setContainerMode,
+			setContainerAge,
+			setImageMode,
+			setImageAge,
+			setVolumeMode,
+			setNetworkMode,
+			setNetworkAge,
+			setBuildCacheMode,
+			setBuildCacheAge
+		});
 		return () => {
 			cancelled = true;
 		};
@@ -163,40 +245,20 @@ export function useSystemPrune({
 		const client = manager.client;
 		if (!client) return;
 		setIsPruning(true);
-		try {
-			if (environments) {
-				const session = manager.clientGeneration;
-				const isCurrent = () => session === useClientManager.getState().clientGeneration;
-				onDismiss();
-				await useAllEnvironmentsOperationStore.getState().runWithToast({
-					title: 'Cleaning up…',
-					completionTitle: 'Cleanup complete',
-					symbol: 'trash',
-					isDestructive: true,
+		await withCleanup(
+			() =>
+				performPrune({
+					clientGeneration: manager.clientGeneration,
+					client,
 					environments,
-					isCurrent,
-					operation: async (id) => {
-						if (!hasPermission(Permission.System.prune, id))
-							throw ArcaneError.transport('Not run: no prune permission');
-						const result = await client.system.prune({ options: request, envID: id });
-						if (!isCurrent()) return 'Completed on previous connection';
-						ResponseCache.invalidateEnvironment(id);
-						markChanged(id);
-						return formatPruneResult(result);
-					}
-				});
-				return;
-			}
-			const result = await client.system.prune({ options: request, envID: environmentID });
-			ResponseCache.invalidateEnvironment(environmentID);
-			markChanged(environmentID);
-			if (!supportsActivities) showToast(Toasts.success(formatPruneResult(result)));
-			onDismiss();
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setIsPruning(false);
-		}
+					environmentID,
+					request,
+					supportsActivities,
+					onDismiss,
+					markChanged
+				}),
+			() => setIsPruning(false)
+		);
 	};
 
 	return {

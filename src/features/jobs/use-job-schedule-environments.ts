@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { environmentDisplayName, useEnvironmentsStore } from '@/stores/environments-store';
 
@@ -7,14 +8,11 @@ import { useJobsNavigation } from './jobs-routes';
 export function useJobScheduleEnvironments() {
 	const navigation = useJobsNavigation();
 	const hasLoaded = useEnvironmentsStore((s) => s.hasLoaded);
-	useEnvironmentsStore((s) => s.environments);
-	const environments = useEnvironmentsStore
-		.getState()
-		.enabledEnvironments()
-		.map((environment) => ({
-			id: environment.id,
-			displayName: environmentDisplayName(environment)
-		}));
+	const enabled = useEnvironmentsStore(useShallow((s) => s.enabledEnvironments()));
+	const environments = enabled.map((environment) => ({
+		id: environment.id,
+		displayName: environmentDisplayName(environment)
+	}));
 
 	useEffect(() => {
 		void useEnvironmentsStore.getState().load();

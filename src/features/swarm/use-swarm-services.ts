@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { Permission } from '@/sdk/models/role/Permission';
 import type { SwarmServiceSummary } from '@/sdk/models/swarm/SwarmServices';
@@ -81,6 +82,10 @@ export function useSwarmServices(environmentID: EnvironmentID, stackName?: strin
 
 export type SwarmServicesModel = ReturnType<typeof useSwarmServices>;
 
+function firstWarning(response: { warnings?: string[] }): string | undefined {
+	return response.warnings?.[0];
+}
+
 export function useSwarmScale() {
 	const router = useRouter();
 	const { envID = '0', serviceID = '' } = useLocalSearchParams<{
@@ -102,22 +107,26 @@ export function useSwarmScale() {
 		if (!client || !service) return;
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			const response = await client.swarm.scaleService({
-				serviceId: service.id,
-				replicas: Math.max(0, replicas),
-				envID
-			});
-			swarmChanged(envID);
-			showToast(Toasts.success(`Scaled to ${replicas} replica${replicas === 1 ? '' : 's'}`));
-			const warning = response.warnings?.[0];
-			if (warning) showToast(Toasts.info(warning));
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		const successMessage = `Scaled to ${replicas} replica${replicas === 1 ? '' : 's'}`;
+		await withCleanup(
+			async () => {
+				try {
+					const response = await client.swarm.scaleService({
+						serviceId: service.id,
+						replicas: Math.max(0, replicas),
+						envID
+					});
+					swarmChanged(envID);
+					showToast(Toasts.success(successMessage));
+					const warning = firstWarning(response);
+					if (warning) showToast(Toasts.info(warning));
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	return {

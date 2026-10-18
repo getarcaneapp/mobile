@@ -1,7 +1,8 @@
 import * as Clipboard from 'expo-clipboard';
 import { useNavigation } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import type { S3Destination } from '@/sdk/models/backup/S3Destination';
 import type { SystemVolumeBackupOption } from '@/sdk/models/backup/SystemVolumeBackupOption';
@@ -30,8 +31,7 @@ function useDestinationOptions(onError: (message: string) => void, enabled = tru
 	const canList = permissions.has('s3-destinations:list');
 	const alive = useAliveRef();
 	const [destinations, setDestinations] = useState<S3Destination[]>([]);
-	const onErrorRef = useRef(onError);
-	onErrorRef.current = onError;
+	const reportError = useEffectEvent(onError);
 	useEffect(() => {
 		if (!enabled || !client || !canList) return;
 		const scope = backupRequestScope(() => alive.current);
@@ -42,7 +42,7 @@ function useDestinationOptions(onError: (message: string) => void, enabled = tru
 				setDestinations(result);
 			})
 			.catch((error: unknown) => {
-				if (!isCancellation(error)) onErrorRef.current(friendlyErrorMessage(error));
+				if (!isCancellation(error)) reportError(friendlyErrorMessage(error));
 			});
 	}, [alive, canList, client, clientGeneration, enabled]);
 	return destinations;
@@ -65,31 +65,38 @@ export function useSystemBackupCreate(discover: boolean) {
 		const scope = backupRequestScope(() => alive.current);
 		if (!client) return;
 		setBusy(true);
-		try {
-			if (discover) {
-				const count = await client.systemBackups.discover({
-					request: { s3DestinationId: s3ID, recoveryKey }
-				});
-				scope.check();
-				showToast(Toasts.info(`Found ${count} backups`));
-			} else {
-				await client.systemBackups.create({
-					request: {
-						destination,
-						s3DestinationId: destination === 'local' ? undefined : s3ID,
-						recoveryKey: recoveryKey === '' ? undefined : recoveryKey
+		const s3DestinationId = destination === 'local' ? undefined : s3ID;
+		const recoveryKeyValue = recoveryKey === '' ? undefined : recoveryKey;
+		await withCleanup(
+			async () => {
+				try {
+					if (discover) {
+						const count = await client.systemBackups.discover({
+							request: { s3DestinationId: s3ID, recoveryKey }
+						});
+						scope.check();
+						showToast(Toasts.info(`Found ${count} backups`));
+					} else {
+						await client.systemBackups.create({
+							request: {
+								destination,
+								s3DestinationId,
+								recoveryKey: recoveryKeyValue
+							}
+						});
+						scope.check();
+						showToast(Toasts.info('Backup started. Check history for completion.'));
 					}
-				});
-				scope.check();
-				showToast(Toasts.info('Backup started. Check history for completion.'));
+					setRecoveryKey('');
+					dismiss();
+				} catch (error) {
+					if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (alive.current) setBusy(false);
 			}
-			setRecoveryKey('');
-			dismiss();
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+		);
 	};
 
 	return {
@@ -164,27 +171,33 @@ export function useSystemVolumeRun() {
 		const scope = backupRequestScope(() => alive.current);
 		if (!client) return;
 		setBusy(true);
-		try {
-			await client.systemBackups.runVolumeBackups({
-				request: {
-					custom: {
-						destination,
-						s3DestinationId: destination === 'local' ? undefined : s3ID,
-						stopContainers,
-						selectionMode,
-						volumeNames: [...selected],
-						ignoreAnonymous
-					}
+		const s3DestinationId = destination === 'local' ? undefined : s3ID;
+		await withCleanup(
+			async () => {
+				try {
+					await client.systemBackups.runVolumeBackups({
+						request: {
+							custom: {
+								destination,
+								s3DestinationId,
+								stopContainers,
+								selectionMode,
+								volumeNames: [...selected],
+								ignoreAnonymous
+							}
+						}
+					});
+					scope.check();
+					showToast(Toasts.info('Volume backups started. Check history for completion.'));
+					dismiss();
+				} catch (error) {
+					if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
 				}
-			});
-			scope.check();
-			showToast(Toasts.info('Volume backups started. Check history for completion.'));
-			dismiss();
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+			},
+			() => {
+				if (alive.current) setBusy(false);
+			}
+		);
 	};
 
 	return {
@@ -233,32 +246,42 @@ export function useBackupRecoveryKey() {
 		const scope = backupRequestScope(() => alive.current);
 		if (!client) return;
 		setBusy(true);
-		try {
-			const generated = await client.systemBackups.generateRecoveryKey();
-			scope.check();
-			setKey(generated.recoveryKey);
-			setMessage('Store this key somewhere safe before saving it on the server.');
-		} catch (error) {
-			if (!isCancellation(error)) setMessage(friendlyErrorMessage(error));
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const generated = await client.systemBackups.generateRecoveryKey();
+					scope.check();
+					setKey(generated.recoveryKey);
+					setMessage('Store this key somewhere safe before saving it on the server.');
+				} catch (error) {
+					if (!isCancellation(error)) setMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (alive.current) setBusy(false);
+			}
+		);
 	};
 
 	const save = async () => {
 		const scope = backupRequestScope(() => alive.current);
 		if (!client) return;
 		setBusy(true);
-		try {
-			await client.systemBackups.setRecoveryKey({ request: { recoveryKey: key } });
-			setKey('');
-			scope.check();
-			showToast(Toasts.success('Recovery key saved'));
-		} catch (error) {
-			if (!isCancellation(error)) setMessage(friendlyErrorMessage(error));
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.systemBackups.setRecoveryKey({ request: { recoveryKey: key } });
+					setKey('');
+					scope.check();
+					showToast(Toasts.success('Recovery key saved'));
+				} catch (error) {
+					if (!isCancellation(error)) setMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (alive.current) setBusy(false);
+			}
+		);
 	};
 
 	const copy = () => {

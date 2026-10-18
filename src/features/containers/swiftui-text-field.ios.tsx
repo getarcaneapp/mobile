@@ -17,7 +17,7 @@ export function BoundTextField({
 }) {
 	const state = useNativeState(value);
 	useEffect(() => {
-		if (state.value !== value) state.value = value;
+		if (state.get() !== value) state.set(value);
 	}, [state, value]);
 	return (
 		<TextField

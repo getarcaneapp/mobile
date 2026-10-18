@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { tabTitle, type AppTab } from '@/core/app-tab';
 import { friendlyErrorMessage } from '@/core/errors';
@@ -67,7 +67,9 @@ export function useDynamicResourceList(config: DynamicResourceListConfig) {
 		edit
 	} = config;
 	const configRef = useRef(config);
-	configRef.current = config;
+	useLayoutEffect(() => {
+		configRef.current = config;
+	});
 
 	const [list, snapshot] = useEnvironmentPagedList<DynamicResource>(pageSize);
 	const [searchText, setSearchText] = useState('');
@@ -145,7 +147,9 @@ export function useDynamicResourceList(config: DynamicResourceListConfig) {
 	}, [load, client]);
 
 	const loadRef = useRef(load);
-	loadRef.current = load;
+	useLayoutEffect(() => {
+		loadRef.current = load;
+	});
 	const reload = useCallback(() => void loadRef.current(), []);
 
 	const rowActions = actions.filter(

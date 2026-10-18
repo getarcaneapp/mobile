@@ -1,6 +1,8 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { create } from 'zustand';
 
+import { deepEqual } from '@/core/deep-equal';
+
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { ContainerListResponse } from '@/sdk/models/container/ContainerDetails';
 import type { ContainerResourceSort } from '@/sdk/models/container/ContainerSummary';
@@ -31,14 +33,31 @@ function load(cacheKey: string): Snapshot | undefined {
 	}
 }
 
-function persist(cacheKey: string, snapshot: Snapshot) {
+async function persist(cacheKey: string, snapshot: Snapshot) {
 	try {
 		const dir = directory();
 		if (!dir.exists) dir.create({ intermediates: true });
 		const file = new File(dir, busiestCacheFileName(cacheKey));
 		if (!file.exists) file.create();
-		file.writeSync(JSON.stringify(snapshot));
+		await file.write(JSON.stringify(snapshot));
 	} catch {}
+}
+
+let pendingPersist: { cacheKey: string; snapshot: Snapshot } | undefined;
+let isPersisting = false;
+
+function schedulePersist(cacheKey: string, snapshot: Snapshot) {
+	pendingPersist = { cacheKey, snapshot };
+	if (isPersisting) return;
+	isPersisting = true;
+	void (async () => {
+		while (pendingPersist) {
+			const next = pendingPersist;
+			pendingPersist = undefined;
+			await persist(next.cacheKey, next.snapshot);
+		}
+		isPersisting = false;
+	})();
 }
 
 type BusiestContainersState = {
@@ -84,7 +103,7 @@ export const useBusiestContainersStore = create<BusiestContainersState>((set, ge
 		}
 		const ranked = response.data.filter((c) => c.resourceSample !== undefined);
 		const existing = get().rankings[sort]?.[environmentID];
-		const changed = !existing || JSON.stringify(existing) !== JSON.stringify(ranked);
+		const changed = !existing || !deepEqual(existing, ranked);
 		set((s) => ({
 			...(changed
 				? {
@@ -142,10 +161,11 @@ export const useBusiestContainersStore = create<BusiestContainersState>((set, ge
 				)
 			);
 			if (signal?.aborted) return;
-			set((s) => ({ rankings: pruneRankings(s.rankings, new Set(environments)) }));
+			const pruned = pruneRankings(get().rankings, new Set(environments));
+			if (pruned !== get().rankings) set({ rankings: pruned });
 			const updatedAt = get().updatedAt;
 			if (cacheKey && updatedAt !== undefined)
-				persist(cacheKey, { updatedAt, rankings: get().rankings });
+				schedulePersist(cacheKey, { updatedAt, rankings: get().rankings });
 		},
 
 		clearCache: () => {

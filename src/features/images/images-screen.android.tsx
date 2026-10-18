@@ -5,6 +5,7 @@ import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { CenteredMessage } from '@/features/containers/android-material';
 import { useEnvironmentRowColor } from '@/features/containers/hooks';
 import { LongPressMenu } from '@/features/containers/long-press-menu';
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import {
@@ -14,7 +15,7 @@ import {
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { m3 } from '@/ui/components/material-colors';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
-import { StableSectionedList } from '@/ui/components/stable-sectioned-list';
+import { VirtualizedSectionedList } from '@/ui/components/virtualized-sectioned-list';
 import { Icon } from '@/ui/Icon';
 
 import { ImageRow } from './image-row';
@@ -53,6 +54,8 @@ const rowStyle = {
 	paddingVertical: 10
 };
 
+const rowContentStyle = { flex: 1 };
+
 function ImageListRow({ model, row }: { model: ImagesListModel; row: ImageRowModel }) {
 	const image = row.image;
 	const environmentColor = useEnvironmentRowColor(image.environmentID, image.environmentName);
@@ -74,7 +77,7 @@ function ImageListRow({ model, row }: { model: ImagesListModel; row: ImageRowMod
 				style={rowStyle}
 			>
 				<Checkbox checked={selected} />
-				<View style={{ flex: 1 }}>{content}</View>
+				<View style={rowContentStyle}>{content}</View>
 			</Pressable>
 		);
 	}
@@ -92,7 +95,7 @@ function ImageListRow({ model, row }: { model: ImagesListModel; row: ImageRowMod
 			onPress={() => model.openDetail(image)}
 			style={rowStyle}
 		>
-			<View style={{ flex: 1 }}>{content}</View>
+			<View style={rowContentStyle}>{content}</View>
 		</LongPressMenu>
 	);
 }
@@ -104,12 +107,16 @@ export function ImagesScreen(props: ImagesListProps) {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(model.refresh, () => setRefreshing(false));
 	};
+
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
 
 	let content;
 	if (snapshot.isLoading && images.length === 0) {
@@ -162,37 +169,56 @@ export function ImagesScreen(props: ImagesListProps) {
 				) : null}
 			</View>
 		);
-	} else {
-		content = (
-			<>
-				<EnvironmentLoadFailuresSection
-					failures={snapshot.failedEnvironments.map((failure) => ({
-						...failure,
-						id: failure.environment.id
-					}))}
-					retry={() => void model.loadImages()}
-				/>
-				<StableSectionedList
-					sections={model.sections}
-					preferredHeaderAccessorySectionID="used"
-					headerAccessory={() => (
-						<ResourceCountLabel
-							loadedCount={images.length}
-							totalCount={snapshot.totalItems}
-							hasMore={snapshot.hasMore}
-						/>
-					)}
-					renderRow={(row) => <ImageListRow model={model} row={row} />}
-				/>
-				<PaginatedListFooter
-					hasMore={snapshot.hasMore}
-					loadMoreError={snapshot.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</>
-		);
 	}
+
+	const list =
+		content === undefined ? (
+			<VirtualizedSectionedList
+				onEndReached={
+					snapshot.hasMore && snapshot.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				sections={model.sections}
+				preferredHeaderAccessorySectionID="used"
+				headerAccessory={() => (
+					<ResourceCountLabel
+						loadedCount={images.length}
+						totalCount={snapshot.totalItems}
+						hasMore={snapshot.hasMore}
+					/>
+				)}
+				renderRow={(row) => <ImageListRow model={model} row={row} />}
+				header={
+					<EnvironmentLoadFailuresSection
+						failures={snapshot.failedEnvironments.map((failure) => ({
+							...failure,
+							id: failure.environment.id
+						}))}
+						retry={() => void model.loadImages()}
+					/>
+				}
+				footer={
+					<PaginatedListFooter
+						hasMore={snapshot.hasMore}
+						loadMoreError={snapshot.loadMoreError}
+						onRetry={() => void model.loadMore()}
+						onLoadMore={() => void model.loadMore()}
+					/>
+				}
+				refreshControl={refreshControl}
+			/>
+		) : (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				style={{ backgroundColor: colors.systemGroupedBackground }}
+				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+				keyboardShouldPersistTaps="handled"
+				refreshControl={refreshControl}
+			>
+				{content}
+			</ScrollView>
+		);
 
 	return (
 		<>
@@ -207,21 +233,7 @@ export function ImagesScreen(props: ImagesListProps) {
 				}}
 			/>
 			<ImagesToolbar model={model} />
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{list}
 		</>
 	);
 }

@@ -23,10 +23,13 @@ import {
 	navigationTitle,
 	searchable
 } from '@expo/ui/swift-ui/modifiers';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { hasPermission } from '@/core/auth/permissions';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
+import type { EnvironmentID } from '@/sdk/client/environment';
 import { Permission } from '@/sdk/models/role/Permission';
 import { useClientManager } from '@/stores/client-manager';
 import { systemColors } from '@/theme/colors';
@@ -343,6 +346,35 @@ export function ComposeResourceDefinitionForm({
 
 const pageSize = 50;
 
+async function fetchResourcePage(
+	client: ArcaneClient,
+	isVolume: boolean,
+	environmentID: EnvironmentID,
+	search: string,
+	start: number
+) {
+	const query = {
+		search: search === '' ? undefined : search,
+		start,
+		limit: pageSize,
+		sortBy: 'name',
+		sortOrder: 'asc' as const
+	};
+	const response = isVolume
+		? await client.volumes.list({ envID: environmentID, query })
+		: await client.networks.list({ envID: environmentID, query });
+	return {
+		names: response.data.map((item) => item.name),
+		total: response.pagination?.totalItems ?? 0
+	};
+}
+
+function appendUniqueNames(existing: string[], incoming: string[], reset: boolean) {
+	const base = reset ? [] : existing;
+	const seen = new Set(base);
+	return [...base, ...incoming.filter((name) => !seen.has(name) && (seen.add(name), true))];
+}
+
 export function ComposeResourcePicker({
 	kind,
 	selection,
@@ -359,9 +391,11 @@ export function ComposeResourcePicker({
 	const environmentID = useClientManager((s) => s.activeEnvironmentID);
 	const session = useClientManager((s) => s.cacheSessionIdentity);
 	useClientManager((s) => s.accessGeneration);
-	const canList =
-		(kind === 'mount' || kind === 'network') &&
-		hasPermission(isVolume ? Permission.Volumes.list : Permission.Networks.list, environmentID);
+	const canList = useClientManager(
+		() =>
+			(kind === 'mount' || kind === 'network') &&
+			hasPermission(isVolume ? Permission.Volumes.list : Permission.Networks.list, environmentID)
+	);
 	const [search, setSearch] = useState('');
 	const searchText = useNativeState('');
 	const [names, setNames] = useState<string[]>([]);
@@ -380,32 +414,25 @@ export function ComposeResourcePicker({
 		const start = reset ? 0 : names.length;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const query = {
-				search: search === '' ? undefined : search,
-				start,
-				limit: pageSize,
-				sortBy: 'name',
-				sortOrder: 'asc' as const
-			};
-			const response = isVolume
-				? await client.volumes.list({ envID: environmentID, query })
-				: await client.networks.list({ envID: environmentID, query });
-			if (current !== generation.current) return;
-			const incoming = response.data.map((item) => item.name);
-			setNames((existing) => {
-				const base = reset ? [] : existing;
-				const seen = new Set(base);
-				return [...base, ...incoming.filter((name) => !seen.has(name) && (seen.add(name), true))];
-			});
-			setTotal(response.pagination?.totalItems ?? 0);
-			setLoadedQuery(requested);
-		} catch (error) {
-			if (current === generation.current) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (current === generation.current) setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const page = await fetchResourcePage(client, isVolume, environmentID, search, start);
+					if (current !== generation.current) return;
+					setNames((existing) => appendUniqueNames(existing, page.names, reset));
+					setTotal(page.total);
+					setLoadedQuery(requested);
+				} catch (error) {
+					if (current === generation.current) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (current === generation.current) setIsLoading(false);
+			}
+		);
 	};
+
+	const loadTask = useEffectEvent(() => () => void load(true));
 
 	useEffect(() => {
 		generation.current += 1;
@@ -414,9 +441,8 @@ export function ComposeResourcePicker({
 		setErrorMessage(undefined);
 		setLoadedQuery(undefined);
 		if (!canList) return;
-		const timer = setTimeout(() => void load(true), 200);
+		const timer = setTimeout(loadTask(), 200);
 		return () => clearTimeout(timer);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [queryKey]);
 
 	return (

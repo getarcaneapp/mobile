@@ -1,5 +1,5 @@
 import { useNavigation } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { create } from 'zustand';
 
 export type DeleteConfirmationAction = {
@@ -97,7 +97,9 @@ export function useDeleteConfirmation(
 ) {
 	const dismiss = useDismiss();
 	const latest = useRef({ config, setIsPresented, dismiss });
-	latest.current = { config, setIsPresented, dismiss };
+	useLayoutEffect(() => {
+		latest.current = { config, setIsPresented, dismiss };
+	});
 	useEffect(() => {
 		if (!isPresented) return;
 		presentDeleteConfirmation(latest.current.config, {
@@ -116,7 +118,9 @@ export function useItemDeleteConfirmation<Item>(
 ) {
 	const dismiss = useDismiss();
 	const latest = useRef({ config, setItem, dismiss, item });
-	latest.current = { config, setItem, dismiss, item };
+	useLayoutEffect(() => {
+		latest.current = { config, setItem, dismiss, item };
+	});
 	const hasItem = item !== undefined;
 	useEffect(() => {
 		const value = latest.current.item;

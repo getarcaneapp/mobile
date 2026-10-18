@@ -1,5 +1,6 @@
-import { useRef, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 
+import { deepEqual } from '@/core/deep-equal';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import {
 	PaginationLoader,
@@ -10,6 +11,7 @@ import {
 } from '@/core/networking/pagination-loader';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ListEnvironment } from '@/stores/environments-store';
+import { reusingUnchanged } from '@/stores/environment-item-identity';
 import { usePinnedItemsStore, type PinnedItemKind } from '@/stores/pinned-items-store';
 
 export interface EnvironmentItem<Value extends Identifiable> {
@@ -63,6 +65,24 @@ export interface EnvironmentPagedListSnapshot<Value extends Identifiable> {
 	totalItems: number | undefined;
 }
 
+function sameSnapshot<Value extends Identifiable>(
+	a: EnvironmentPagedListSnapshot<Value>,
+	b: EnvironmentPagedListSnapshot<Value>
+): boolean {
+	return (
+		a.items === b.items &&
+		a.environments === b.environments &&
+		a.isLoading === b.isLoading &&
+		a.isLoadingMore === b.isLoadingMore &&
+		a.errorMessage === b.errorMessage &&
+		a.loadMoreError === b.loadMoreError &&
+		a.failedEnvironments === b.failedEnvironments &&
+		a.showsAllEnvironments === b.showsAllEnvironments &&
+		a.hasMore === b.hasMore &&
+		a.totalItems === b.totalItems
+	);
+}
+
 async function fetchPage<Value>(
 	environment: ListEnvironment,
 	start: number,
@@ -112,7 +132,8 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 
 	private update(patch: Partial<EnvironmentPagedListSnapshot<Value>>) {
 		const next = { ...this.state, ...patch };
-		if (patch.items !== undefined) next.revision = this.state.revision + 1;
+		if (patch.items !== undefined && patch.items !== this.state.items)
+			next.revision = this.state.revision + 1;
 		next.showsAllEnvironments = next.environments.some((e) => e.name !== undefined);
 		next.hasMore = [...this.cursors.values()].some((cursor) => cursor.hasMore);
 		let total: number | undefined = 0;
@@ -125,6 +146,7 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 			total += count;
 		}
 		next.totalItems = total;
+		if (sameSnapshot(this.state, next)) return;
 		this.state = next;
 		for (const listener of this.listeners) listener();
 	}
@@ -199,9 +221,12 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 					);
 					const showsAll = environments.some((e) => e.name !== undefined);
 					const allResolved = resolvedCount === requests.length;
+					const nextFailures = showsAll ? failures : [];
 					this.update({
-						items: PaginationLoader.merge([], merged, true),
-						failedEnvironments: showsAll ? [...failures] : [],
+						items: reusingUnchanged(this.state.items, PaginationLoader.merge([], merged, true)),
+						failedEnvironments: deepEqual(this.state.failedEnvironments, nextFailures)
+							? this.state.failedEnvironments
+							: [...nextFailures],
 						errorMessage:
 							allResolved && failures.length > 0 && failures.length === requests.length
 								? failures[0]?.message
@@ -256,7 +281,8 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 			}
 			this.update({
 				items: PaginationLoader.merge(this.state.items, incoming, false),
-				loadMoreError: failures[0]?.message
+				loadMoreError: failures[0]?.message,
+				isLoadingMore: false
 			});
 		} finally {
 			if (request === this.generation) this.update({ isLoadingMore: false });
@@ -271,9 +297,7 @@ export class EnvironmentPagedList<Value extends Identifiable> {
 export function useEnvironmentPagedList<Value extends Identifiable>(
 	pageSize?: number
 ): [EnvironmentPagedList<Value>, EnvironmentPagedListSnapshot<Value>] {
-	const ref = useRef<EnvironmentPagedList<Value> | null>(null);
-	ref.current ??= new EnvironmentPagedList<Value>(pageSize);
-	const list = ref.current;
+	const [list] = useState(() => new EnvironmentPagedList<Value>(pageSize));
 	const snapshot = useSyncExternalStore(list.subscribe, list.getSnapshot);
 	return [list, snapshot];
 }

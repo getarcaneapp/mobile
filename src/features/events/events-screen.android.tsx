@@ -6,13 +6,17 @@ import type { Event } from '@/sdk/models/event/Event';
 import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import {
+	GroupedFlashList,
+	groupPosition,
+	type GroupedListEntry
+} from '@/ui/components/grouped-flash-list';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { m3 } from '@/ui/components/material-colors';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type, monoFamily } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { CenteredMessage } from '@/features/containers/android-material';
 import { AndroidToolbar } from '@/features/containers/android-toolbar';
@@ -113,6 +117,38 @@ function SeveritySummary({ model }: { model: EventsModel }) {
 	);
 }
 
+const eventRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'flex-start' as const,
+	gap: 16,
+	paddingHorizontal: 16,
+	paddingVertical: 10
+};
+const eventBodyStyle = { flex: 1, gap: 4 };
+const eventMetaStyle = { flexDirection: 'row' as const, gap: 6 };
+const errorLineStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 8,
+	paddingHorizontal: 32,
+	paddingTop: 12
+};
+
+type EventEntry = GroupedListEntry & ({ type: 'header' } | { type: 'item'; event: Event });
+
+function eventEntries(events: Event[]) {
+	const entries: EventEntry[] = [{ type: 'header', key: 'header:events' }];
+	events.forEach((event, index) => {
+		entries.push({
+			type: 'item',
+			key: `event:${event.id}`,
+			event,
+			grouped: groupPosition(index, events.length)
+		});
+	});
+	return entries;
+}
+
 function EventListRow({ model, event }: { model: EventsModel; event: Event }) {
 	const items: RowMenuItem[] = [
 		{ id: 'copy-title', title: 'Copy Title', onPress: () => model.copyTitle(event) }
@@ -137,23 +173,17 @@ function EventListRow({ model, event }: { model: EventsModel; event: Event }) {
 			title={event.title}
 			items={items}
 			onPress={() => model.openDetail(event)}
-			style={{
-				flexDirection: 'row',
-				alignItems: 'flex-start',
-				gap: 16,
-				paddingHorizontal: 16,
-				paddingVertical: 10
-			}}
+			style={eventRowStyle}
 		>
 			<RowIcon systemImage={severityIcon(event.severity)} tint={severityTint(event.severity)} />
-			<View style={{ flex: 1, gap: 4 }}>
+			<View style={eventBodyStyle}>
 				<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{event.title}</Text>
 				{event.description ? (
 					<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
 						{event.description}
 					</Text>
 				) : null}
-				<View style={{ flexDirection: 'row', gap: 6 }}>
+				<View style={eventMetaStyle}>
 					<Text style={[m3Type.bodySmall, { color: colors.tertiaryLabel }]}>
 						{relativeNamed(event.timestamp)}
 					</Text>
@@ -178,6 +208,29 @@ export function EventsScreen() {
 	const { snapshot } = model;
 	const [refreshing, setRefreshing] = useState(false);
 
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => {
+				setRefreshing(true);
+				void model.refresh().finally(() => setRefreshing(false));
+			}}
+			colors={[systemColors.blue]}
+		/>
+	);
+
+	const footer = (
+		<PaginatedListFooter
+			hasMore={snapshot.hasMore}
+			loadMoreError={snapshot.loadMoreError}
+			onRetry={() => void model.store.loadMore()}
+			onLoadMore={() => {
+				if (snapshot.isLoading || snapshot.isLoadingMore) return;
+				void model.store.loadMore();
+			}}
+		/>
+	);
+
 	let content;
 	if (snapshot.isLoading && snapshot.events.length === 0) {
 		content = (
@@ -194,20 +247,24 @@ export function EventsScreen() {
 				action={{ title: 'Retry', onPress: () => void model.store.reload() }}
 			/>
 		);
-	} else {
+	} else if (snapshot.events.length === 0) {
 		content = (
 			<>
 				<SeveritySummary model={model} />
-				{snapshot.events.length === 0 ? (
-					<View style={{ flex: 1, minHeight: 320 }}>
-						<CenteredMessage
-							icon="clock.badge.exclamationmark"
-							title={model.emptyTitle}
-							message=""
-						/>
-					</View>
-				) : (
-					<View>
+				<View style={{ flex: 1, minHeight: 320 }}>
+					<CenteredMessage icon="clock.badge.exclamationmark" title={model.emptyTitle} message="" />
+				</View>
+				{footer}
+			</>
+		);
+	}
+
+	const list =
+		content === undefined ? (
+			<GroupedFlashList
+				data={eventEntries(snapshot.events)}
+				renderEntry={(entry) =>
+					entry.type === 'header' ? (
 						<SectionTitle
 							title="Events"
 							trailing={
@@ -218,41 +275,42 @@ export function EventsScreen() {
 								/>
 							}
 						/>
-						<MaterialListGroup>
-							{snapshot.events.map((event) => (
-								<EventListRow key={event.id} model={model} event={event} />
-							))}
-						</MaterialListGroup>
-					</View>
-				)}
-				{snapshot.errorMessage !== undefined && snapshot.events.length > 0 ? (
-					<View
-						style={{
-							flexDirection: 'row',
-							alignItems: 'center',
-							gap: 8,
-							paddingHorizontal: 32,
-							paddingTop: 12
-						}}
-					>
-						<Icon name="exclamationmark.triangle" size={16} color={m3.error} />
-						<Text style={[m3Type.bodySmall, { color: m3.error, flex: 1 }]}>
-							{snapshot.errorMessage}
-						</Text>
-					</View>
-				) : null}
-				<PaginatedListFooter
-					hasMore={snapshot.hasMore}
-					loadMoreError={snapshot.loadMoreError}
-					onRetry={() => void model.store.loadMore()}
-					onLoadMore={() => {
-						if (snapshot.isLoading || snapshot.isLoadingMore) return;
-						void model.store.loadMore();
-					}}
-				/>
-			</>
+					) : (
+						<EventListRow model={model} event={entry.event} />
+					)
+				}
+				header={<SeveritySummary model={model} />}
+				footer={
+					<>
+						{snapshot.errorMessage !== undefined ? (
+							<View style={errorLineStyle}>
+								<Icon name="exclamationmark.triangle" size={16} color={m3.error} />
+								<Text style={[m3Type.bodySmall, { color: m3.error, flex: 1 }]}>
+									{snapshot.errorMessage}
+								</Text>
+							</View>
+						) : null}
+						{footer}
+					</>
+				}
+				onEndReached={
+					snapshot.hasMore && snapshot.loadMoreError === undefined
+						? () => void model.store.loadMore()
+						: undefined
+				}
+				refreshControl={refreshControl}
+			/>
+		) : (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				style={{ backgroundColor: colors.systemGroupedBackground }}
+				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+				keyboardShouldPersistTaps="handled"
+				refreshControl={refreshControl}
+			>
+				{content}
+			</ScrollView>
 		);
-	}
 
 	return (
 		<>
@@ -277,24 +335,7 @@ export function EventsScreen() {
 					}
 				]}
 			/>
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => {
-							setRefreshing(true);
-							void model.refresh().finally(() => setRefreshing(false));
-						}}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{list}
 		</>
 	);
 }

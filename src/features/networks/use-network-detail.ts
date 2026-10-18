@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { NetworkInspect, NetworkSummary } from '@/sdk/models/network/Network';
 import { useClientManager } from '@/stores/client-manager';
 import {
@@ -53,28 +54,33 @@ export function useNetworkDetail() {
 	}, [environmentID, id, inspect]);
 
 	const isBuiltIn = isSystemNetworkName(network.name);
-	const canConnect =
-		allowsConnect(network.name) && hasPermission('networks:connect', environmentID);
-	const canDisconnect = hasPermission('networks:disconnect', environmentID);
+	const hasConnectPermission = useClientManager(() =>
+		hasPermission('networks:connect', environmentID)
+	);
+	const canConnect = allowsConnect(network.name) && hasConnectPermission;
+	const canDisconnect = useClientManager(() => hasPermission('networks:disconnect', environmentID));
 
 	const loadInspect = useCallback(async () => {
 		const current = useClientManager.getState().client;
 		if (!current) return;
 		setIsLoadingInspect(true);
-		try {
-			const result = await current.rest.get<NetworkInspect>(
-				current.rest.environmentPath(environmentID, `networks/${id}`),
-				{
-					decode: NetworkInspect.decode
+		await withCleanup(
+			async () => {
+				try {
+					const result = await current.rest.get<NetworkInspect>(
+						current.rest.environmentPath(environmentID, `networks/${id}`),
+						{
+							decode: NetworkInspect.decode
+						}
+					);
+					setInspect(result);
+					setInspectError(undefined);
+				} catch (error) {
+					setInspectError(friendlyErrorMessage(error));
 				}
-			);
-			setInspect(result);
-			setInspectError(undefined);
-		} catch (error) {
-			setInspectError(friendlyErrorMessage(error));
-		} finally {
-			setIsLoadingInspect(false);
-		}
+			},
+			() => setIsLoadingInspect(false)
+		);
 	}, [environmentID, id]);
 
 	useEffect(() => {

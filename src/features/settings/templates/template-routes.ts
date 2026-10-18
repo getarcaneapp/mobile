@@ -22,19 +22,19 @@ export function useTemplateNavigation() {
 	return useMemo(
 		() => ({
 			...navigation,
-			openPreview(this: void, payload: TemplatePreviewPayload) {
+			openPreview: (payload: TemplatePreviewPayload) => {
 				navigation.push('settings/templates/preview', {
 					id: payload.template.id,
 					token: settingsPayloads.put(payload)
 				});
 			},
-			openRegistries(this: void) {
+			openRegistries: () => {
 				navigation.push('settings/templates/registries');
 			},
-			openEditor(this: void, payload: TemplateEditorPayload) {
+			openEditor: (payload: TemplateEditorPayload) => {
 				navigation.push('settings/templates/editor', { token: settingsPayloads.put(payload) });
 			},
-			openRegistryForm(this: void, payload: TemplateRegistryFormPayload) {
+			openRegistryForm: (payload: TemplateRegistryFormPayload) => {
 				navigation.push('settings/templates/registry-form', {
 					token: settingsPayloads.put(payload)
 				});

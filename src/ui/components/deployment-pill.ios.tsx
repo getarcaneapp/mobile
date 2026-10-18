@@ -44,7 +44,7 @@ export function DeploymentPill({ operation, onTap, onDismiss }: DeploymentPillPr
 	const { completionFill, showsCheckmark } = useCompletionSweep(status, reduceMotion);
 	const pulsing = useNativeState(status.kind === 'running');
 	useEffect(() => {
-		pulsing.value = status.kind === 'running';
+		pulsing.set(status.kind === 'running');
 	}, [pulsing, status.kind]);
 
 	const terminal = isTerminal(status);

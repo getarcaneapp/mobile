@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { Role } from '@/sdk/models/role/Role';
@@ -40,27 +41,32 @@ export function useUserRoleAssignments() {
 	const [actionErrorMessage, setActionErrorMessage] = useState<string>();
 	const [pendingRemoveAssignment, setPendingRemoveAssignment] = useState<RoleAssignment>();
 	const assignmentsRef = useRef(assignments);
-	assignmentsRef.current = assignments;
+	useLayoutEffect(() => {
+		assignmentsRef.current = assignments;
+	});
 
 	const load = useCallback(async () => {
 		const client = useClientManager.getState().client;
 		if (!client || !userId) return;
 		if (assignmentsRef.current.length === 0) setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const [loadedAssignments, roles, environments] = await Promise.all([
-				client.users.getRoleAssignments({ userId }),
-				collectAllRoles(client),
-				collectAllEnvironments(client)
-			]);
-			setAssignments(loadedAssignments);
-			setAvailableRoles(roles);
-			setAvailableEnvironments(environments);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const [loadedAssignments, roles, environments] = await Promise.all([
+						client.users.getRoleAssignments({ userId }),
+						collectAllRoles(client),
+						collectAllEnvironments(client)
+					]);
+					setAssignments(loadedAssignments);
+					setAvailableRoles(roles);
+					setAvailableEnvironments(environments);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	}, [userId]);
 
 	useEffect(() => {

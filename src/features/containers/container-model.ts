@@ -1,4 +1,5 @@
 import { parseArcaneDate } from '@/sdk/models/base/date';
+import { localizedStandardCompare } from '@/core/list-sort-order';
 import type { ContainerDetails } from '@/sdk/models/container/ContainerDetails';
 import {
 	ContainerSummary,
@@ -112,9 +113,7 @@ export const ResourceUpdateFilters: { id: ResourceUpdateFilter; title: string }[
 export const resourceUpdateFilterMatches = (filter: ResourceUpdateFilter, hasUpdate: boolean) =>
 	filter === 'all' || hasUpdate;
 
-export function localizedStandardCompare(lhs: string, rhs: string): number {
-	return lhs.localeCompare(rhs, undefined, { numeric: true, sensitivity: 'base' });
-}
+export { localizedStandardCompare };
 
 export type ContainerListSort = 'nameAscending' | 'nameDescending' | 'cpuUsage' | 'memoryUsage';
 

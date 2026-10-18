@@ -18,6 +18,15 @@ import { m3Type, monoFamily } from '@/ui/components/type-scale';
 
 import { jobBadge, jobIcon, jobTint, relativeNamed } from './job-model';
 
+const rowStyle = { flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 16 };
+const bodyStyle = { flex: 1, gap: 4 };
+const metaStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 6,
+	flexWrap: 'wrap' as const
+};
+
 export function JobBadge({ text, tint }: { text: string; tint: string }) {
 	return <Text style={[m3Type.labelSmall, { fontWeight: '700', color: tint }]}>{text}</Text>;
 }
@@ -35,18 +44,16 @@ function SpinningIcon({
 	const rotation = useSharedValue(0);
 	useEffect(() => {
 		if (spinning && !reduceMotion) {
-			rotation.value = 0;
-			rotation.value = withRepeat(
-				withTiming(360, { duration: 1000, easing: Easing.linear }),
-				-1,
-				false
+			rotation.set(0);
+			rotation.set(
+				withRepeat(withTiming(360, { duration: 1000, easing: Easing.linear }), -1, false)
 			);
 		} else {
 			cancelAnimation(rotation);
-			rotation.value = 0;
+			rotation.set(0);
 		}
 	}, [spinning, reduceMotion, rotation]);
-	const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }));
+	const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.get()}deg` }] }));
 	return (
 		<Animated.View style={style}>
 			<RowIcon systemImage={systemImage} tint={tint} />
@@ -68,20 +75,20 @@ export function JobRow({
 	const next = relativeNamed(job.nextRun);
 	const badge = jobBadge(job);
 	return (
-		<View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
+		<View style={rowStyle}>
 			<SpinningIcon
 				systemImage={jobIcon(job, isRunning)}
 				tint={jobTint(job, isRunning)}
 				spinning={isRunning}
 			/>
-			<View style={{ flex: 1, gap: 4 }}>
+			<View style={bodyStyle}>
 				<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{job.name}</Text>
 				{job.description !== '' ? (
 					<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
 						{job.description}
 					</Text>
 				) : null}
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+				<View style={metaStyle}>
 					<Text style={[m3Type.bodySmall, { color: colors.tertiaryLabel, fontFamily: monoFamily }]}>
 						{job.schedule}
 					</Text>

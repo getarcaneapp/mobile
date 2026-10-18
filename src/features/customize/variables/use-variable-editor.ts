@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { useSettingsNavigation } from '@/features/settings/shared/settings-routes';
 import { showToast, Toasts } from '@/ui/toast';
 
@@ -86,15 +87,21 @@ export function useVariableEditor() {
 
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
+		const submit = async () => {
 			await payload.onSave(request);
 			showToast(Toasts.success(isEditing ? 'Variable updated' : 'Variable created'));
 			nav.back();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await submit();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	return {

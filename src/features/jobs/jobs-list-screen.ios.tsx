@@ -28,6 +28,7 @@ import { systemColors } from '@/theme/colors';
 import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-swiftui';
 import { EnvironmentLoadFailuresSection } from '@/ui/components/environment-label';
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { AppToolbar } from '@/ui/components/toolbar';
 import { DisclosureChevron } from '@/ui/settings-row';
 
@@ -53,6 +54,7 @@ function JobLink({ model, job }: { model: JobsListModel; job: JobItem }) {
 								isRunning={isRunning}
 								environmentName={job.environmentName}
 								environmentColor={environmentColor}
+								identity={job.id}
 							/>
 							<DisclosureChevron />
 						</HStack>
@@ -146,9 +148,9 @@ export function JobsListView(props: JobsListProps) {
 							)
 						}
 					>
-						{group.jobs.map((job) => (
-							<JobLink key={job.id} model={model} job={job} />
-						))}
+						<List.ForEach data={group.jobs} keyExtractor={stableItemKey} estimatedItemSize={70}>
+							{({ item }) => <JobLink model={model} job={item} />}
+						</List.ForEach>
 					</Section>
 				))}
 			</List>

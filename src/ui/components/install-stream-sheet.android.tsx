@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
-import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
+import { memo, useEffect, useRef, useState } from 'react';
+import { FlatList, Pressable, Text, View, type ListRenderItemInfo } from 'react-native';
 import Animated, {
 	cancelAnimation,
 	useAnimatedStyle,
@@ -22,9 +22,51 @@ import {
 	phaseLabel,
 	phaseTint,
 	servicePrefixEnd,
+	type InstallStreamLine,
 	type InstallStreamSheetProps
 } from './install-stream.types';
 import { monoFamily } from './type-scale';
+
+const StreamLineText = memo(function StreamLineText({
+	line,
+	accent
+}: {
+	line: InstallStreamLine;
+	accent: string;
+}) {
+	const text = line.text === '' ? ' ' : line.text;
+	const prefixEnd = line.isError ? undefined : servicePrefixEnd(line.text);
+	return (
+		<Text
+			selectable
+			style={{
+				fontFamily: monoFamily,
+				fontSize: 12,
+				color: line.isError ? systemColors.red : palette.text
+			}}
+		>
+			{prefixEnd !== undefined ? (
+				<>
+					<Text style={{ color: accent }}>{text.slice(0, prefixEnd)}</Text>
+					{text.slice(prefixEnd)}
+				</>
+			) : (
+				text
+			)}
+		</Text>
+	);
+});
+
+const streamLineKey = (line: InstallStreamLine) => line.id;
+
+function StreamLine({ line }: { line: InstallStreamLine }) {
+	const accent = useAccentColor();
+	return <StreamLineText line={line} accent={accent} />;
+}
+
+const renderStreamLine = ({ item }: ListRenderItemInfo<InstallStreamLine>) => (
+	<StreamLine line={item} />
+);
 
 export function InstallStreamSheet({
 	operation,
@@ -37,7 +79,7 @@ export function InstallStreamSheet({
 	const status = operation.status;
 	const terminal = isTerminal(status);
 	const tint = phaseTint(status) ?? accent;
-	const scroll = useRef<ScrollViewInstance>(null);
+	const scroll = useRef<FlatList<InstallStreamLine>>(null);
 	const [width, setWidth] = useState(0);
 	const blink = useSharedValue(1);
 
@@ -129,55 +171,39 @@ export function InstallStreamSheet({
 				) : null}
 			</View>
 
-			<ScrollView
+			<FlatList
 				ref={scroll}
+				data={operation.lines}
+				keyExtractor={streamLineKey}
+				renderItem={renderStreamLine}
+				extraData={accent}
+				initialNumToRender={40}
+				maxToRenderPerBatch={60}
+				windowSize={11}
 				style={{ flex: 1 }}
 				contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 14, gap: 4 }}
 				onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
-			>
-				{operation.lines.map((line) => {
-					const text = line.text === '' ? ' ' : line.text;
-					const prefixEnd = line.isError ? undefined : servicePrefixEnd(line.text);
-					return (
-						<Text
-							key={line.id}
-							selectable
-							style={{
-								fontFamily: monoFamily,
-								fontSize: 12,
-								color: line.isError ? systemColors.red : palette.text
-							}}
+				ListFooterComponent={
+					!terminal ? (
+						<Animated.Text
+							style={[
+								{
+									fontFamily: monoFamily,
+									fontSize: 12,
+									color: operation.lines.length === 0 ? palette.dim : palette.text
+								},
+								cursorStyle
+							]}
 						>
-							{prefixEnd !== undefined ? (
-								<>
-									<Text style={{ color: accent }}>{text.slice(0, prefixEnd)}</Text>
-									{text.slice(prefixEnd)}
-								</>
-							) : (
-								text
-							)}
+							{operation.lines.length === 0 ? 'starting ▊' : '▊'}
+						</Animated.Text>
+					) : operation.lines.length === 0 ? (
+						<Text style={{ fontFamily: monoFamily, fontSize: 12, color: palette.dim }}>
+							no output
 						</Text>
-					);
-				})}
-				{!terminal ? (
-					<Animated.Text
-						style={[
-							{
-								fontFamily: monoFamily,
-								fontSize: 12,
-								color: operation.lines.length === 0 ? palette.dim : palette.text
-							},
-							cursorStyle
-						]}
-					>
-						{operation.lines.length === 0 ? 'starting ▊' : '▊'}
-					</Animated.Text>
-				) : operation.lines.length === 0 ? (
-					<Text style={{ fontFamily: monoFamily, fontSize: 12, color: palette.dim }}>
-						no output
-					</Text>
-				) : null}
-			</ScrollView>
+					) : undefined
+				}
+			/>
 
 			<View
 				style={{

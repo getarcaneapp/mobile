@@ -1,9 +1,11 @@
-import type { ReactNode } from 'react';
+import { createContext, type ReactNode } from 'react';
 
 export const ListUX = {
 	searchDebounce: 200,
 	pageSizeDefault: 50
 } as const;
+
+export const LoadsOnEndReachedContext = createContext(false);
 
 export type PaginatedListFooterProps = {
 	hasMore: boolean;

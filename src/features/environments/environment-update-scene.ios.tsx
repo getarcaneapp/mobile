@@ -87,7 +87,7 @@ function useTintColor(): (tint: EnvironmentUpdateTint) => string {
 function useActiveState(active: boolean) {
 	const state = useNativeState<boolean>(active);
 	useEffect(() => {
-		state.value = active;
+		state.set(active);
 	}, [state, active]);
 	return state;
 }
@@ -95,7 +95,7 @@ function useActiveState(active: boolean) {
 function useTriggerState(trigger: number | string) {
 	const state = useNativeState<number | string>(trigger);
 	useEffect(() => {
-		state.value = trigger;
+		state.set(trigger);
 	}, [state, trigger]);
 	return state;
 }

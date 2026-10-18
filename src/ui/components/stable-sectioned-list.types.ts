@@ -15,9 +15,14 @@ export type StableSectionedListProps<
 > = {
 	sections: StableListSection<SectionID, Item>[];
 	renderRow: (item: Item) => ReactNode;
+	estimatedItemSize?: number;
 	preferredHeaderAccessorySectionID?: SectionID;
 	headerAccessory?: (section: StableListSection<SectionID, Item>) => ReactNode;
 };
+
+export function stableItemKey(item: { id: string | number }): string {
+	return String(item.id);
+}
 
 export function headerAccessorySectionID<
 	SectionID extends string | number,

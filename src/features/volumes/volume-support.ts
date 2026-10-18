@@ -1,7 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
 
 import type { ArcaneAuthorizedRequest } from '@/sdk/client/ArcaneTransport';
@@ -214,7 +214,9 @@ export async function shareFile(file: File) {
 export function useLatestState<T>(initial: T) {
 	const [value, setValue] = useState(initial);
 	const ref = useRef(value);
-	ref.current = value;
+	useLayoutEffect(() => {
+		ref.current = value;
+	});
 	const set = useCallback((next: T | ((current: T) => T)) => {
 		setValue((current) => {
 			const resolved = typeof next === 'function' ? (next as (current: T) => T)(current) : next;

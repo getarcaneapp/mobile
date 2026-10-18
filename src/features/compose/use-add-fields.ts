@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 
 import { ComposeDocument } from './model/compose-document';
 import { composeErrorMessage, ComposeFormError } from './model/compose-errors';
@@ -21,6 +21,51 @@ export type AddFieldsOptions = {
 
 const includesInsensitive = (value: string, search: string) =>
 	value.toLowerCase().includes(search.toLowerCase());
+
+function applyAddedSetting(
+	pending: ComposeSettingDraft,
+	{
+		excluding,
+		includesProjectSettings,
+		selectionIsProject,
+		serviceSelection,
+		serviceName,
+		text,
+		destinationPath,
+		isList,
+		setText,
+		setServiceSelection
+	}: {
+		excluding: Set<string>;
+		includesProjectSettings: boolean;
+		selectionIsProject: boolean;
+		serviceSelection: string;
+		serviceName: string;
+		text: string;
+		destinationPath: ComposeFieldPathComponent[];
+		isList: boolean;
+		setText: (text: string) => void;
+		setServiceSelection: (service: string) => void;
+	}
+): string | undefined {
+	try {
+		if (excluding.has(pending.name))
+			throw ComposeFormError.invalid('This setting is managed outside this editor.');
+		if (includesProjectSettings && selectionIsProject && pending.name === 'services') {
+			throw ComposeFormError.invalid('Use the service settings above to add a service.');
+		}
+		const newService =
+			includesProjectSettings && !selectionIsProject && serviceSelection === ''
+				? serviceName
+				: undefined;
+		const result = addingDraft(pending, text, destinationPath, newService, isList);
+		setText(result);
+		if (newService !== undefined) setServiceSelection(newService);
+		return undefined;
+	} catch (caught) {
+		return composeErrorMessage(caught);
+	}
+}
 
 export function useAddFields(
 	text: string,
@@ -107,30 +152,26 @@ export function useAddFields(
 		setDraft(pending);
 	};
 
-	useEffect(() => {
+	const selectInitialItem = useEffectEvent(() => {
 		if (isList && draft === undefined) select(ComposeSchema.value([...schemaPath, { index: 0 }]));
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+	});
+	useEffect(() => {
+		selectInitialItem();
 	}, []);
 
-	const add = (pending: ComposeSettingDraft): string | undefined => {
-		try {
-			if (excluding.has(pending.name))
-				throw ComposeFormError.invalid('This setting is managed outside this editor.');
-			if (includesProjectSettings && selectionIsProject && pending.name === 'services') {
-				throw ComposeFormError.invalid('Use the service settings above to add a service.');
-			}
-			const newService =
-				includesProjectSettings && !selectionIsProject && serviceSelection === ''
-					? serviceName
-					: undefined;
-			const result = addingDraft(pending, text, destinationPath, newService, isList);
-			setText(result);
-			if (newService !== undefined) setServiceSelection(newService);
-			return undefined;
-		} catch (caught) {
-			return composeErrorMessage(caught);
-		}
-	};
+	const add = (pending: ComposeSettingDraft): string | undefined =>
+		applyAddedSetting(pending, {
+			excluding,
+			includesProjectSettings,
+			selectionIsProject,
+			serviceSelection,
+			serviceName,
+			text,
+			destinationPath,
+			isList,
+			setText,
+			setServiceSelection
+		});
 
 	return {
 		includesProjectSettings,

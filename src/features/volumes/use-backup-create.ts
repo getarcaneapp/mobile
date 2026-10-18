@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useRef } from 'react';
+import { useState } from 'react';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 
@@ -21,12 +21,9 @@ export function useBackupCreate(token: string | undefined) {
 	const router = useRouter();
 	useBackupSessionScope();
 	const unmounted = useUnmounted();
-	const storeRef = useRef<BackupCreateStore | undefined>(
-		routePayloads.get<BackupCreateStore>(token)
-	);
-	const fallback = useRef<BackupCreateStore | undefined>(undefined);
-	const store = storeRef.current;
-	const state = useStore(store ?? (fallback.current ??= makeEmpty()));
+	const [store] = useState(() => routePayloads.get<BackupCreateStore>(token));
+	const [observed] = useState(() => store ?? makeEmpty());
+	const state = useStore(observed);
 	if (!store) return undefined;
 	return {
 		state,

@@ -34,7 +34,7 @@ import {
 	truncationMode
 } from '@expo/ui/swift-ui/modifiers';
 import * as Clipboard from 'expo-clipboard';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import { useAccentColor } from '@/theme/accent';
 import { systemColors } from '@/theme/colors';
@@ -62,7 +62,13 @@ const breathing = Animation.easeInOut({ duration: 0.9 }).repeat({
 	autoreverses: true
 });
 
-function LineRow({ line, accent }: { line: InstallStreamLine; accent: string }) {
+const LineRow = memo(function LineRow({
+	line,
+	accent
+}: {
+	line: InstallStreamLine;
+	accent: string;
+}) {
 	const text = line.text === '' ? ' ' : line.text;
 	const modifiers = [
 		mono('caption'),
@@ -82,7 +88,7 @@ function LineRow({ line, accent }: { line: InstallStreamLine; accent: string }) 
 			<Text modifiers={[foregroundStyle(palette.text)]}>{text.slice(prefixEnd)}</Text>
 		</Text>
 	);
-}
+});
 
 export function InstallStreamSheet({
 	operation,

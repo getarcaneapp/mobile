@@ -5,7 +5,9 @@ import type { DashboardSnapshot } from '@/sdk/models/dashboard';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import type { DockerInfo } from '@/sdk/models/system/DockerInfo';
 import type { SystemStats } from '@/sdk/models/system/SystemStats';
+import { deepEqual } from '@/core/deep-equal';
 import { pruneRankings, topBusiest } from '@/stores/busiest-containers-logic';
+import { coalescedUpdates } from '@/stores/coalesced-updates';
 import {
 	appendFrame,
 	applyError,
@@ -31,6 +33,7 @@ import {
 	resolveImageUpdateCount,
 	retainingActiveActivities,
 	smoothed,
+	smoothedSeries,
 	tileValue,
 	usageHeadline,
 	windowEnd
@@ -367,5 +370,78 @@ describe('busiest containers', () => {
 			['b/z']
 		);
 		assert.deepEqual(Object.keys(pruneRankings(rankings, new Set(['b'])).cpuUsage ?? {}), ['b']);
+	});
+});
+
+describe('busiest containers change detection', () => {
+	const container = (id: string, cpu: number) =>
+		({
+			id,
+			names: [id],
+			resourceSample: { cpuPercent: cpu, memoryUsageBytes: 1, memoryLimitBytes: 0 }
+		}) as unknown as ContainerSummary;
+
+	it('keeps the rankings object when nothing is pruned', () => {
+		const rankings = { cpuUsage: { a: [container('x', 5)] } };
+		assert.equal(pruneRankings(rankings, new Set(['a', 'b'])), rankings);
+		assert.notEqual(pruneRankings(rankings, new Set(['b'])), rankings);
+	});
+
+	it('treats identical responses as unchanged', () => {
+		assert.ok(deepEqual([container('x', 5)], [container('x', 5)]));
+		assert.ok(!deepEqual([container('x', 5)], [container('x', 6)]));
+		assert.ok(deepEqual({ a: 1, b: undefined }, { a: 1 }));
+		assert.ok(!deepEqual({ a: [1, 2] }, { a: [1, 2, 3] }));
+		assert.ok(!deepEqual([], {}));
+	});
+});
+
+describe('usage smoothing cache', () => {
+	it('returns the same smoothed array for the same samples', () => {
+		const samples = [
+			{ timestamp: 1, value: 10 },
+			{ timestamp: 2, value: 30 }
+		];
+		const first = smoothedSeries(samples);
+		assert.equal(smoothedSeries(samples), first);
+		assert.deepEqual(first, smoothed(samples));
+		assert.notEqual(smoothedSeries([...samples]), first);
+	});
+});
+
+describe('coalesced stats updates', () => {
+	it('commits every queued transform in one batch, in order', async () => {
+		const commits: Map<string, number>[] = [];
+		const values = new Map<string, number>();
+		const updates = coalescedUpdates<number>((pending) => {
+			for (const [key, transforms] of pending)
+				values.set(
+					key,
+					transforms.reduce((value, transform) => transform(value), values.get(key) ?? 0)
+				);
+			commits.push(new Map(values));
+		}, 5);
+		updates.enqueue('a', (v) => v + 1);
+		updates.enqueue('b', (v) => v + 10);
+		updates.enqueue('a', (v) => v * 3);
+		assert.equal(commits.length, 0);
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		assert.equal(commits.length, 1);
+		assert.equal(values.get('a'), 3);
+		assert.equal(values.get('b'), 10);
+	});
+
+	it('drops keys that are no longer tracked and flushes on demand', () => {
+		const committed: string[] = [];
+		const updates = coalescedUpdates<number>((pending) => {
+			committed.push(...pending.keys());
+		}, 1000);
+		updates.enqueue('a', (v) => v);
+		updates.enqueue('b', (v) => v);
+		updates.drop((key) => key === 'b');
+		updates.flush();
+		assert.deepEqual(committed, ['b']);
+		updates.flush();
+		assert.deepEqual(committed, ['b']);
 	});
 });

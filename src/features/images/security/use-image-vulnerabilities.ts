@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { User } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
@@ -29,6 +31,69 @@ export type ImageVulnerabilitiesProps = {
 };
 
 const pageSize = 50;
+
+const withoutKey = (current: Record<string, IgnoredVulnerability>, key: string) => {
+	const { [key]: _removed, ...rest } = current;
+	return rest;
+};
+
+type VulnerabilitiesLive = {
+	page: number;
+	isLoading: boolean;
+	hasMore: boolean;
+	selectedSeverities: VulnerabilitySeverity[];
+	vulnerabilities: VulnerabilityRecord[];
+};
+
+async function loadVulnerabilityPage({
+	client,
+	live,
+	environmentID,
+	imageID,
+	setVulnerabilities,
+	setCleared,
+	setHasMore,
+	setLoadMoreError,
+	setIsLoading
+}: {
+	client: ArcaneClient;
+	live: VulnerabilitiesLive;
+	environmentID: EnvironmentID;
+	imageID: string;
+	setVulnerabilities: (vulnerabilities: VulnerabilityRecord[]) => void;
+	setCleared: (cleared: boolean) => void;
+	setHasMore: (hasMore: boolean) => void;
+	setLoadMoreError: (error: string | undefined) => void;
+	setIsLoading: (isLoading: boolean) => void;
+}) {
+	const page = live.page;
+	let failed = false;
+	try {
+		const response = await client.vulnerabilities.listForImage({
+			envID: environmentID,
+			imageId: imageID,
+			query: { start: (page - 1) * pageSize, limit: pageSize },
+			severity: severityQuery(live.selectedSeverities)
+		});
+		const items = response.data.map(vulnerabilityRecord);
+		const next = page === 1 ? items : [...live.vulnerabilities, ...items];
+		live.vulnerabilities = next;
+		setVulnerabilities(next);
+		setCleared(false);
+		const more = page * pageSize < response.pagination.totalItems;
+		live.hasMore = more;
+		setHasMore(more);
+	} catch (error) {
+		if (page > 1) {
+			setLoadMoreError(friendlyErrorMessage(error));
+			failed = true;
+		}
+	} finally {
+		live.isLoading = false;
+		setIsLoading(false);
+	}
+	return failed;
+}
 
 export function useImageVulnerabilities({
 	imageID,
@@ -105,33 +170,17 @@ export function useImageVulnerabilities({
 		setLoadMoreError(undefined);
 		live.current.isLoading = true;
 		setIsLoading(true);
-		const page = live.current.page;
-		let failed = false;
-		try {
-			const response = await client.vulnerabilities.listForImage({
-				envID: environmentID,
-				imageId: imageID,
-				query: { start: (page - 1) * pageSize, limit: pageSize },
-				severity: severityQuery(live.current.selectedSeverities)
-			});
-			const items = response.data.map(vulnerabilityRecord);
-			const next = page === 1 ? items : [...live.current.vulnerabilities, ...items];
-			live.current.vulnerabilities = next;
-			setVulnerabilities(next);
-			setCleared(false);
-			const more = page * pageSize < response.pagination.totalItems;
-			live.current.hasMore = more;
-			setHasMore(more);
-		} catch (error) {
-			if (page > 1) {
-				setLoadMoreError(friendlyErrorMessage(error));
-				failed = true;
-			}
-		} finally {
-			live.current.isLoading = false;
-			setIsLoading(false);
-		}
-		return failed;
+		return loadVulnerabilityPage({
+			client,
+			live: live.current,
+			environmentID,
+			imageID,
+			setVulnerabilities,
+			setCleared,
+			setHasMore,
+			setLoadMoreError,
+			setIsLoading
+		});
 	};
 
 	const reload = async () => {
@@ -153,9 +202,12 @@ export function useImageVulnerabilities({
 		if (failed) live.current.page -= 1;
 	};
 
-	useEffect(() => {
+	const startInitialLoad = useEffectEvent(() => {
 		void initialLoad();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+	});
+
+	useEffect(() => {
+		startInitialLoad();
 	}, []);
 
 	const toggleSeverity = (severity: VulnerabilitySeverity) => {
@@ -172,15 +224,18 @@ export function useImageVulnerabilities({
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsScanning(true);
-		try {
-			await client.vulnerabilities.scanImage({ envID: environmentID, imageId: imageID });
-			await reload();
-			showToast(Toasts.success('Scan complete'));
-		} catch (error) {
-			showError(friendlyErrorMessage(error));
-		} finally {
-			setIsScanning(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.vulnerabilities.scanImage({ envID: environmentID, imageId: imageID });
+					await reload();
+					showToast(Toasts.success('Scan complete'));
+				} catch (error) {
+					showError(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsScanning(false)
+		);
 	};
 
 	const unignore = async (ignoreId: string, key: string) => {
@@ -188,10 +243,7 @@ export function useImageVulnerabilities({
 		if (!client) return;
 		try {
 			await client.vulnerabilities.unignore({ envID: environmentID, ignoreId });
-			setIgnoredById((current) => {
-				const { [key]: _removed, ...rest } = current;
-				return rest;
-			});
+			setIgnoredById((current) => withoutKey(current, key));
 			setCleared(false);
 			showToast(Toasts.success('Vulnerability unignored'));
 		} catch (error) {
@@ -215,7 +267,8 @@ export function useImageVulnerabilities({
 	const ignoreInfo = (vulnerability: VulnerabilityRecord): IgnoredVulnerability | undefined =>
 		ignoredById[ignoreKey(vulnerability)];
 
-	const canPatch = hasPermission('images:patch', environmentID) && supportsActivities;
+	const hasPatchPermission = useClientManager(() => hasPermission('images:patch', environmentID));
+	const canPatch = hasPatchPermission && supportsActivities;
 
 	return {
 		imageID,

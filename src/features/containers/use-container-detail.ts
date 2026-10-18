@@ -1,9 +1,10 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ContainerDetails } from '@/sdk/models/container/ContainerDetails';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
@@ -76,9 +77,17 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 	const [isSavingAutoUpdate, setIsSavingAutoUpdate] = useState(false);
 	useClientManager((s) => s.accessGeneration);
 	const isRBAC = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
+	const canAutoUpdate = useClientManager(() =>
+		hasPermission(Permission.Containers.autoUpdate, environmentID)
+	);
+	const canEdit = useClientManager(() => hasPermission('containers:edit', environmentID));
+	const canCommit = useClientManager(() => hasPermission('images:commit', environmentID));
+	const canKill = useClientManager(() => hasPermission('containers:kill', environmentID));
 
 	const containerRef = useRef(container);
-	containerRef.current = container;
+	useLayoutEffect(() => {
+		containerRef.current = container;
+	});
 
 	const showError = (error: unknown) =>
 		Alert.alert('Error', friendlyErrorMessage(error), [{ text: 'OK' }]);
@@ -89,7 +98,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 		const requestedID = containerRef.current.id;
 		const generation = useClientManager.getState().clientGeneration;
 		setIsLoading(true);
-		try {
+		const load = async () => {
 			const loaded = await boundedContainerInspectWithAutoUpdate(
 				client,
 				environmentID,
@@ -103,10 +112,15 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 			containerCache.setDetails(environmentID, loaded.details);
 			setDetails(loaded.details);
 			setAutoUpdateEnabled(loaded.autoUpdateEnabled);
-		} catch {
-		} finally {
-			setIsLoading(false);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await load();
+				} catch {}
+			},
+			() => setIsLoading(false)
+		);
 	}, [environmentID]);
 
 	useFocusEffect(
@@ -145,42 +159,50 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 				? systemColors.orange
 				: undefined;
 
+	const activeEnvironmentName = useClientManager((s) => s.activeEnvironmentName);
 	const environmentName =
-		useEnvironmentsStore((s) => s.displayName(environmentID)) ??
-		useClientManager.getState().activeEnvironmentName;
+		useEnvironmentsStore((s) => s.displayName(environmentID)) ?? activeEnvironmentName;
 
 	const performAction = async (action: ContainerLifecycleAction, actionID?: string) => {
 		if (!useClientManager.getState().client) return;
 		setIsActioning(true);
 		setRunningActionID(actionID);
-		try {
-			await runLifecycle(action, environmentID, container.id);
-			containersChanged(environmentID);
-			await loadDetails();
-			showToast(Toasts.success(lifecycleSuccessTitle[action]));
-		} catch (error) {
-			showError(error);
-		} finally {
-			setIsActioning(false);
-			setRunningActionID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await runLifecycle(action, environmentID, container.id);
+					containersChanged(environmentID);
+					await loadDetails();
+					showToast(Toasts.success(lifecycleSuccessTitle[action]));
+				} catch (error) {
+					showError(error);
+				}
+			},
+			() => {
+				setIsActioning(false);
+				setRunningActionID(undefined);
+			}
+		);
 	};
 
 	const deleteContainer = async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsActioning(true);
-		try {
-			await client.rest.deleteVoid(
-				client.rest.environmentPath(environmentID, `containers/${container.id}`)
-			);
-			containersChanged(environmentID);
-			showToast(Toasts.success('Container removed'));
-		} catch (error) {
-			showError(error);
-		} finally {
-			setIsActioning(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.rest.deleteVoid(
+						client.rest.environmentPath(environmentID, `containers/${container.id}`)
+					);
+					containersChanged(environmentID);
+					showToast(Toasts.success('Container removed'));
+				} catch (error) {
+					showError(error);
+				}
+			},
+			() => setIsActioning(false)
+		);
 	};
 
 	const downloadLogs = async () => {
@@ -203,16 +225,22 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 		const previous = autoUpdateEnabled;
 		setAutoUpdateEnabled(enabled);
 		setIsSavingAutoUpdate(true);
-		try {
+		const save = async () => {
 			await client.containers.setAutoUpdate({ envID: environmentID, id: container.id, enabled });
 			containersChanged(environmentID);
 			showToast(Toasts.success(enabled ? 'Auto-update enabled' : 'Auto-update disabled'));
-		} catch (error) {
-			setAutoUpdateEnabled(previous);
-			showError(error);
-		} finally {
-			setIsSavingAutoUpdate(false);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await save();
+				} catch (error) {
+					setAutoUpdateEnabled(previous);
+					showError(error);
+				}
+			},
+			() => setIsSavingAutoUpdate(false)
+		);
 	};
 
 	const startDeployment = (kind: 'containerRedeploy' | 'containerUpdate') =>
@@ -260,8 +288,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 				};
 
 	const actionSecondary: ActionButtonItem[] = [
-		...(container.updateInfo?.hasUpdate === true &&
-		hasPermission(Permission.Containers.autoUpdate, environmentID)
+		...(container.updateInfo?.hasUpdate === true && canAutoUpdate
 			? [
 					{
 						id: 'update',
@@ -314,7 +341,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 			tint: accent,
 			action: () => void downloadLogs()
 		},
-		...(isRBAC && hasPermission('containers:edit', environmentID)
+		...(isRBAC && canEdit
 			? [
 					{
 						id: 'edit',
@@ -325,7 +352,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 					}
 				]
 			: []),
-		...(isRBAC && hasPermission('images:commit', environmentID)
+		...(isRBAC && canCommit
 			? [
 					{
 						id: 'commit',
@@ -354,7 +381,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 			tint: accent,
 			action: () => nav.openSubpage('rename', environmentID, container.id, { name: displayedName })
 		},
-		...(isRunning && hasPermission('containers:kill', environmentID)
+		...(isRunning && canKill
 			? [
 					{
 						id: 'kill',
@@ -427,7 +454,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 		statusIndicatorColor,
 		metadata,
 		autoUpdateEnabled,
-		canAutoUpdate: hasPermission(Permission.Containers.autoUpdate, environmentID),
+		canAutoUpdate,
 		isSavingAutoUpdate,
 		setAutoUpdate: (enabled: boolean) => void setAutoUpdate(enabled),
 		loadDetails,

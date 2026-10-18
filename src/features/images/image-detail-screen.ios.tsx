@@ -33,7 +33,10 @@ import { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
-import { canPatchImage, useSecurityNavigation } from '@/features/images/security/security-routes';
+import {
+	useCanPatchImage,
+	useSecurityNavigation
+} from '@/features/images/security/security-routes';
 import { ImageVulnerabilitiesView } from '@/features/images/security/image-vulnerabilities-view';
 import { useAccentColor } from '@/theme/accent';
 import { colors, systemColors } from '@/theme/colors';
@@ -261,6 +264,7 @@ function ImageDetailToolbar({
 }) {
 	const accent = useAccentColor();
 	const security = useSecurityNavigation();
+	const canPatch = useCanPatchImage(model.environmentID);
 	const [pending, setPending] = useState<ActionButtonItem>();
 	useItemDeleteConfirmation(pending, setPending, (item) => ({
 		title: `${item.title}?`,
@@ -275,7 +279,7 @@ function ImageDetailToolbar({
 		isDisabled || (runningItemID !== undefined && runningItemID !== item.id);
 	const section = model.selectedSection;
 	const showsPredicateFilter = section === 'attestations' && attestations.predicateTypes.length > 1;
-	const showsPatch = section === 'vulnerabilities' && canPatchImage(model.environmentID);
+	const showsPatch = section === 'vulnerabilities' && canPatch;
 	return (
 		<AppToolbar placement="right" tintColor={accent}>
 			{model.exportedImage ? (

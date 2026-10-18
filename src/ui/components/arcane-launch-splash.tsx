@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
 	Easing,
@@ -103,7 +103,9 @@ export function ArcaneLaunchSplash({ accentColorHex, onFinished }: ArcaneLaunchS
 	const [showsFinishedLogo, setShowsFinishedLogo] = useState(!tracesNatively);
 	const time = useTraceClock('elapsed', traceStart, tracesNatively && !showsFinishedLogo);
 	const finishedRef = useRef(onFinished);
-	finishedRef.current = onFinished;
+	useLayoutEffect(() => {
+		finishedRef.current = onFinished;
+	});
 
 	const initialBlur = reduceMotion ? 0 : 12;
 	const blurRadius = useSharedValue(initialBlur);
@@ -113,27 +115,29 @@ export function ArcaneLaunchSplash({ accentColorHex, onFinished }: ArcaneLaunchS
 		const timers: ReturnType<typeof setTimeout>[] = [];
 		const after = (ms: number, run: () => void) => timers.push(setTimeout(run, ms));
 
-		appeared.value = animateTo(reduceMotion ? Motion.reducedFallback : Motion.splashEnter, 1);
+		appeared.set(animateTo(reduceMotion ? Motion.reducedFallback : Motion.splashEnter, 1));
 		if (!reduceMotion) {
-			blurRadius.value = animateTo(Motion.splashEnter, 0);
-			breath.value = withRepeat(
-				withTiming(1, { duration: breathHalfPeriod * 1000, easing: Easing.inOut(Easing.ease) }),
-				-1,
-				true
+			blurRadius.set(animateTo(Motion.splashEnter, 0));
+			breath.set(
+				withRepeat(
+					withTiming(1, { duration: breathHalfPeriod * 1000, easing: Easing.inOut(Easing.ease) }),
+					-1,
+					true
+				)
 			);
 		}
 
 		const sweepSheen = (delayMs: number) => {
 			if (reduceMotion) return;
-			sheen.value = animateTo(Motion.splashSheen, 1.4, delayMs);
+			sheen.set(animateTo(Motion.splashSheen, 1.4, delayMs));
 		};
 		const finish = (delayMs: number) =>
 			after(delayMs, () => {
 				setShowsFinishedLogo(true);
 				after(32, () => {
 					const token = reduceMotion ? Motion.reducedFallback : Motion.splashExit;
-					exit.value = animateTo(token, 1);
-					if (!reduceMotion) blurRadius.value = animateTo(token, 14);
+					exit.set(animateTo(token, 1));
+					if (!reduceMotion) blurRadius.set(animateTo(token, 14));
 					after(reduceMotion ? Motion.reducedFallback.duration : 600, () => finishedRef.current());
 				});
 			});

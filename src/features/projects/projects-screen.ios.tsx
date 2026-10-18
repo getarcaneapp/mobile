@@ -289,6 +289,7 @@ export function ProjectsScreen(props: ProjectsListProps) {
 							hasMore={snapshot.hasMore}
 						/>
 					)}
+					estimatedItemSize={46}
 					renderRow={(item) => <ProjectLink model={model} item={item} />}
 				/>
 				<PaginatedListFooter

@@ -1,5 +1,6 @@
-import { useFocusEffect, useNavigation, useRouter, useSegments } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 import { AppState } from 'react-native';
 import { useStore } from 'zustand';
 
@@ -7,6 +8,7 @@ import '@/stores/environment-detail-streams';
 
 import { AppTabIDs, type AppTab } from '@/core/app-tab';
 import { hasPermission } from '@/core/auth/permissions';
+import { nextInstanceKey } from '@/core/with-cleanup';
 import { Permission } from '@/sdk/models/role/Permission';
 import { User } from '@/sdk/models/user/User';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
@@ -20,7 +22,7 @@ import { useImageUpdateCountStore } from '@/stores/image-update-count-store';
 import { resolveTabs, useNavTabsStore } from '@/stores/nav-tabs-store';
 import { usePinnedItemsStore } from '@/stores/pinned-items-store';
 import { useResourceMutationStore } from '@/stores/resource-mutation-store';
-import { maxStatsStreams } from '@/stores/system-stats-history-store';
+import { useMaxStatsStreams } from '@/stores/system-stats-history-store';
 
 import type { PickerEnvironment } from '@/ui/components/environment-context.types';
 
@@ -36,16 +38,22 @@ import {
 } from './dashboard-logic';
 import { createDashboardViewStore } from './dashboard-view-store';
 
-let nextConsumerID = 0;
+function createViewState() {
+	let unmounted = false;
+	return {
+		store: createDashboardViewStore(() => unmounted),
+		setUnmounted: (value: boolean) => {
+			unmounted = value;
+		}
+	};
+}
 
 export function useDashboardModel() {
 	const router = useRouter();
 	const navigation = useNavigation();
-	const segments = useSegments() as string[];
-	const group = segments[1] ?? '(dashboard)';
+	const group = useTabStackGroup('(dashboard)');
 
-	const unmountedRef = useRef(false);
-	const [store] = useState(() => createDashboardViewStore(() => unmountedRef.current));
+	const [{ store, setUnmounted }] = useState(createViewState);
 	const view = useStore(store);
 
 	const client = useClientManager((s) => s.client);
@@ -70,7 +78,7 @@ export function useDashboardModel() {
 	const mutationVersions = useResourceMutationStore((s) => s.versions);
 	usePinnedItemsStore((s) => s.version);
 
-	const [consumerID] = useState(() => `dashboard-${nextConsumerID++}`);
+	const [consumerID] = useState(() => nextInstanceKey('dashboard'));
 	const holdsStreamsRef = useRef(false);
 	const isVisibleRef = useRef(false);
 	const wasBackgroundedRef = useRef(false);
@@ -100,15 +108,15 @@ export function useDashboardModel() {
 	}, [consumerID]);
 
 	useEffect(() => {
-		unmountedRef.current = false;
+		setUnmounted(false);
 		return () => {
-			unmountedRef.current = true;
+			setUnmounted(true);
 			if (holdsStreamsRef.current) {
 				holdsStreamsRef.current = false;
 				useEnvironmentsStore.getState().setVisible(false, consumerID, false);
 			}
 		};
-	}, [consumerID]);
+	}, [consumerID, setUnmounted]);
 
 	useEffect(() => {
 		useEnvironmentsStore.getState().configure(client);
@@ -235,14 +243,17 @@ export function useDashboardModel() {
 	);
 	const imageUpdatesTotal = view.imageUpdatesTotal();
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
-	const canPrune = allEnvironmentsPreview
-		? enabledEnvironments.some((e) => hasPermission(Permission.System.prune, e.id))
-		: hasPermission(Permission.System.prune, activeEnvironmentID);
+	const canPrune = useClientManager(() =>
+		allEnvironmentsPreview
+			? enabledEnvironments.some((e) => hasPermission(Permission.System.prune, e.id))
+			: hasPermission(Permission.System.prune, activeEnvironmentID)
+	);
 
-	const pinnedStore = usePinnedItemsStore.getState();
-	const hasPinnedDashboardResources =
-		pinnedStore.pinnedIDs('container', activeEnvironmentID).size > 0 ||
-		pinnedStore.pinnedIDs('project', activeEnvironmentID).size > 0;
+	const hasPinnedDashboardResources = usePinnedItemsStore(
+		(s) =>
+			s.pinnedIDs('container', activeEnvironmentID).size > 0 ||
+			s.pinnedIDs('project', activeEnvironmentID).size > 0
+	);
 
 	const showsSkeleton = !view.hasLoadedOnce && view.isLoading;
 	const showsEmptyState =
@@ -266,7 +277,8 @@ export function useDashboardModel() {
 		hasStreamAggregate: aggregate !== undefined
 	});
 
-	const liveStatsMessage = liveStatsLimitMessage(enabledEnvironments.length, maxStatsStreams());
+	const maxStreams = useMaxStatsStreams();
+	const liveStatsMessage = liveStatsLimitMessage(enabledEnvironments.length, maxStreams);
 	const showsStreamFailedBanner = streamFailed && !streamUnsupported;
 
 	const pinned = useNavTabsStore((s) => s.pinnedTabs);

@@ -20,15 +20,26 @@ import {
 
 const visibleCount = 3;
 
+const chipsStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 8,
+	overflow: 'hidden' as const
+};
+const chipStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 3 };
+const containerStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12 };
+const bodyStyle = { flex: 1, gap: 3 };
+const titleLineStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4 };
+
 export function ProjectTagChips({ tags }: { tags: ProjectTag[] }) {
 	return (
 		<View
 			accessible
 			accessibilityLabel={`Tags: ${tags.map((t) => t.name).join(', ')}`}
-			style={{ flexDirection: 'row', alignItems: 'center', gap: 8, overflow: 'hidden' }}
+			style={chipsStyle}
 		>
 			{tags.slice(0, visibleCount).map((tag) => (
-				<View key={tag.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+				<View key={tag.name} style={chipStyle}>
 					<Icon name="tag.fill" size={11} color={projectTagDisplayColor(tag.color)} />
 					<Text numberOfLines={1} style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>
 						{tag.name}
@@ -61,7 +72,7 @@ export function ProjectRow({
 		<View
 			accessible
 			accessibilityLabel={projectRowAccessibility(project, isPinned, environmentName)}
-			style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+			style={containerStyle}
 		>
 			<View importantForAccessibility="no-hide-descendants">
 				<CachedAsyncImage
@@ -71,8 +82,8 @@ export function ProjectRow({
 					fallback={<RowIcon systemImage="folder.fill" tint={systemColors.indigo} />}
 				/>
 			</View>
-			<View style={{ flex: 1, gap: 3 }}>
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+			<View style={bodyStyle}>
+				<View style={titleLineStyle}>
 					<Text style={[m3Type.bodyLarge, { color: colors.label, flexShrink: 1 }]}>
 						{projectDisplayName(project)}
 					</Text>

@@ -69,7 +69,13 @@ function memoryPercent(sample: ContainerResourceSample) {
 		: 0;
 }
 
-export function ContainerResourceMetrics({ sample }: { sample?: ContainerResourceSample }) {
+export function ContainerResourceMetrics({
+	sample,
+	identity
+}: {
+	sample?: ContainerResourceSample;
+	identity?: string;
+}) {
 	const reduceMotion = useReduceMotion();
 	const metric = (
 		progress: number,
@@ -104,7 +110,13 @@ export function ContainerResourceMetrics({ sample }: { sample?: ContainerResourc
 				<HStack modifiers={[frame({ width: 14, height: 14 })]}>
 					<RNHostView matchContents>
 						<View style={{ width: 14, height: 14 }}>
-							<MetricRing progress={progress} tint={tint} size={14} lineWidth={2.5} />
+							<MetricRing
+								progress={progress}
+								tint={tint}
+								size={14}
+								lineWidth={2.5}
+								identity={identity}
+							/>
 						</View>
 					</RNHostView>
 				</HStack>
@@ -255,7 +267,7 @@ export function ContainerRow({
 			{metrics.kind === 'hidden' ? (
 				<StatusIcon status={container.status} isLive={running} />
 			) : (
-				<ContainerResourceMetrics sample={sample} />
+				<ContainerResourceMetrics sample={sample} identity={container.id} />
 			)}
 		</HStack>
 	);

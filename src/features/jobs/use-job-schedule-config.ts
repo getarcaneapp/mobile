@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { UpdateSettings } from '@/sdk/models/settings/Settings';
 import { useClientManager } from '@/stores/client-manager';
@@ -80,6 +81,15 @@ const isUpdatable = (key: string): key is keyof typeof updatableKeys => key in u
 
 type Values = Readonly<Record<string, string | undefined>>;
 
+function jobScheduleValues(settings: readonly { key: string; value: string }[]) {
+	const dict: Record<string, string> = {};
+	for (const setting of settings) {
+		if (jobScheduleFields.some((field) => field.key === setting.key))
+			dict[setting.key] = setting.value;
+	}
+	return dict;
+}
+
 export function useJobScheduleConfig(environmentID: EnvironmentID) {
 	const [values, setValues] = useState<Values>({});
 	const [original, setOriginal] = useState<Values>({});
@@ -90,7 +100,9 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 	const hasChanges = jobScheduleFields.some((field) => values[field.key] !== original[field.key]);
 	const valuesEmpty = Object.keys(values).length === 0;
 	const valuesEmptyRef = useRef(valuesEmpty);
-	valuesEmptyRef.current = valuesEmpty;
+	useLayoutEffect(() => {
+		valuesEmptyRef.current = valuesEmpty;
+	});
 
 	const load = useCallback(
 		async (refresh = false) => {
@@ -98,21 +110,20 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 			if (!client) return;
 			if (valuesEmptyRef.current) setIsLoading(true);
 			if (refresh) setErrorMessage(undefined);
-			try {
-				const settings = await client.settings.getSettings({ envID: environmentID });
-				const dict: Record<string, string> = {};
-				for (const setting of settings) {
-					if (jobScheduleFields.some((field) => field.key === setting.key))
-						dict[setting.key] = setting.value;
-				}
-				setValues(dict);
-				setOriginal(dict);
-				setErrorMessage(undefined);
-			} catch (error) {
-				setErrorMessage(friendlyErrorMessage(error));
-			} finally {
-				setIsLoading(false);
-			}
+			await withCleanup(
+				async () => {
+					try {
+						const settings = await client.settings.getSettings({ envID: environmentID });
+						const dict = jobScheduleValues(settings);
+						setValues(dict);
+						setOriginal(dict);
+						setErrorMessage(undefined);
+					} catch (error) {
+						setErrorMessage(friendlyErrorMessage(error));
+					}
+				},
+				() => setIsLoading(false)
+			);
 		},
 		[environmentID]
 	);
@@ -126,28 +137,29 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 		if (!client) return;
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			const changed: Record<string, string> = {};
-			for (const field of jobScheduleFields) {
-				const value = values[field.key] ?? '';
-				if (value !== original[field.key]) changed[field.key] = value;
-			}
-			if (Object.keys(changed).length === 0) return;
+		await withCleanup(
+			async () => {
+				const changed: Record<string, string> = {};
+				for (const field of jobScheduleFields) {
+					const value = values[field.key] ?? '';
+					if (value !== original[field.key]) changed[field.key] = value;
+				}
+				if (Object.keys(changed).length === 0) return;
 
-			const update: UpdateSettings = {};
-			for (const [key, value] of Object.entries(changed)) {
-				if (isUpdatable(key)) update[key] = value;
-			}
-			try {
-				await client.settings.updateSettings({ body: update, envID: environmentID });
-				setOriginal((current) => ({ ...current, ...changed }));
-				showToast(Toasts.success('Schedules saved'));
-			} catch (error) {
-				setErrorMessage(friendlyErrorMessage(error));
-			}
-		} finally {
-			setIsSaving(false);
-		}
+				const update: UpdateSettings = {};
+				for (const [key, value] of Object.entries(changed)) {
+					if (isUpdatable(key)) update[key] = value;
+				}
+				try {
+					await client.settings.updateSettings({ body: update, envID: environmentID });
+					setOriginal((current) => ({ ...current, ...changed }));
+					showToast(Toasts.success('Schedules saved'));
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	}, [values, original, environmentID]);
 
 	return {

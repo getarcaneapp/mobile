@@ -1,13 +1,14 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { cachedClient } from '@/core/networking/use-cached-client';
+import { withCleanup } from '@/core/with-cleanup';
 import { storage } from '@/core/storage';
 import { makeComposePreviewSession } from '@/features/compose/model/compose-preview-session';
 import { ProjectDraftReview } from '@/features/compose/model/project-draft-snapshot';
-import type { DeployOptions } from '@/sdk/models/project/Project';
+import type { DeployOptions, ProjectDetails } from '@/sdk/models/project/Project';
 import type { ProjectFile, ProjectFileChange } from '@/sdk/models/project/ProjectFiles';
 import { Permission } from '@/sdk/models/role/Permission';
 import { useClientManager } from '@/stores/client-manager';
@@ -42,6 +43,15 @@ const overrideNames = [
 	'docker-compose.override.yml',
 	'docker-compose.override.yaml'
 ];
+
+function isSessionCurrent(sessionIdentity: string | undefined, envID: string) {
+	return (
+		sessionIdentity === useClientManager.getState().cacheSessionIdentity &&
+		useClientManager.getState().acceptsEnvironmentContext(envID)
+	);
+}
+
+const workspaceFileText = (file: { content?: string }) => file.content ?? '';
 
 function readOnlyReasonFor(project: { isArchived: boolean; gitOpsManagedBy?: string } | undefined) {
 	if (project?.isArchived) return 'Archived projects are read-only.';
@@ -95,16 +105,12 @@ export function useProjectFilesWorkspace() {
 	const previewEnabled = previewSession.isEnabled;
 	const [requestedDeployOptions, setRequestedDeployOptions] = useState<DeployOptions>();
 
-	const sessionIsCurrent = () =>
-		sessionIdentity === useClientManager.getState().cacheSessionIdentity &&
-		useClientManager.getState().acceptsEnvironmentContext(envID);
-	const sessionCurrent =
-		sessionIdentity === currentSession &&
-		useClientManager.getState().acceptsEnvironmentContext(envID);
-	const canEdit =
-		readOnlyReason === undefined &&
-		sessionCurrent &&
-		hasPermission(Permission.Projects.update, envID);
+	const acceptsEnvironmentContext = useClientManager((s) => s.acceptsEnvironmentContext(envID));
+	const canUpdateProject = useClientManager(() => hasPermission(Permission.Projects.update, envID));
+	const canDeployProject = useClientManager(() => hasPermission(Permission.Projects.deploy, envID));
+	const sessionIsCurrent = () => isSessionCurrent(sessionIdentity, envID);
+	const sessionCurrent = sessionIdentity === currentSession && acceptsEnvironmentContext;
+	const canEdit = readOnlyReason === undefined && sessionCurrent && canUpdateProject;
 
 	const hasCoreChanges =
 		composeContent !== originalComposeContent || envContent !== originalEnvContent;
@@ -128,7 +134,9 @@ export function useProjectFilesWorkspace() {
 	);
 
 	const latest = useRef({ managedFileContents, displayedFiles });
-	latest.current = { managedFileContents, displayedFiles };
+	useLayoutEffect(() => {
+		latest.current = { managedFileContents, displayedFiles };
+	});
 
 	const dismiss = () => {
 		if (router.canGoBack()) router.back();
@@ -136,49 +144,55 @@ export function useProjectFilesWorkspace() {
 
 	const loadFiles = useCallback(async () => {
 		const client = useClientManager.getState().client;
-		if (!sessionIsCurrent() || !client) return;
+		const current = () => isSessionCurrent(sessionIdentity, envID);
+		if (!current() || !client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			try {
-				const compose = await client.projects.compose({ envID, projectID });
-				if (!sessionIsCurrent()) return;
-				setProjectName(projectDisplayName(compose));
-				setComposeRelatedPaths(
-					new Set([
-						...(compose.includeFiles ?? []).map((file) => file.relativePath),
-						...overrideNames
-					])
-				);
-				setComposeFileName(compose.composeFileName ? compose.composeFileName : 'compose.yml');
-				setComposeContent(compose.composeContent ?? '');
-				setEnvContent(compose.envContent ?? '');
-				setOriginalComposeContent(compose.composeContent ?? '');
-				setOriginalEnvContent(compose.envContent ?? '');
-				setReadOnlyReason(readOnlyReasonFor(compose));
-			} catch (error) {
-				setErrorMessage(friendlyErrorMessage(error));
-			}
+		const applyCompose = (compose: ProjectDetails) => {
+			setProjectName(projectDisplayName(compose));
+			setComposeRelatedPaths(
+				new Set([
+					...(compose.includeFiles ?? []).map((file) => file.relativePath),
+					...overrideNames
+				])
+			);
+			setComposeFileName(compose.composeFileName ? compose.composeFileName : 'compose.yml');
+			setComposeContent(compose.composeContent ?? '');
+			setEnvContent(compose.envContent ?? '');
+			setOriginalComposeContent(compose.composeContent ?? '');
+			setOriginalEnvContent(compose.envContent ?? '');
+			setReadOnlyReason(readOnlyReasonFor(compose));
+		};
+		await withCleanup(
+			async () => {
+				try {
+					const compose = await client.projects.compose({ envID, projectID });
+					if (!current()) return;
+					applyCompose(compose);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
 
-			try {
-				const workspace = await client.projects.workspace({ envID, projectID });
-				if (!sessionIsCurrent()) return;
-				setProjectFiles(workspace.files);
-				setFileTreeRevision(workspace.fileTreeRevision);
-				setStagedChanges([]);
-				setManagedFileContents({});
-				setOriginalManagedFileContents({});
-				setManagedFileLoadErrors({});
-				setManagedFileLoading(new Set());
-			} catch (error) {
-				setErrorMessage(friendlyErrorMessage(error));
+				try {
+					const workspace = await client.projects.workspace({ envID, projectID });
+					if (!current()) return;
+					setProjectFiles(workspace.files);
+					setFileTreeRevision(workspace.fileTreeRevision);
+					setStagedChanges([]);
+					setManagedFileContents({});
+					setOriginalManagedFileContents({});
+					setManagedFileLoadErrors({});
+					setManagedFileLoading(new Set());
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				setIsLoading(false);
+				setHasLoaded(true);
 			}
-		} finally {
-			setIsLoading(false);
-			setHasLoaded(true);
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [envID, projectID]);
+		);
+	}, [envID, projectID, sessionIdentity]);
 
 	useEffect(() => {
 		void loadFiles();
@@ -193,32 +207,38 @@ export function useProjectFilesWorkspace() {
 			)
 				return;
 			const client = useClientManager.getState().client;
-			if (!sessionIsCurrent() || !client) return;
+			const isCurrent = () => isSessionCurrent(sessionIdentity, envID);
+			if (!isCurrent() || !client) return;
 			setManagedFileLoading((current) => new Set(current).add(path));
 			setManagedFileLoadErrors((current) =>
 				ProjectFileWorkspaceHelpers.removeRecord(current, path)
 			);
-			try {
-				const file = await client.projects.workspaceFile({ envID, projectID, relativePath: path });
-				if (!sessionIsCurrent()) return;
-				const content = file.content ?? '';
-				setManagedFileContents((current) => ({ ...current, [path]: content }));
-				setOriginalManagedFileContents((current) => ({ ...current, [path]: content }));
-			} catch (error) {
-				setManagedFileLoadErrors((current) => ({
-					...current,
-					[path]: friendlyErrorMessage(error)
-				}));
-			} finally {
-				setManagedFileLoading((current) => {
-					const next = new Set(current);
-					next.delete(path);
-					return next;
-				});
-			}
+			await withCleanup(
+				async () => {
+					try {
+						const file = await client.projects.workspaceFile({
+							envID,
+							projectID,
+							relativePath: path
+						});
+						if (!isCurrent()) return;
+						const content = workspaceFileText(file);
+						setManagedFileContents((current) => ({ ...current, [path]: content }));
+						setOriginalManagedFileContents((current) => ({ ...current, [path]: content }));
+					} catch (error) {
+						const message = friendlyErrorMessage(error);
+						setManagedFileLoadErrors((current) => ({ ...current, [path]: message }));
+					}
+				},
+				() =>
+					setManagedFileLoading((current) => {
+						const next = new Set(current);
+						next.delete(path);
+						return next;
+					})
+			);
 		},
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[envID, projectID]
+		[envID, projectID, sessionIdentity]
 	);
 
 	const isDeleted = (path: string, changes: ProjectFileChange[]) =>
@@ -271,8 +291,8 @@ export function useProjectFilesWorkspace() {
 		setIsSaving(true);
 		setErrorMessage(undefined);
 		const fileChanges = buildProjectFileSaveChanges();
-		let savedCoreFiles = false;
-		try {
+		const progress = { savedCoreFiles: false };
+		const performSave = async () => {
 			if (previewEnabled) {
 				ProjectDraftReview.validateSyntax({ compose: composeContent, environment: envContent });
 				for (const change of fileChanges) {
@@ -309,7 +329,7 @@ export function useProjectFilesWorkspace() {
 				});
 				setOriginalComposeContent(composeContent);
 				setOriginalEnvContent(envContent);
-				savedCoreFiles = true;
+				progress.savedCoreFiles = true;
 			}
 			if (!sessionIsCurrent()) return;
 			if (fileChanges.length > 0) {
@@ -338,22 +358,31 @@ export function useProjectFilesWorkspace() {
 			invalidate();
 			useResourceMutationStore.getState().markChanged('projects', envID);
 			await loadFiles();
-		} catch (error) {
+		};
+		const reportFailure = (error: unknown) => {
 			setErrorMessage(friendlyErrorMessage(error));
 			showToast(
 				Toasts.error(
-					savedCoreFiles
+					progress.savedCoreFiles
 						? 'Compose and environment saved; additional files could not be saved.'
 						: "Couldn't save"
 				)
 			);
-			if (savedCoreFiles && sessionIsCurrent()) {
+			if (progress.savedCoreFiles && sessionIsCurrent()) {
 				invalidate();
 				useResourceMutationStore.getState().markChanged('projects', envID);
 			}
-		} finally {
-			setIsSaving(false);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await performSave();
+				} catch (error) {
+					reportFailure(error);
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	const remapManagedState = (oldPath: string, newPath: string) => {
@@ -589,7 +618,7 @@ export function useProjectFilesWorkspace() {
 			else await loadFiles();
 		},
 		previewEnabled,
-		canDeploy: hasPermission(Permission.Projects.deploy, envID),
+		canDeploy: canDeployProject,
 		save: () => {
 			if (!previewEnabled) {
 				void saveChanges();

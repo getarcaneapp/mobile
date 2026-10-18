@@ -16,7 +16,30 @@ function subscribe(key: string, listener: Listener): () => void {
 	listeners.set(key, set);
 	return () => {
 		set.delete(listener);
+		if (set.size === 0 && listeners.get(key) === set) listeners.delete(key);
 	};
+}
+
+const keySubscribers = new Map<string, (listener: Listener) => () => void>();
+
+function subscriberFor(key: string): (listener: Listener) => () => void {
+	let subscriber = keySubscribers.get(key);
+	if (!subscriber) {
+		subscriber = (listener) => subscribe(key, listener);
+		keySubscribers.set(key, subscriber);
+	}
+	return subscriber;
+}
+
+const keySetters = new Map<string, (next: string | boolean) => void>();
+
+function setterFor(key: string): (next: string | boolean) => void {
+	let setter = keySetters.get(key);
+	if (!setter) {
+		setter = (next) => defaults.set(key, next);
+		keySetters.set(key, setter);
+	}
+	return setter;
 }
 
 export const storage = {
@@ -46,19 +69,16 @@ export const storage = {
 };
 
 export function useStoredString(key: string, fallback: string): [string, (value: string) => void] {
-	const value = useSyncExternalStore(
-		(listener) => subscribe(key, listener),
-		() => defaults.getString(key) ?? fallback
-	);
-	return [value, (next) => defaults.set(key, next)];
+	const value = useSyncExternalStore(subscriberFor(key), () => defaults.getString(key) ?? fallback);
+	return [value, setterFor(key)];
 }
 
 export function useStoredBool(key: string, fallback: boolean): [boolean, (value: boolean) => void] {
 	const value = useSyncExternalStore(
-		(listener) => subscribe(key, listener),
+		subscriberFor(key),
 		() => defaults.getBoolean(key) ?? fallback
 	);
-	return [value, (next) => defaults.set(key, next)];
+	return [value, setterFor(key)];
 }
 
 export const Keys = {

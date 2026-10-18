@@ -7,13 +7,22 @@ import { decodeLogFrame } from '@/sdk/streaming/Streams';
 import { WebSocketChannel, type WebSocketMessage } from '@/sdk/streaming/WebSocketChannel';
 import type { LogLine } from '@/sdk/types/streaming/LogLine';
 
-import { RemoteDataLimitError, RemoteDataLimits, boundedText } from './remote-data-limits';
-
-const byteLength = (message: WebSocketMessage) =>
-	message.kind === 'string' ? encodeUTF8(message.value).byteLength : message.value.byteLength;
+import {
+	RemoteDataLimitError,
+	RemoteDataLimits,
+	boundedText,
+	utf8ByteLength
+} from './remote-data-limits';
 
 function checkFrame(message: WebSocketMessage, maximumBytes: number) {
-	if (byteLength(message) > maximumBytes) throw RemoteDataLimitError.responseTooLarge(maximumBytes);
+	if (message.kind === 'string') {
+		if (message.value.length * 3 <= maximumBytes) return;
+		if (utf8ByteLength(message.value) > maximumBytes)
+			throw RemoteDataLimitError.responseTooLarge(maximumBytes);
+		return;
+	}
+	if (message.value.byteLength > maximumBytes)
+		throw RemoteDataLimitError.responseTooLarge(maximumBytes);
 }
 
 function boundedLogLine(line: LogLine): LogLine {

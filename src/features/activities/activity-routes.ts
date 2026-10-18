@@ -1,5 +1,9 @@
-import { useRouter, useSegments, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
+import {
+	useIsInActivityCenterStack,
+	useTabStackGroup
+} from '@/features/navigation/tab-stack-group';
 
 import type { Activity } from '@/sdk/models/activity/Activity';
 import type { ActivityCenterStore } from '@/stores/activity-center-store';
@@ -30,10 +34,8 @@ export const activityRoutePayloads = {
 
 export function useActivityNavigation() {
 	const router = useRouter();
-	const segments = useSegments() as string[];
-	const group =
-		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(more)';
-	const base = segments.includes('activity-center')
+	const group = useTabStackGroup('(more)');
+	const base = useIsInActivityCenterStack()
 		? `/(tabs)/${group}/activity-center`
 		: `/(tabs)/${group}`;
 	return useMemo(

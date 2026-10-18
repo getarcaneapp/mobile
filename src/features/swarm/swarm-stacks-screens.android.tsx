@@ -7,13 +7,13 @@ import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import { DeleteConfirmationHost } from '@/ui/components/delete-confirmation';
 import { FormPicker, FormTextField } from '@/ui/components/form-fields';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { ScrollableTabBar } from '@/ui/components/scrollable-tab-bar';
 import { m3Type, monoFamily } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import {
 	CenteredMessage,
@@ -25,7 +25,7 @@ import {
 	AndroidResourceActionsToolbar,
 	AndroidToolbar
 } from '@/features/containers/android-toolbar';
-import { LongPressMenu } from '@/features/containers/long-press-menu';
+import { LongPressMenu, type RowMenuItem } from '@/features/containers/long-press-menu';
 import { ActionItem, LinkItem, SectionTitle, SheetError } from '@/features/networks/android-parts';
 
 import { swarmDate } from './swarm-common';
@@ -43,6 +43,17 @@ import {
 	type SwarmStacksModel
 } from './use-swarm-stacks';
 
+const stackRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 16,
+	paddingHorizontal: 16,
+	paddingVertical: 10
+};
+const stackBodyStyle = { flex: 1, gap: 3 };
+const listContentStyle = { paddingBottom: 32 };
+const noMenuItems: RowMenuItem[] = [];
+
 function StackRow({ model, stack }: { model: SwarmStacksModel; stack: SwarmStackSummary }) {
 	return (
 		<LongPressMenu
@@ -57,19 +68,13 @@ function StackRow({ model, stack }: { model: SwarmStacksModel; stack: SwarmStack
 								onPress: () => model.requestDelete(stack)
 							}
 						]
-					: []
+					: noMenuItems
 			}
 			onPress={() => model.openDetail(stack)}
-			style={{
-				flexDirection: 'row',
-				alignItems: 'center',
-				gap: 16,
-				paddingHorizontal: 16,
-				paddingVertical: 10
-			}}
+			style={stackRowStyle}
 		>
 			<RowIcon systemImage="square.stack.3d.up.fill" />
-			<View style={{ flex: 1, gap: 3 }}>
+			<View style={stackBodyStyle}>
 				<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{stack.name}</Text>
 				<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
 					{model.servicesText(stack)}
@@ -120,10 +125,39 @@ export function SwarmStacksScreen() {
 				emptySystemImage="square.stack.3d.up"
 				retry={() => void model.load()}
 			>
-				<ScrollView
-					contentInsetAdjustmentBehavior="automatic"
-					style={{ backgroundColor: colors.systemGroupedBackground }}
-					contentContainerStyle={{ paddingBottom: 32 }}
+				<GroupedFlashList
+					data={items.map((item, index) => ({
+						key: String(item.id),
+						type: 'item',
+						stack: item.value,
+						grouped: groupPosition(index, items.length)
+					}))}
+					renderEntry={(entry) => <StackRow model={model} stack={entry.stack} />}
+					header={
+						<SectionTitle
+							title="Stacks"
+							trailing={
+								<ResourceCountLabel
+									loadedCount={items.length}
+									totalCount={snapshot.totalItems}
+									hasMore={snapshot.hasMore}
+								/>
+							}
+						/>
+					}
+					footer={
+						<PaginatedListFooter
+							hasMore={snapshot.hasMore}
+							loadMoreError={snapshot.loadMoreError}
+							onRetry={() => void model.loadMore()}
+							onLoadMore={() => void model.loadMore()}
+						/>
+					}
+					onEndReached={
+						snapshot.hasMore && snapshot.loadMoreError === undefined
+							? () => void model.loadMore()
+							: undefined
+					}
 					refreshControl={
 						<RefreshControl
 							refreshing={refreshing}
@@ -133,29 +167,8 @@ export function SwarmStacksScreen() {
 							}}
 						/>
 					}
-				>
-					<SectionTitle
-						title="Stacks"
-						trailing={
-							<ResourceCountLabel
-								loadedCount={items.length}
-								totalCount={snapshot.totalItems}
-								hasMore={snapshot.hasMore}
-							/>
-						}
-					/>
-					<MaterialListGroup>
-						{items.map((item) => (
-							<StackRow key={item.id} model={model} stack={item.value} />
-						))}
-					</MaterialListGroup>
-					<PaginatedListFooter
-						hasMore={snapshot.hasMore}
-						loadMoreError={snapshot.loadMoreError}
-						onRetry={() => void model.loadMore()}
-						onLoadMore={() => void model.loadMore()}
-					/>
-				</ScrollView>
+					contentContainerStyle={listContentStyle}
+				/>
 			</SwarmListState>
 		</>
 	);

@@ -144,8 +144,11 @@ export function volumesChanged(environmentID: EnvironmentID) {
 export const VolumeRename = {
 	footer:
 		"The data is copied to a new volume and the old one is removed. The volume can't be in use by any container.",
-	isAvailable: (volume: Volume, envID: EnvironmentID) =>
-		volume.containers.length === 0 && hasPermission('volumes:rename', envID),
+	isAvailable: (
+		volume: Volume,
+		envID: EnvironmentID,
+		can: (perm: string, envID: EnvironmentID) => boolean = hasPermission
+	) => volume.containers.length === 0 && can('volumes:rename', envID),
 	async perform(from: string, to: string, envID: EnvironmentID): Promise<void> {
 		const client = useClientManager.getState().client;
 		if (!client) throw ArcaneError.transport('No client');

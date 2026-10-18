@@ -13,35 +13,17 @@ import { m3 } from '../material-colors';
 import { animateTo } from '../motion-views';
 import { exitDelay, type DeleteConfirmationCardProps } from './card.types';
 
-export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmationCardProps) {
-	const reduceMotion = useReduceMotion();
-	const accent = useAccentColor();
-	const shown = useSharedValue(0);
-	const isDismissing = useRef(false);
-	const motion = reduceMotion ? Motion.reducedFallback : Motion.overlay;
-
-	useEffect(() => {
-		void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-		shown.value = animateTo(motion, 1);
-	}, [motion, shown]);
-
-	const resolve = (action: (() => void) | undefined) => {
-		if (isDismissing.current) return;
-		isDismissing.current = true;
-		if (action) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-		shown.value = animateTo(motion, 0);
-		setTimeout(() => onResolved(action), exitDelay(reduceMotion));
-	};
-
-	const scrimStyle = useAnimatedStyle(() => ({ opacity: shown.value * 0.4 }));
-	const dialogStyle = useAnimatedStyle(() => ({
-		opacity: Math.min(shown.value, 1),
-		transform: [{ scale: reduceMotion ? 1 : interpolate(shown.value, [0, 1], [0.94, 1]) }]
-	}));
-
-	const textButton = (title: string, color: unknown, onPress: () => void, key: string) => (
+function TextButton({
+	title,
+	color,
+	onPress
+}: {
+	title: string;
+	color: unknown;
+	onPress: () => void;
+}) {
+	return (
 		<Pressable
-			key={key}
 			onPress={onPress}
 			accessibilityRole="button"
 			android_ripple={{ color: colors.separator as string, borderless: false }}
@@ -61,21 +43,50 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 			</Text>
 		</Pressable>
 	);
+}
 
-	const cancel = textButton(
-		config.cancelTitle ?? 'Cancel',
-		m3.primary,
-		() => resolve(undefined),
-		'cancel'
+export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmationCardProps) {
+	const reduceMotion = useReduceMotion();
+	const accent = useAccentColor();
+	const shown = useSharedValue(0);
+	const isDismissing = useRef(false);
+	const motion = reduceMotion ? Motion.reducedFallback : Motion.overlay;
+
+	useEffect(() => {
+		void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+		shown.set(animateTo(motion, 1));
+	}, [motion, shown]);
+
+	const resolve = (action: (() => void) | undefined) => {
+		if (isDismissing.current) return;
+		isDismissing.current = true;
+		if (action) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+		shown.set(animateTo(motion, 0));
+		setTimeout(() => onResolved(action), exitDelay(reduceMotion));
+	};
+
+	const scrimStyle = useAnimatedStyle(() => ({ opacity: shown.value * 0.4 }));
+	const dialogStyle = useAnimatedStyle(() => ({
+		opacity: Math.min(shown.value, 1),
+		transform: [{ scale: reduceMotion ? 1 : interpolate(shown.value, [0, 1], [0.94, 1]) }]
+	}));
+
+	const cancel = (
+		<TextButton
+			key="cancel"
+			title={config.cancelTitle ?? 'Cancel'}
+			color={m3.primary}
+			onPress={() => resolve(undefined)}
+		/>
 	);
-	const actions = config.actions.map((action, index) =>
-		textButton(
-			action.title,
-			action.tint ?? ((action.role ?? 'destructive') === 'destructive' ? m3.error : accent),
-			() => resolve(action.action),
-			`action-${index}`
-		)
-	);
+	const actions = config.actions.map((action, index) => (
+		<TextButton
+			key={`action-${index}`}
+			title={action.title}
+			color={action.tint ?? ((action.role ?? 'destructive') === 'destructive' ? m3.error : accent)}
+			onPress={() => resolve(action.action)}
+		/>
+	));
 
 	return (
 		<View style={StyleSheet.absoluteFill}>

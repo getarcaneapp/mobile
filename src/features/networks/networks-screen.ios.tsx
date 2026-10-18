@@ -39,6 +39,7 @@ import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { RowPreviewCard } from '@/ui/components/row-preview-card';
 import { environmentTitle } from '@/ui/components/environment-label.types';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { DisclosureChevron } from '@/ui/settings-row';
 import { useToolbarIcons } from '@/ui/toolbar-icon';
 
@@ -292,18 +293,18 @@ export function NetworksScreen(props: NetworksListProps) {
 						header={countHeader('Built-in')}
 						footer={<Text>Built-in Docker networks can't be removed.</Text>}
 					>
-						{systemNetworks.map((network) => (
-							<NetworkLink key={network.id} model={model} network={network} deletable={false} />
-						))}
+						<List.ForEach data={systemNetworks} keyExtractor={stableItemKey} estimatedItemSize={48}>
+							{({ item }) => <NetworkLink model={model} network={item} deletable={false} />}
+						</List.ForEach>
 					</Section>
 				) : null}
 				{userNetworks.length > 0 ? (
 					<Section
 						header={systemNetworks.length === 0 ? countHeader('Custom') : <Text>Custom</Text>}
 					>
-						{userNetworks.map((network) => (
-							<NetworkLink key={network.id} model={model} network={network} deletable />
-						))}
+						<List.ForEach data={userNetworks} keyExtractor={stableItemKey} estimatedItemSize={48}>
+							{({ item }) => <NetworkLink model={model} network={item} deletable />}
+						</List.ForEach>
 					</Section>
 				) : null}
 				<PaginatedListFooter

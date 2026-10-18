@@ -1,8 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { isCancellation } from '@/core/errors';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
+import type { EnvironmentID } from '@/sdk/client/environment';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import type { ContainerEditConfig } from '@/sdk/models/container/ContainerEditing';
 import { Permission } from '@/sdk/models/role/Permission';
@@ -28,6 +30,61 @@ import { routePayloads } from './container-routes';
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
+async function submitConfiguration({
+	client,
+	controller,
+	run,
+	environmentID,
+	containerID,
+	draft,
+	original,
+	token,
+	onSaved,
+	back,
+	setError,
+	setBusy
+}: {
+	client: ArcaneClient;
+	controller: AbortController;
+	run: number;
+	environmentID: EnvironmentID;
+	containerID: string | undefined;
+	draft: ContainerConfigurationDraft;
+	original: ContainerConfigurationDraft;
+	token: string | undefined;
+	onSaved: ((id: string) => boolean | void) | undefined;
+	back: () => void;
+	setError: (error: string | undefined) => void;
+	setBusy: (busy: boolean) => void;
+}) {
+	try {
+		const scoped = client.withSignal(controller.signal);
+		const id =
+			containerID !== undefined
+				? (
+						await scoped.containers.edit({
+							envID: environmentID,
+							id: containerID,
+							body: editRequest(draft, original)
+						})
+					).id
+				: (await scoped.containers.create({ envID: environmentID, body: createRequest(draft) })).id;
+		if (controller.signal.aborted || run !== useClientManager.getState().clientGeneration) return;
+		containersChanged(environmentID);
+		showToast(
+			Toasts.success(containerID === undefined ? 'Container created' : 'Container updated')
+		);
+		routePayloads.delete(token);
+		if (onSaved?.(id) !== true) back();
+	} catch (e) {
+		if (controller.signal.aborted || isCancellation(e)) return;
+		setError(errorText(e));
+		showToast(Toasts.error(errorText(e)));
+	} finally {
+		setBusy(false);
+	}
+}
+
 export function useContainerConfiguration() {
 	const router = useRouter();
 	const {
@@ -36,7 +93,6 @@ export function useContainerConfiguration() {
 		token
 	} = useLocalSearchParams<{ envID?: string; containerID?: string; token?: string }>();
 	const environmentID = envID;
-	const onSaved = routePayloads.get<(id: string) => boolean | void>(token);
 	const [draft, setDraft] = useState<ContainerConfigurationDraft>(emptyDraft);
 	const [original, setOriginal] = useState<ContainerConfigurationDraft>(emptyDraft);
 	const [config, setConfig] = useState<ContainerEditConfig>();
@@ -53,6 +109,12 @@ export function useContainerConfiguration() {
 
 	const blocked = config?.editDisabled === true || config?.isCompose === true;
 	const permission = containerID === undefined ? Permission.Containers.create : 'containers:edit';
+	const canSubmit = useClientManager(() => hasPermission(permission, environmentID));
+	const canBrowseProjects = useClientManager(
+		() =>
+			hasPermission(Permission.Projects.list, environmentID) &&
+			hasPermission(Permission.Projects.read, environmentID)
+	);
 
 	const dismiss = () => {
 		abort.current?.abort();
@@ -60,14 +122,18 @@ export function useContainerConfiguration() {
 		router.back();
 	};
 
+	const dismissIfContextChanged = useEffectEvent(
+		(currentGeneration: number, currentEnvironmentID: EnvironmentID) => {
+			if (currentGeneration !== initial.current.generation) dismiss();
+			else if (
+				currentEnvironmentID !== initial.current.activeEnvironmentID &&
+				currentEnvironmentID !== environmentID
+			)
+				dismiss();
+		}
+	);
 	useEffect(() => {
-		if (generation !== initial.current.generation) dismiss();
-		else if (
-			activeEnvironmentID !== initial.current.activeEnvironmentID &&
-			activeEnvironmentID !== environmentID
-		)
-			dismiss();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		dismissIfContextChanged(generation, activeEnvironmentID);
 	}, [generation, activeEnvironmentID]);
 	useEffect(() => () => abort.current?.abort(), []);
 
@@ -116,38 +182,26 @@ export function useContainerConfiguration() {
 		const client = useClientManager.getState().client;
 		if (!client || loadedGeneration.current !== useClientManager.getState().clientGeneration)
 			return;
-		if (!hasPermission(permission, environmentID) || blocked) return;
+		if (!canSubmit || blocked) return;
 		const controller = new AbortController();
 		abort.current = controller;
 		const run = loadedGeneration.current;
+		const onSaved = routePayloads.get<(id: string) => boolean | void>(token);
 		setBusy(true);
-		try {
-			const scoped = client.withSignal(controller.signal);
-			const id =
-				containerID !== undefined
-					? (
-							await scoped.containers.edit({
-								envID: environmentID,
-								id: containerID,
-								body: editRequest(draft, original)
-							})
-						).id
-					: (await scoped.containers.create({ envID: environmentID, body: createRequest(draft) }))
-							.id;
-			if (controller.signal.aborted || run !== useClientManager.getState().clientGeneration) return;
-			containersChanged(environmentID);
-			showToast(
-				Toasts.success(containerID === undefined ? 'Container created' : 'Container updated')
-			);
-			routePayloads.delete(token);
-			if (onSaved?.(id) !== true) router.back();
-		} catch (e) {
-			if (controller.signal.aborted || isCancellation(e)) return;
-			setError(errorText(e));
-			showToast(Toasts.error(errorText(e)));
-		} finally {
-			setBusy(false);
-		}
+		await submitConfiguration({
+			client,
+			controller,
+			run,
+			environmentID,
+			containerID,
+			draft,
+			original,
+			token,
+			onSaved,
+			back: () => router.back(),
+			setError,
+			setBusy
+		});
 	};
 
 	const confirm = () => {
@@ -200,15 +254,12 @@ export function useContainerConfiguration() {
 		blocked,
 		networkMode,
 		preservesNetworkMode,
-		canOpenProject:
-			config?.composeProject !== undefined &&
-			hasPermission(Permission.Projects.list, environmentID) &&
-			hasPermission(Permission.Projects.read, environmentID),
+		canOpenProject: config?.composeProject !== undefined && canBrowseProjects,
 		confirmDisabled:
 			loading ||
 			busy ||
 			blocked ||
-			!hasPermission(permission, environmentID) ||
+			!canSubmit ||
 			(containerID !== undefined && draftsEqual(draft, original)),
 		update,
 		updatePort: updateItem('ports') as (id: string, patch: Partial<ContainerPortDraft>) => void,

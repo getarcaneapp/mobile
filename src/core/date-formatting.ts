@@ -15,8 +15,33 @@ const timeOptions: Record<TimeStyle, Intl.DateTimeFormatOptions> = {
 	omitted: {}
 };
 
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+function formatter(dateStyle: DateStyle, timeStyle: TimeStyle): Intl.DateTimeFormat {
+	const key = `${dateStyle}|${timeStyle}`;
+	let cached = formatters.get(key);
+	if (!cached) {
+		const options = { ...dateOptions[dateStyle], ...timeOptions[timeStyle] };
+		cached = new Intl.DateTimeFormat(
+			undefined,
+			Object.keys(options).length === 0
+				? {
+						year: 'numeric',
+						month: 'numeric',
+						day: 'numeric',
+						hour: 'numeric',
+						minute: 'numeric',
+						second: 'numeric'
+					}
+				: options
+		);
+		formatters.set(key, cached);
+	}
+	return cached;
+}
+
 export function formatDate(date: Date, dateStyle: DateStyle, timeStyle: TimeStyle): string {
-	return date.toLocaleString(undefined, { ...dateOptions[dateStyle], ...timeOptions[timeStyle] });
+	return formatter(dateStyle, timeStyle).format(date);
 }
 
 export function formattedISO8601(
@@ -30,5 +55,5 @@ export function formattedISO8601(
 
 export function formattedClockTime(value: string): string | undefined {
 	const date = parseArcaneDate(value);
-	return date ? date.toLocaleTimeString(undefined, timeOptions.standard) : undefined;
+	return date ? formatter('omitted', 'standard').format(date) : undefined;
 }

@@ -132,6 +132,32 @@ function autoIndent(
 	};
 }
 
+type QuickKey =
+	| { label: string; kind: 'insert'; insertion: string; cursorOffset?: number }
+	| { label: string; kind: 'outdent' | 'listItem' };
+
+const quoteKey: QuickKey = { label: '“”', kind: 'insert', insertion: '""', cursorOffset: 1 };
+const hashKey: QuickKey = { label: '#', kind: 'insert', insertion: '# ' };
+
+function quickKeysFor(language: CodeEditorLanguage): QuickKey[] {
+	switch (language) {
+		case 'yaml':
+			return [
+				{ label: '⇥', kind: 'insert', insertion: '  ' },
+				{ label: '⇤', kind: 'outdent' },
+				{ label: ':', kind: 'insert', insertion: ': ' },
+				{ label: '-', kind: 'listItem' },
+				{ label: '|', kind: 'insert', insertion: ' |' },
+				quoteKey,
+				hashKey
+			];
+		case 'env':
+			return [{ label: '=', kind: 'insert', insertion: '=' }, quoteKey, hashKey];
+		case 'plaintext':
+			return [quoteKey, hashKey];
+	}
+}
+
 export function CodeEditor({
 	text,
 	onChangeText = noop,
@@ -147,56 +173,49 @@ export function CodeEditor({
 	const [focused, setFocused] = useState(false);
 	const spans = useMemo(() => highlight(text, language), [text, language]);
 
-	const replaceSelection = (insertion: string, cursorOffset = insertion.length) => {
+	const replaceSelection = (insertion: string, cursorOffset?: number) => {
 		const { start, end } = selectionRef.current;
 		const next = text.slice(0, start) + insertion + text.slice(end);
-		const cursor = start + cursorOffset;
+		const cursor = start + (cursorOffset === undefined ? insertion.length : cursorOffset);
 		selectionRef.current = { start: cursor, end: cursor };
 		setPendingSelection({ start: cursor, end: cursor });
 		onChangeText(next);
 	};
 
-	const keys: { label: string; action: () => void }[] = (() => {
-		const quotes = { label: '“”', action: () => replaceSelection('""', 1) };
-		const hash = { label: '#', action: () => replaceSelection('# ') };
-		switch (language) {
-			case 'yaml':
-				return [
-					{ label: '⇥', action: () => replaceSelection('  ') },
-					{
-						label: '⇤',
-						action: () => {
-							const { start } = selectionRef.current;
-							const lineStart = text.lastIndexOf('\n', start - 1) + 1;
-							if (!text.startsWith('  ', lineStart)) return;
-							const next = text.slice(0, lineStart) + text.slice(lineStart + 2);
-							const cursor = Math.max(start - 2, lineStart);
-							selectionRef.current = { start: cursor, end: cursor };
-							setPendingSelection({ start: cursor, end: cursor });
-							onChangeText(next);
-						}
-					},
-					{ label: ':', action: () => replaceSelection(': ') },
-					{
-						label: '-',
-						action: () => {
-							const { start } = selectionRef.current;
-							const lineStart = text.lastIndexOf('\n', start - 1) + 1;
-							const lineText = text.slice(lineStart, start);
-							const indent = /^ */.exec(lineText)?.[0] ?? '';
-							replaceSelection(lineText.trim() === '' ? '- ' : `\n${indent}- `);
-						}
-					},
-					{ label: '|', action: () => replaceSelection(' |') },
-					quotes,
-					hash
-				];
-			case 'env':
-				return [{ label: '=', action: () => replaceSelection('=') }, quotes, hash];
-			case 'plaintext':
-				return [quotes, hash];
+	const outdent = () => {
+		const { start } = selectionRef.current;
+		const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+		if (!text.startsWith('  ', lineStart)) return;
+		const next = text.slice(0, lineStart) + text.slice(lineStart + 2);
+		const cursor = Math.max(start - 2, lineStart);
+		selectionRef.current = { start: cursor, end: cursor };
+		setPendingSelection({ start: cursor, end: cursor });
+		onChangeText(next);
+	};
+
+	const insertListItem = () => {
+		const { start } = selectionRef.current;
+		const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+		const lineText = text.slice(lineStart, start);
+		const indent = /^ */.exec(lineText)?.[0] ?? '';
+		replaceSelection(lineText.trim() === '' ? '- ' : `\n${indent}- `);
+	};
+
+	const runQuickKey = (key: QuickKey) => {
+		switch (key.kind) {
+			case 'insert':
+				replaceSelection(key.insertion, key.cursorOffset);
+				break;
+			case 'outdent':
+				outdent();
+				break;
+			case 'listItem':
+				insertListItem();
+				break;
 		}
-	})();
+	};
+
+	const keys = quickKeysFor(language);
 
 	const quickKeys = (
 		<View
@@ -217,7 +236,7 @@ export function CodeEditor({
 				{keys.map((key) => (
 					<Pressable
 						key={key.label}
-						onPress={key.action}
+						onPress={() => runQuickKey(key)}
 						accessibilityRole="button"
 						accessibilityLabel={key.label}
 						style={{

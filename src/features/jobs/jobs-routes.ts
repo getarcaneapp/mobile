@@ -1,5 +1,6 @@
-import { useRouter, useSegments, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
+import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 
 import type { EnvironmentID } from '@/sdk/client/environment';
 
@@ -18,9 +19,7 @@ function query(params: Params) {
 
 export function useJobsNavigation() {
 	const router = useRouter();
-	const segments = useSegments() as string[];
-	const group =
-		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(more)';
+	const group = useTabStackGroup('(more)');
 	return useMemo(() => {
 		const href = (path: string, params: Params = {}) =>
 			`/(tabs)/${group}/${path}${query(params)}` as Href;

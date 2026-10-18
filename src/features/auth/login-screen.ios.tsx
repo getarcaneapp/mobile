@@ -57,7 +57,15 @@ import {
 	truncationMode
 } from '@expo/ui/swift-ui/modifiers';
 import { Image as ExpoImage } from 'expo-image';
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+	useEffect,
+	useEffectEvent,
+	useLayoutEffect,
+	useRef,
+	useState,
+	type ReactNode,
+	type RefObject
+} from 'react';
 import { View } from 'react-native';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
@@ -99,9 +107,11 @@ export function LoginScreen() {
 	};
 
 	const ignore = () => {};
-	model.bindFocus((field: LoginField | null) => {
-		if (field) refs[field].current?.focus().catch(ignore);
-		else for (const ref of Object.values(refs)) ref.current?.blur().catch(ignore);
+	useLayoutEffect(() => {
+		model.bindFocus((field: LoginField | null) => {
+			if (field) refs[field].current?.focus().catch(ignore);
+			else for (const ref of Object.values(refs)) ref.current?.blur().catch(ignore);
+		});
 	});
 
 	const { serverURL, username, password, recoveryCode } = model;
@@ -111,12 +121,17 @@ export function LoginScreen() {
 		password: useNativeState(password),
 		recoveryCode: useNativeState(recoveryCode)
 	};
+	const syncTexts = useEffectEvent(
+		(values: { serverURL: string; username: string; password: string; recoveryCode: string }) => {
+			if (texts.serverURL.get() !== values.serverURL) texts.serverURL.set(values.serverURL);
+			if (texts.username.get() !== values.username) texts.username.set(values.username);
+			if (texts.password.get() !== values.password) texts.password.set(values.password);
+			if (texts.recoveryCode.get() !== values.recoveryCode)
+				texts.recoveryCode.set(values.recoveryCode);
+		}
+	);
 	useEffect(() => {
-		if (texts.serverURL.get() !== serverURL) texts.serverURL.set(serverURL);
-		if (texts.username.get() !== username) texts.username.set(username);
-		if (texts.password.get() !== password) texts.password.set(password);
-		if (texts.recoveryCode.get() !== recoveryCode) texts.recoveryCode.set(recoveryCode);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		syncTexts({ serverURL, username, password, recoveryCode });
 	}, [serverURL, username, password, recoveryCode]);
 
 	const entrance = (value: number | boolean) =>
@@ -307,13 +322,19 @@ function ServerChip({ model }: { model: LoginModel }) {
 const cardGlass = () => glassEffectCompat({ shape: 'roundedRectangle', cornerRadius: Radius.card });
 
 function FormCard({ model, refs, texts }: { model: LoginModel; refs: Refs; texts: Texts }) {
+	const {
+		serverURL: serverURLRef,
+		username: usernameRef,
+		password: passwordRef,
+		recoveryCode: recoveryCodeRef
+	} = refs;
 	if (model.isSetupMode) {
 		return (
 			<VStack spacing={8}>
 				<ZStack modifiers={[cardGlass()]}>
 					<FieldRow icon="server.rack" label="Server URL">
 						<TextField
-							ref={refs.serverURL}
+							ref={serverURLRef}
 							text={texts.serverURL}
 							placeholder="arcane.example.com"
 							onTextChange={model.setServerURL}
@@ -374,7 +395,7 @@ function FormCard({ model, refs, texts }: { model: LoginModel; refs: Refs; texts
 			<VStack spacing={0} modifiers={[cardGlass()]}>
 				<FieldRow icon="key.viewfinder" label="Recovery Code">
 					<TextField
-						ref={refs.recoveryCode}
+						ref={recoveryCodeRef}
 						text={texts.recoveryCode}
 						placeholder="Enter recovery code"
 						onTextChange={model.setRecoveryCode}
@@ -396,7 +417,7 @@ function FormCard({ model, refs, texts }: { model: LoginModel; refs: Refs; texts
 		<VStack spacing={0} modifiers={[cardGlass()]}>
 			<FieldRow icon="person" label="Username">
 				<TextField
-					ref={refs.username}
+					ref={usernameRef}
 					text={texts.username}
 					placeholder="Username"
 					onTextChange={model.setUsername}
@@ -413,7 +434,7 @@ function FormCard({ model, refs, texts }: { model: LoginModel; refs: Refs; texts
 			<Divider modifiers={[padding({ leading: 16 })]} />
 			<FieldRow icon="lock" label="Password">
 				<SecureField
-					ref={refs.password}
+					ref={passwordRef}
 					text={texts.password}
 					placeholder="Password"
 					onTextChange={model.setPassword}

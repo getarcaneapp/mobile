@@ -56,7 +56,7 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
-import { useRef, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
 import { useEnvironmentRowColor } from '@/features/containers/hooks';
@@ -904,12 +904,12 @@ export function ImageUpdatesView({
 		);
 	}
 
-	const lastDetailTarget = useRef(model.detailTarget);
-	if (model.detailTarget) lastDetailTarget.current = model.detailTarget;
-	const lastUpdaterRunTarget = useRef(model.updaterRunTarget);
-	if (model.updaterRunTarget !== undefined) lastUpdaterRunTarget.current = model.updaterRunTarget;
-	const detailTarget = lastDetailTarget.current;
-	const updaterRunTarget = lastUpdaterRunTarget.current;
+	const [detailTarget, setDetailTarget] = useState(model.detailTarget);
+	if (model.detailTarget && model.detailTarget !== detailTarget)
+		setDetailTarget(model.detailTarget);
+	const [updaterRunTarget, setUpdaterRunTarget] = useState(model.updaterRunTarget);
+	if (model.updaterRunTarget !== undefined && model.updaterRunTarget !== updaterRunTarget)
+		setUpdaterRunTarget(model.updaterRunTarget);
 
 	return (
 		<>

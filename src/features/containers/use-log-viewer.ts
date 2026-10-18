@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { boundedContainerLogs } from '@/core/networking/bounded-streams';
 import { useStoredBool } from '@/core/storage';
@@ -29,9 +29,8 @@ export function containerLogStore(environmentID: EnvironmentID, containerID: str
 }
 
 export function useLogStore(make: () => LogViewerStore, storeToken?: string) {
-	const ref = useRef<LogViewerStore | null>(null);
-	ref.current ??= routePayloads.get<LogViewerStore>(storeToken) ?? make();
-	return ref.current;
+	const [store] = useState(() => routePayloads.get<LogViewerStore>(storeToken) ?? make());
+	return store;
 }
 
 const exportStamp = (date: Date) => {

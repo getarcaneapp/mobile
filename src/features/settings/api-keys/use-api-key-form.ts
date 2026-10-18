@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import { escapedPathComponent } from '@/core/networking/server-identity';
 import type { APIKey, APIKeyCreated } from '@/sdk/models/apiKey/APIKey';
@@ -48,7 +49,9 @@ function useManifest(enabled: boolean, onError?: (message: string) => void) {
 	const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
 	const manifest = loadedManifest ?? sessionManifest;
 	const latest = useRef({ enabled, hasManifest: manifest !== undefined, onError });
-	latest.current = { enabled, hasManifest: manifest !== undefined, onError };
+	useLayoutEffect(() => {
+		latest.current = { enabled, hasManifest: manifest !== undefined, onError };
+	});
 
 	useEffect(() => {
 		const client = useClientManager.getState().client;
@@ -103,16 +106,20 @@ export function useCreateAPIKey() {
 			expiresAt: hasExpiration ? formatArcaneDate(expiresAt) : undefined,
 			permissions: supportsRBAC ? grants(selectedPermissions) : undefined
 		};
-		try {
-			const created = await client.rest.post<APIKeyCreated>('api-keys', { body });
-			showToast(Toasts.success('API key created'));
-			payload?.onCreated(created.key);
-			dismiss();
-		} catch (error) {
-			setErrorMessage(mutationErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		const notifyCreated = (key: string) => payload?.onCreated(key);
+		await withCleanup(
+			async () => {
+				try {
+					const created = await client.rest.post<APIKeyCreated>('api-keys', { body });
+					showToast(Toasts.success('API key created'));
+					notifyCreated(created.key);
+					dismiss();
+				} catch (error) {
+					setErrorMessage(mutationErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	return {
@@ -199,18 +206,24 @@ export function useEditAPIKey() {
 			expiresAt: hasExpiration ? formatArcaneDate(expiresAt) : undefined,
 			permissions: showsPermissionPicker ? grants(selectedPermissions) : undefined
 		};
-		try {
-			const updated = await client.rest.put<APIKey>(`api-keys/${escapedPathComponent(apiKey.id)}`, {
-				body
-			});
-			await payload.onSaved(updated);
-			showToast(Toasts.success('API key updated'));
-			dismiss();
-		} catch (error) {
-			setErrorMessage(mutationErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const updated = await client.rest.put<APIKey>(
+						`api-keys/${escapedPathComponent(apiKey.id)}`,
+						{
+							body
+						}
+					);
+					await payload.onSaved(updated);
+					showToast(Toasts.success('API key updated'));
+					dismiss();
+				} catch (error) {
+					setErrorMessage(mutationErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	return {

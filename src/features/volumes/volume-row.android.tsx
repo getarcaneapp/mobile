@@ -9,6 +9,16 @@ import { Icon } from '@/ui/Icon';
 
 import { volumeAccessibilityDescription, volumeSubtitleParts } from './volume-model';
 
+const containerStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12 };
+const bodyStyle = { flex: 1, gap: 4 };
+const titleLineStyle = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 };
+const metaStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 6,
+	flexWrap: 'wrap' as const
+};
+
 export function UsageBadge({ text, color }: { text: string; color: string }) {
 	return <Text style={[m3Type.bodyMedium, { color }]}>{text}</Text>;
 }
@@ -31,17 +41,17 @@ export function VolumeRow({
 		<View
 			accessible
 			accessibilityLabel={volumeAccessibilityDescription(volume, size, isPinned, environmentName)}
-			style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+			style={containerStyle}
 		>
 			<RowIcon systemImage="externaldrive.fill" tint={systemColors.blue} />
-			<View style={{ flex: 1, gap: 4 }}>
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+			<View style={bodyStyle}>
+				<View style={titleLineStyle}>
 					<Text style={[m3Type.bodyLarge, { color: colors.label, flexShrink: 1 }]}>
 						{volume.name}
 					</Text>
 					{isPinned ? <Icon name="pin.fill" size={12} color={systemColors.yellow} /> : null}
 				</View>
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+				<View style={metaStyle}>
 					{volume.inUse ? (
 						<UsageBadge text="In use" color={systemColors.green} />
 					) : (

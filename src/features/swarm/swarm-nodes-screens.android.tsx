@@ -4,13 +4,13 @@ import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import type { SwarmNode } from '@/sdk/models/swarm/SwarmNode';
 import { colors, systemColors } from '@/theme/colors';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { m3 } from '@/ui/components/material-colors';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { M3Section, ValueRow } from '@/features/containers/android-material';
 import { AndroidResourceActionsToolbar } from '@/features/containers/android-toolbar';
@@ -35,14 +35,40 @@ import {
 	type SwarmNodesModel
 } from './use-swarm-nodes';
 
+const nodeRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 16,
+	flex: 1
+};
+const nodeBodyStyle = { flex: 1, gap: 3 };
+const nodeBadgesStyle = { alignItems: 'flex-end' as const, gap: 4 };
+const listRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	paddingHorizontal: 16,
+	paddingVertical: 10
+};
+const listContentStyle = { paddingBottom: 32 };
+const labelRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 16,
+	minHeight: 48,
+	paddingHorizontal: 16,
+	paddingVertical: 10
+};
+const labelValueStyle = { flex: 1, alignItems: 'flex-end' as const };
+const noMenuItems: RowMenuItem[] = [];
+
 export function SwarmNodeRow({ node }: { node: SwarmNode }) {
 	return (
-		<View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 }}>
+		<View style={nodeRowStyle}>
 			<RowIcon
 				systemImage={nodeIsManager(node) ? 'crown.fill' : 'server.rack'}
 				tint={nodeIsLeader(node) ? systemColors.yellow : undefined}
 			/>
-			<View style={{ flex: 1, gap: 3 }}>
+			<View style={nodeBodyStyle}>
 				<Text numberOfLines={1} style={[m3Type.bodyLarge, { color: colors.label }]}>
 					{node.hostname}
 				</Text>
@@ -50,7 +76,7 @@ export function SwarmNodeRow({ node }: { node: SwarmNode }) {
 					{nodeSubtitle(node)}
 				</Text>
 			</View>
-			<View style={{ alignItems: 'flex-end', gap: 4 }}>
+			<View style={nodeBadgesStyle}>
 				<SwarmStateBadge state={node.status} />
 				{node.availability.toLowerCase() !== 'active' ? (
 					<SwarmStateBadge state={node.availability} />
@@ -96,12 +122,7 @@ function NodeListRow({ model, node }: { model: SwarmNodesModel; node: SwarmNode 
 			title={node.hostname}
 			items={items}
 			onPress={() => model.openDetail(node)}
-			style={{
-				flexDirection: 'row',
-				alignItems: 'center',
-				paddingHorizontal: 16,
-				paddingVertical: 10
-			}}
+			style={listRowStyle}
 		>
 			<SwarmNodeRow node={node} />
 		</LongPressMenu>
@@ -133,10 +154,39 @@ export function SwarmNodesScreen() {
 				emptySystemImage="server.rack"
 				retry={() => void model.load()}
 			>
-				<ScrollView
-					contentInsetAdjustmentBehavior="automatic"
-					style={{ backgroundColor: colors.systemGroupedBackground }}
-					contentContainerStyle={{ paddingBottom: 32 }}
+				<GroupedFlashList
+					data={items.map((item, index) => ({
+						key: String(item.id),
+						type: 'item',
+						node: item.value,
+						grouped: groupPosition(index, items.length)
+					}))}
+					renderEntry={(entry) => <NodeListRow model={model} node={entry.node} />}
+					header={
+						<SectionTitle
+							title="Nodes"
+							trailing={
+								<ResourceCountLabel
+									loadedCount={items.length}
+									totalCount={snapshot.totalItems}
+									hasMore={snapshot.hasMore}
+								/>
+							}
+						/>
+					}
+					footer={
+						<PaginatedListFooter
+							hasMore={snapshot.hasMore}
+							loadMoreError={snapshot.loadMoreError}
+							onRetry={() => void model.loadMore()}
+							onLoadMore={() => void model.loadMore()}
+						/>
+					}
+					onEndReached={
+						snapshot.hasMore && snapshot.loadMoreError === undefined
+							? () => void model.loadMore()
+							: undefined
+					}
 					refreshControl={
 						<RefreshControl
 							refreshing={refreshing}
@@ -146,29 +196,8 @@ export function SwarmNodesScreen() {
 							}}
 						/>
 					}
-				>
-					<SectionTitle
-						title="Nodes"
-						trailing={
-							<ResourceCountLabel
-								loadedCount={items.length}
-								totalCount={snapshot.totalItems}
-								hasMore={snapshot.hasMore}
-							/>
-						}
-					/>
-					<MaterialListGroup>
-						{items.map((item) => (
-							<NodeListRow key={item.id} model={model} node={item.value} />
-						))}
-					</MaterialListGroup>
-					<PaginatedListFooter
-						hasMore={snapshot.hasMore}
-						loadMoreError={snapshot.loadMoreError}
-						onRetry={() => void model.loadMore()}
-						onLoadMore={() => void model.loadMore()}
-					/>
-				</ScrollView>
+					contentContainerStyle={listContentStyle}
+				/>
 			</SwarmListState>
 		</>
 	);
@@ -263,19 +292,12 @@ export function SwarmNodeDetailScreen() {
 												onPress: () => model.removeLabel(key)
 											}
 										]
-									: []
+									: noMenuItems
 							}
-							style={{
-								flexDirection: 'row',
-								alignItems: 'center',
-								gap: 16,
-								minHeight: 48,
-								paddingHorizontal: 16,
-								paddingVertical: 10
-							}}
+							style={labelRowStyle}
 						>
 							<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{key}</Text>
-							<View style={{ flex: 1, alignItems: 'flex-end' }}>
+							<View style={labelValueStyle}>
 								<MonoText value={value} />
 							</View>
 						</LongPressMenu>

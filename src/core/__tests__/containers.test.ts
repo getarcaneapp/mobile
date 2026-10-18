@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
-import { describe, test } from 'vite-plus/test';
+import { describe, it, test } from 'vite-plus/test';
 
+import { formatDate, formattedClockTime } from '@/core/date-formatting';
 import { parseEnvironmentVariable } from '@/core/environment-secret-detector';
+import { localizedStandardCompare } from '@/core/list-sort-order';
+import { arcaneTimestampMs, parseArcaneDate } from '@/sdk/models/base/date';
 import {
 	TerminalFrameDecoder,
 	TerminalOutputBuffer,
@@ -513,5 +516,51 @@ describe('environment variables', () => {
 			name: 'NOVALUE',
 			isPotentialSecret: false
 		});
+	});
+});
+
+describe('cached formatters', () => {
+	it('sorts like localeCompare with numeric base sensitivity', () => {
+		const names = ['web-10', 'Web-2', 'api', 'web-1', 'Älpha', 'alpha', 'db-002', 'db-1'];
+		const expected = [...names].sort((a, b) =>
+			a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+		);
+		assert.deepEqual([...names].sort(localizedStandardCompare), expected);
+	});
+
+	it('formats dates like toLocaleString with the same options', () => {
+		const date = new Date(2026, 9, 17, 14, 5, 9);
+		assert.equal(
+			formatDate(date, 'abbreviated', 'shortened'),
+			date.toLocaleString(undefined, {
+				month: 'short',
+				day: 'numeric',
+				year: 'numeric',
+				hour: 'numeric',
+				minute: '2-digit'
+			})
+		);
+		assert.equal(
+			formatDate(date, 'numeric', 'omitted'),
+			date.toLocaleString(undefined, { month: 'numeric', day: 'numeric', year: 'numeric' })
+		);
+		assert.equal(formatDate(date, 'omitted', 'omitted'), date.toLocaleString(undefined, {}));
+		assert.equal(
+			formattedClockTime('2026-10-17T14:05:09Z'),
+			new Date('2026-10-17T14:05:09Z').toLocaleTimeString(undefined, {
+				hour: 'numeric',
+				minute: '2-digit',
+				second: '2-digit'
+			})
+		);
+	});
+
+	it('caches parsed timestamps without changing results', () => {
+		const value = '2026-10-17T14:05:09.123+02:00';
+		assert.equal(arcaneTimestampMs(value), parseArcaneDate(value)?.getTime());
+		assert.equal(arcaneTimestampMs(value), parseArcaneDate(value)?.getTime());
+		assert.equal(arcaneTimestampMs('not a date'), undefined);
+		assert.equal(arcaneTimestampMs('not a date'), undefined);
+		assert.equal(arcaneTimestampMs(undefined), undefined);
 	});
 });

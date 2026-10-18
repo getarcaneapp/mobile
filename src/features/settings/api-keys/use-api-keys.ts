@@ -1,8 +1,9 @@
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { PaginationLoader, ProgressivePaginationState } from '@/core/networking/pagination-loader';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { APIKey } from '@/sdk/models/apiKey/APIKey';
@@ -45,7 +46,9 @@ export function useSecretPresentation(onDismissed?: () => void) {
 	const presented = useRef(false);
 	const isFocused = useRef(false);
 	const latestDismissed = useRef(onDismissed);
-	latestDismissed.current = onDismissed;
+	useLayoutEffect(() => {
+		latestDismissed.current = onDismissed;
+	});
 
 	const presentPending = useCallback(() => {
 		const presentation = pending.current;
@@ -105,12 +108,14 @@ export function useAPIKeys() {
 		order: sortOrder,
 		canListUsers: access.canListUsers
 	});
-	query.current = {
-		search: debouncedSearchText,
-		sort: sortField,
-		order: sortOrder,
-		canListUsers: access.canListUsers
-	};
+	useLayoutEffect(() => {
+		query.current = {
+			search: debouncedSearchText,
+			sort: sortField,
+			order: sortOrder,
+			canListUsers: access.canListUsers
+		};
+	});
 
 	const updatePagination = (next: ProgressivePaginationState) => {
 		paginationRef.current = next;
@@ -157,29 +162,35 @@ export function useAPIKeys() {
 		if (apiKeysRef.current.length === 0) setIsLoading(true);
 		setErrorMessage(undefined);
 		setLoadMoreError(undefined);
-		try {
-			const pageTask = current.apiKeys.listPaginated({
-				search: search === '' ? undefined : search,
-				sort,
-				order,
-				start: 0,
-				limit: pageSize
-			});
-			const usersTask = fetchAssignedUsers(current, canListUsers);
-			const response = await pageTask;
-			const users = await usersTask;
-			if (!applyPage(response, true, 0, generation)) return;
-			const usersByID = new Map(users.map((user) => [user.id, user]));
-			const currentUser = useClientManager.getState().currentUser;
-			if (currentUser) usersByID.set(currentUser.id, currentUser);
-			setAssignedUsers(usersByID);
-		} catch (error) {
-			if (!ProgressivePaginationState.accepts(paginationRef.current, generation)) return;
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (ProgressivePaginationState.accepts(paginationRef.current, generation))
-				setIsLoading(false);
-		}
+		const searchQuery = search === '' ? undefined : search;
+		await withCleanup(
+			async () => {
+				try {
+					const pageTask = current.apiKeys.listPaginated({
+						search: searchQuery,
+						sort,
+						order,
+						start: 0,
+						limit: pageSize
+					});
+					const usersTask = fetchAssignedUsers(current, canListUsers);
+					const response = await pageTask;
+					const users = await usersTask;
+					if (!applyPage(response, true, 0, generation)) return;
+					const usersByID = new Map(users.map((user) => [user.id, user]));
+					const currentUser = useClientManager.getState().currentUser;
+					if (currentUser) usersByID.set(currentUser.id, currentUser);
+					setAssignedUsers(usersByID);
+				} catch (error) {
+					if (!ProgressivePaginationState.accepts(paginationRef.current, generation)) return;
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (ProgressivePaginationState.accepts(paginationRef.current, generation))
+					setIsLoading(false);
+			}
+		);
 	};
 
 	const loadMore = async () => {
@@ -189,26 +200,34 @@ export function useAPIKeys() {
 		setLoadMoreError(undefined);
 		const { generation, nextStart: start } = paginationRef.current;
 		const { search, sort, order } = query.current;
-		try {
-			const response = await current.apiKeys.listPaginated({
-				search: search === '' ? undefined : search,
-				sort,
-				order,
-				start,
-				limit: pageSize
-			});
-			applyPage(response, false, start, generation);
-		} catch (error) {
-			if (!ProgressivePaginationState.accepts(paginationRef.current, generation)) return;
-			setLoadMoreError(friendlyErrorMessage(error));
-		} finally {
-			if (ProgressivePaginationState.accepts(paginationRef.current, generation))
-				setLoadingMore(false);
-		}
+		const searchQuery = search === '' ? undefined : search;
+		await withCleanup(
+			async () => {
+				try {
+					const response = await current.apiKeys.listPaginated({
+						search: searchQuery,
+						sort,
+						order,
+						start,
+						limit: pageSize
+					});
+					applyPage(response, false, start, generation);
+				} catch (error) {
+					if (!ProgressivePaginationState.accepts(paginationRef.current, generation)) return;
+					setLoadMoreError(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (ProgressivePaginationState.accepts(paginationRef.current, generation))
+					setLoadingMore(false);
+			}
+		);
 	};
 
 	const latestLoad = useRef(loadKeys);
-	latestLoad.current = loadKeys;
+	useLayoutEffect(() => {
+		latestLoad.current = loadKeys;
+	});
 	const reload = useCallback(() => latestLoad.current(), []);
 
 	useEffect(() => {

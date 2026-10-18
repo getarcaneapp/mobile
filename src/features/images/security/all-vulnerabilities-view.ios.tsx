@@ -40,6 +40,7 @@ import {
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { ScrollableTabBar } from '@/ui/components/scrollable-tab-bar';
 import { SeverityBar } from '@/ui/components/severity-bar';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { AppToolbar } from '@/ui/components/toolbar';
 import { DisclosureChevron } from '@/ui/settings-row';
 
@@ -187,9 +188,9 @@ function FindingsContent({ model }: { model: AllVulnerabilitiesModel }) {
 			) : null}
 			{displayedItems.length > 0 ? (
 				<Section title="Findings">
-					{displayedItems.map((item) => (
-						<FindingLink key={item.id} model={model} item={item} />
-					))}
+					<List.ForEach data={displayedItems} keyExtractor={stableItemKey} estimatedItemSize={64}>
+						{({ item }) => <FindingLink model={model} item={item} />}
+					</List.ForEach>
 					<PaginatedListFooter
 						hasMore={snapshot.hasMore}
 						loadMoreError={snapshot.loadMoreError}

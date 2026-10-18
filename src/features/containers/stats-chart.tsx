@@ -26,9 +26,11 @@ function tickLabel(value: number, step: number) {
 	return `${+value.toFixed(decimals)}`;
 }
 
+const round = (value: number) => Math.round(value * 10) / 10;
+
 function monotonePath(points: [number, number][]): string {
 	if (points.length === 0) return '';
-	if (points.length === 1) return `M${points[0]![0]},${points[0]![1]}`;
+	if (points.length === 1) return `M${round(points[0]![0])},${round(points[0]![1])}`;
 	const n = points.length;
 	const dx: number[] = [];
 	const slope: number[] = [];
@@ -48,12 +50,12 @@ function monotonePath(points: [number, number][]): string {
 		);
 	}
 	tangent.push(slope[n - 2]!);
-	let d = `M${points[0]![0]},${points[0]![1]}`;
+	let d = `M${round(points[0]![0])},${round(points[0]![1])}`;
 	for (let i = 0; i < n - 1; i++) {
 		const [x0, y0] = points[i]!;
 		const [x1, y1] = points[i + 1]!;
 		const h = dx[i]! / 3;
-		d += ` C${x0 + h},${y0 + tangent[i]! * h} ${x1 - h},${y1 - tangent[i + 1]! * h} ${x1},${y1}`;
+		d += ` C${round(x0 + h)},${round(y0 + tangent[i]! * h)} ${round(x1 - h)},${round(y1 - tangent[i + 1]! * h)} ${round(x1)},${round(y1)}`;
 	}
 	return d;
 }
@@ -85,7 +87,7 @@ export function StatsLineChart({
 			<View style={{ width: axisWidth, height }}>
 				{ticks.map((tick, index) => (
 					<Text
-						key={tick}
+						key={index}
 						numberOfLines={1}
 						style={{
 							position: 'absolute',
@@ -102,9 +104,9 @@ export function StatsLineChart({
 			</View>
 			{plotWidth > 0 ? (
 				<Svg width={plotWidth} height={height}>
-					{ticks.map((tick) => (
+					{ticks.map((tick, index) => (
 						<Line
-							key={tick}
+							key={index}
 							x1={0}
 							x2={plotWidth}
 							y1={y(tick)}
@@ -126,7 +128,7 @@ export function StatsLineChart({
 							<G key={index}>
 								{s.fillOpacity && last ? (
 									<Path
-										d={`${line} L${last[0]},${height} L0,${height} Z`}
+										d={`${line} L${round(last[0])},${height} L0,${height} Z`}
 										fill={s.color}
 										fillOpacity={s.fillOpacity}
 									/>

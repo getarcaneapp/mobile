@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
 import { cachedClient } from '@/core/networking/use-cached-client';
+import { withCleanup } from '@/core/with-cleanup';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import type { ProjectDetails } from '@/sdk/models/project/Project';
 import { useClientManager } from '@/stores/client-manager';
@@ -71,7 +72,9 @@ export function useDashboardPinned(refreshToken: number) {
 		...containers.map((container) => ({ kind: 'container' as const, container })),
 		...projects.map((project) => ({ kind: 'project' as const, project }))
 	];
-	itemCount.current = items.length;
+	useLayoutEffect(() => {
+		itemCount.current = items.length;
+	});
 
 	useEffect(() => {
 		let cancelled = false;
@@ -142,7 +145,7 @@ export function useDashboardPinned(refreshToken: number) {
 		if (!client || runningID !== undefined) return;
 		setRunningID(PinnedItem.id(item));
 		const mutations = useResourceMutationStore.getState();
-		try {
+		const perform = async () => {
 			if (item.kind === 'container') {
 				if (containerIsRunning(item.container)) {
 					await client.containers.stop({ envID: environmentID, id: item.container.id });
@@ -170,11 +173,17 @@ export function useDashboardPinned(refreshToken: number) {
 				]);
 				mutations.markChanged('projects', environmentID);
 			}
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setRunningID(undefined);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await perform();
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setRunningID(undefined)
+		);
 	};
 
 	return { items, isLoading, runningID, runAction };

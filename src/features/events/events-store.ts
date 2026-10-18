@@ -1,8 +1,9 @@
+import { deepEqual } from '@/core/deep-equal';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { PaginationLoader, ProgressivePaginationState } from '@/core/networking/pagination-loader';
 import type { ArcaneClient } from '@/sdk';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
-import { parseArcaneDate } from '@/sdk/models/base/date';
+import { arcaneTimestampMs } from '@/sdk/models/base/date';
 import type { Event, EventSeverityCounts } from '@/sdk/models/event/Event';
 
 export type EventSeverityFilter = 'info' | 'success' | 'warning' | 'error';
@@ -21,7 +22,7 @@ export const EventSeverityFilter = {
 	} as Record<EventSeverityFilter, string>
 };
 
-const timestampMs = (event: Event) => parseArcaneDate(event.timestamp)?.getTime() ?? 0;
+const timestampMs = (event: Event) => arcaneTimestampMs(event.timestamp) ?? 0;
 
 export function mergedEventHistory(current: Event[], incoming: Event[], limit: number): Event[] {
 	if (limit <= 0) return [];
@@ -42,7 +43,7 @@ function sameEvents(a: Event[], b: Event[]) {
 	if (a.length !== b.length) return false;
 	return a.every((event, index) => {
 		const other = b[index];
-		return other !== undefined && JSON.stringify(event) === JSON.stringify(other);
+		return other !== undefined && (event === other || deepEqual(event, other));
 	});
 }
 

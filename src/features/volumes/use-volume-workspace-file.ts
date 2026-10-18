@@ -1,9 +1,10 @@
 import { Directory, File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import type { ProjectFile } from '@/sdk/models/project/ProjectFiles';
@@ -28,6 +29,10 @@ export type WorkspaceReviewPayload = {
 	onKeep: () => void;
 };
 
+function loadedDraft(result: VolumeWorkspaceFileContent) {
+	return VolumeWorkspaceDraft.load(result.content ?? '');
+}
+
 export function useVolumeWorkspaceFile(
 	environmentID: EnvironmentID,
 	volumeName: string,
@@ -51,15 +56,14 @@ export function useVolumeWorkspaceFile(
 	const [errorMessage, setErrorMessage] = useState<string>();
 	const [download, setDownload] = useState<{ directory: Directory; file: File }>();
 	const downloadRef = useRef(download);
-	downloadRef.current = download;
+	useLayoutEffect(() => {
+		downloadRef.current = download;
+	});
 	const generation = useClientManager((s) => s.clientGeneration);
-	useClientManager((s) => s.accessGeneration);
+	const canUpload = usePermission(Permission.Volumes.upload, environmentID);
 
 	const fileIdentity = () => `${workspaceIdentity(environmentID, volumeName)}|${relativePath}`;
-	const canEdit =
-		content?.editable === true &&
-		content.readOnlyReason === undefined &&
-		hasPermission(Permission.Volumes.upload, environmentID);
+	const canEdit = content?.editable === true && content.readOnlyReason === undefined && canUpload;
 	const hasChanges = VolumeWorkspaceDraft.hasChanges(draft);
 
 	const load = useCallback(async () => {
@@ -70,20 +74,25 @@ export function useVolumeWorkspaceFile(
 			!unmounted.current &&
 			key === `${workspaceIdentity(environmentID, volumeName)}|${relativePath}`;
 		setLoading(true);
-		try {
-			const result = await client.volumes.workspaceFile({
-				envID: environmentID,
-				name: volumeName,
-				relativePath
-			});
-			if (!isCurrent()) return;
-			setContent(result);
-			setDraft(VolumeWorkspaceDraft.load(result.content ?? ''));
-		} catch (error) {
-			if (isCurrent()) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (isCurrent()) setLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const result = await client.volumes.workspaceFile({
+						envID: environmentID,
+						name: volumeName,
+						relativePath
+					});
+					if (!isCurrent()) return;
+					setContent(result);
+					setDraft(loadedDraft(result));
+				} catch (error) {
+					if (isCurrent()) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (isCurrent()) setLoading(false);
+			}
+		);
 	}, [environmentID, volumeName, relativePath, unmounted]);
 
 	useEffect(() => {
@@ -99,42 +108,47 @@ export function useVolumeWorkspaceFile(
 		const isCurrent = () => !unmounted.current && key === fileIdentity();
 		const directory = makeTemporaryDirectory();
 		setLoading(true);
-		try {
-			const updated = new File(directory, 'updated');
-			const baseline = new File(directory, 'baseline');
-			updated.create();
-			await updated.write(draft.text);
-			baseline.create();
-			await baseline.write(draft.baseline);
-			const result = await client.volumes.updateWorkspace({
-				envID: environmentID,
-				name: volumeName,
-				manifest: {
-					fileTreeRevision: revision,
-					fileChanges: [
-						{ operation: 'update_file', relativePath, uploadIndex: 0, baselineIndex: 1 }
-					]
-				},
-				files: [updated.uri, baseline.uri]
-			});
-			if (!isCurrent()) return;
-			setRevision(result.fileTreeRevision);
-			setDraft((d) => VolumeWorkspaceDraft.load(d.text));
-			setErrorMessage(undefined);
-			await WorkspaceStore.load(environmentID, volumeName);
-			showToast(Toasts.success('File saved'));
-		} catch (error) {
-			if (!isCurrent()) return;
-			if (isArcaneError(error, 'conflict')) {
-				setDraft((d) => ({ ...d, conflict: true }));
-				setErrorMessage('The server file changed. Review it before saving your draft.');
-			} else {
-				setErrorMessage(friendlyErrorMessage(error));
+		await withCleanup(
+			async () => {
+				try {
+					const updated = new File(directory, 'updated');
+					const baseline = new File(directory, 'baseline');
+					updated.create();
+					await updated.write(draft.text);
+					baseline.create();
+					await baseline.write(draft.baseline);
+					const result = await client.volumes.updateWorkspace({
+						envID: environmentID,
+						name: volumeName,
+						manifest: {
+							fileTreeRevision: revision,
+							fileChanges: [
+								{ operation: 'update_file', relativePath, uploadIndex: 0, baselineIndex: 1 }
+							]
+						},
+						files: [updated.uri, baseline.uri]
+					});
+					if (!isCurrent()) return;
+					setRevision(result.fileTreeRevision);
+					setDraft((d) => VolumeWorkspaceDraft.load(d.text));
+					setErrorMessage(undefined);
+					await WorkspaceStore.load(environmentID, volumeName);
+					showToast(Toasts.success('File saved'));
+				} catch (error) {
+					if (!isCurrent()) return;
+					if (isArcaneError(error, 'conflict')) {
+						setDraft((d) => ({ ...d, conflict: true }));
+						setErrorMessage('The server file changed. Review it before saving your draft.');
+					} else {
+						setErrorMessage(friendlyErrorMessage(error));
+					}
+				}
+			},
+			() => {
+				removeItem(directory);
+				if (isCurrent()) setLoading(false);
 			}
-		} finally {
-			removeItem(directory);
-			if (isCurrent()) setLoading(false);
-		}
+		);
 	};
 
 	const reviewConflict = async () => {
@@ -172,15 +186,17 @@ export function useVolumeWorkspaceFile(
 		if (!client) return;
 		const key = fileIdentity();
 		const directory = makeTemporaryDirectory();
+		const targetName = file.name.split('/').pop() ?? file.name;
+		const isStale = () => unmounted.current || key !== fileIdentity();
 		try {
-			const target = new File(directory, file.name.split('/').pop() ?? file.name);
+			const target = new File(directory, targetName);
 			const request = await client.volumes.downloadWorkspaceFileDownloadRequest({
 				envID: environmentID,
 				name: volumeName,
 				relativePath
 			});
 			await downloadTo(request, target);
-			if (unmounted.current || key !== fileIdentity()) {
+			if (isStale()) {
 				removeItem(directory);
 				return;
 			}

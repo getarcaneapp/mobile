@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Linking } from 'react-native';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { settingsPayloads } from '@/features/settings/shared/settings-routes';
 import { useClientManager } from '@/stores/client-manager';
 import { useEnvironmentsStore } from '@/stores/environments-store';
@@ -28,8 +29,8 @@ export function useGitOpsSyncDetail() {
 	const params = useLocalSearchParams<{ id?: string; envID?: string; token?: string }>();
 	const [payload] = useState(() => settingsPayloads.get<GitOpsSyncPayload>(params.token));
 	const syncID = payload?.resource.id ?? params.id ?? '';
-	const environmentID =
-		payload?.environmentID ?? params.envID ?? useClientManager.getState().activeEnvironmentID;
+	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
+	const environmentID = payload?.environmentID ?? params.envID ?? activeEnvironmentID;
 	const onChange = payload?.onChange;
 
 	const [sync, setSync] = useState(() =>
@@ -72,13 +73,16 @@ export function useGitOpsSyncDetail() {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setRunningActionID('sync');
-		try {
+		const runSync = async () => {
 			const result = await client.gitops.performSync({ id: sync.id, envID: environmentID });
 			if (result.success) {
 				showToast(Toasts.success(isBackup ? 'Backup completed' : 'Sync completed'));
 			} else {
 				showToast(Toasts.error(nonEmptyResourceValue(result.error) ?? result.message));
 			}
+		};
+		try {
+			await runSync();
 		} catch (error) {
 			showToast(Toasts.error(friendlyErrorMessage(error)));
 		}
@@ -91,16 +95,22 @@ export function useGitOpsSyncDetail() {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setRunningActionID('delete');
-		try {
+		const remove = async () => {
 			await client.gitops.deleteSync({ id: sync.id, envID: environmentID });
 			showToast(Toasts.success(isBackup ? 'Backup stopped' : 'Sync deleted'));
 			onChange?.();
 			nav.back();
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setRunningActionID(undefined);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await remove();
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setRunningActionID(undefined)
+		);
 	};
 
 	const presentEdit = () => {

@@ -36,6 +36,7 @@ import {
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { DisclosureChevron } from '@/ui/settings-row';
 import { useToolbarIcons } from '@/ui/toolbar-icon';
 
@@ -215,9 +216,9 @@ export function PortsScreen(props: PortsListProps) {
 							</HStack>
 						}
 					>
-						{group.ports.map((port) => (
-							<PortLink key={port.id} port={port} onPress={() => model.openDetail(port)} />
-						))}
+						<List.ForEach data={group.ports} keyExtractor={stableItemKey} estimatedItemSize={44}>
+							{({ item }) => <PortLink port={item} onPress={() => model.openDetail(item)} />}
+						</List.ForEach>
 					</Section>
 				))}
 				<PaginatedListFooter

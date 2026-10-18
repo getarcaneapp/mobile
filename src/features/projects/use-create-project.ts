@@ -1,10 +1,11 @@
 import { File } from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { boundedAPIResponse, RemoteDataLimits } from '@/core/networking/remote-data-limits';
+import { withCleanup } from '@/core/with-cleanup';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import { storage } from '@/core/storage';
 import { makeComposePreviewSession } from '@/features/compose/model/compose-preview-session';
@@ -13,6 +14,7 @@ import {
 	snapshotsEqual,
 	type ProjectDraftSnapshot
 } from '@/features/compose/model/project-draft-snapshot';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { DeployOptions } from '@/sdk/models/project/Project';
 import { Permission } from '@/sdk/models/role/Permission';
 import type { Template, TemplateContent } from '@/sdk/models/template/Template';
@@ -31,6 +33,89 @@ import {
 import { routePayloads, useProjectNavigation, type CreateProjectPayload } from './project-routes';
 
 export const createProjectConfirmationHost = 'create-project';
+
+function announceCreatedProject(
+	envID: string,
+	created: { id: string; name: string },
+	deploy: boolean,
+	deployOptions: DeployOptions | undefined
+) {
+	if (deploy && hasPermission(Permission.Projects.deploy, envID)) {
+		const started = useProjectDeploymentStore.getState().start({
+			kind: 'up',
+			envID,
+			targetID: created.id,
+			targetName: projectDisplayName(created),
+			environmentName:
+				useEnvironmentsStore.getState().displayName(envID) ??
+				useClientManager.getState().activeEnvironmentName,
+			deployOptions
+		});
+		if (!started) showToast(Toasts.info('Project created. Open the project to retry deployment.'));
+	} else {
+		showToast(Toasts.success('Project created'));
+	}
+}
+
+function invalidateProjectsCache(client: ArcaneClient, envID: string) {
+	cachedClient()?.invalidate(envID, [
+		client.rest.environmentPath(envID, 'projects') + '*',
+		client.rest.environmentPath(envID, 'projects/*')
+	]);
+}
+
+async function notifyCreated(payload: CreateProjectPayload) {
+	await payload.onSuccess?.();
+}
+
+function conversionSucceeded(isCurrent: () => boolean, result: { success: boolean }) {
+	return isCurrent() && result.success;
+}
+
+async function loadTemplateList(
+	client: ArcaneClient,
+	handlers: {
+		isCancelled: () => boolean;
+		isCurrent: () => boolean;
+		setTemplates: (templates: Template[]) => void;
+		setErrorMessage: (message: string) => void;
+		setIsLoadingTemplates: (loading: boolean) => void;
+	}
+) {
+	try {
+		const loaded = await client.templates.listAll();
+		if (!handlers.isCancelled() && handlers.isCurrent()) handlers.setTemplates(loaded);
+	} catch (error) {
+		if (!handlers.isCancelled()) handlers.setErrorMessage(friendlyErrorMessage(error));
+	} finally {
+		if (!handlers.isCancelled()) handlers.setIsLoadingTemplates(false);
+	}
+}
+
+async function pickComposeFile(isCurrent: () => boolean, onPicked: (text: string) => void) {
+	try {
+		const result = await File.pickFileAsync();
+		if (result.canceled || !isCurrent()) return;
+		const file = result.result;
+		if ((file.size ?? 0) > RemoteDataLimits.maximumTemplateBytes) {
+			showToast(Toasts.error('The YAML file exceeds the template size limit.'));
+			return;
+		}
+		let text: string;
+		try {
+			text = await file.text();
+		} catch {
+			text = '\u{FFFD}';
+		}
+		if (text.includes('\u{FFFD}') || text.length > RemoteDataLimits.maximumTemplateBytes) {
+			showToast(Toasts.error('Choose a UTF-8 YAML file within the template size limit.'));
+			return;
+		}
+		onPicked(text);
+	} catch (error) {
+		if (!isCancellation(error)) showToast(Toasts.error(friendlyErrorMessage(error)));
+	}
+}
 
 export function useCreateProject() {
 	const router = useRouter();
@@ -70,9 +155,15 @@ export function useCreateProject() {
 	const [dockerRun, setDockerRun] = useState('');
 
 	const isPrefilled = payload.prefilledCompose !== undefined;
-	const canBrowseTemplates =
-		hasPermission(Permission.Templates.list, null) &&
-		hasPermission(Permission.Templates.read, null);
+	const canBrowseTemplates = useClientManager(
+		() =>
+			hasPermission(Permission.Templates.list, null) &&
+			hasPermission(Permission.Templates.read, null)
+	);
+	const acceptsEnvironmentContext = useClientManager((s) => s.acceptsEnvironmentContext(envID));
+	const canCreatePermission = useClientManager(() =>
+		hasPermission(Permission.Projects.create, envID)
+	);
 	const sessionIsCurrent = () =>
 		sessionIdentity === useClientManager.getState().cacheSessionIdentity &&
 		useClientManager.getState().acceptsEnvironmentContext(envID);
@@ -84,7 +175,9 @@ export function useCreateProject() {
 		envContent !== (payload.prefilledEnv ?? '');
 
 	const latest = useRef({ name, draftSnapshot, selectedTemplateID });
-	latest.current = { name, draftSnapshot, selectedTemplateID };
+	useLayoutEffect(() => {
+		latest.current = { name, draftSnapshot, selectedTemplateID };
+	});
 
 	const dismiss = () => {
 		if (router.canGoBack()) router.back();
@@ -122,29 +215,30 @@ export function useCreateProject() {
 		setBaseline({ compose, environment: defaults.envTemplate });
 	};
 
-	useEffect(() => {
-		if (isPrefilled || !canBrowseTemplates) return;
+	const startInitialLoad = useEffectEvent(() => {
+		if (isPrefilled || !canBrowseTemplates) return undefined;
 		const client = useClientManager.getState().client;
-		if (!client) return;
+		if (!client) return undefined;
 		let cancelled = false;
+		const isCancelled = () => cancelled;
 		void (async () => {
 			if (previewEnabled) await loadDefaultTemplate();
 			if (cancelled) return;
 			setIsLoadingTemplates(true);
-			try {
-				const loaded = await client.templates.listAll();
-				if (!cancelled && sessionIsCurrent()) setTemplates(loaded);
-			} catch (error) {
-				if (!cancelled) setErrorMessage(friendlyErrorMessage(error));
-			} finally {
-				if (!cancelled) setIsLoadingTemplates(false);
-			}
+			await loadTemplateList(client, {
+				isCancelled,
+				isCurrent: sessionIsCurrent,
+				setTemplates,
+				setErrorMessage,
+				setIsLoadingTemplates
+			});
 		})();
 		return () => {
 			cancelled = true;
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	});
+
+	useEffect(() => startInitialLoad(), []);
 
 	const applyTemplate = async (id: string) => {
 		if (!sessionIsCurrent()) return;
@@ -157,24 +251,27 @@ export function useCreateProject() {
 		const client = useClientManager.getState().client;
 		if (!canBrowseTemplates || !client) return;
 		setIsLoading(true);
-		try {
-			const content = await boundedAPIResponse<TemplateContent>(
-				client,
-				`templates/${encodeURIComponent(id)}/content`,
-				{
-					maximumBytes: RemoteDataLimits.maximumTemplateBytes
+		await withCleanup(
+			async () => {
+				try {
+					const content = await boundedAPIResponse<TemplateContent>(
+						client,
+						`templates/${encodeURIComponent(id)}/content`,
+						{
+							maximumBytes: RemoteDataLimits.maximumTemplateBytes
+						}
+					);
+					if (!sessionIsCurrent()) return;
+					setComposeContent(content.content);
+					setEnvContent(content.envContent);
+					setBaseline({ compose: content.content, environment: content.envContent });
+					if (latest.current.name === '') setName(projectNameFromTemplate(content.template.name));
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
 				}
-			);
-			if (!sessionIsCurrent()) return;
-			setComposeContent(content.content);
-			setEnvContent(content.envContent);
-			setBaseline({ compose: content.content, environment: content.envContent });
-			if (latest.current.name === '') setName(projectNameFromTemplate(content.template.name));
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	const createProject = async (deploy = false, deployOptions?: DeployOptions) => {
@@ -182,45 +279,30 @@ export function useCreateProject() {
 		if (!sessionIsCurrent() || !hasPermission(Permission.Projects.create, envID) || !client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			if (previewEnabled) ProjectDraftReview.validateSyntax(latest.current.draftSnapshot);
-			const created = await client.projects.create({
-				envID,
-				request: {
-					name: latest.current.name,
-					composeContent: latest.current.draftSnapshot.compose,
-					envContent: latest.current.draftSnapshot.environment
+		await withCleanup(
+			async () => {
+				try {
+					if (previewEnabled) ProjectDraftReview.validateSyntax(latest.current.draftSnapshot);
+					const created = await client.projects.create({
+						envID,
+						request: {
+							name: latest.current.name,
+							composeContent: latest.current.draftSnapshot.compose,
+							envContent: latest.current.draftSnapshot.environment
+						}
+					});
+					if (!sessionIsCurrent()) return;
+					announceCreatedProject(envID, created, deploy, deployOptions);
+					invalidateProjectsCache(client, envID);
+					useResourceMutationStore.getState().markChanged('projects', envID);
+					await notifyCreated(payload);
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
 				}
-			});
-			if (!sessionIsCurrent()) return;
-			if (deploy && hasPermission(Permission.Projects.deploy, envID)) {
-				const started = useProjectDeploymentStore.getState().start({
-					kind: 'up',
-					envID,
-					targetID: created.id,
-					targetName: projectDisplayName(created),
-					environmentName:
-						useEnvironmentsStore.getState().displayName(envID) ??
-						useClientManager.getState().activeEnvironmentName,
-					deployOptions
-				});
-				if (!started)
-					showToast(Toasts.info('Project created. Open the project to retry deployment.'));
-			} else {
-				showToast(Toasts.success('Project created'));
-			}
-			cachedClient()?.invalidate(envID, [
-				client.rest.environmentPath(envID, 'projects') + '*',
-				client.rest.environmentPath(envID, 'projects/*')
-			]);
-			useResourceMutationStore.getState().markChanged('projects', envID);
-			await payload.onSuccess?.();
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	const review = () =>
@@ -242,53 +324,37 @@ export function useCreateProject() {
 
 	const importYAMLFile = async () => {
 		if (!sessionIsCurrent()) return;
-		try {
-			const result = await File.pickFileAsync();
-			if (result.canceled || !sessionIsCurrent()) return;
-			const file = result.result;
-			if ((file.size ?? 0) > RemoteDataLimits.maximumTemplateBytes) {
-				showToast(Toasts.error('The YAML file exceeds the template size limit.'));
-				return;
-			}
-			let text: string;
-			try {
-				text = await file.text();
-			} catch {
-				text = '\u{FFFD}';
-			}
-			if (text.includes('\u{FFFD}') || text.length > RemoteDataLimits.maximumTemplateBytes) {
-				showToast(Toasts.error('Choose a UTF-8 YAML file within the template size limit.'));
-				return;
-			}
+		await pickComposeFile(sessionIsCurrent, (text) => {
 			setImportedCompose(text);
 			setShowReplaceImport(true);
-		} catch (error) {
-			if (!isCancellation(error)) showToast(Toasts.error(friendlyErrorMessage(error)));
-		}
+		});
 	};
 
 	const convertDockerRun = async () => {
 		const client = useClientManager.getState().client;
 		if (!sessionIsCurrent() || !client) return;
 		setIsLoading(true);
-		try {
-			const result = await client.system.convertDockerRun({
-				request: { dockerRunCommand: dockerRun },
-				envID
-			});
-			if (!sessionIsCurrent() || !result.success) {
-				showToast(Toasts.error('Command conversion failed.'));
-				return;
-			}
-			setComposeContent(result.dockerCompose);
-			setEnvContent(result.envVars);
-			if (latest.current.name === '') setName(result.serviceName);
-			setShowDockerRun(false);
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const result = await client.system.convertDockerRun({
+						request: { dockerRunCommand: dockerRun },
+						envID
+					});
+					if (!conversionSucceeded(sessionIsCurrent, result)) {
+						showToast(Toasts.error('Command conversion failed.'));
+						return;
+					}
+					setComposeContent(result.dockerCompose);
+					setEnvContent(result.envVars);
+					if (latest.current.name === '') setName(result.serviceName);
+					setShowDockerRun(false);
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	useDeleteConfirmation(
@@ -368,8 +434,8 @@ export function useCreateProject() {
 		canCreate:
 			name !== '' &&
 			sessionIdentity === currentSession &&
-			useClientManager.getState().acceptsEnvironmentContext(envID) &&
-			hasPermission(Permission.Projects.create, envID),
+			acceptsEnvironmentContext &&
+			canCreatePermission,
 		dismissDisabled: previewEnabled && hasDraftChanges,
 		cancel: () => (previewEnabled && hasDraftChanges ? setShowDiscard(true) : dismiss()),
 		create: () => (previewEnabled ? review() : void createProject()),

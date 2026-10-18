@@ -7,6 +7,7 @@ import type {
 	VulnerabilityRiskImage,
 	VulnerabilityRiskOverview
 } from '@/sdk/types/VulnerabilityRiskOverview';
+import { nextInstanceKey } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { SeverityBar } from '@/ui/components/severity-bar';
 import { m3Type, monoFamily } from '@/ui/components/type-scale';
@@ -27,8 +28,6 @@ import {
 } from './security-overview-logic';
 import { SeverityBadge } from './vulnerability-rows';
 import { capitalized, riskBandColor, severityFromRaw } from './vulnerability-model';
-
-let overviewCounter = 0;
 
 export type SecurityOverviewProps = {
 	overview: VulnerabilityRiskOverview;
@@ -305,7 +304,7 @@ export function SecurityOverview({
 	const [selectedRiskPanel, setSelectedRiskPanel] = useState<RiskPanel>('score');
 	const [trendDays, setTrendDays] = useState(30);
 	const [rankByPrevalence, setRankByPrevalence] = useState(false);
-	const [memoryKey] = useState(() => `overview-${++overviewCounter}`);
+	const [memoryKey] = useState(() => nextInstanceKey('overview'));
 	useEffect(() => () => releaseRiskScoreMemory(memoryKey), [memoryKey]);
 	const p = overviewPresentation(overview);
 	const { drivers, drivers7dAgo, exposure, summary } = overview;

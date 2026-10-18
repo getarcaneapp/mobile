@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { colors } from '@/theme/colors';
 import { Icon } from '@/ui/Icon';
 import { MaterialListItem } from '@/ui/material/list';
@@ -12,6 +13,18 @@ import {
 	type RunEndpointButtonProps
 } from './rows.types';
 import { m3Type } from './type-scale';
+
+async function runEndpoint(
+	run: RunEndpointButtonProps['run'],
+	formatError: (error: unknown) => string
+): Promise<string> {
+	try {
+		await run();
+		return 'Completed';
+	} catch (error) {
+		return formatError(error);
+	}
+}
 
 export function RunEndpointButton({
 	title,
@@ -26,14 +39,10 @@ export function RunEndpointButton({
 
 	const onPress = async () => {
 		setIsRunning(true);
-		try {
-			await run();
-			setMessage('Completed');
-		} catch (error) {
-			setMessage(formatError(error));
-		} finally {
-			setIsRunning(false);
-		}
+		await withCleanup(
+			async () => setMessage(await runEndpoint(run, formatError)),
+			() => setIsRunning(false)
+		);
 	};
 
 	return (

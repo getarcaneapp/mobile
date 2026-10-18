@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { SwarmInfo } from '@/sdk/models/swarm/SwarmInfo';
 import { Permission } from '@/sdk/models/role/Permission';
@@ -23,25 +24,28 @@ export function useSwarmHub(environmentID: EnvironmentID) {
 		const current = useClientManager.getState().client;
 		if (!current || isLoading.current) return;
 		isLoading.current = true;
-		try {
-			const fetched = await current.swarm.info({ envID: environmentID }).catch(() => undefined);
-			if (fetched) {
-				setInfo(fetched);
-				setIsActive(true);
-				setErrorMessage(undefined);
-				return;
+		await withCleanup(
+			async () => {
+				const fetched = await current.swarm.info({ envID: environmentID }).catch(() => undefined);
+				if (fetched) {
+					setInfo(fetched);
+					setIsActive(true);
+					setErrorMessage(undefined);
+					return;
+				}
+				try {
+					const status = await current.swarm.status({ envID: environmentID });
+					setIsActive(status.enabled);
+					setInfo(undefined);
+					setErrorMessage(undefined);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				isLoading.current = false;
 			}
-			try {
-				const status = await current.swarm.status({ envID: environmentID });
-				setIsActive(status.enabled);
-				setInfo(undefined);
-				setErrorMessage(undefined);
-			} catch (error) {
-				setErrorMessage(friendlyErrorMessage(error));
-			}
-		} finally {
-			isLoading.current = false;
-		}
+		);
 	}, [environmentID]);
 
 	useEffect(() => {
@@ -75,24 +79,28 @@ export function useSwarmSetup(environmentID: EnvironmentID) {
 		if (!client) return;
 		setRunningAction('init');
 		setErrorMessage(undefined);
-		try {
-			await client.swarm.initSwarm({
-				request: {
-					listenAddr: optionalTrimmed(listenAddress),
-					advertiseAddr: optionalTrimmed(advertiseAddress),
-					forceNewCluster: forceNewCluster ? true : undefined,
-					spec: {},
-					autoLockManagers: autoLock ? true : undefined
-				},
-				envID: environmentID
-			});
-			swarmChanged(environmentID);
-			showToast(Toasts.success('Swarm initialized'));
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setRunningAction(undefined);
-		}
+		const request = {
+			listenAddr: optionalTrimmed(listenAddress),
+			advertiseAddr: optionalTrimmed(advertiseAddress),
+			forceNewCluster: forceNewCluster ? true : undefined,
+			spec: {},
+			autoLockManagers: autoLock ? true : undefined
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await client.swarm.initSwarm({
+						request,
+						envID: environmentID
+					});
+					swarmChanged(environmentID);
+					showToast(Toasts.success('Swarm initialized'));
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setRunningAction(undefined)
+		);
 	};
 
 	const join = async () => {
@@ -100,23 +108,26 @@ export function useSwarmSetup(environmentID: EnvironmentID) {
 		if (!client) return;
 		setRunningAction('join');
 		setErrorMessage(undefined);
-		try {
-			await client.swarm.join({
-				request: {
-					listenAddr: optionalTrimmed(joinListenAddress),
-					advertiseAddr: optionalTrimmed(joinAdvertiseAddress),
-					remoteAddrs: remoteAddresses,
-					joinToken: joinToken.trim()
-				},
-				envID: environmentID
-			});
-			swarmChanged(environmentID);
-			showToast(Toasts.success('Joined the swarm'));
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setRunningAction(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.swarm.join({
+						request: {
+							listenAddr: optionalTrimmed(joinListenAddress),
+							advertiseAddr: optionalTrimmed(joinAdvertiseAddress),
+							remoteAddrs: remoteAddresses,
+							joinToken: joinToken.trim()
+						},
+						envID: environmentID
+					});
+					swarmChanged(environmentID);
+					showToast(Toasts.success('Joined the swarm'));
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setRunningAction(undefined)
+		);
 	};
 
 	return {

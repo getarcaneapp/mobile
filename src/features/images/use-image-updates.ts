@@ -2,7 +2,10 @@ import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { routePayloads } from '@/features/containers/container-routes';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
+import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ImageSummary } from '@/sdk/models/image/ImageSummary';
 import { ImageUpdateInfo } from '@/sdk/models/image/ImageUpdateInfo';
 import type { ImageUpdateResponse, ImageUpdateSummary } from '@/sdk/models/imageUpdate/ImageUpdate';
@@ -11,6 +14,42 @@ import { useImageUpdateCountStore } from '@/stores/image-update-count-store';
 import { showToast, Toasts } from '@/ui/toast';
 
 import { taggedReferences } from './image-model';
+
+async function loadUpdateSummary(
+	client: ArcaneClient,
+	environmentID: EnvironmentID,
+	setSummary: (summary: ImageUpdateSummary) => void,
+	setErrorMessage: (message: string) => void
+) {
+	try {
+		const loaded = await client.images.updateSummary({ envID: environmentID });
+		setSummary(loaded);
+		const manager = useClientManager.getState();
+		useImageUpdateCountStore
+			.getState()
+			.setCount(loaded.imagesWithUpdates, environmentID, manager.client, manager.currentUser?.id);
+	} catch (error) {
+		setErrorMessage(friendlyErrorMessage(error));
+	}
+}
+
+async function loadUpdatesByRefs(
+	client: ArcaneClient,
+	environmentID: EnvironmentID,
+	taggedRefs: string[],
+	setByRef: (byRef: Record<string, ImageUpdateResponse>) => void
+) {
+	try {
+		const map = await client.images.updateInfoByRefs({
+			envID: environmentID,
+			imageRefs: taggedRefs
+		});
+		const next: Record<string, ImageUpdateResponse> = {};
+		for (const [ref, info] of Object.entries(map))
+			if (info) next[ref] = ImageUpdateInfo.asUpdateResponse(info);
+		setByRef(next);
+	} catch {}
+}
 
 export function useImageUpdates() {
 	const { envID = '0', token } = useLocalSearchParams<{ envID?: string; token?: string }>();
@@ -32,33 +71,16 @@ export function useImageUpdates() {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setLoadingSummary(true);
-		try {
-			const loaded = await client.images.updateSummary({ envID: environmentID });
-			setSummary(loaded);
-			const manager = useClientManager.getState();
-			useImageUpdateCountStore
-				.getState()
-				.setCount(loaded.imagesWithUpdates, environmentID, manager.client, manager.currentUser?.id);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setLoadingSummary(false);
-		}
+		await withCleanup(
+			() => loadUpdateSummary(client, environmentID, setSummary, setErrorMessage),
+			() => setLoadingSummary(false)
+		);
 	}, [environmentID]);
 
 	const loadByRefs = useCallback(async () => {
 		const client = useClientManager.getState().client;
 		if (!client || taggedRefs.length === 0) return;
-		try {
-			const map = await client.images.updateInfoByRefs({
-				envID: environmentID,
-				imageRefs: taggedRefs
-			});
-			const next: Record<string, ImageUpdateResponse> = {};
-			for (const [ref, info] of Object.entries(map))
-				if (info) next[ref] = ImageUpdateInfo.asUpdateResponse(info);
-			setByRef(next);
-		} catch {}
+		await loadUpdatesByRefs(client, environmentID, taggedRefs, setByRef);
 	}, [environmentID, taggedRefs]);
 
 	const reload = useCallback(async () => {
@@ -74,31 +96,40 @@ export function useImageUpdates() {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setCheckingRef(ref);
-		try {
-			const result = await client.images.checkUpdateByRef({ envID: environmentID, imageRef: ref });
-			setByRef((current) => ({ ...current, [ref]: result }));
-			await loadSummary();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setCheckingRef(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const result = await client.images.checkUpdateByRef({
+						envID: environmentID,
+						imageRef: ref
+					});
+					setByRef((current) => ({ ...current, [ref]: result }));
+					await loadSummary();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setCheckingRef(undefined)
+		);
 	};
 
 	const scanAll = async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsScanning(true);
-		try {
-			await client.images.checkAllUpdates({ envID: environmentID });
-			await loadSummary();
-			await loadByRefs();
-			showToast(Toasts.success('Update check complete'));
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsScanning(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.images.checkAllUpdates({ envID: environmentID });
+					await loadSummary();
+					await loadByRefs();
+					showToast(Toasts.success('Update check complete'));
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsScanning(false)
+		);
 	};
 
 	return {

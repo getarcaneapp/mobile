@@ -1,5 +1,6 @@
-import { useRouter, useSegments, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
+import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ContainerDetails } from '@/sdk/models/container/ContainerDetails';
@@ -51,9 +52,7 @@ function query(params: Params) {
 
 export function useContainerNavigation() {
 	const router = useRouter();
-	const segments = useSegments() as string[];
-	const group =
-		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(containers)';
+	const group = useTabStackGroup('(containers)');
 	return useMemo(() => {
 		const href = (path: string, params: Params = {}) =>
 			`/(tabs)/${group}/${path}${query(params)}` as Href;
@@ -61,49 +60,40 @@ export function useContainerNavigation() {
 			`container/${encodeURIComponent(id)}${suffix}`;
 		return {
 			router,
-			openDetail(
-				this: void,
+			openDetail: (
 				environmentID: EnvironmentID,
 				summary: ContainerSummary,
 				environmentName?: string
-			) {
+			) => {
 				containerCache.setSummary(environmentID, summary);
 				router.push(
 					href(containerPath(summary.id), { envID: environmentID, envName: environmentName })
 				);
 			},
-			replaceDetail(this: void, environmentID: EnvironmentID, id: string) {
+			replaceDetail: (environmentID: EnvironmentID, id: string) => {
 				router.replace(href(containerPath(id), { envID: environmentID }));
 			},
-			openLogs(
-				this: void,
-				environmentID: EnvironmentID,
-				id: string,
-				title: string,
-				storeToken?: string
-			) {
+			openLogs: (environmentID: EnvironmentID, id: string, title: string, storeToken?: string) => {
 				router.push(
 					href(containerPath(id, '/logs'), { envID: environmentID, title, store: storeToken })
 				);
 			},
-			openTerminal(this: void, environmentID: EnvironmentID, id: string, title: string) {
+			openTerminal: (environmentID: EnvironmentID, id: string, title: string) => {
 				router.push(href(containerPath(id, '/terminal'), { envID: environmentID, title }));
 			},
-			openSubpage(
-				this: void,
+			openSubpage: (
 				page: 'inspect' | 'rename' | 'commit' | 'env' | 'labels' | 'mounts' | 'health',
 				environmentID: EnvironmentID,
 				id: string,
 				params: Params = {}
-			) {
+			) => {
 				router.push(href(containerPath(id, `/${page}`), { envID: environmentID, ...params }));
 			},
-			openConfiguration(
-				this: void,
+			openConfiguration: (
 				environmentID: EnvironmentID,
 				containerID: string | undefined,
 				onSaved: (id: string) => boolean | void
-			) {
+			) => {
 				router.push(
 					href('container-configuration', {
 						envID: environmentID,
@@ -112,12 +102,12 @@ export function useContainerNavigation() {
 					})
 				);
 			},
-			openCompose(this: void, environmentID: EnvironmentID, containerIDs: string[]) {
+			openCompose: (environmentID: EnvironmentID, containerIDs: string[]) => {
 				router.push(
 					href('containers-compose', { envID: environmentID, ids: containerIDs.join(',') })
 				);
 			},
-			openFilter(this: void, listKey: string) {
+			openFilter: (listKey: string) => {
 				router.push(href('containers-filter', { key: listKey }));
 			}
 		};

@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { usePermissionCheck } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
+import type { CachedClient } from '@/core/networking/cached-client';
 import { cachedClient } from '@/core/networking/use-cached-client';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import { Volume, type VolumeSizeInfo } from '@/sdk/models/volume/Volume';
@@ -21,6 +25,32 @@ import { showErrorAlert } from './volume-support';
 const placeholderVolume = (name: string) =>
 	Volume.make({ id: name, name, driver: '', mountpoint: '', scope: '', createdAt: '' });
 
+async function fetchContainersByID(
+	client: ArcaneClient,
+	cached: CachedClient,
+	environmentID: EnvironmentID
+) {
+	const path = client.rest.environmentPath(environmentID, 'containers');
+	const containers = await cached.getAllPages<ContainerSummary>(
+		path,
+		environmentID,
+		async (start, limit) => {
+			const response = await client.containers.list({
+				envID: environmentID,
+				query: { start, limit }
+			});
+			return { items: response.data, pagination: response.pagination };
+		}
+	);
+	const byID: Record<string, ContainerSummary> = {};
+	for (const container of containers) byID[container.id] = container;
+	return byID;
+}
+
+function volumeSize(sizes: VolumeSizeInfo[], name: string) {
+	return sizes.find((s) => s.name === name)?.size ?? 0;
+}
+
 export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 	const nav = useVolumeNavigation();
 	const containerNav = useContainerNavigation();
@@ -33,7 +63,7 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 	const [resolvedContainersByID, setResolvedContainersByID] = useState<
 		Record<string, ContainerSummary>
 	>({});
-	useClientManager((s) => s.accessGeneration);
+	const can = usePermissionCheck();
 
 	useEffect(() => {
 		if (volumeCache.volume(environmentID, name)) return;
@@ -57,14 +87,16 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setLoadingSize(true);
-		try {
-			const path = client.rest.environmentPath(environmentID, 'volumes/sizes');
-			const sizes = await client.rest.get<VolumeSizeInfo[]>(path);
-			setSizeBytes(sizes.find((s) => s.name === name)?.size ?? 0);
-		} catch {
-		} finally {
-			setLoadingSize(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const path = client.rest.environmentPath(environmentID, 'volumes/sizes');
+					const sizes = await client.rest.get<VolumeSizeInfo[]>(path);
+					setSizeBytes(volumeSize(sizes, name));
+				} catch {}
+			},
+			() => setLoadingSize(false)
+		);
 	}, [environmentID, name]);
 
 	const containerIDs = volume.containers.join(',');
@@ -73,21 +105,7 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 		const cached = cachedClient();
 		if (!client || !cached || containerIDs === '') return;
 		try {
-			const path = client.rest.environmentPath(environmentID, 'containers');
-			const containers = await cached.getAllPages<ContainerSummary>(
-				path,
-				environmentID,
-				async (start, limit) => {
-					const response = await client.containers.list({
-						envID: environmentID,
-						query: { start, limit }
-					});
-					return { items: response.data, pagination: response.pagination };
-				}
-			);
-			const byID: Record<string, ContainerSummary> = {};
-			for (const container of containers) byID[container.id] = container;
-			setResolvedContainersByID(byID);
+			setResolvedContainersByID(await fetchContainersByID(client, cached, environmentID));
 		} catch {}
 	}, [environmentID, containerIDs]);
 
@@ -129,7 +147,7 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 	];
 
 	const overflow: ActionButtonItem[] = [];
-	if (VolumeRename.isAvailable(volume, environmentID)) {
+	if (VolumeRename.isAvailable(volume, environmentID, can)) {
 		overflow.push({
 			id: 'rename',
 			title: 'Rename',

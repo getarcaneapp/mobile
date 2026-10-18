@@ -4,6 +4,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 
 import { formatDate } from '@/core/date-formatting';
 import { formatFileBytes } from '@/core/networking/remote-data-limits';
+import { withCleanup } from '@/core/with-cleanup';
 import { relativeNamed } from '@/features/dashboard/use-all-environments-dashboard';
 import { AndroidResourceActionsToolbar } from '@/features/settings/shared/android-toolbar';
 import { TextButtonRow, ValueRow } from '@/features/settings/shared/android-material';
@@ -234,11 +235,10 @@ export function GitOpsSyncDetailScreen() {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.reload();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			() => model.reload(),
+			() => setRefreshing(false)
+		);
 	};
 
 	return (

@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { useDebounced } from '@/features/containers/hooks';
 import {
@@ -36,14 +36,12 @@ export interface DeleteVariablePayload {
 }
 
 function useVariablePermissions() {
-	useClientManager((s) => s.accessGeneration);
-	useClientManager((s) => s.currentUser);
 	return {
-		canRead: hasPermission(Permission.Variables.read, null),
-		canCreate: hasPermission(Permission.Variables.create, null),
-		canUpdate: hasPermission(Permission.Variables.update, null),
-		canDelete: hasPermission(Permission.Variables.delete, null),
-		canSync: hasPermission(Permission.Variables.sync, null)
+		canRead: usePermission(Permission.Variables.read, null),
+		canCreate: usePermission(Permission.Variables.create, null),
+		canUpdate: usePermission(Permission.Variables.update, null),
+		canDelete: usePermission(Permission.Variables.delete, null),
+		canSync: usePermission(Permission.Variables.sync, null)
 	};
 }
 

@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import {
 	NotificationTestType,
@@ -50,7 +51,9 @@ export function useNotificationProviderForm() {
 	const [showsSaveBeforeTestConfirmation, setShowsSaveBeforeTestConfirmation] = useState(false);
 
 	const latest = useRef({ state, originalState });
-	latest.current = { state, originalState };
+	useLayoutEffect(() => {
+		latest.current = { state, originalState };
+	});
 
 	const hasChanges = !NotificationProviderFormState.equals(state, originalState);
 	const isValid = !state.enabled || NotificationProviderFormState.isValid(state, provider);
@@ -113,31 +116,37 @@ export function useNotificationProviderForm() {
 		if (!client || !currentIsValid) return false;
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			await client.notifications.upsertSettings({
-				body: {
-					enabled: current.enabled,
-					config: NotificationProviderFormState.configuration(
-						current,
-						provider,
-						supportsPost26Features
-					)
-				},
-				envID: activeEnvironmentID
-			});
-			setOriginalState(latest.current.state);
+		const notifySaved = async () => {
 			await payload?.onSaved();
-			if (dismissAfterSave) {
-				showToast(Toasts.success('Notification settings saved'));
-				navigation.back();
-			}
-			return true;
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-			return false;
-		} finally {
-			setIsSaving(false);
-		}
+		};
+		return await withCleanup(
+			async () => {
+				try {
+					await client.notifications.upsertSettings({
+						body: {
+							enabled: current.enabled,
+							config: NotificationProviderFormState.configuration(
+								current,
+								provider,
+								supportsPost26Features
+							)
+						},
+						envID: activeEnvironmentID
+					});
+					setOriginalState(latest.current.state);
+					await notifySaved();
+					if (dismissAfterSave) {
+						showToast(Toasts.success('Notification settings saved'));
+						navigation.back();
+					}
+					return true;
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+					return false;
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	const testNotification = async () => {
@@ -149,22 +158,25 @@ export function useNotificationProviderForm() {
 		}
 
 		setIsTesting(true);
-		try {
-			const response = await client.notifications.test({
-				provider,
-				type: selectedTestType,
-				envID: activeEnvironmentID
-			});
-			if (response.warning) {
-				showToast(Toasts.info(response.warning));
-			} else {
-				showToast(Toasts.success('Test notification sent'));
-			}
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setIsTesting(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const response = await client.notifications.test({
+						provider,
+						type: selectedTestType,
+						envID: activeEnvironmentID
+					});
+					if (response.warning) {
+						showToast(Toasts.info(response.warning));
+					} else {
+						showToast(Toasts.success('Test notification sent'));
+					}
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setIsTesting(false)
+		);
 	};
 
 	const sendTest = () => {

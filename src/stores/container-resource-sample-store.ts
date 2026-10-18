@@ -5,6 +5,16 @@ import type { ContainerResourceSample } from '@/sdk/models/container/ContainerSu
 
 type Samples = ReadonlyMap<string, ReadonlyMap<string, ContainerResourceSample>>;
 
+function sameSample(a: ContainerResourceSample, b: ContainerResourceSample) {
+	return (
+		a === b ||
+		(a.cpuPercent === b.cpuPercent &&
+			a.memoryUsageBytes === b.memoryUsageBytes &&
+			a.memoryLimitBytes === b.memoryLimitBytes &&
+			a.sampleTime === b.sampleTime)
+	);
+}
+
 function sameSamples(
 	a: ReadonlyMap<string, ContainerResourceSample> | undefined,
 	b: ReadonlyMap<string, ContainerResourceSample>
@@ -12,15 +22,7 @@ function sameSamples(
 	if (!a || a.size !== b.size) return false;
 	for (const [id, sample] of b) {
 		const other = a.get(id);
-		if (
-			!other ||
-			other.cpuPercent !== sample.cpuPercent ||
-			other.memoryUsageBytes !== sample.memoryUsageBytes ||
-			other.memoryLimitBytes !== sample.memoryLimitBytes ||
-			other.sampleTime !== sample.sampleTime
-		) {
-			return false;
-		}
+		if (!other || !sameSample(other, sample)) return false;
 	}
 	return true;
 }
@@ -88,9 +90,13 @@ export class ContainerResourceSampleStore {
 				didChange = true;
 				continue;
 			}
+			const previous = next.get(environmentID);
 			const byID = new Map<string, ContainerResourceSample>();
 			for (const container of response.data) {
-				if (container.resourceSample) byID.set(container.id, container.resourceSample);
+				const sample = container.resourceSample;
+				if (!sample) continue;
+				const kept = previous?.get(container.id);
+				byID.set(container.id, kept && sameSample(kept, sample) ? kept : sample);
 			}
 			if (!sameSamples(next.get(environmentID), byID)) {
 				next.set(environmentID, byID);

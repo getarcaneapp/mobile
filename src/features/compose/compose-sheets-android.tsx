@@ -1,9 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { hasPermission } from '@/core/auth/permissions';
 import { M3Section, SwitchRow } from '@/features/containers/android-material';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
+import type { EnvironmentID } from '@/sdk/client/environment';
 import { Permission } from '@/sdk/models/role/Permission';
 import { useClientManager } from '@/stores/client-manager';
 import { colors } from '@/theme/colors';
@@ -673,6 +676,35 @@ export function AddFieldsSheet(props: {
 	);
 }
 
+async function fetchResourceNamePage(
+	client: ArcaneClient,
+	isVolume: boolean,
+	environmentID: EnvironmentID,
+	query: string,
+	start: number
+) {
+	const page = {
+		search: query === '' ? undefined : query,
+		start,
+		limit: ListUX.pageSizeDefault,
+		sortBy: 'name',
+		sortOrder: 'asc' as const
+	};
+	const response = isVolume
+		? await client.volumes.list({ envID: environmentID, query: page })
+		: await client.networks.list({ envID: environmentID, query: page });
+	return {
+		names: response.data.map((item) => item.name),
+		hasMore: start + response.data.length < response.pagination.totalItems
+	};
+}
+
+function appendUniqueNames(current: string[], incoming: string[], reset: boolean) {
+	const base = reset ? [] : current;
+	const existing = new Set(base);
+	return [...base, ...incoming.filter((name) => !existing.has(name) && existing.add(name))];
+}
+
 export function ResourcePicker({
 	kind,
 	selection,
@@ -686,9 +718,11 @@ export function ResourcePicker({
 }) {
 	const isVolume = kind === 'mount';
 	const environmentID = useClientManager((s) => s.activeEnvironmentID);
-	const canList =
-		(kind === 'mount' || kind === 'network') &&
-		hasPermission(isVolume ? Permission.Volumes.list : Permission.Networks.list, environmentID);
+	const canList = useClientManager(
+		() =>
+			(kind === 'mount' || kind === 'network') &&
+			hasPermission(isVolume ? Permission.Volumes.list : Permission.Networks.list, environmentID)
+	);
 	const [search, setSearch] = useState('');
 	const [names, setNames] = useState<string[]>([]);
 	const [hasMore, setHasMore] = useState(false);
@@ -701,39 +735,29 @@ export function ResourcePicker({
 		if (!canList || !client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const page = {
-				search: query === '' ? undefined : query,
-				start,
-				limit: ListUX.pageSizeDefault,
-				sortBy: 'name',
-				sortOrder: 'asc' as const
-			};
-			const response = isVolume
-				? await client.volumes.list({ envID: environmentID, query: page })
-				: await client.networks.list({ envID: environmentID, query: page });
-			const incoming = response.data.map((item) => item.name);
-			setNames((current) => {
-				const base = reset ? [] : current;
-				const existing = new Set(base);
-				return [...base, ...incoming.filter((name) => !existing.has(name) && existing.add(name))];
-			});
-			setHasMore(start + response.data.length < response.pagination.totalItems);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const page = await fetchResourceNamePage(client, isVolume, environmentID, query, start);
+					setNames((current) => appendUniqueNames(current, page.names, reset));
+					setHasMore(page.hasMore);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	};
+
+	const loadTask = useEffectEvent((query: string) => () => void load(true, query, 0));
 
 	useEffect(() => {
 		setNames([]);
 		setHasMore(false);
 		setErrorMessage(undefined);
 		if (!canList) return;
-		const timer = setTimeout(() => void load(true, search, 0), ListUX.searchDebounce);
+		const timer = setTimeout(loadTask(search), ListUX.searchDebounce);
 		return () => clearTimeout(timer);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [search, canList, environmentID, generation]);
 
 	return (
@@ -862,6 +886,27 @@ function EntrySettingsDialog({
 	);
 }
 
+function entryDraftRaw(
+	supported: boolean,
+	draft: ComposeEntryDraft,
+	kind: ComposeEntryKind,
+	nativeSource: string
+) {
+	return supported ? draft.yaml(kind) : nativeSource;
+}
+
+function saveEntryDraft(
+	supported: boolean,
+	draft: ComposeEntryDraft,
+	kind: ComposeEntryKind,
+	nativeSource: string,
+	externalResource: string | undefined,
+	save: (raw: string, externalResource: string | undefined) => string | undefined
+) {
+	const raw = entryDraftRaw(supported, draft, kind, nativeSource);
+	return save(raw, supported && externalResource === draft.source ? externalResource : undefined);
+}
+
 export function EntrySheet({
 	kind,
 	original,
@@ -942,10 +987,13 @@ export function EntrySheet({
 				confirmDisabled={!supported && nativeSource === ''}
 				onConfirm={() => {
 					try {
-						const raw = supported ? draft.yaml(kind) : nativeSource;
-						const result = save(
-							raw,
-							supported && externalResource === draft.source ? externalResource : undefined
+						const result = saveEntryDraft(
+							supported,
+							draft,
+							kind,
+							nativeSource,
+							externalResource,
+							save
 						);
 						setError(result);
 						if (result === undefined) onClose();
@@ -1045,7 +1093,7 @@ export function EntrySheet({
 							title="All settings"
 							onPress={() => {
 								try {
-									const raw = supported ? draft.yaml(kind) : nativeSource;
+									const raw = entryDraftRaw(supported, draft, kind, nativeSource);
 									setNativeSource(raw);
 									setNativeWrapper(entryWrapper(raw));
 								} catch (caught) {

@@ -1,5 +1,5 @@
 import { randomUUID } from 'expo-crypto';
-import { useRef, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
 import { PaginationLoader } from '@/core/networking/pagination-loader';
@@ -258,8 +258,6 @@ export function syncStatusPresentation(state: VariableSyncState): {
 }
 
 export function useVariablesStore(): [VariablesStore, VariablesSnapshot] {
-	const ref = useRef<VariablesStore | null>(null);
-	ref.current ??= new VariablesStore();
-	const store = ref.current;
+	const [store] = useState(() => new VariablesStore());
 	return [store, useSyncExternalStore(store.subscribe, store.getSnapshot)];
 }

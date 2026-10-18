@@ -113,9 +113,7 @@ export function useEvents() {
 	const nav = useTabRouter();
 	const client = useClientManager((s) => s.client);
 	useClientManager((s) => s.accessGeneration);
-	const storeRef = useRef<EventsStore | null>(null);
-	storeRef.current ??= new EventsStore();
-	const store = storeRef.current;
+	const [store] = useState(() => new EventsStore());
 	const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot);
 	const [isLive, setIsLive] = useState(true);
 	const [pendingDeleteEvent, setPendingDeleteEvent] = useState<Event>();
@@ -166,7 +164,7 @@ export function useEvents() {
 		return () => clearInterval(timer);
 	}, [store, isLive, isActive, isFocused, queryTaskKey]);
 
-	const canDeleteEvents = hasPermission(Permission.Events.delete, null);
+	const canDeleteEvents = useClientManager(() => hasPermission(Permission.Events.delete, null));
 
 	const deleteEvent = async (event: Event) => {
 		try {

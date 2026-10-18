@@ -1,5 +1,6 @@
-import { useRouter, useSegments, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
+import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 
 import { routePayloads } from '@/features/containers/container-routes';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -56,9 +57,7 @@ export type VolumeSubpage =
 
 export function useVolumeNavigation() {
 	const router = useRouter();
-	const segments = useSegments() as string[];
-	const group =
-		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(volumes)';
+	const group = useTabStackGroup('(volumes)');
 	return useMemo(() => {
 		const href = (path: string, params: Params = {}) =>
 			`/(tabs)/${group}/${path}${query(params)}` as Href;

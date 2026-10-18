@@ -1,8 +1,9 @@
-import { Group, HStack, Section, Spacer, Text } from '@expo/ui/swift-ui';
-import { font, tag } from '@expo/ui/swift-ui/modifiers';
+import { Group, HStack, List, Section, Spacer, Text } from '@expo/ui/swift-ui';
+import { font } from '@expo/ui/swift-ui/modifiers';
 
 import {
 	headerAccessorySectionID,
+	stableItemKey,
 	type StableSectionedListProps
 } from './stable-sectioned-list.types';
 
@@ -14,10 +15,12 @@ export function StableSectionedList<
 >({
 	sections,
 	renderRow,
+	estimatedItemSize,
 	preferredHeaderAccessorySectionID,
 	headerAccessory
 }: StableSectionedListProps<SectionID, Item>) {
 	const accessoryID = headerAccessorySectionID(sections, preferredHeaderAccessorySectionID);
+	const renderItem = ({ item }: { item: Item }) => <Group>{renderRow(item)}</Group>;
 	return (
 		<>
 			{sections
@@ -37,11 +40,13 @@ export function StableSectionedList<
 							) : undefined
 						}
 					>
-						{section.items.map((item) => (
-							<Group key={String(item.id)} modifiers={[tag(item.id)]}>
-								{renderRow(item)}
-							</Group>
-						))}
+						<List.ForEach
+							data={section.items}
+							keyExtractor={stableItemKey}
+							estimatedItemSize={estimatedItemSize}
+						>
+							{renderItem}
+						</List.ForEach>
 					</Section>
 				))}
 		</>

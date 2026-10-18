@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, useState, type ReactNode } from 'react';
 import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { formattedClockTime, formattedISO8601 } from '@/core/date-formatting';
 import type { ActivityMessage } from '@/sdk/models/activity/Activity';
 import { colors, systemColors } from '@/theme/colors';
@@ -118,21 +119,21 @@ export function ActivityDetailScreen({
 	const resourceID = activity.resourceID;
 
 	const { errorMessage } = model;
-	const dismissError = useRef(model.dismissError);
-	dismissError.current = model.dismissError;
+	const dismissError = useEffectEvent(() => model.dismissError());
 	useEffect(() => {
 		if (errorMessage === undefined) return;
-		const dismiss = () => dismissError.current();
+		const dismiss = () => dismissError();
 		Alert.alert('Error', errorMessage, [{ text: 'OK', onPress: dismiss }], { onDismiss: dismiss });
 	}, [errorMessage]);
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			async () => {
+				await model.refresh();
+			},
+			() => setRefreshing(false)
+		);
 	};
 
 	return (

@@ -28,20 +28,40 @@ import {
 import { hashKey, motionAwareAnimation } from './swiftui-motion';
 import { symbolRenderingMode } from '../../../modules/arcane-swiftui-extras';
 
+const glyphFont = [
+	font({ textStyle: 'caption', weight: 'semibold' }),
+	symbolRenderingMode('hierarchical')
+];
+const glyphFrame = frame({ minWidth: 16, minHeight: 16 });
+
+function PulsingStatusGlyph({ icon, isActive }: { icon: string; isActive: boolean }) {
+	const pulsing = useNativeState(isActive);
+	useEffect(() => {
+		pulsing.set(isActive);
+	}, [pulsing, isActive]);
+	return (
+		<Image
+			systemName={icon as SFSymbol}
+			modifiers={[
+				...glyphFont,
+				symbolEffect({ effect: 'pulse' }, { options: { repeat: 'continuous' }, isActive: pulsing }),
+				glyphFrame
+			]}
+		/>
+	);
+}
+
 export function ResourceStatusBadge({
 	status,
 	isLive,
 	usesCardStyle = false,
-	label
-}: ResourceStatusBadgeProps) {
+	label,
+	identity
+}: ResourceStatusBadgeProps & { identity?: string }) {
 	const isDark = useIsDark();
 	const reduceMotion = useReduceMotion();
 	const p = badgePresentation({ status, isLive, label });
 	const tintHex = p.tint ?? secondaryHex[isDark ? 'dark' : 'light'];
-	const pulsing = useNativeState(usesCardStyle && p.isTransitional);
-	useEffect(() => {
-		pulsing.value = usesCardStyle && p.isTransitional;
-	}, [pulsing, usesCardStyle, p.isTransitional]);
 
 	return (
 		<HStack
@@ -63,18 +83,11 @@ export function ResourceStatusBadge({
 				accessibilityLabel(`${p.displayText} status`)
 			]}
 		>
-			<Image
-				systemName={p.icon as SFSymbol}
-				modifiers={[
-					font({ textStyle: 'caption', weight: 'semibold' }),
-					symbolRenderingMode('hierarchical'),
-					symbolEffect(
-						{ effect: 'pulse' },
-						{ options: { repeat: 'continuous' }, isActive: pulsing }
-					),
-					frame({ minWidth: 16, minHeight: 16 })
-				]}
-			/>
+			{usesCardStyle ? (
+				<PulsingStatusGlyph key={identity} icon={p.icon} isActive={p.isTransitional} />
+			) : (
+				<Image systemName={p.icon as SFSymbol} modifiers={[...glyphFont, glyphFrame]} />
+			)}
 			<Text
 				modifiers={
 					usesCardStyle

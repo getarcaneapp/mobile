@@ -1,4 +1,4 @@
-import { useEffect, type ReactElement } from 'react';
+import { use, useEffect, useEffectEvent, type ReactElement } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
@@ -8,6 +8,7 @@ import { ArcaneLoadingView } from './arcane-loading-view';
 import { m3 } from './material-colors';
 import {
 	isValidURL,
+	LoadsOnEndReachedContext,
 	type PaginatedListFooterProps,
 	type ResourceListContainerProps
 } from './paginated-list.types';
@@ -16,9 +17,11 @@ import { m3Type } from './type-scale';
 export { ListUX } from './paginated-list.types';
 
 function LoadMoreSpinner({ onLoadMore }: { onLoadMore: () => void }) {
+	const loadsOnEndReached = use(LoadsOnEndReachedContext);
+	const loadMore = useEffectEvent(onLoadMore);
 	useEffect(() => {
-		onLoadMore();
-	}, [onLoadMore]);
+		if (!loadsOnEndReached) loadMore();
+	}, [loadsOnEndReached]);
 	return (
 		<View style={{ alignItems: 'center', paddingVertical: 16 }}>
 			<ArcaneLoadingView label="Loading more…" variant="inline" />

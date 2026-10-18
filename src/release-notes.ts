@@ -21,6 +21,12 @@ export const releaseNotes: ReleaseNote[] = [
 		],
 		changed: [
 			{
+				text: 'Smoother scrolling in long lists, live charts, logs, and terminals.'
+			},
+			{
+				text: 'Live usage charts slide continuously instead of jumping with each sample.'
+			},
+			{
 				text: 'Long-pressing a log line opens Copy Line in an action sheet.'
 			},
 			{
@@ -46,6 +52,9 @@ export const releaseNotes: ReleaseNote[] = [
 			}
 		],
 		fixed: [
+			{
+				text: 'On Android, long lists no longer load every page on their own before you scroll.'
+			},
 			{
 				text: 'Creating a project works again on current Arcane servers.'
 			},

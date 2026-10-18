@@ -1,4 +1,4 @@
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermissionCheck } from '@/core/auth/permissions';
 import { formattedISO8601 } from '@/core/date-formatting';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -92,9 +92,8 @@ export const useSwarmVersion = (environmentID: EnvironmentID) =>
 	useResourceVersion('swarm', environmentID);
 
 export function useCan(environmentID: EnvironmentID) {
-	useClientManager((s) => s.accessGeneration);
-	useClientManager((s) => s.currentUser);
-	return (permission: string) => hasPermission(permission, environmentID);
+	const can = usePermissionCheck();
+	return (permission: string) => can(permission, environmentID);
 }
 
 export const nodeIsManager = (node: SwarmNode) => node.role.toLowerCase() === 'manager';

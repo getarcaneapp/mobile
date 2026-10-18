@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Animated, { useAnimatedProps, useSharedValue, withSpring } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -12,21 +12,28 @@ export function MetricRing({
 	progress,
 	tint,
 	size = 18,
-	lineWidth = 3
+	lineWidth = 3,
+	identity
 }: {
 	progress: number;
 	tint: string;
 	size?: number;
 	lineWidth?: number;
+	identity?: string;
 }) {
 	const reduceMotion = useReduceMotion();
 	const clamped = Math.min(Math.max(progress, 0), 1);
-	const value = useSharedValue(0);
+	const value = useSharedValue(clamped);
+	const shown = useRef({ identity, progress: clamped });
 	useEffect(() => {
-		value.value = reduceMotion
-			? clamped
-			: withSpring(clamped, springConfig(Motion.gauge.response, Motion.gauge.dampingFraction));
-	}, [clamped, reduceMotion, value]);
+		const previous = shown.current;
+		shown.current = { identity, progress: clamped };
+		if (previous.identity === identity && previous.progress === clamped) return;
+		value.value =
+			reduceMotion || previous.identity !== identity
+				? clamped
+				: withSpring(clamped, springConfig(Motion.gauge.response, Motion.gauge.dampingFraction));
+	}, [clamped, identity, reduceMotion, value]);
 
 	const radius = (size - lineWidth) / 2;
 	const circumference = 2 * Math.PI * radius;

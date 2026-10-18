@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { useClientManager } from '@/stores/client-manager';
 import { useResourceMutationStore } from '@/stores/resource-mutation-store';
@@ -16,15 +17,14 @@ function useDismissOnContextChange(environmentID: EnvironmentID, onDismiss: () =
 	const generation = useClientManager((s) => s.clientGeneration);
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
 	const initial = useRef({ generation, activeEnvironmentID });
-	const dismiss = useRef(onDismiss);
-	dismiss.current = onDismiss;
+	const dismiss = useEffectEvent(onDismiss);
 	useEffect(() => {
-		if (generation !== initial.current.generation) dismiss.current();
+		if (generation !== initial.current.generation) dismiss();
 		else if (
 			activeEnvironmentID !== initial.current.activeEnvironmentID &&
 			activeEnvironmentID !== environmentID
 		)
-			dismiss.current();
+			dismiss();
 	}, [generation, activeEnvironmentID, environmentID]);
 }
 
@@ -44,17 +44,23 @@ export function useRenameContainer(
 		const client = useClientManager.getState().client;
 		setIsSubmitting(true);
 		setErrorMessage(undefined);
-		try {
+		const rename = async () => {
 			if (!client) throw new Error('No client');
 			await client.containers.rename({ envID: environmentID, id: containerID, newName });
 			containersChanged(environmentID);
 			showToast(Toasts.success('Container renamed'));
 			router.back();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSubmitting(false);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await rename();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSubmitting(false)
+		);
 	};
 
 	return {
@@ -79,7 +85,7 @@ export function useContainerCommit(environmentID: EnvironmentID, containerID: st
 	const [busy, setBusy] = useState(false);
 	const controller = useRef<AbortController | undefined>(undefined);
 	useClientManager((s) => s.accessGeneration);
-	const canCommit = hasPermission('images:commit', environmentID);
+	const canCommit = useClientManager(() => hasPermission('images:commit', environmentID));
 
 	const dismiss = () => {
 		controller.current?.abort();
@@ -95,7 +101,7 @@ export function useContainerCommit(environmentID: EnvironmentID, containerID: st
 		const abort = new AbortController();
 		controller.current = abort;
 		setBusy(true);
-		try {
+		const run = async () => {
 			await client.withSignal(abort.signal).containers.commit({
 				envID: environmentID,
 				id: containerID,
@@ -113,12 +119,21 @@ export function useContainerCommit(environmentID: EnvironmentID, containerID: st
 			useResourceMutationStore.getState().markChanged('images', environmentID);
 			showToast(Toasts.success('Image created'));
 			router.back();
-		} catch (error) {
+		};
+		const handleError = (error: unknown) => {
 			if (!isCancellation(error) && !abort.signal.aborted)
 				showToast(Toasts.error(error instanceof Error ? error.message : String(error)));
-		} finally {
-			setBusy(false);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await run();
+				} catch (error) {
+					handleError(error);
+				}
+			},
+			() => setBusy(false)
+		);
 	};
 
 	return {

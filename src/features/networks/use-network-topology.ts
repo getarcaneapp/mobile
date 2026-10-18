@@ -1,12 +1,14 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import {
 	boundedAPIResponse,
 	RemoteDataLimitError,
 	RemoteDataLimits
 } from '@/core/networking/remote-data-limits';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { NetworkTopology, TopologyNode } from '@/sdk/models/network/Topology';
 import { useClientManager } from '@/stores/client-manager';
@@ -17,6 +19,20 @@ import { routePayloads, useTabRouter } from './tab-routes';
 import { makeTopologyLayout, type TopologyGraphLayout } from './topology-layout';
 
 export type TopologyNodeSheetPayload = { node: TopologyNode; topology: NetworkTopology };
+
+async function fetchTopology(current: ArcaneClient, target: EnvironmentID) {
+	const response = await boundedAPIResponse<NetworkTopology>(
+		current,
+		current.rest.environmentPath(target, 'networks/topology')
+	);
+	if (
+		response.nodes.length > RemoteDataLimits.maximumTopologyNodes ||
+		response.edges.length > RemoteDataLimits.maximumTopologyEdges
+	) {
+		throw RemoteDataLimitError.collectionTooLarge(RemoteDataLimits.maximumTopologyEdges);
+	}
+	return response;
+}
 
 export function useNetworkTopology({
 	environmentID,
@@ -39,11 +55,10 @@ export function useNetworkTopology({
 		? (chosenEnvironmentID ?? environmentID)
 		: environmentID;
 	const latest = useRef({ shownEnvironmentID, loadingEnvironmentID, hasTopology: false });
-	latest.current = {
-		shownEnvironmentID,
-		loadingEnvironmentID,
-		hasTopology: topology !== undefined
-	};
+	const hasTopology = topology !== undefined;
+	useLayoutEffect(() => {
+		latest.current = { shownEnvironmentID, loadingEnvironmentID, hasTopology };
+	});
 
 	const loadTopology = useCallback(async (refresh = false) => {
 		const target = latest.current.shownEnvironmentID;
@@ -52,33 +67,29 @@ export function useNetworkTopology({
 		latest.current.loadingEnvironmentID = target;
 		setLoadingEnvironmentID(target);
 		if (!latest.current.hasTopology) setErrorMessage(undefined);
-		try {
-			const response = await boundedAPIResponse<NetworkTopology>(
-				current,
-				current.rest.environmentPath(target, 'networks/topology')
-			);
-			if (
-				response.nodes.length > RemoteDataLimits.maximumTopologyNodes ||
-				response.edges.length > RemoteDataLimits.maximumTopologyEdges
-			) {
-				throw RemoteDataLimitError.collectionTooLarge(RemoteDataLimits.maximumTopologyEdges);
+		await withCleanup(
+			async () => {
+				try {
+					const response = await fetchTopology(current, target);
+					if (target !== latest.current.shownEnvironmentID) return;
+					setTopology(response);
+					setLayout(makeTopologyLayout(response));
+					setLayoutRevision((r) => r + 1);
+					setErrorMessage(undefined);
+				} catch (error) {
+					if (target !== latest.current.shownEnvironmentID) return;
+					const message = friendlyErrorMessage(error);
+					if (!latest.current.hasTopology) setErrorMessage(message);
+					else if (refresh) showToast(Toasts.error(message));
+				}
+			},
+			() => {
+				if (latest.current.loadingEnvironmentID === target) {
+					latest.current.loadingEnvironmentID = undefined;
+					setLoadingEnvironmentID(undefined);
+				}
 			}
-			if (target !== latest.current.shownEnvironmentID) return;
-			setTopology(response);
-			setLayout(makeTopologyLayout(response));
-			setLayoutRevision((r) => r + 1);
-			setErrorMessage(undefined);
-		} catch (error) {
-			if (target !== latest.current.shownEnvironmentID) return;
-			const message = friendlyErrorMessage(error);
-			if (!latest.current.hasTopology) setErrorMessage(message);
-			else if (refresh) showToast(Toasts.error(message));
-		} finally {
-			if (latest.current.loadingEnvironmentID === target) {
-				latest.current.loadingEnvironmentID = undefined;
-				setLoadingEnvironmentID(undefined);
-			}
-		}
+		);
 	}, []);
 
 	useEffect(() => {

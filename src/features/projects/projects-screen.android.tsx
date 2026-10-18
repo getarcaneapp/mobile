@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { maintenanceActionInfo } from '@/ui/components/all-environments-maintenance';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
@@ -12,7 +13,7 @@ import {
 import { environmentActionIsMenu, environmentTitle } from '@/ui/components/environment-label.types';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
-import { StableSectionedList } from '@/ui/components/stable-sectioned-list';
+import { VirtualizedSectionedList } from '@/ui/components/virtualized-sectioned-list';
 import { MaterialListGroup } from '@/ui/material/list';
 
 import { CenteredMessage } from '@/features/containers/android-material';
@@ -33,6 +34,8 @@ import {
 	type ProjectsListProps
 } from './use-projects-list';
 
+const rowStyle = { paddingHorizontal: 16, paddingVertical: 10 };
+
 function ProjectListRow({ model, item }: { model: ProjectsListModel; item: ProjectItem }) {
 	const isPinned = model.pinnedIDs.has(item.id);
 	const environmentColor = useEnvironmentRowColor(item.environmentID, item.environmentName);
@@ -45,7 +48,7 @@ function ProjectListRow({ model, item }: { model: ProjectsListModel; item: Proje
 			items={items}
 			title={projectDisplayName(item.value)}
 			onPress={() => model.openDetail(item)}
-			style={{ paddingHorizontal: 16, paddingVertical: 10 }}
+			style={rowStyle}
 		>
 			<ProjectRow
 				project={item.value}
@@ -166,12 +169,16 @@ export function ProjectsScreen(props: ProjectsListProps) {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(model.refresh, () => setRefreshing(false));
 	};
+
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
 
 	let content;
 	if (snapshot.isLoading && projects.length === 0) {
@@ -217,37 +224,56 @@ export function ProjectsScreen(props: ProjectsListProps) {
 				}}
 			/>
 		);
-	} else {
-		content = (
-			<>
-				<EnvironmentLoadFailuresSection
-					failures={snapshot.failedEnvironments.map((failure) => ({
-						...failure,
-						id: failure.environment.id
-					}))}
-					retry={() => void model.loadProjects()}
-				/>
-				<StableSectionedList
-					sections={model.sections}
-					preferredHeaderAccessorySectionID="active"
-					headerAccessory={() => (
-						<ResourceCountLabel
-							loadedCount={projects.length}
-							totalCount={snapshot.totalItems}
-							hasMore={snapshot.hasMore}
-						/>
-					)}
-					renderRow={(item) => <ProjectListRow model={model} item={item} />}
-				/>
-				<PaginatedListFooter
-					hasMore={snapshot.hasMore}
-					loadMoreError={snapshot.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</>
-		);
 	}
+
+	const list =
+		content === undefined ? (
+			<VirtualizedSectionedList
+				onEndReached={
+					snapshot.hasMore && snapshot.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				sections={model.sections}
+				preferredHeaderAccessorySectionID="active"
+				headerAccessory={() => (
+					<ResourceCountLabel
+						loadedCount={projects.length}
+						totalCount={snapshot.totalItems}
+						hasMore={snapshot.hasMore}
+					/>
+				)}
+				renderRow={(item) => <ProjectListRow model={model} item={item} />}
+				header={
+					<EnvironmentLoadFailuresSection
+						failures={snapshot.failedEnvironments.map((failure) => ({
+							...failure,
+							id: failure.environment.id
+						}))}
+						retry={() => void model.loadProjects()}
+					/>
+				}
+				footer={
+					<PaginatedListFooter
+						hasMore={snapshot.hasMore}
+						loadMoreError={snapshot.loadMoreError}
+						onRetry={() => void model.loadMore()}
+						onLoadMore={() => void model.loadMore()}
+					/>
+				}
+				refreshControl={refreshControl}
+			/>
+		) : (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				style={{ backgroundColor: colors.systemGroupedBackground }}
+				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+				keyboardShouldPersistTaps="handled"
+				refreshControl={refreshControl}
+			>
+				{content}
+			</ScrollView>
+		);
 
 	return (
 		<>
@@ -262,21 +288,7 @@ export function ProjectsScreen(props: ProjectsListProps) {
 				}}
 			/>
 			<ProjectsToolbar model={model} />
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{list}
 		</>
 	);
 }

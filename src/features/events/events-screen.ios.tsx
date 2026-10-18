@@ -47,6 +47,7 @@ import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-sw
 import { DestructiveLabel, ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { DisclosureChevron } from '@/ui/settings-row';
 import { useToolbarIcons } from '@/ui/toolbar-icon';
 
@@ -314,9 +315,13 @@ export function EventsScreen() {
 							/>
 						}
 					>
-						{snapshot.events.map((event) => (
-							<EventLink key={event.id} model={model} event={event} />
-						))}
+						<List.ForEach
+							data={snapshot.events}
+							keyExtractor={stableItemKey}
+							estimatedItemSize={66}
+						>
+							{({ item }) => <EventLink model={model} event={item} />}
+						</List.ForEach>
 					</Section>
 				)}
 				{snapshot.errorMessage !== undefined && snapshot.events.length > 0 ? (

@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { EmailAuthMode, EmailTLSMode } from '@/sdk/models/notification/Notification';
@@ -666,7 +666,9 @@ function EventSection({ model }: { model: NotificationProviderFormModel }) {
 
 function useSaveBeforeTestDialog(model: NotificationProviderFormModel) {
 	const latest = useRef(model);
-	latest.current = model;
+	useLayoutEffect(() => {
+		latest.current = model;
+	});
 	const isPresented = model.showsSaveBeforeTestConfirmation;
 	useEffect(() => {
 		if (!isPresented) return;

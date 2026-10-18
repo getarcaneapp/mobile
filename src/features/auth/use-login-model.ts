@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import {
@@ -54,7 +54,9 @@ export function useLoginModel() {
 	const savedSignInAttemptID = useRef<number | undefined>(undefined);
 	const focusImpl = useRef<(field: LoginField | null) => void>(() => {});
 	const latest = useRef({ username, password });
-	latest.current = { username, password };
+	useLayoutEffect(() => {
+		latest.current = { username, password };
+	});
 
 	const isSetupMode = mode === 'setup' || showSetup;
 	const isLocalAuthAvailable = manager.isLocalAuthAvailable();
@@ -120,7 +122,7 @@ export function useLoginModel() {
 				profile.id
 			)
 				return;
-			useSavedSignIn({ profile, credential });
+			applySavedSignIn({ profile, credential });
 		})();
 	};
 
@@ -156,7 +158,7 @@ export function useLoginModel() {
 		}
 	};
 
-	const useSavedSignIn = (offer: SavedSignInOffer) => {
+	const applySavedSignIn = (offer: SavedSignInOffer) => {
 		setSavedSignInOffer(undefined);
 		focus(null);
 		assignFields({ username: offer.credential.username, password: offer.credential.password });
@@ -190,37 +192,44 @@ export function useLoginModel() {
 		})();
 	};
 
+	const clearFocus = useEffectEvent(() => focus(null));
+
 	useEffect(() => {
-		if (manager.isStartingDemo) focus(null);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		if (manager.isStartingDemo) clearFocus();
 	}, [manager.isStartingDemo]);
 
 	useEffect(() => {
-		if (!shouldShowPasswordFields) focus(null);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		if (!shouldShowPasswordFields) clearFocus();
 	}, [shouldShowPasswordFields]);
 
-	useEffect(() => {
-		if (isLocalAuthAvailable) return;
+	const clearSavedSignIn = useEffectEvent(() => {
 		setSavedSignInOffer(undefined);
 		assignFields({ username: '', password: '' });
 		setIsUsingSavedSignIn(false);
 		savedSignInAttemptID.current = undefined;
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+	});
+
+	useEffect(() => {
+		if (isLocalAuthAvailable) return;
+		clearSavedSignIn();
 	}, [isLocalAuthAvailable]);
 
 	const previousCredentialIDs = useRef(credentialProfileIDs);
+	const offerNewlySavedCredential = useEffectEvent(
+		(previous: ReadonlySet<string>, ids: ReadonlySet<string>) => {
+			const { username: u, password: p } = latest.current;
+			if (isSetupMode || isLaunchSplashPresented || u || p) return;
+			const profile = useConnectionProfileStore
+				.getState()
+				.profile(useClientManager.getState().serverURL);
+			if (!profile || previous.has(profile.id) || !ids.has(profile.id)) return;
+			offerSavedCredential(profile);
+		}
+	);
 	useEffect(() => {
 		const previous = previousCredentialIDs.current;
 		previousCredentialIDs.current = credentialProfileIDs;
-		const { username: u, password: p } = latest.current;
-		if (isSetupMode || isLaunchSplashPresented || u || p) return;
-		const profile = useConnectionProfileStore
-			.getState()
-			.profile(useClientManager.getState().serverURL);
-		if (!profile || previous.has(profile.id) || !credentialProfileIDs.has(profile.id)) return;
-		offerSavedCredential(profile);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		offerNewlySavedCredential(previous, credentialProfileIDs);
 	}, [credentialProfileIDs]);
 
 	useEffect(() => {
@@ -228,32 +237,33 @@ export function useLoginModel() {
 		void useClientManager.getState().refreshLoginCapabilities();
 	}, [isSetupMode, manager.serverURL, manager.clientGeneration]);
 
-	useEffect(() => {
-		if (isLaunchSplashPresented) {
+	const launchFocusTask = useEffectEvent(() => () => {
+		const state = useClientManager.getState();
+		if (state.isStartingDemo) return;
+		let offered = false;
+		if (!isSetupMode) {
+			const profile = useConnectionProfileStore.getState().profile(state.serverURL);
+			offerSavedCredential(profile);
+			offered =
+				profile !== undefined && useConnectionProfileStore.getState().hasSavedCredential(profile);
+		}
+		if (offered) {
 			focus(null);
 			return;
 		}
-		const timer = setTimeout(() => {
-			const state = useClientManager.getState();
-			if (state.isStartingDemo) return;
-			let offered = false;
-			if (!isSetupMode) {
-				const profile = useConnectionProfileStore.getState().profile(state.serverURL);
-				offerSavedCredential(profile);
-				offered =
-					profile !== undefined && useConnectionProfileStore.getState().hasSavedCredential(profile);
-			}
-			if (offered) {
-				focus(null);
-				return;
-			}
-			if (isSetupMode) focus('serverURL');
-			else if (state.pendingMFAChallenge) focus('recoveryCode');
-			else if (state.isLocalAuthAvailable() && (!state.isOIDCAvailable() || showsPasswordForm))
-				focus('username');
-		}, 350);
+		if (isSetupMode) focus('serverURL');
+		else if (state.pendingMFAChallenge) focus('recoveryCode');
+		else if (state.isLocalAuthAvailable() && (!state.isOIDCAvailable() || showsPasswordForm))
+			focus('username');
+	});
+
+	useEffect(() => {
+		if (isLaunchSplashPresented) {
+			clearFocus();
+			return;
+		}
+		const timer = setTimeout(launchFocusTask(), 350);
 		return () => clearTimeout(timer);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isLaunchSplashPresented]);
 
 	const connectToServer = () => {
@@ -407,7 +417,7 @@ export function useLoginModel() {
 		},
 		startDemo: () => void manager.startDemo(),
 		acceptSavedSignIn: () => {
-			if (savedSignInOffer) useSavedSignIn(savedSignInOffer);
+			if (savedSignInOffer) applySavedSignIn(savedSignInOffer);
 		},
 		declineSavedSignIn: () => setSavedSignInOffer(undefined)
 	};

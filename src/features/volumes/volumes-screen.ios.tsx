@@ -192,6 +192,7 @@ export function VolumesScreen(props: VolumesListProps) {
 							hasMore={snapshot.hasMore}
 						/>
 					)}
+					estimatedItemSize={48}
 					renderRow={(item) => <VolumeLink model={model} item={item} />}
 				/>
 				<PaginatedListFooter

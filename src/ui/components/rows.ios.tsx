@@ -4,6 +4,7 @@ import { buttonStyle, disabled, font, foregroundStyle } from '@expo/ui/swift-ui/
 import { useState } from 'react';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { DisclosureChevron } from '@/ui/settings-row';
 
 import {
@@ -13,6 +14,18 @@ import {
 } from './rows.types';
 import { isIOS26 } from './swiftui-surfaces';
 import { symbolRenderingMode } from '../../../modules/arcane-swiftui-extras';
+
+async function runEndpoint(
+	run: RunEndpointButtonProps['run'],
+	formatError: (error: unknown) => string
+): Promise<string> {
+	try {
+		await run();
+		return 'Completed';
+	} catch (error) {
+		return formatError(error);
+	}
+}
 
 export function RunEndpointButton({
 	title,
@@ -26,14 +39,12 @@ export function RunEndpointButton({
 
 	const onPress = async () => {
 		setIsRunning(true);
-		try {
-			await run();
-			setMessage('Completed');
-		} catch (error) {
-			setMessage(formatError(error));
-		} finally {
-			setIsRunning(false);
-		}
+		setMessage(
+			await withCleanup(
+				() => runEndpoint(run, formatError),
+				() => setIsRunning(false)
+			)
+		);
 	};
 
 	return (

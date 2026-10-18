@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { localizedStandardCompare } from '@/core/list-sort-order';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -115,7 +115,9 @@ export function usePortsList({ environmentID, allEnvironments = false }: PortsLi
 	const ports = snapshot.items;
 
 	const searchRef = useRef(debouncedSearch);
-	searchRef.current = debouncedSearch;
+	useLayoutEffect(() => {
+		searchRef.current = debouncedSearch;
+	});
 
 	const portsPage = useCallback((): EnvironmentFetch<PortMapping> | undefined => {
 		const current = useClientManager.getState().client;

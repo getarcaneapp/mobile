@@ -1,10 +1,12 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { boundedAPIResponse, RemoteDataLimits } from '@/core/networking/remote-data-limits';
 import { escapedPathComponent } from '@/core/networking/server-identity';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { Permission } from '@/sdk/models/role/Permission';
 import type { TemplateContent } from '@/sdk/models/template/Template';
 import { useClientManager } from '@/stores/client-manager';
@@ -24,13 +26,125 @@ const emptyFields: Fields = { name: '', description: '', compose: '', environmen
 
 const utf8Length = (text: string) => new TextEncoder().encode(text).byteLength;
 
+async function fetchTemplateFields(
+	client: ArcaneClient,
+	mode: TemplateEditorMode,
+	identity: string | undefined
+): Promise<Fields | undefined> {
+	let loaded = emptyFields;
+	switch (mode.kind) {
+		case 'create':
+			break;
+		case 'edit': {
+			if (mode.template.isRemote || !hasPermission(Permission.Templates.read, null))
+				return undefined;
+			const content = await boundedAPIResponse<TemplateContent>(
+				client,
+				`templates/${escapedPathComponent(mode.template.id)}/content`,
+				{
+					maximumBytes: RemoteDataLimits.maximumTemplateBytes
+				}
+			);
+			if (identity !== useClientManager.getState().cacheSessionIdentity) return undefined;
+			loaded = {
+				name: content.template.name,
+				description: content.template.description,
+				compose: content.content,
+				environment: content.envContent
+			};
+			break;
+		}
+		case 'defaults': {
+			if (!hasPermission(Permission.Templates.read, null)) return undefined;
+			const defaults = await client.templates.getDefaults();
+			if (identity !== useClientManager.getState().cacheSessionIdentity) return undefined;
+			loaded = {
+				...emptyFields,
+				compose: defaults.composeTemplate,
+				environment: defaults.envTemplate
+			};
+			break;
+		}
+	}
+	return loaded;
+}
+
+async function persistTemplate(
+	client: ArcaneClient,
+	mode: TemplateEditorMode,
+	fields: Fields,
+	original: Fields,
+	sessionStillCurrent: () => boolean,
+	onConflict: (message: string) => void
+): Promise<boolean> {
+	switch (mode.kind) {
+		case 'create':
+			await client.templates.create({
+				body: {
+					name: fields.name,
+					description: fields.description,
+					content: fields.compose,
+					envContent: fields.environment
+				}
+			});
+			break;
+		case 'edit': {
+			if (mode.template.isRemote) return false;
+			const latest = await client.templates.getContent({ id: mode.template.id });
+			if (!sessionStillCurrent()) return false;
+			if (
+				latest.content !== original.compose ||
+				latest.envContent !== original.environment ||
+				latest.template.name !== original.name ||
+				latest.template.description !== original.description
+			) {
+				onConflict(
+					'This template changed on the server. Your draft is preserved. Reopen the template to load the latest version.'
+				);
+				return false;
+			}
+			await client.templates.update({
+				id: mode.template.id,
+				body: {
+					name: fields.name,
+					description: fields.description,
+					content: fields.compose,
+					envContent: fields.environment
+				}
+			});
+			break;
+		}
+		case 'defaults': {
+			const latest = await client.templates.getDefaults();
+			if (!sessionStillCurrent()) return false;
+			if (
+				latest.composeTemplate !== original.compose ||
+				latest.envTemplate !== original.environment
+			) {
+				onConflict(
+					'Default templates changed on the server. Your draft is preserved. Reopen this editor to load the latest version.'
+				);
+				return false;
+			}
+			await client.templates.saveDefaults({
+				body: { composeContent: fields.compose, envContent: fields.environment }
+			});
+			break;
+		}
+	}
+	return true;
+}
+
 export function useTemplateEditor() {
 	const { payload } = useRoutePayload<TemplateEditorPayload>();
 	const [mode] = useState<TemplateEditorMode>(() => payload?.mode ?? { kind: 'create' });
 	const router = useRouter();
 	const client = useClientManager((s) => s.client);
 	const cacheSessionIdentity = useClientManager((s) => s.cacheSessionIdentity);
-	useClientManager((s) => s.accessGeneration);
+	const canWriteTemplate = usePermission(
+		mode.kind === 'create' ? Permission.Templates.create : Permission.Templates.update,
+		null
+	);
 
 	const [fields, setFields] = useState<Fields>(emptyFields);
 	const [original, setOriginal] = useState<Fields>(emptyFields);
@@ -56,10 +170,7 @@ export function useTemplateEditor() {
 	const canSave =
 		isLoaded &&
 		sessionIdentity === cacheSessionIdentity &&
-		hasPermission(
-			mode.kind === 'create' ? Permission.Templates.create : Permission.Templates.update,
-			null
-		) &&
+		canWriteTemplate &&
 		(isDefaults || fields.name.trim() !== '');
 	const readOnly = !canSave || isSaving;
 
@@ -74,40 +185,8 @@ export function useTemplateEditor() {
 		const identity = useClientManager.getState().cacheSessionIdentity;
 		setErrorMessage(undefined);
 		try {
-			let loaded = emptyFields;
-			switch (mode.kind) {
-				case 'create':
-					break;
-				case 'edit': {
-					if (mode.template.isRemote || !hasPermission(Permission.Templates.read, null)) return;
-					const content = await boundedAPIResponse<TemplateContent>(
-						client,
-						`templates/${escapedPathComponent(mode.template.id)}/content`,
-						{
-							maximumBytes: RemoteDataLimits.maximumTemplateBytes
-						}
-					);
-					if (identity !== useClientManager.getState().cacheSessionIdentity) return;
-					loaded = {
-						name: content.template.name,
-						description: content.template.description,
-						compose: content.content,
-						environment: content.envContent
-					};
-					break;
-				}
-				case 'defaults': {
-					if (!hasPermission(Permission.Templates.read, null)) return;
-					const defaults = await client.templates.getDefaults();
-					if (identity !== useClientManager.getState().cacheSessionIdentity) return;
-					loaded = {
-						...emptyFields,
-						compose: defaults.composeTemplate,
-						environment: defaults.envTemplate
-					};
-					break;
-				}
-			}
+			const loaded = await fetchTemplateFields(client, mode, identity);
+			if (loaded === undefined) return;
 			setFields(loaded);
 			setOriginal(loaded);
 			setSessionIdentity(identity);
@@ -134,71 +213,28 @@ export function useTemplateEditor() {
 		const sessionStillCurrent = () => identity === useClientManager.getState().cacheSessionIdentity;
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			switch (mode.kind) {
-				case 'create':
-					await client.templates.create({
-						body: {
-							name: fields.name,
-							description: fields.description,
-							content: fields.compose,
-							envContent: fields.environment
-						}
-					});
-					break;
-				case 'edit': {
-					if (mode.template.isRemote) return;
-					const latest = await client.templates.getContent({ id: mode.template.id });
+		await withCleanup(
+			async () => {
+				try {
+					const saved = await persistTemplate(
+						client,
+						mode,
+						fields,
+						original,
+						sessionStillCurrent,
+						setErrorMessage
+					);
+					if (!saved) return;
 					if (!sessionStillCurrent()) return;
-					if (
-						latest.content !== original.compose ||
-						latest.envContent !== original.environment ||
-						latest.template.name !== original.name ||
-						latest.template.description !== original.description
-					) {
-						setErrorMessage(
-							'This template changed on the server. Your draft is preserved. Reopen the template to load the latest version.'
-						);
-						return;
-					}
-					await client.templates.update({
-						id: mode.template.id,
-						body: {
-							name: fields.name,
-							description: fields.description,
-							content: fields.compose,
-							envContent: fields.environment
-						}
-					});
-					break;
+					showToast(Toasts.success('Template saved'));
+					if (payload) await payload.onSuccess();
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
 				}
-				case 'defaults': {
-					const latest = await client.templates.getDefaults();
-					if (!sessionStillCurrent()) return;
-					if (
-						latest.composeTemplate !== original.compose ||
-						latest.envTemplate !== original.environment
-					) {
-						setErrorMessage(
-							'Default templates changed on the server. Your draft is preserved. Reopen this editor to load the latest version.'
-						);
-						return;
-					}
-					await client.templates.saveDefaults({
-						body: { composeContent: fields.compose, envContent: fields.environment }
-					});
-					break;
-				}
-			}
-			if (!sessionStillCurrent()) return;
-			showToast(Toasts.success('Template saved'));
-			await payload?.onSuccess();
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	useDeleteConfirmation(

@@ -44,7 +44,7 @@ import {
 function useSyncedText(text: string) {
 	const state = useNativeState(text);
 	useEffect(() => {
-		if (state.value !== text) state.value = text;
+		if (state.get() !== text) state.set(text);
 	}, [state, text]);
 	return state;
 }

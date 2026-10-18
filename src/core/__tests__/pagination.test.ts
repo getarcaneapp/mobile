@@ -6,7 +6,12 @@ import {
 	ProgressivePaginationState,
 	progressiveFanOut
 } from '../networking/pagination-loader';
-import { RemoteDataLimitError } from '../networking/remote-data-limits';
+import {
+	RemoteDataLimitError,
+	boundedText,
+	utf8ByteLength
+} from '../networking/remote-data-limits';
+import { reusingUnchanged } from '@/stores/environment-item-identity';
 
 const items = (start: number, count: number) =>
 	Array.from({ length: count }, (_, i) => ({ id: String(start + i) }));
@@ -113,5 +118,75 @@ describe('progressiveFanOut', () => {
 			[1, 2, 3, 4]
 		);
 		assert.ok(batches.length <= 3);
+	});
+});
+
+describe('environment item identity', () => {
+	const item = (id: string, name: string) => ({
+		id,
+		environmentID: '0',
+		value: { id, name }
+	});
+
+	it('returns the previous array when every item is unchanged', () => {
+		const previous = [item('a', 'one'), item('b', 'two')];
+		assert.equal(reusingUnchanged(previous, [item('a', 'one'), item('b', 'two')]), previous);
+	});
+
+	it('keeps unchanged items and replaces changed ones', () => {
+		const previous = [item('a', 'one'), item('b', 'two')];
+		const next = reusingUnchanged(previous, [
+			item('a', 'one'),
+			item('b', 'changed'),
+			item('c', 'new')
+		]);
+		assert.equal(next[0], previous[0]);
+		assert.notEqual(next[1], previous[1]);
+		assert.equal(next[1]?.value.name, 'changed');
+		assert.equal(next.length, 3);
+	});
+
+	it('detects reordering', () => {
+		const previous = [item('a', 'one'), item('b', 'two')];
+		const next = reusingUnchanged(previous, [item('b', 'two'), item('a', 'one')]);
+		assert.notEqual(next, previous);
+		assert.equal(next[0], previous[1]);
+	});
+});
+
+describe('boundedText fast paths', () => {
+	const encoder = new TextEncoder();
+	const reference = (text: string, maximumBytes: number) => {
+		if (maximumBytes <= 0) return '';
+		if (encoder.encode(text).byteLength <= maximumBytes) return text;
+		const marker = '\n… output truncated …';
+		const contentLimit = Math.max(0, maximumBytes - encoder.encode(marker).byteLength);
+		let used = 0;
+		let result = '';
+		for (const character of text) {
+			const bytes = encoder.encode(character).byteLength;
+			if (used + bytes > contentLimit) break;
+			result += character;
+			used += bytes;
+		}
+		return result + marker;
+	};
+
+	it('matches the TextEncoder implementation', () => {
+		const texts = [
+			'',
+			'plain ascii line',
+			'héllo wörld',
+			'日本語のログ行',
+			'emoji 🚀🔥 and text',
+			'lone \uD800 surrogate',
+			'x'.repeat(500),
+			'é'.repeat(300) + '🚀'.repeat(50)
+		];
+		for (const text of texts) {
+			assert.equal(utf8ByteLength(text), encoder.encode(text).byteLength);
+			for (const limit of [0, 1, 10, 30, 64, 256, 2048])
+				assert.equal(boundedText(text, limit), reference(text, limit));
+		}
 	});
 });

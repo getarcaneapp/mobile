@@ -49,5 +49,5 @@ export const usePinnedItemsStore = create<PinnedItemsState>((set, get) => ({
 
 export function usePinnedIDs(kind: PinnedItemKind, envID: EnvironmentID): ReadonlySet<string> {
 	usePinnedItemsStore((s) => s.version);
-	return usePinnedItemsStore.getState().pinnedIDs(kind, envID);
+	return usePinnedItemsStore((s) => s.pinnedIDs(kind, envID));
 }

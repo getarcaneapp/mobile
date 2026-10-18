@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { OidcRoleMapping, OidcRoleMappingSource } from '@/sdk/models/role/OidcRoleMapping';
@@ -34,27 +35,32 @@ export function useOIDCRoleMappings() {
 	const [actionErrorMessage, setActionErrorMessage] = useState<string>();
 	const [pendingDeleteMapping, setPendingDeleteMapping] = useState<OidcRoleMapping>();
 	const mappingsRef = useRef(mappings);
-	mappingsRef.current = mappings;
+	useLayoutEffect(() => {
+		mappingsRef.current = mappings;
+	});
 
 	const load = useCallback(async () => {
 		const client = useClientManager.getState().client;
 		if (!rbacAvailable || !client) return;
 		if (mappingsRef.current.length === 0) setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const [loadedMappings, roles, environments] = await Promise.all([
-				client.oidcRoleMappings.list(),
-				collectAllRoles(client),
-				collectAllEnvironments(client)
-			]);
-			setMappings(loadedMappings);
-			setAvailableRoles(roles);
-			setAvailableEnvironments(environments);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const [loadedMappings, roles, environments] = await Promise.all([
+						client.oidcRoleMappings.list(),
+						collectAllRoles(client),
+						collectAllEnvironments(client)
+					]);
+					setMappings(loadedMappings);
+					setAvailableRoles(roles);
+					setAvailableEnvironments(environments);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	}, [rbacAvailable]);
 
 	useEffect(() => {

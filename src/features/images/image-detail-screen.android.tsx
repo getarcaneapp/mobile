@@ -6,7 +6,10 @@ import { M3Section, ValueRow } from '@/features/containers/android-material';
 import { AndroidToolbar, type AndroidToolbarItem } from '@/features/containers/android-toolbar';
 import { containerDisplayName, containerIsRunning } from '@/features/containers/container-model';
 import { ImageVulnerabilitiesView } from '@/features/images/security/image-vulnerabilities-view';
-import { canPatchImage, useSecurityNavigation } from '@/features/images/security/security-routes';
+import {
+	useCanPatchImage,
+	useSecurityNavigation
+} from '@/features/images/security/security-routes';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import { useItemDeleteConfirmation } from '@/ui/components/delete-confirmation';
@@ -200,6 +203,7 @@ function ImageDetailToolbar({
 	attestations: ImageAttestationsModel;
 }) {
 	const security = useSecurityNavigation();
+	const canPatch = useCanPatchImage(model.environmentID);
 	const [pending, setPending] = useState<ActionButtonItem>();
 	useItemDeleteConfirmation(pending, setPending, (item) => ({
 		title: `${item.title}?`,
@@ -238,7 +242,7 @@ function ImageDetailToolbar({
 			]
 		});
 	}
-	if (model.selectedSection === 'vulnerabilities' && canPatchImage(model.environmentID)) {
+	if (model.selectedSection === 'vulnerabilities' && canPatch) {
 		items.push({
 			kind: 'button',
 			id: 'patch',

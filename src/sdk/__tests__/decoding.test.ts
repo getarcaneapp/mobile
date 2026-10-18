@@ -189,3 +189,37 @@ describe('NDJSON', () => {
 		assert.equal(OperationStreamEvent.terminalAction({ log: 'x' }).kind, 'continueStreaming');
 	});
 });
+
+describe('fast JSON and line parsing', () => {
+	const reviverParse = (text: string) =>
+		JSON.parse(text, function (this: unknown, _key: string, value: unknown) {
+			if (value === null && !Array.isArray(this)) return undefined;
+			return value;
+		});
+
+	it('matches the null-stripping reviver', () => {
+		const samples = [
+			'{"a":1,"b":null,"c":{"d":null,"e":[null,1,{"f":null,"g":"null"}]}}',
+			'[null,{"a":null},[null]]',
+			'{"text":"no nulls here","n":0,"empty":{},"list":[]}',
+			'"null"',
+			'42',
+			'null',
+			'{"nested":{"deeper":{"deepest":null,"keep":false}}}'
+		];
+		for (const text of samples) assert.deepEqual(parseArcaneJSON(text), reviverParse(text));
+		assert.equal(parseArcaneJSON('null'), undefined);
+		assert.ok(!('b' in (parseArcaneJSON('{"a":1,"b":null}') as object)));
+	});
+
+	it('splits every separator style and waits on a trailing carriage return', async () => {
+		const encoder = new TextEncoder();
+		async function* chunks() {
+			yield encoder.encode('one\ntwo\r\nthree\rfour\r');
+			yield encoder.encode('\nfive\n\nsix');
+		}
+		const out: string[] = [];
+		for await (const line of lines(chunks())) out.push(line);
+		assert.deepEqual(out, ['one', 'two', 'three', 'four', 'five', '', 'six']);
+	});
+});

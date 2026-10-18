@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { Permission } from '@/sdk/models/role/Permission';
 import type { SwarmInfo } from '@/sdk/models/swarm/SwarmInfo';
 import type { SwarmJoinTokens } from '@/sdk/models/swarm/SwarmJoinTokens';
@@ -106,15 +107,18 @@ export function useSwarmCluster() {
 		const current = useClientManager.getState().client;
 		if (!current) return;
 		setIsWorking(true);
-		try {
-			await current.swarm.leave({ force, envID: environmentID });
-			swarmChanged(environmentID);
-			showToast(Toasts.success('Left the swarm'));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setIsWorking(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await current.swarm.leave({ force, envID: environmentID });
+					swarmChanged(environmentID);
+					showToast(Toasts.success('Left the swarm'));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setIsWorking(false)
+		);
 	};
 
 	useItemDeleteConfirmation(pendingRotation, setPendingRotation, (role) => ({

@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import {
 	PaginationLoader,
@@ -13,6 +14,9 @@ export type ProgressivePageFetch<Item> = (
 	start: number,
 	limit: number
 ) => Promise<PaginatedResponse<Item>>;
+
+const runBeforeFirstPage = (beforeFirstPage: (() => Promise<void>) | undefined) =>
+	beforeFirstPage?.();
 
 export function useProgressiveList<Item extends Identifiable>({
 	pageSize,
@@ -36,41 +40,49 @@ export function useProgressiveList<Item extends Identifiable>({
 	const paginationRef = useRef(pagination);
 	const loadingMoreRef = useRef(false);
 	const latest = useRef({ search, fetchPage, beforeFirstPage });
-	latest.current = { search, fetchPage, beforeFirstPage };
+	useLayoutEffect(() => {
+		latest.current = { search, fetchPage, beforeFirstPage };
+	});
 
 	const setItems = useCallback((next: Item[]) => {
 		itemsRef.current = next;
 		setItemsState(next);
 	}, []);
-	const setPagination = (next: ProgressivePaginationState) => {
+	const setPagination = useCallback((next: ProgressivePaginationState) => {
 		paginationRef.current = next;
 		setPaginationState(next);
-	};
-	const setIsLoadingMore = (value: boolean) => {
+	}, []);
+	const setIsLoadingMore = useCallback((value: boolean) => {
 		loadingMoreRef.current = value;
 		setIsLoadingMoreState(value);
-	};
+	}, []);
 
-	const applyPage = (
-		response: PaginatedResponse<Item>,
-		reset: boolean,
-		requestedStart: number,
-		generation: number
-	) => {
-		const next = ProgressivePaginationState.receive(paginationRef.current, {
-			pagination: response.pagination,
-			itemCount: response.data.length,
-			requestedStart,
-			requestedLimit: pageSize,
-			generation
-		});
-		if (!next) return;
-		setPagination(next);
-		setItems(PaginationLoader.merge(itemsRef.current, response.data, reset));
-		setLoadMoreError(undefined);
-	};
+	const applyPage = useCallback(
+		(
+			response: PaginatedResponse<Item>,
+			reset: boolean,
+			requestedStart: number,
+			generation: number
+		) => {
+			const next = ProgressivePaginationState.receive(paginationRef.current, {
+				pagination: response.pagination,
+				itemCount: response.data.length,
+				requestedStart,
+				requestedLimit: pageSize,
+				generation
+			});
+			if (!next) return;
+			setPagination(next);
+			setItems(PaginationLoader.merge(itemsRef.current, response.data, reset));
+			setLoadMoreError(undefined);
+		},
+		[pageSize, setItems, setPagination]
+	);
 
-	const query = () => (latest.current.search === '' ? undefined : latest.current.search);
+	const query = useCallback(
+		() => (latest.current.search === '' ? undefined : latest.current.search),
+		[]
+	);
 
 	const load = useCallback(async () => {
 		const fetch = latest.current.fetchPage;
@@ -82,20 +94,25 @@ export function useProgressiveList<Item extends Identifiable>({
 		if (itemsRef.current.length === 0) setIsLoading(true);
 		setErrorMessage(undefined);
 		setLoadMoreError(undefined);
-		try {
-			const [response] = await Promise.all([
-				fetch(query(), 0, pageSize),
-				latest.current.beforeFirstPage?.()
-			]);
-			applyPage(response, true, 0, generation);
-		} catch (error) {
-			if (!ProgressivePaginationState.accepts(paginationRef.current, generation)) return;
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (ProgressivePaginationState.accepts(paginationRef.current, generation))
-				setIsLoading(false);
-		}
-	}, [pageSize]);
+		await withCleanup(
+			async () => {
+				try {
+					const [response] = await Promise.all([
+						fetch(query(), 0, pageSize),
+						runBeforeFirstPage(latest.current.beforeFirstPage)
+					]);
+					applyPage(response, true, 0, generation);
+				} catch (error) {
+					if (!ProgressivePaginationState.accepts(paginationRef.current, generation)) return;
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (ProgressivePaginationState.accepts(paginationRef.current, generation))
+					setIsLoading(false);
+			}
+		);
+	}, [pageSize, applyPage, setPagination, setIsLoadingMore, query]);
 
 	const loadMore = useCallback(async () => {
 		const fetch = latest.current.fetchPage;
@@ -105,17 +122,22 @@ export function useProgressiveList<Item extends Identifiable>({
 		setLoadMoreError(undefined);
 		const generation = state.generation;
 		const start = state.nextStart;
-		try {
-			const response = await fetch(query(), start, pageSize);
-			applyPage(response, false, start, generation);
-		} catch (error) {
-			if (!ProgressivePaginationState.accepts(paginationRef.current, generation)) return;
-			setLoadMoreError(friendlyErrorMessage(error));
-		} finally {
-			if (ProgressivePaginationState.accepts(paginationRef.current, generation))
-				setIsLoadingMore(false);
-		}
-	}, [pageSize]);
+		await withCleanup(
+			async () => {
+				try {
+					const response = await fetch(query(), start, pageSize);
+					applyPage(response, false, start, generation);
+				} catch (error) {
+					if (!ProgressivePaginationState.accepts(paginationRef.current, generation)) return;
+					setLoadMoreError(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (ProgressivePaginationState.accepts(paginationRef.current, generation))
+					setIsLoadingMore(false);
+			}
+		);
+	}, [pageSize, applyPage, setIsLoadingMore, query]);
 
 	const removeItem = useCallback(
 		(id: string) => setItems(itemsRef.current.filter((item) => item.id !== id)),

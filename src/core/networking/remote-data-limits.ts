@@ -157,21 +157,46 @@ export async function boundedDirectResponse<T>(
 	return options.decode ? options.decode(raw) : (raw as T);
 }
 
-export function boundedText(text: string, maximumBytes: number): string {
-	const encoder = new TextEncoder();
-	if (maximumBytes <= 0) return '';
-	if (encoder.encode(text).byteLength <= maximumBytes) return text;
-	const marker = '\n… output truncated …';
-	const contentLimit = Math.max(0, maximumBytes - encoder.encode(marker).byteLength);
-	let used = 0;
-	let result = '';
-	for (const character of text) {
-		const bytes = encoder.encode(character).byteLength;
-		if (used + bytes > contentLimit) break;
-		result += character;
-		used += bytes;
+function codePointByteLength(codePoint: number): number {
+	if (codePoint < 0x80) return 1;
+	if (codePoint < 0x800) return 2;
+	if (codePoint < 0x10000) return 3;
+	return 4;
+}
+
+export function utf8ByteLength(text: string): number {
+	let bytes = 0;
+	for (let index = 0; index < text.length; index++) {
+		const code = text.charCodeAt(index);
+		if (code < 0x80) bytes += 1;
+		else if (code < 0x800) bytes += 2;
+		else if (code >= 0xd800 && code <= 0xdbff && index + 1 < text.length) {
+			const next = text.charCodeAt(index + 1);
+			if (next >= 0xdc00 && next <= 0xdfff) {
+				bytes += 4;
+				index += 1;
+			} else bytes += 3;
+		} else bytes += 3;
 	}
-	return result + marker;
+	return bytes;
+}
+
+const truncationMarker = '\n… output truncated …';
+const truncationMarkerBytes = utf8ByteLength(truncationMarker);
+
+export function boundedText(text: string, maximumBytes: number): string {
+	if (maximumBytes <= 0) return '';
+	if (text.length * 3 <= maximumBytes || utf8ByteLength(text) <= maximumBytes) return text;
+	const contentLimit = Math.max(0, maximumBytes - truncationMarkerBytes);
+	let used = 0;
+	let end = 0;
+	for (const character of text) {
+		const bytes = codePointByteLength(character.codePointAt(0) ?? 0);
+		if (used + bytes > contentLimit) break;
+		used += bytes;
+		end += character.length;
+	}
+	return text.slice(0, end) + truncationMarker;
 }
 
 export function nonnegative(value: number, maximum = 1_000_000_000): number {

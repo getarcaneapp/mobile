@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import { useClientManager } from '@/stores/client-manager';
@@ -19,21 +20,26 @@ export function useContainerProcesses(environmentID: EnvironmentID, containerID:
 		if (!client || loading.current) return;
 		loading.current = true;
 		setIsLoading(true);
-		try {
-			const path = client.rest.environmentPath(
-				environmentID,
-				`containers/${encodeURIComponent(containerID)}/processes`
-			);
-			setList(await client.rest.get<ContainerProcessList>(path));
-			setNotRunning(false);
-			setErrorMessage(undefined);
-		} catch (error) {
-			if (isArcaneError(error, 'conflict')) setNotRunning(true);
-			else setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			loading.current = false;
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const path = client.rest.environmentPath(
+						environmentID,
+						`containers/${encodeURIComponent(containerID)}/processes`
+					);
+					setList(await client.rest.get<ContainerProcessList>(path));
+					setNotRunning(false);
+					setErrorMessage(undefined);
+				} catch (error) {
+					if (isArcaneError(error, 'conflict')) setNotRunning(true);
+					else setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				loading.current = false;
+				setIsLoading(false);
+			}
+		);
 	}, [environmentID, containerID]);
 
 	useEffect(() => {

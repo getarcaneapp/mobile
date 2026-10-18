@@ -38,14 +38,22 @@ export async function* lines(
 	let buffer = '';
 	for await (const chunk of bytes) {
 		buffer += decoder.decode(chunk, { stream: true });
-		let index: number;
-		while ((index = buffer.search(/\r\n|\n|\r/)) >= 0) {
-			const line = buffer.slice(0, index);
-			const separatorLength = buffer.startsWith('\r\n', index) ? 2 : 1;
-			if (separatorLength === 1 && buffer[index] === '\r' && index === buffer.length - 1) break;
-			buffer = buffer.slice(index + separatorLength);
-			yield line;
+		const complete: string[] = [];
+		let start = 0;
+		for (let index = 0; index < buffer.length; index++) {
+			const code = buffer.charCodeAt(index);
+			if (code === 10) {
+				complete.push(buffer.slice(start, index));
+				start = index + 1;
+			} else if (code === 13) {
+				if (index === buffer.length - 1) break;
+				complete.push(buffer.slice(start, index));
+				if (buffer.charCodeAt(index + 1) === 10) index += 1;
+				start = index + 1;
+			}
 		}
+		if (start > 0) buffer = buffer.slice(start);
+		for (const line of complete) yield line;
 	}
 	buffer += decoder.decode();
 	const rest = buffer.replace(/\r$/, '');

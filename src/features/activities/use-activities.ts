@@ -1,14 +1,17 @@
 import * as Haptics from 'expo-haptics';
+import { useShallow } from 'zustand/react/shallow';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { Activity, ActivityMessage } from '@/sdk/models/activity/Activity';
 import { User } from '@/sdk/models/user/User';
 import {
 	createActivityCenterStore,
 	useActivityCenter,
+	type ActivityCenterState,
 	type ActivityCenterStore
 } from '@/stores/activity-center-store';
 import { useActivityHistoryMutationStore } from '@/stores/activity-history-mutation-store';
@@ -31,10 +34,9 @@ function useIsNotBackground(): boolean {
 }
 
 function useDebouncedEffect<T>(value: T, delayMs: number, apply: (value: T) => void) {
-	const latest = useRef(apply);
-	latest.current = apply;
+	const onApply = useEffectEvent(apply);
 	useEffect(() => {
-		const timer = setTimeout(() => latest.current(value), delayMs);
+		const timer = setTimeout(() => onApply(value), delayMs);
 		return () => clearTimeout(timer);
 	}, [value, delayMs]);
 }
@@ -61,13 +63,20 @@ function useActivitySession() {
 	return { client, supportsActivities, currentUser, notBackground, taskID };
 }
 
+function withoutActivityDetails({
+	activityDetails: _activityDetails,
+	...rest
+}: ActivityCenterState): Omit<ActivityCenterState, 'activityDetails'> {
+	return rest;
+}
+
 export function useActivitiesScreen() {
 	const [store] = useState(createActivityCenterStore);
 	const { client, supportsActivities, currentUser, notBackground, taskID } = useActivitySession();
 	const recordClear = useActivityHistoryMutationStore((s) => s.recordClear);
 	const navigation = useActivityNavigation();
 
-	const state = useActivityCenter(store, (s) => s);
+	const state = useActivityCenter(store, useShallow(withoutActivityDetails));
 	const [searchText, setSearchText] = useState('');
 	const [showClearConfirm, setShowClearConfirm] = useState(false);
 	const [expandedBatchIDs, setExpandedBatchIDs] = useState<ReadonlySet<string>>(new Set());
@@ -82,11 +91,10 @@ export function useActivitiesScreen() {
 		}, [store])
 	);
 
-	const latestClient = useRef(client);
-	latestClient.current = client;
+	const currentClient = useEffectEvent(() => client);
 	useEffect(() => {
 		const actions = store.getState();
-		actions.configure(supportsActivities ? latestClient.current : undefined);
+		actions.configure(supportsActivities ? currentClient() : undefined);
 		if (!supportsActivities || !notBackground) {
 			loadedTaskID.current = undefined;
 			actions.stopStream();
@@ -175,6 +183,14 @@ export function useActivitiesScreen() {
 
 export type ActivitiesScreenModel = ReturnType<typeof useActivitiesScreen>;
 
+const hasClient = () => useClientManager.getState().client !== undefined;
+
+function cancelRequester(): string | undefined | null {
+	const manager = useClientManager.getState();
+	if (!manager.client) return null;
+	return manager.currentUser?.displayName ?? manager.currentUser?.username;
+}
+
 export function useActivityDetail(
 	initialActivity: Activity,
 	sharedStore: ActivityCenterStore | undefined
@@ -207,31 +223,34 @@ export function useActivityDetail(
 		(currentUser ? User.hasPermission(currentUser, 'activities:cancel', environmentID) : false);
 
 	const loadDetail = useCallback(async () => {
-		if (!useClientManager.getState().client) return;
+		if (!hasClient()) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			await store.getState().loadDetail(initialActivity);
-		} catch (error) {
-			if (mounted.current) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (mounted.current) setIsLoading(false);
-		}
+		await withCleanup(
+			() =>
+				store
+					.getState()
+					.loadDetail(initialActivity)
+					.catch((error: unknown) => {
+						if (mounted.current) setErrorMessage(friendlyErrorMessage(error));
+					}),
+			() => {
+				if (mounted.current) setIsLoading(false);
+			}
+		);
 	}, [store, initialActivity]);
 
-	const latestClient = useRef(client);
-	latestClient.current = client;
-	const latestLoad = useRef(loadDetail);
-	latestLoad.current = loadDetail;
+	const currentClient = useEffectEvent(() => client);
+	const loadLatest = useEffectEvent(() => loadDetail());
 	useEffect(() => {
 		const actions = store.getState();
-		if (!isShared) actions.configure(supportsActivities ? latestClient.current : undefined);
+		if (!isShared) actions.configure(supportsActivities ? currentClient() : undefined);
 		if (!supportsActivities || !notBackground) {
 			if (!isShared) actions.stopStream();
 			return;
 		}
 		if (!isShared) actions.startStream();
-		void latestLoad.current();
+		void loadLatest();
 	}, [taskID, supportsActivities, notBackground, store, isShared]);
 
 	useFocusEffect(
@@ -245,20 +264,22 @@ export function useActivityDetail(
 	);
 
 	const cancelActivity = async () => {
-		const manager = useClientManager.getState();
-		if (!manager.client) return;
+		const requestedBy = cancelRequester();
+		if (requestedBy === null) return;
 		setIsCancelling(true);
 		setErrorMessage(undefined);
-		const requestedBy = manager.currentUser?.displayName ?? manager.currentUser?.username;
-		try {
-			if (await store.getState().cancel(activity, requestedBy)) {
-				void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
-			} else if (mounted.current) {
-				setErrorMessage(store.getState().errorMessage);
+		await withCleanup(
+			async () => {
+				if (await store.getState().cancel(activity, requestedBy)) {
+					void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+				} else if (mounted.current) {
+					setErrorMessage(store.getState().errorMessage);
+				}
+			},
+			() => {
+				if (mounted.current) setIsCancelling(false);
 			}
-		} finally {
-			if (mounted.current) setIsCancelling(false);
-		}
+		);
 	};
 
 	useDeleteConfirmation(showCancelConfirm, setShowCancelConfirm, {

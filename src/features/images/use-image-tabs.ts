@@ -2,6 +2,8 @@ import * as Clipboard from 'expo-clipboard';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ImageAttestation, ImageAttestationList } from '@/sdk/models/image/ImageAttestation';
 import type { ImageHistoryItem } from '@/sdk/models/image/ImageHistory';
@@ -12,12 +14,13 @@ import { prettySortedJSON } from './image-model';
 
 export const layerID = (id: string) => (id === '<missing>' ? 'Metadata-only layer' : id);
 
-export const historyDate = (created: number) =>
-	new Date(created * 1000).toLocaleDateString(undefined, {
-		year: 'numeric',
-		month: 'short',
-		day: 'numeric'
-	});
+const historyDateFormat = new Intl.DateTimeFormat(undefined, {
+	year: 'numeric',
+	month: 'short',
+	day: 'numeric'
+});
+
+export const historyDate = (created: number) => historyDateFormat.format(new Date(created * 1000));
 
 export function useImageHistory(environmentID: EnvironmentID, imageID: string) {
 	const [items, setItems] = useState<ImageHistoryItem[]>([]);
@@ -30,15 +33,20 @@ export function useImageHistory(environmentID: EnvironmentID, imageID: string) {
 		if (!client || loading.current) return;
 		loading.current = true;
 		setIsLoading(true);
-		try {
-			setItems(await client.images.history({ envID: environmentID, imageID }));
-			setErrorMessage(undefined);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			loading.current = false;
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					setItems(await client.images.history({ envID: environmentID, imageID }));
+					setErrorMessage(undefined);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				loading.current = false;
+				setIsLoading(false);
+			}
+		);
 	}, [environmentID, imageID]);
 
 	useEffect(() => {
@@ -62,14 +70,17 @@ export function useImageAttestations(
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsLoading(true);
-		try {
-			setResult(await client.images.attestations({ envID: environmentID, id: imageID }));
-			setErrorMessage(undefined);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					setResult(await client.images.attestations({ envID: environmentID, id: imageID }));
+					setErrorMessage(undefined);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	}, [environmentID, imageID]);
 
 	useEffect(() => {
@@ -97,6 +108,41 @@ export function useImageAttestations(
 
 export type ImageAttestationsModel = ReturnType<typeof useImageAttestations>;
 
+async function loadAttestationStatement({
+	client,
+	environmentID,
+	imageID,
+	attestation,
+	setStatementJSON,
+	setStatementError
+}: {
+	client: ArcaneClient;
+	environmentID: EnvironmentID;
+	imageID: string;
+	attestation: ImageAttestation;
+	setStatementJSON: (json: string) => void;
+	setStatementError: (error: string | undefined) => void;
+}) {
+	try {
+		const list = await client.images.attestations({
+			envID: environmentID,
+			id: imageID,
+			platform: attestation.platform,
+			predicateType: attestation.predicateType,
+			includeStatement: true
+		});
+		const statement = list.attestations.find((a) => a.digest === attestation.digest)?.statement;
+		if (statement === undefined) {
+			setStatementError('No statement payload returned.');
+			return;
+		}
+		setStatementJSON(prettySortedJSON(statement));
+		setStatementError(undefined);
+	} catch (error) {
+		setStatementError(friendlyErrorMessage(error));
+	}
+}
+
 export function useAttestationStatement(
 	environmentID: EnvironmentID,
 	imageID: string,
@@ -110,26 +156,18 @@ export function useAttestationStatement(
 		const client = useClientManager.getState().client;
 		if (!client || !attestation) return;
 		setIsLoadingStatement(true);
-		try {
-			const list = await client.images.attestations({
-				envID: environmentID,
-				id: imageID,
-				platform: attestation.platform,
-				predicateType: attestation.predicateType,
-				includeStatement: true
-			});
-			const statement = list.attestations.find((a) => a.digest === attestation.digest)?.statement;
-			if (statement === undefined) {
-				setStatementError('No statement payload returned.');
-				return;
-			}
-			setStatementJSON(prettySortedJSON(statement));
-			setStatementError(undefined);
-		} catch (error) {
-			setStatementError(friendlyErrorMessage(error));
-		} finally {
-			setIsLoadingStatement(false);
-		}
+		await withCleanup(
+			() =>
+				loadAttestationStatement({
+					client,
+					environmentID,
+					imageID,
+					attestation,
+					setStatementJSON,
+					setStatementError
+				}),
+			() => setIsLoadingStatement(false)
+		);
 	};
 
 	const copyStatement = () => {

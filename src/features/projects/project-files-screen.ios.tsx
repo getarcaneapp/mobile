@@ -43,7 +43,7 @@ import {
 	tint
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, useMemo, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 
 import { systemColors, withOpacity } from '@/theme/colors';
@@ -424,9 +424,11 @@ function ManagedFileEditor({ model, path }: { model: Model; path: string }) {
 		() => (text: string) => setManagedFileContent(path, text),
 		[setManagedFileContent, path]
 	);
+	const loadContent = useEffectEvent((target: string) => {
+		void model.loadManagedFileContent(target);
+	});
 	useEffect(() => {
-		void model.loadManagedFileContent(path);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		loadContent(path);
 	}, [path]);
 	if (entry?.isDirectory)
 		return <ContentUnavailableView title="Folder" systemImage="folder" description={path} />;

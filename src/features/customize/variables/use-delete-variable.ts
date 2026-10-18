@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { useSettingsNavigation } from '@/features/settings/shared/settings-routes';
 import { showToast, Toasts } from '@/ui/toast';
 
@@ -17,15 +18,18 @@ export function useDeleteVariable() {
 		if (!payload) return;
 		setIsDeleting(true);
 		setErrorMessage(undefined);
-		try {
-			await payload.onDelete();
-			showToast(Toasts.success('Variable deleted'));
-			nav.back();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsDeleting(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await payload.onDelete();
+					showToast(Toasts.success('Variable deleted'));
+					nav.back();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsDeleting(false)
+		);
 	};
 
 	return {

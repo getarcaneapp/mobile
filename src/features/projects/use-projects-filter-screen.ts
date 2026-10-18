@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { useClientManager } from '@/stores/client-manager';
 
 import { localizedStandardCompare } from '@/features/containers/container-model';
@@ -10,6 +11,21 @@ import {
 	useProjectsFilterStore,
 	type ProjectsFilterState
 } from './projects-filter-store';
+
+async function environmentTagOptions(
+	client: ArcaneClient,
+	environmentID: string
+): Promise<ProjectTagOption[]> {
+	try {
+		return (
+			(await client.rest.get<ProjectTagOption[]>(
+				client.rest.environmentPath(environmentID, 'projects/tags')
+			)) ?? []
+		);
+	} catch {
+		return [];
+	}
+}
 
 export function useProjectsFilterScreen(key: string) {
 	const filter = useProjectsFilter(key);
@@ -24,15 +40,7 @@ export function useProjectsFilterScreen(key: string) {
 			const environments = useProjectsFilterStore.getState().lists[key]?.listEnvironments ?? [];
 			const byName = new Map<string, ProjectTagOption>();
 			for (const environment of environments) {
-				let options: ProjectTagOption[] = [];
-				try {
-					options =
-						(await client.rest.get<ProjectTagOption[]>(
-							client.rest.environmentPath(environment.id, 'projects/tags')
-						)) ?? [];
-				} catch {
-					options = [];
-				}
+				const options = await environmentTagOptions(client, environment.id);
 				for (const option of options) if (!byName.has(option.name)) byName.set(option.name, option);
 			}
 			if (cancelled) return;

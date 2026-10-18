@@ -30,12 +30,14 @@ export function RowIcon({ systemImage, tint, size = 36, changeToken = '' }: RowI
 			return;
 		}
 		if (reduceMotion) return;
-		scale.value = withSequence(
-			withTiming(1.18, { duration: 120 }),
-			withSpring(1, { damping: 8, stiffness: 220 })
+		scale.set(
+			withSequence(
+				withTiming(1.18, { duration: 120 }),
+				withSpring(1, { damping: 8, stiffness: 220 })
+			)
 		);
 	}, [changeToken, reduceMotion, scale]);
-	const glyph = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+	const glyph = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 	return (
 		<View
 			importantForAccessibility="no-hide-descendants"
@@ -71,14 +73,16 @@ export function ImageReferenceName({
 	);
 }
 
+const referenceLineStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 6
+};
+
 export function ImageReferenceLine({ reference }: { reference: string }) {
 	const parts = imageReferenceParts(reference);
 	return (
-		<View
-			accessible
-			accessibilityLabel={reference}
-			style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-		>
+		<View accessible accessibilityLabel={reference} style={referenceLineStyle}>
 			<Text
 				numberOfLines={1}
 				ellipsizeMode="head"

@@ -29,7 +29,15 @@ import {
 	ResourceMetricsText,
 	type AllEnvironmentsCounts
 } from '../dashboard-logic';
-import { relativeNamed, useAllEnvironmentsDashboard } from '../use-all-environments-dashboard';
+import {
+	relativeNamed,
+	useAllEnvironmentsDashboard,
+	useBusiestCard,
+	useHostDiskPercent,
+	useTileValues,
+	useUsageCard,
+	type AllEnvironmentsDashboardModel
+} from '../use-all-environments-dashboard';
 import { DashboardRowChevron, DashboardSectionTitle, DashboardStatTile } from './dashboard-parts';
 import { MaterialMenu } from './material-menu';
 import { MaterialSheet } from './material-sheet';
@@ -363,6 +371,259 @@ function TilesEditorSheet({
 	);
 }
 
+function TotalsTiles({
+	model,
+	onOpenTile,
+	onLongPress
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenTile: (tile: DashboardTotalsTile) => void;
+	onLongPress: () => void;
+}) {
+	const values = useTileValues(model);
+	return (
+		<>
+			{model.tiles.map((tile, index) => {
+				const info = DashboardTotalsTile.info[tile];
+				return (
+					<DashboardStatTile
+						key={tile}
+						title={info.title}
+						value={values[index] ?? '—'}
+						icon={info.systemImage}
+						tint={systemColors[info.tint]}
+						onPress={info.opensDestination ? () => onOpenTile(tile) : undefined}
+						onLongPress={onLongPress}
+					/>
+				);
+			})}
+		</>
+	);
+}
+
+function UsageCard({ model }: { model: AllEnvironmentsDashboardModel }) {
+	const usage = useUsageCard(model);
+	return (
+		<GlassCard style={{ padding: 16, gap: 14 }}>
+			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+				<View style={{ flex: 1, gap: 2 }}>
+					<Text
+						style={[
+							m3Type.headlineSmall,
+							{ color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }
+						]}
+					>
+						{usage.headline?.value ?? '—'}
+					</Text>
+					{usage.headline ? (
+						<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
+							{usage.headline.detail}
+						</Text>
+					) : null}
+				</View>
+				<Segmented
+					options={[
+						{ label: 'CPU', value: 'CPU' },
+						{ label: 'Memory', value: 'Memory' }
+					]}
+					selection={model.usageMetric}
+					onChange={model.setUsageMetric}
+				/>
+			</View>
+			{usage.waitingForStats ? (
+				<View style={{ minHeight: 150, alignItems: 'center', justifyContent: 'center' }}>
+					<ArcaneLoadingView label="Waiting for live stats…" variant="inline" />
+				</View>
+			) : (
+				<UsageChart lines={usage.usageLines} metric={model.usageMetric} />
+			)}
+			{usage.usageLines.length > 0 ? (
+				<View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 10, rowGap: 8 }}>
+					{usage.usageLines.map((line) => (
+						<View
+							key={line.id}
+							style={{
+								flexBasis: '45%',
+								flexGrow: 1,
+								flexDirection: 'row',
+								alignItems: 'center',
+								gap: 6
+							}}
+						>
+							<View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: line.color }} />
+							<Text numberOfLines={1} style={[m3Type.bodySmall, { flex: 1, color: colors.label }]}>
+								{line.name}
+							</Text>
+							<Text
+								style={[
+									m3Type.bodySmall,
+									{ color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }
+								]}
+							>
+								{line.current === undefined ? '—' : percent0(line.current)}
+							</Text>
+						</View>
+					))}
+				</View>
+			) : null}
+			{model.showsStreamCapNote ? (
+				<Text style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>
+					{`Live usage covers the first ${model.maxStreams} environments. Change this in App Settings.`}
+				</Text>
+			) : null}
+		</GlassCard>
+	);
+}
+
+function BusiestSection({
+	model,
+	onOpenContainer
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenContainer: (container: ContainerSummary, environmentID: string) => void;
+}) {
+	const busiest = useBusiestCard(model);
+	return (
+		<CardEntranceView id="dashboard.all.busiest" index={2} style={{ gap: 14 }}>
+			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+				<View style={{ flex: 1, gap: 2 }}>
+					<DashboardSectionTitle title="Busiest Containers" />
+					{!busiest.isLive && busiest.updatedAt !== undefined && busiest.entries.length > 0 ? (
+						<Text
+							style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}
+						>{`Updated ${relativeNamed(busiest.updatedAt)}`}</Text>
+					) : null}
+				</View>
+				<Segmented
+					options={[
+						{ label: 'CPU', value: 'cpuUsage' as const },
+						{ label: 'Memory', value: 'memoryUsage' as const }
+					]}
+					selection={model.busiestSort}
+					onChange={model.setBusiestSort}
+				/>
+			</View>
+			<GlassCard style={{ paddingVertical: 4, overflow: 'hidden' }}>
+				{busiest.entries.length === 0 ? (
+					<View style={{ alignItems: 'center', paddingVertical: 20 }}>
+						{busiest.isLive ? (
+							<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
+								No running containers.
+							</Text>
+						) : (
+							<ArcaneLoadingView label="Sampling containers…" variant="inline" />
+						)}
+					</View>
+				) : (
+					busiest.entries.map((entry, index) => (
+						<View key={entry.id}>
+							{index > 0 ? (
+								<View style={{ height: 1, marginLeft: 64, backgroundColor: colors.separator }} />
+							) : null}
+							<Pressable
+								onPress={() => onOpenContainer(entry.container, entry.environmentID)}
+								android_ripple={{ color: colors.separator as string }}
+								accessibilityRole="button"
+								accessibilityLabel={`${containerDisplayName(entry.container)}, ${ResourceMetricsText.accessibility(entry.sample)}`}
+								style={{ paddingHorizontal: 16, paddingVertical: 10 }}
+							>
+								<BusiestRow
+									entry={entry}
+									environmentName={model.environmentName(entry.environmentID)}
+								/>
+							</Pressable>
+						</View>
+					))
+				)}
+			</GlassCard>
+		</CardEntranceView>
+	);
+}
+
+function HostRow({
+	model,
+	environment,
+	index,
+	info,
+	volumes,
+	onOpenEnvironment
+}: {
+	model: AllEnvironmentsDashboardModel;
+	environment: Environment;
+	index: number;
+	info: DockerInfo | undefined;
+	volumes: number | undefined;
+	onOpenEnvironment: (environment: Environment) => void;
+}) {
+	const isOnline = environmentIsOnline(environment);
+	const disk = useHostDiskPercent(environment.id);
+	const running = info ? DockerCounts.containersRunning(info) : undefined;
+	const total = info ? DockerCounts.containers(info) : undefined;
+	const images = info ? DockerCounts.images(info) : undefined;
+	return (
+		<View>
+			{index > 0 ? (
+				<View style={{ height: 1, marginLeft: 16, backgroundColor: colors.separator }} />
+			) : null}
+			<Pressable
+				onPress={() => onOpenEnvironment(environment)}
+				android_ripple={{ color: colors.separator as string }}
+				accessibilityRole="button"
+				accessibilityLabel={[
+					displayName(environment),
+					isOnline ? 'online' : 'offline',
+					info ? `${running} of ${total} containers running` : undefined,
+					info ? `${images} images` : undefined,
+					volumes !== undefined ? `${volumes} volumes` : undefined,
+					disk !== undefined ? `disk ${disk.toFixed(0)} percent full` : undefined
+				]
+					.filter(Boolean)
+					.join(', ')}
+				style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}
+			>
+				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+					<View
+						style={{
+							width: 8,
+							height: 8,
+							borderRadius: 4,
+							backgroundColor: model.colorFor(environment, index)
+						}}
+					/>
+					<Text numberOfLines={1} style={[m3Type.titleSmall, { flex: 1, color: colors.label }]}>
+						{displayName(environment)}
+					</Text>
+					{!isOnline ? (
+						<Text style={[m3Type.bodySmall, { color: systemColors.orange }]}>Offline</Text>
+					) : null}
+					<DashboardRowChevron />
+				</View>
+				<View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
+					<HostStat
+						title="Running"
+						value={info ? `${running}/${total}` : undefined}
+						meter={{
+							fraction: total !== undefined && total > 0 ? (running ?? 0) / total : undefined,
+							tint: systemColors.green
+						}}
+					/>
+					<HostStat title="Images" value={images !== undefined ? String(images) : undefined} />
+					<HostStat title="Volumes" value={volumes !== undefined ? String(volumes) : undefined} />
+					<HostStat
+						title="Disk"
+						value={disk !== undefined ? percent0(disk) : undefined}
+						meter={{
+							fraction: disk !== undefined ? disk / 100 : undefined,
+							tint: systemColors.teal,
+							warnsAbove: 0.9
+						}}
+					/>
+				</View>
+			</Pressable>
+		</View>
+	);
+}
+
 export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 	const { environments, dockerInfo, counts, volumeCounts } = props;
 	const model = useAllEnvironmentsDashboard(environments, counts);
@@ -382,20 +643,11 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 								paddingVertical: 14
 							}}
 						>
-							{model.tiles.map((tile) => {
-								const info = DashboardTotalsTile.info[tile];
-								return (
-									<DashboardStatTile
-										key={tile}
-										title={info.title}
-										value={model.tileValue(tile)}
-										icon={info.systemImage}
-										tint={systemColors[info.tint]}
-										onPress={info.opensDestination ? () => props.onOpenTile(tile) : undefined}
-										onLongPress={() => setTotalsMenu(true)}
-									/>
-								);
-							})}
+							<TotalsTiles
+								model={model}
+								onOpenTile={props.onOpenTile}
+								onLongPress={() => setTotalsMenu(true)}
+							/>
 						</GlassCard>
 					</Pressable>
 					<MaterialMenu
@@ -415,139 +667,11 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 			</CardEntranceView>
 
 			<CardEntranceView id="dashboard.all.usage" index={1}>
-				<GlassCard style={{ padding: 16, gap: 14 }}>
-					<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-						<View style={{ flex: 1, gap: 2 }}>
-							<Text
-								style={[
-									m3Type.headlineSmall,
-									{ color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }
-								]}
-							>
-								{model.headline?.value ?? '—'}
-							</Text>
-							{model.headline ? (
-								<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
-									{model.headline.detail}
-								</Text>
-							) : null}
-						</View>
-						<Segmented
-							options={[
-								{ label: 'CPU', value: 'CPU' },
-								{ label: 'Memory', value: 'Memory' }
-							]}
-							selection={model.usageMetric}
-							onChange={model.setUsageMetric}
-						/>
-					</View>
-					{model.waitingForStats ? (
-						<View style={{ minHeight: 150, alignItems: 'center', justifyContent: 'center' }}>
-							<ArcaneLoadingView label="Waiting for live stats…" variant="inline" />
-						</View>
-					) : (
-						<UsageChart lines={model.usageLines} metric={model.usageMetric} />
-					)}
-					{model.usageLines.length > 0 ? (
-						<View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 10, rowGap: 8 }}>
-							{model.usageLines.map((line) => (
-								<View
-									key={line.id}
-									style={{
-										flexBasis: '45%',
-										flexGrow: 1,
-										flexDirection: 'row',
-										alignItems: 'center',
-										gap: 6
-									}}
-								>
-									<View
-										style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: line.color }}
-									/>
-									<Text
-										numberOfLines={1}
-										style={[m3Type.bodySmall, { flex: 1, color: colors.label }]}
-									>
-										{line.name}
-									</Text>
-									<Text
-										style={[
-											m3Type.bodySmall,
-											{ color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }
-										]}
-									>
-										{line.current === undefined ? '—' : percent0(line.current)}
-									</Text>
-								</View>
-							))}
-						</View>
-					) : null}
-					{model.showsStreamCapNote ? (
-						<Text style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>
-							{`Live usage covers the first ${model.maxStreams} environments. Change this in App Settings.`}
-						</Text>
-					) : null}
-				</GlassCard>
+				<UsageCard model={model} />
 			</CardEntranceView>
 
 			{model.showsBusiest ? (
-				<CardEntranceView id="dashboard.all.busiest" index={2} style={{ gap: 14 }}>
-					<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-						<View style={{ flex: 1, gap: 2 }}>
-							<DashboardSectionTitle title="Busiest Containers" />
-							{!model.busiestIsLive &&
-							model.busiestUpdatedAt !== undefined &&
-							model.busiestEntries.length > 0 ? (
-								<Text
-									style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}
-								>{`Updated ${relativeNamed(model.busiestUpdatedAt)}`}</Text>
-							) : null}
-						</View>
-						<Segmented
-							options={[
-								{ label: 'CPU', value: 'cpuUsage' as const },
-								{ label: 'Memory', value: 'memoryUsage' as const }
-							]}
-							selection={model.busiestSort}
-							onChange={model.setBusiestSort}
-						/>
-					</View>
-					<GlassCard style={{ paddingVertical: 4, overflow: 'hidden' }}>
-						{model.busiestEntries.length === 0 ? (
-							<View style={{ alignItems: 'center', paddingVertical: 20 }}>
-								{model.busiestIsLive ? (
-									<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
-										No running containers.
-									</Text>
-								) : (
-									<ArcaneLoadingView label="Sampling containers…" variant="inline" />
-								)}
-							</View>
-						) : (
-							model.busiestEntries.map((entry, index) => (
-								<View key={entry.id}>
-									{index > 0 ? (
-										<View
-											style={{ height: 1, marginLeft: 64, backgroundColor: colors.separator }}
-										/>
-									) : null}
-									<Pressable
-										onPress={() => props.onOpenContainer(entry.container, entry.environmentID)}
-										android_ripple={{ color: colors.separator as string }}
-										accessibilityRole="button"
-										accessibilityLabel={`${containerDisplayName(entry.container)}, ${ResourceMetricsText.accessibility(entry.sample)}`}
-										style={{ paddingHorizontal: 16, paddingVertical: 10 }}
-									>
-										<BusiestRow
-											entry={entry}
-											environmentName={model.environmentName(entry.environmentID)}
-										/>
-									</Pressable>
-								</View>
-							))
-						)}
-					</GlassCard>
-				</CardEntranceView>
+				<BusiestSection model={model} onOpenContainer={props.onOpenContainer} />
 			) : null}
 
 			<CardEntranceView id="dashboard.all.hosts" index={3} style={{ gap: 14 }}>
@@ -561,89 +685,17 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 					{props.hostsAccessory}
 				</View>
 				<GlassCard style={{ paddingVertical: 4, overflow: 'hidden' }}>
-					{environments.map((environment, index) => {
-						const info = dockerInfo[environment.id];
-						const isOnline = environmentIsOnline(environment);
-						const disk = model.diskPercent(environment.id);
-						const volumes = volumeCounts[environment.id];
-						const running = info ? DockerCounts.containersRunning(info) : undefined;
-						const total = info ? DockerCounts.containers(info) : undefined;
-						const images = info ? DockerCounts.images(info) : undefined;
-						return (
-							<View key={environment.id}>
-								{index > 0 ? (
-									<View style={{ height: 1, marginLeft: 16, backgroundColor: colors.separator }} />
-								) : null}
-								<Pressable
-									onPress={() => props.onOpenEnvironment(environment)}
-									android_ripple={{ color: colors.separator as string }}
-									accessibilityRole="button"
-									accessibilityLabel={[
-										displayName(environment),
-										isOnline ? 'online' : 'offline',
-										info ? `${running} of ${total} containers running` : undefined,
-										info ? `${images} images` : undefined,
-										volumes !== undefined ? `${volumes} volumes` : undefined,
-										disk !== undefined ? `disk ${disk.toFixed(0)} percent full` : undefined
-									]
-										.filter(Boolean)
-										.join(', ')}
-									style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}
-								>
-									<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-										<View
-											style={{
-												width: 8,
-												height: 8,
-												borderRadius: 4,
-												backgroundColor: model.colorFor(environment, index)
-											}}
-										/>
-										<Text
-											numberOfLines={1}
-											style={[m3Type.titleSmall, { flex: 1, color: colors.label }]}
-										>
-											{displayName(environment)}
-										</Text>
-										{!isOnline ? (
-											<Text style={[m3Type.bodySmall, { color: systemColors.orange }]}>
-												Offline
-											</Text>
-										) : null}
-										<DashboardRowChevron />
-									</View>
-									<View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
-										<HostStat
-											title="Running"
-											value={info ? `${running}/${total}` : undefined}
-											meter={{
-												fraction:
-													total !== undefined && total > 0 ? (running ?? 0) / total : undefined,
-												tint: systemColors.green
-											}}
-										/>
-										<HostStat
-											title="Images"
-											value={images !== undefined ? String(images) : undefined}
-										/>
-										<HostStat
-											title="Volumes"
-											value={volumes !== undefined ? String(volumes) : undefined}
-										/>
-										<HostStat
-											title="Disk"
-											value={disk !== undefined ? percent0(disk) : undefined}
-											meter={{
-												fraction: disk !== undefined ? disk / 100 : undefined,
-												tint: systemColors.teal,
-												warnsAbove: 0.9
-											}}
-										/>
-									</View>
-								</Pressable>
-							</View>
-						);
-					})}
+					{environments.map((environment, index) => (
+						<HostRow
+							key={environment.id}
+							model={model}
+							environment={environment}
+							index={index}
+							info={dockerInfo[environment.id]}
+							volumes={volumeCounts[environment.id]}
+							onOpenEnvironment={props.onOpenEnvironment}
+						/>
+					))}
 				</GlassCard>
 			</CardEntranceView>
 

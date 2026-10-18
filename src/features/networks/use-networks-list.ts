@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { performAllEnvironmentsPrune } from '@/core/all-environments-actions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { ResourcePruneAction } from '@/core/resource-prune-action';
+import { nextInstanceKey } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { NetworkSummary } from '@/sdk/models/network/Network';
 import { useAllEnvironmentsOperationStore } from '@/stores/all-environments-operation-store';
@@ -39,8 +40,6 @@ export type NetworksListProps = {
 	allEnvironments?: boolean;
 };
 
-let listCounter = 0;
-
 export const networkCacheKey = (environmentID: EnvironmentID, id: string) =>
 	`network:${environmentID}/${id}`;
 
@@ -51,7 +50,7 @@ export function showActionFailed(message: string, title = 'Action Failed') {
 export function useNetworksList({ environmentID, allEnvironments = false }: NetworksListProps) {
 	const nav = useTabRouter();
 	const client = useClientManager((s) => s.client);
-	const [listKey] = useState(() => `networks-${++listCounter}`);
+	const [listKey] = useState(() => nextInstanceKey('networks'));
 	const filter = useNetworksFilter(listKey);
 	const updateFilter = useNetworksFilterStore((s) => s.update);
 	useEffect(() => () => useNetworksFilterStore.getState().remove(listKey), [listKey]);

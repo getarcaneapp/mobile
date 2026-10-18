@@ -1,7 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { withCleanup } from '@/core/with-cleanup';
+import { hasPermission, usePermissionCheck } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { boundedAPIResponse, RemoteDataLimits } from '@/core/networking/remote-data-limits';
 import { escapedPathComponent } from '@/core/networking/server-identity';
@@ -35,6 +36,8 @@ function loadBoundedContent(client: ArcaneClient, id: string): Promise<TemplateC
 	);
 }
 
+const currentSession = () => useClientManager.getState().cacheSessionIdentity;
+
 export function useTemplatePreview() {
 	const { payload, params } = useRoutePayload<TemplatePreviewPayload>();
 	const template = payload?.template;
@@ -52,6 +55,7 @@ export function useTemplatePreview() {
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
 	const environments = useEnvironmentsStore((s) => s.environments);
 	const permissions = useTemplatePermissions();
+	const can = usePermissionCheck();
 
 	const [downloadedTemplate, setDownloadedTemplate] = useState<Template>();
 	const [content, setContent] = useState<TemplateContent>();
@@ -68,10 +72,11 @@ export function useTemplatePreview() {
 		content?.template ?? downloadedTemplate ?? template;
 	const displayedID = displayedTemplate?.id ?? templateID;
 	const isRemote = displayedTemplate?.isRemote ?? false;
-	const currentSession = () => useClientManager.getState().cacheSessionIdentity;
 	const sessionMatches = loadedSessionIdentity === cacheSessionIdentity;
 	const displayedIDRef = useRef(displayedID);
-	displayedIDRef.current = displayedID;
+	useLayoutEffect(() => {
+		displayedIDRef.current = displayedID;
+	});
 
 	const canEdit = sessionMatches && permissions.canRead && permissions.canUpdate;
 	const canDelete = sessionMatches && permissions.canDelete;
@@ -83,7 +88,7 @@ export function useTemplatePreview() {
 					.filter((environment) => environment.enabled)
 					.map((environment) => ({ id: environment.id, name: environmentDisplayName(environment) }))
 			: [{ id: activeEnvironmentID }]
-	).filter((environment) => hasPermission(Permission.Projects.create, environment.id));
+	).filter((environment) => can(Permission.Projects.create, environment.id));
 	const canDeploy = sessionMatches && deployEnvironments.length > 0;
 
 	const loadContent = useCallback(async () => {
@@ -99,17 +104,20 @@ export function useTemplatePreview() {
 		}
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const loaded = await loadBoundedContent(client, displayedIDRef.current);
-			if (identity !== currentSession()) return;
-			loadedIdentityRef.current = identity;
-			setLoadedSessionIdentity(identity);
-			setContent(loaded);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const loaded = await loadBoundedContent(client, displayedIDRef.current);
+					if (identity !== currentSession()) return;
+					loadedIdentityRef.current = identity;
+					setLoadedSessionIdentity(identity);
+					setContent(loaded);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	}, [client]);
 
 	useEffect(() => {
@@ -128,17 +136,20 @@ export function useTemplatePreview() {
 		if (!client || isRemote || !canDelete || isDeleting) return;
 		const identity = currentSession();
 		setIsDeleting(true);
-		try {
-			await client.templates.delete({ id: displayedID });
-			if (identity !== currentSession()) return;
-			showToast(Toasts.success('Template deleted'));
-			await onChange();
-			dismiss();
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setIsDeleting(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.templates.delete({ id: displayedID });
+					if (identity !== currentSession()) return;
+					showToast(Toasts.success('Template deleted'));
+					await onChange();
+					dismiss();
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setIsDeleting(false)
+		);
 	};
 
 	useDeleteConfirmation(confirmDelete, setConfirmDelete, {
@@ -152,19 +163,22 @@ export function useTemplatePreview() {
 		if (!client || !isRemote || !canDownload) return;
 		const identity = currentSession();
 		setIsDownloading(true);
-		try {
-			const downloaded = await client.templates.download({ id: displayedID });
-			const loaded = await loadBoundedContent(client, downloaded.id);
-			if (identity !== currentSession()) return;
-			setDownloadedTemplate(loaded.template);
-			setContent(loaded);
-			showToast(Toasts.success('Template downloaded'));
-			await onChange();
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setIsDownloading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const downloaded = await client.templates.download({ id: displayedID });
+					const loaded = await loadBoundedContent(client, downloaded.id);
+					if (identity !== currentSession()) return;
+					setDownloadedTemplate(loaded.template);
+					setContent(loaded);
+					showToast(Toasts.success('Template downloaded'));
+					await onChange();
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setIsDownloading(false)
+		);
 	};
 
 	const dismissAfterDeploy = useRef(false);

@@ -10,6 +10,7 @@ import {
 	TextButtonRow,
 	ValueRow
 } from '@/features/containers/android-material';
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import { m3 } from '@/ui/components/material-colors';
@@ -26,11 +27,10 @@ export function ImagePatchTargetsScreen() {
 	const [refreshing, setRefreshing] = useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			() => model.refresh(),
+			() => setRefreshing(false)
+		);
 	};
 	const empty = model.targets.length === 0 && !model.loading && model.error === undefined;
 	return (

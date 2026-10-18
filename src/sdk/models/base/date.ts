@@ -19,6 +19,19 @@ export function parseArcaneDate(value: string | undefined | null): Date | undefi
 	return Number.isNaN(parsed) ? undefined : new Date(parsed);
 }
 
+const timestampCacheLimit = 4096;
+const timestampCache = new Map<string, number>();
+
+export function arcaneTimestampMs(value: string | undefined | null): number | undefined {
+	if (value == null) return undefined;
+	const cached = timestampCache.get(value);
+	if (cached !== undefined) return Number.isNaN(cached) ? undefined : cached;
+	const parsed = parseArcaneDate(value)?.getTime() ?? Number.NaN;
+	if (timestampCache.size >= timestampCacheLimit) timestampCache.clear();
+	timestampCache.set(value, parsed);
+	return Number.isNaN(parsed) ? undefined : parsed;
+}
+
 export function requireArcaneDate(value: string): Date {
 	const date = parseArcaneDate(value);
 	if (!date) throw new Error(`Invalid ISO8601 date: ${value}`);

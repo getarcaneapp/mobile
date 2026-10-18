@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
@@ -21,11 +22,12 @@ export function FederatedCredentialsDestination() {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.reload();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			async () => {
+				await model.reload();
+			},
+			() => setRefreshing(false)
+		);
 	};
 
 	let content;

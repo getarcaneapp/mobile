@@ -67,14 +67,23 @@ export function syncComposeSession(
 	else if (existing.text !== text) state.update(id, text);
 }
 
+function ensureComposeSession(
+	id: string,
+	text: string,
+	setText: (text: string) => void,
+	menuActions?: ComposeMenuAction[]
+) {
+	const state = useComposeSessionStore.getState();
+	if (!state.sessions[id]) state.register(id, text, setText, menuActions);
+}
+
 export function useComposeSessionHost(
 	id: string,
 	text: string,
 	setText: (text: string) => void,
 	menuActions?: ComposeMenuAction[]
 ) {
-	if (!useComposeSessionStore.getState().sessions[id])
-		useComposeSessionStore.getState().register(id, text, setText, menuActions);
+	ensureComposeSession(id, text, setText, menuActions);
 	useLayoutEffect(() => {
 		syncComposeSession(id, text, setText, menuActions);
 	});

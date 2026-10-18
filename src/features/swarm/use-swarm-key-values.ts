@@ -2,7 +2,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { localizedStandardCompare } from '@/core/list-sort-order';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { Permission } from '@/sdk/models/role/Permission';
 import { useClientManager } from '@/stores/client-manager';
@@ -76,6 +78,16 @@ async function deleteItem(
 	return true;
 }
 
+async function listItems(
+	client: ArcaneClient,
+	kind: SwarmKeyValueKind,
+	environmentID: EnvironmentID
+) {
+	return kind === 'config'
+		? await client.swarm.listConfigs({ envID: environmentID })
+		: await client.swarm.listSecrets({ envID: environmentID });
+}
+
 export function useSwarmKeyValues() {
 	const { envID = '0', kind: kindParam } = useLocalSearchParams<{
 		envID?: string;
@@ -92,34 +104,36 @@ export function useSwarmKeyValues() {
 	const [searchText, setSearchText] = useState('');
 	const [pendingDelete, setPendingDelete] = useState<SwarmKeyValueItem>();
 	const loading = useRef(false);
-	const canManage = can(KeyValueKind.permission(kind));
 
 	const load = useCallback(async () => {
 		const current = useClientManager.getState().client;
 		if (!current || loading.current) return;
 		loading.current = true;
 		setIsLoading(true);
-		try {
-			const list =
-				kind === 'config'
-					? await current.swarm.listConfigs({ envID: environmentID })
-					: await current.swarm.listSecrets({ envID: environmentID });
-			setItems(
-				list.map((entry) => ({
-					id: entry.id,
-					spec: entry.spec,
-					createdAt: entry.createdAt,
-					updatedAt: entry.updatedAt
-				}))
-			);
-			setErrorMessage(undefined);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			loading.current = false;
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const list = await listItems(current, kind, environmentID);
+					setItems(
+						list.map((entry) => ({
+							id: entry.id,
+							spec: entry.spec,
+							createdAt: entry.createdAt,
+							updatedAt: entry.updatedAt
+						}))
+					);
+					setErrorMessage(undefined);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				loading.current = false;
+				setIsLoading(false);
+			}
+		);
 	}, [kind, environmentID]);
+	const canManage = can(KeyValueKind.permission(kind));
 
 	useEffect(() => {
 		void load();
@@ -191,15 +205,18 @@ export function useSwarmKeyValueDetail() {
 	const remove = async () => {
 		if (!item) return;
 		setIsDeleting(true);
-		try {
-			if (!(await deleteItem(kind, item, environmentID))) return;
-			swarmChanged(environmentID);
-			showToast(Toasts.success(`${KeyValueKind.singular(kind)} deleted`));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setIsDeleting(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					if (!(await deleteItem(kind, item, environmentID))) return;
+					swarmChanged(environmentID);
+					showToast(Toasts.success(`${KeyValueKind.singular(kind)} deleted`));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setIsDeleting(false)
+		);
 	};
 
 	const overflow: ActionButtonItem[] = canManage
@@ -253,18 +270,21 @@ export function useSwarmKeyValueCreate() {
 		setIsSaving(true);
 		setErrorMessage(undefined);
 		const spec = { Name: trimmedName, Data: base64UTF8(data) };
-		try {
-			if (kind === 'config')
-				await client.swarm.createConfig({ request: { spec }, envID: environmentID });
-			else await client.swarm.createSecret({ request: { spec }, envID: environmentID });
-			swarmChanged(environmentID);
-			showToast(Toasts.success(`${KeyValueKind.singular(kind)} created`));
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					if (kind === 'config')
+						await client.swarm.createConfig({ request: { spec }, envID: environmentID });
+					else await client.swarm.createSecret({ request: { spec }, envID: environmentID });
+					swarmChanged(environmentID);
+					showToast(Toasts.success(`${KeyValueKind.singular(kind)} created`));
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	return {

@@ -21,6 +21,7 @@ import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-sw
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { ScrollableTabBar } from '@/ui/components/scrollable-tab-bar';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { AppToolbar } from '@/ui/components/toolbar';
 import { DisclosureChevron } from '@/ui/settings-row';
 import type { Template } from '@/sdk/models/template/Template';
@@ -78,9 +79,9 @@ function TemplateGroupSection({
 				)
 			}
 		>
-			{group.templates.map((template) => (
-				<TemplateLink key={template.id} model={model} template={template} />
-			))}
+			<List.ForEach data={group.templates} keyExtractor={stableItemKey} estimatedItemSize={72}>
+				{({ item }) => <TemplateLink model={model} template={item} />}
+			</List.ForEach>
 		</Section>
 	);
 }

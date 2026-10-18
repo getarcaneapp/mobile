@@ -44,6 +44,7 @@ import { systemColors } from '@/theme/colors';
 import { DestructiveLabel, ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { ImageReferenceLine, RowIcon } from '@/ui/components/row-icon';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { DisclosureChevron } from '@/ui/settings-row';
 import { useToolbarIcons } from '@/ui/toolbar-icon';
 
@@ -192,9 +193,9 @@ export function SwarmServicesList({ model }: { model: SwarmServicesModel }) {
 						/>
 					}
 				>
-					{items.map((item) => (
-						<ServiceLink key={item.id} model={model} service={item.value} />
-					))}
+					<List.ForEach data={items} keyExtractor={stableItemKey} estimatedItemSize={52}>
+						{({ item }) => <ServiceLink model={model} service={item.value} />}
+					</List.ForEach>
 					<PaginatedListFooter
 						hasMore={snapshot.hasMore}
 						loadMoreError={snapshot.loadMoreError}

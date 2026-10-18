@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import { SortOrder } from '@/sdk/models/base/pagination';
@@ -25,8 +26,7 @@ export function useCanManageFederated(): boolean {
 export function useFederatedCredentials() {
 	const navigation = useSettingsNavigation();
 	const canManage = useCanManageFederated();
-	useClientManager((s) => s.accessGeneration);
-	const canRead = hasPermission('federated:read', null);
+	const canRead = usePermission('federated:read', null);
 	const clientGeneration = useClientManager((s) => s.clientGeneration);
 	const baseURL = useClientManager((s) => s.client?.configuration.baseURL ?? '');
 	const userID = useClientManager((s) => s.currentUser?.id ?? '');
@@ -42,7 +42,9 @@ export function useFederatedCredentials() {
 	const [pendingDelete, setPendingDelete] = useState<FederatedCredential>();
 
 	const live = useRef({ identity, credentials, search });
-	live.current = { identity, credentials, search };
+	useLayoutEffect(() => {
+		live.current = { identity, credentials, search };
+	});
 	const requestID = useRef(0);
 	const loadingIdentity = useRef<string | undefined>(undefined);
 	const loadedIdentity = useRef('');
@@ -73,39 +75,48 @@ export function useFederatedCredentials() {
 		setLoading(true);
 		setErrorMessage(undefined);
 		setLoadMoreError(undefined);
-		try {
-			const result = await client.federatedCredentials.list({
-				query: {
-					search: live.current.search,
-					start: reset ? 0 : current.length,
-					limit: 30,
-					sortBy: 'name',
-					sortOrder: SortOrder.ascending
+		const start = reset ? 0 : current.length;
+		const base: FederatedCredential[] = reset ? [] : current;
+		const isCurrent = () => key === live.current.identity && requestID.current === request;
+		await withCleanup(
+			async () => {
+				try {
+					const result = await client.federatedCredentials.list({
+						query: {
+							search: live.current.search,
+							start,
+							limit: 30,
+							sortBy: 'name',
+							sortOrder: SortOrder.ascending
+						}
+					});
+					if (!isCurrent()) return;
+					const merged = [
+						...base,
+						...result.data.filter((row) => !base.some((existing) => existing.id === row.id))
+					];
+					setCredentials(merged);
+					setTotal(Math.trunc(result.pagination.totalItems));
+				} catch (error) {
+					if (!isCurrent()) return;
+					setUnsupported(isArcaneError(error, 'notFound'));
+					if (reset) setErrorMessage(friendlyErrorMessage(error));
+					else setLoadMoreError(friendlyErrorMessage(error));
 				}
-			});
-			if (key !== live.current.identity || requestID.current !== request) return;
-			const base = reset ? [] : current;
-			const merged = [
-				...base,
-				...result.data.filter((row) => !base.some((existing) => existing.id === row.id))
-			];
-			setCredentials(merged);
-			setTotal(Math.trunc(result.pagination.totalItems));
-		} catch (error) {
-			if (key !== live.current.identity || requestID.current !== request) return;
-			setUnsupported(isArcaneError(error, 'notFound'));
-			if (reset) setErrorMessage(friendlyErrorMessage(error));
-			else setLoadMoreError(friendlyErrorMessage(error));
-		} finally {
-			if (requestID.current === request) {
-				setLoading(false);
-				loadingIdentity.current = undefined;
+			},
+			() => {
+				if (requestID.current === request) {
+					setLoading(false);
+					loadingIdentity.current = undefined;
+				}
 			}
-		}
+		);
 	};
 
 	const latestLoad = useRef(load);
-	latestLoad.current = load;
+	useLayoutEffect(() => {
+		latestLoad.current = load;
+	});
 	const reload = () => latestLoad.current(true);
 
 	useEffect(() => {

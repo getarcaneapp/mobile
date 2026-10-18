@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import {
 	NotificationSettings,
@@ -38,15 +39,18 @@ export function useNotificationSettings() {
 	const loadProviders = useCallback(async () => {
 		if (!client) return;
 		setIsLoading(true);
-		try {
-			setConfiguredProviders(
-				await client.notifications.listSettings({ envID: activeEnvironmentID })
-			);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					setConfiguredProviders(
+						await client.notifications.listSettings({ envID: activeEnvironmentID })
+					);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	}, [client, activeEnvironmentID]);
 
 	useEffect(() => {

@@ -1,7 +1,9 @@
-import { useFocusEffect, useRouter, useSegments, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 import { AppState } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { usePermission } from '@/core/auth/permissions';
 import {
 	boundedAPIResponse,
@@ -47,9 +49,7 @@ function useIsNotBackground() {
 
 export function useEnvironmentDetail(environmentID: string, environmentName: string) {
 	const router = useRouter();
-	const segments = useSegments() as string[];
-	const group =
-		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(dashboard)';
+	const group = useTabStackGroup('(dashboard)');
 
 	const clientGeneration = useClientManager((s) => s.clientGeneration);
 	const serverURL = useClientManager((s) => s.serverURL);
@@ -135,39 +135,42 @@ export function useEnvironmentDetail(environmentID: string, environmentName: str
 		const run = runRef.current;
 		isLoadingRef.current = true;
 		setIsLoading(true);
-		try {
-			const [, info, version] = await Promise.all([
-				loadEnvironment(),
-				boundedDirectResponse(
-					client,
-					client.rest.environmentPath(environmentID, 'system/docker/info'),
-					{
-						maximumBytes: RemoteDataLimits.maximumInspectBytes,
-						decode: DockerInfo.decode
-					}
-				).catch(() => undefined),
-				client.environments.version({ id: environmentID }).catch(() => undefined)
-			]);
-			if (run !== runRef.current || generation !== useClientManager.getState().clientGeneration)
-				return;
-			if (info) {
-				setDockerInfo(info);
-				setStaticError(undefined);
-			} else {
-				setStaticError('Docker information could not be refreshed. Pull to refresh to retry.');
+		await withCleanup(
+			async () => {
+				const [, info, version] = await Promise.all([
+					loadEnvironment(),
+					boundedDirectResponse(
+						client,
+						client.rest.environmentPath(environmentID, 'system/docker/info'),
+						{
+							maximumBytes: RemoteDataLimits.maximumInspectBytes,
+							decode: DockerInfo.decode
+						}
+					).catch(() => undefined),
+					client.environments.version({ id: environmentID }).catch(() => undefined)
+				]);
+				if (run !== runRef.current || generation !== useClientManager.getState().clientGeneration)
+					return;
+				if (info) {
+					setDockerInfo(info);
+					setStaticError(undefined);
+				} else {
+					setStaticError('Docker information could not be refreshed. Pull to refresh to retry.');
+				}
+				if (version) {
+					setVersionInfo(version);
+					setVersionError(undefined);
+				} else {
+					setVersionError('Arcane version unavailable for this environment.');
+				}
+			},
+			() => {
+				if (run === runRef.current && generation === useClientManager.getState().clientGeneration) {
+					isLoadingRef.current = false;
+					setIsLoading(false);
+				}
 			}
-			if (version) {
-				setVersionInfo(version);
-				setVersionError(undefined);
-			} else {
-				setVersionError('Arcane version unavailable for this environment.');
-			}
-		} finally {
-			if (run === runRef.current && generation === useClientManager.getState().clientGeneration) {
-				isLoadingRef.current = false;
-				setIsLoading(false);
-			}
-		}
+		);
 	}, [environmentID, loadEnvironment]);
 
 	const loadKey = `${clientGeneration}|${environmentID}|${isNotBackground}`;

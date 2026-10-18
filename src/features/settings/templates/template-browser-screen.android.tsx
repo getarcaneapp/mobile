@@ -1,15 +1,22 @@
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import type { Template } from '@/sdk/models/template/Template';
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import {
+	GroupedFlashList,
+	groupPosition,
+	type GroupedListEntry
+} from '@/ui/components/grouped-flash-list';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { ScrollableTabBar } from '@/ui/components/scrollable-tab-bar';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup, MaterialSectionHeader } from '@/ui/material/list';
+import { MaterialSectionHeader } from '@/ui/material/list';
 
 import {
 	AndroidToolbar,
@@ -22,13 +29,84 @@ import { TemplateRow } from './template-row';
 import {
 	templateSourceOptions,
 	useTemplateBrowser,
-	type TemplateBrowserModel
+	type TemplateBrowserModel,
+	type TemplateGroup
 } from './use-template-browser';
 
-function BrowserBody({ model }: { model: TemplateBrowserModel }) {
+const firstHeaderStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	paddingHorizontal: 16,
+	paddingTop: 20,
+	paddingBottom: 6
+};
+const pressableRowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 8,
+	paddingHorizontal: 16,
+	paddingVertical: 10
+};
+const staticRowStyle = { paddingHorizontal: 16, paddingVertical: 10 };
+const errorLineStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 8,
+	paddingHorizontal: 32,
+	paddingTop: 12
+};
+const loadingStyle = { padding: 32, alignItems: 'center' as const };
+const scrollContentStyle = { flexGrow: 1, paddingBottom: 24 };
+
+type TemplateEntry = GroupedListEntry &
+	({ type: 'header'; name: string; isFirstGroup: boolean } | { type: 'item'; template: Template });
+
+function templateEntries(groups: TemplateGroup[]) {
+	const entries: TemplateEntry[] = [];
+	groups.forEach((group, index) => {
+		entries.push({
+			type: 'header',
+			key: `group:${group.name}`,
+			name: group.name,
+			isFirstGroup: index === 0
+		});
+		group.templates.forEach((template, templateIndex) => {
+			entries.push({
+				type: 'item',
+				key: `template:${group.name}:${template.id}`,
+				template,
+				grouped: groupPosition(templateIndex, group.templates.length)
+			});
+		});
+	});
+	return entries;
+}
+
+function TemplateListRow({ model, template }: { model: TemplateBrowserModel; template: Template }) {
+	if (!model.canReadTemplates) {
+		return (
+			<View style={staticRowStyle}>
+				<TemplateRow template={template} />
+			</View>
+		);
+	}
+	return (
+		<Pressable
+			onPress={() => model.openPreview(template)}
+			accessibilityRole="button"
+			android_ripple={{ color: colors.separator as string }}
+			style={pressableRowStyle}
+		>
+			<TemplateRow template={template} />
+			<Icon name="chevron.right" size={20} color={colors.secondaryLabel} />
+		</Pressable>
+	);
+}
+
+function BrowserState({ model }: { model: TemplateBrowserModel }) {
 	if (model.isLoading && model.templates.length === 0) {
 		return (
-			<View style={{ padding: 32, alignItems: 'center' }}>
+			<View style={loadingStyle}>
 				<ArcaneLoadingView label="Loading templates…" />
 			</View>
 		);
@@ -46,85 +124,11 @@ function BrowserBody({ model }: { model: TemplateBrowserModel }) {
 	}
 	return (
 		<>
-			{model.templates.length === 0 ? (
-				<UnavailableView
-					title={model.isUnfiltered ? 'No Templates' : 'No Matching Templates'}
-					systemImage="doc.text.magnifyingglass"
-					fills={false}
-				/>
-			) : (
-				model.groupedTemplates.map((group, index) => (
-					<View key={group.name}>
-						{index === 0 ? (
-							<View
-								style={{
-									flexDirection: 'row',
-									alignItems: 'center',
-									paddingHorizontal: 16,
-									paddingTop: 20,
-									paddingBottom: 6
-								}}
-							>
-								<Text
-									accessibilityRole="header"
-									style={[m3Type.titleSmall, { color: colors.secondaryLabel, flex: 1 }]}
-								>
-									{group.name}
-								</Text>
-								<ResourceCountLabel
-									loadedCount={model.templates.length}
-									totalCount={model.totalItemCount}
-									hasMore={model.hasMore}
-								/>
-							</View>
-						) : (
-							<MaterialSectionHeader title={group.name} />
-						)}
-						<MaterialListGroup>
-							{group.templates.map((template) =>
-								model.canReadTemplates ? (
-									<Pressable
-										key={template.id}
-										onPress={() => model.openPreview(template)}
-										accessibilityRole="button"
-										android_ripple={{ color: colors.separator as string }}
-										style={{
-											flexDirection: 'row',
-											alignItems: 'center',
-											gap: 8,
-											paddingHorizontal: 16,
-											paddingVertical: 10
-										}}
-									>
-										<TemplateRow template={template} />
-										<Icon name="chevron.right" size={20} color={colors.secondaryLabel} />
-									</Pressable>
-								) : (
-									<View key={template.id} style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
-										<TemplateRow template={template} />
-									</View>
-								)
-							)}
-						</MaterialListGroup>
-					</View>
-				))
-			)}
-			{model.errorMessage !== undefined && model.templates.length > 0 ? (
-				<View
-					style={{
-						flexDirection: 'row',
-						alignItems: 'center',
-						gap: 8,
-						paddingHorizontal: 32,
-						paddingTop: 12
-					}}
-				>
-					<Icon name="exclamationmark.triangle" size={16} color={systemColors.red} />
-					<Text style={[m3Type.bodySmall, { color: systemColors.red, flex: 1 }]}>
-						{model.errorMessage}
-					</Text>
-				</View>
-			) : null}
+			<UnavailableView
+				title={model.isUnfiltered ? 'No Templates' : 'No Matching Templates'}
+				systemImage="doc.text.magnifyingglass"
+				fills={false}
+			/>
 			<PaginatedListFooter
 				hasMore={model.hasMore}
 				loadMoreError={model.loadMoreError}
@@ -135,6 +139,63 @@ function BrowserBody({ model }: { model: TemplateBrowserModel }) {
 	);
 }
 
+function TemplateList({
+	model,
+	tabBar,
+	refreshControl
+}: {
+	model: TemplateBrowserModel;
+	tabBar: ReactElement;
+	refreshControl: ReactElement;
+}) {
+	return (
+		<GroupedFlashList
+			data={templateEntries(model.groupedTemplates)}
+			renderEntry={(entry) => {
+				if (entry.type === 'item')
+					return <TemplateListRow model={model} template={entry.template} />;
+				if (!entry.isFirstGroup) return <MaterialSectionHeader title={entry.name} />;
+				return (
+					<View style={firstHeaderStyle}>
+						<Text
+							accessibilityRole="header"
+							style={[m3Type.titleSmall, { color: colors.secondaryLabel, flex: 1 }]}
+						>
+							{entry.name}
+						</Text>
+						<ResourceCountLabel
+							loadedCount={model.templates.length}
+							totalCount={model.totalItemCount}
+							hasMore={model.hasMore}
+						/>
+					</View>
+				);
+			}}
+			header={tabBar}
+			footer={
+				<>
+					{model.errorMessage !== undefined ? (
+						<View style={errorLineStyle}>
+							<Icon name="exclamationmark.triangle" size={16} color={systemColors.red} />
+							<Text style={[m3Type.bodySmall, { color: systemColors.red, flex: 1 }]}>
+								{model.errorMessage}
+							</Text>
+						</View>
+					) : null}
+					<PaginatedListFooter
+						hasMore={model.hasMore}
+						loadMoreError={model.loadMoreError}
+						onRetry={model.loadMore}
+						onLoadMore={model.loadMore}
+					/>
+				</>
+			}
+			onEndReached={model.hasMore && model.loadMoreError === undefined ? model.loadMore : undefined}
+			refreshControl={refreshControl}
+		/>
+	);
+}
+
 export function TemplateBrowserScreen({ embedded = false }: { embedded?: boolean }) {
 	const model = useTemplateBrowser({ embedded });
 	const { permissions } = model;
@@ -142,12 +203,24 @@ export function TemplateBrowserScreen({ embedded = false }: { embedded?: boolean
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(model.refresh, () => setRefreshing(false));
 	};
+
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
+	const tabBar = (
+		<ScrollableTabBar
+			selection={model.source}
+			onSelectionChange={model.setSource}
+			options={templateSourceOptions}
+			accessibilityLabel="Template source"
+		/>
+	);
 
 	const menuItems: AndroidMenuItem[] = [
 		...(permissions.canCreate
@@ -203,37 +276,30 @@ export function TemplateBrowserScreen({ embedded = false }: { embedded?: boolean
 					]}
 				/>
 			) : null}
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{!model.canListTemplates ? (
-					<UnavailableView
-						title="Templates Access Required"
-						systemImage="lock.fill"
-						description="Your role cannot list templates."
-					/>
-				) : (
-					<>
-						<ScrollableTabBar
-							selection={model.source}
-							onSelectionChange={model.setSource}
-							options={templateSourceOptions}
-							accessibilityLabel="Template source"
+			{model.canListTemplates && model.templates.length > 0 ? (
+				<TemplateList model={model} tabBar={tabBar} refreshControl={refreshControl} />
+			) : (
+				<ScrollView
+					contentInsetAdjustmentBehavior="automatic"
+					style={{ backgroundColor: colors.systemGroupedBackground }}
+					contentContainerStyle={scrollContentStyle}
+					keyboardShouldPersistTaps="handled"
+					refreshControl={refreshControl}
+				>
+					{!model.canListTemplates ? (
+						<UnavailableView
+							title="Templates Access Required"
+							systemImage="lock.fill"
+							description="Your role cannot list templates."
 						/>
-						<BrowserBody model={model} />
-					</>
-				)}
-			</ScrollView>
+					) : (
+						<>
+							{tabBar}
+							<BrowserState model={model} />
+						</>
+					)}
+				</ScrollView>
+			)}
 		</>
 	);
 }

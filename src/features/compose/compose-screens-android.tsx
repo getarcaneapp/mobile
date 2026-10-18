@@ -1,7 +1,16 @@
 import { Stack } from 'expo-router';
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+	createContext,
+	useContext,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+	type ReactNode
+} from 'react';
 import { BackHandler, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { nextInstanceKey } from '@/core/with-cleanup';
 import { M3Section, SwitchRow, ValueRow } from '@/features/containers/android-material';
 import {
 	AndroidToolbar,
@@ -129,7 +138,9 @@ function usePush() {
 function ScreenChrome({ title, items = [] }: { title: string; items?: AndroidToolbarItem[] }) {
 	const { mode, back, setChromeItems } = useContext(ComposeNavigationContext);
 	const latest = useRef(items);
-	latest.current = items;
+	useLayoutEffect(() => {
+		latest.current = items;
+	});
 	const signature = chromeSignature(items);
 	useEffect(() => {
 		if (mode !== 'embedded' || !setChromeItems) return;
@@ -1783,8 +1794,6 @@ function MappingScreen({
 	);
 }
 
-let selectionCounter = 0;
-
 function CollectionScreen({
 	destination
 }: {
@@ -1811,7 +1820,7 @@ function CollectionScreen({
 	}
 	const items = collectionItems(document, path);
 	const select = (index: number | undefined, raw: string) =>
-		setEditing({ id: `entry-${++selectionCounter}`, index, raw });
+		setEditing({ id: nextInstanceKey('entry'), index, raw });
 
 	return (
 		<View style={{ flex: 1 }}>

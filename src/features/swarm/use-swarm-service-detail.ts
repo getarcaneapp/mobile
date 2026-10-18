@@ -1,7 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
+import type { EnvironmentID } from '@/sdk/client/environment';
 import { Permission } from '@/sdk/models/role/Permission';
 import type { SwarmServiceInspect, SwarmServiceSummary } from '@/sdk/models/swarm/SwarmServices';
 import { useClientManager } from '@/stores/client-manager';
@@ -44,6 +47,40 @@ const allTabs: ScrollableTabOption<ServiceDetailTab>[] = [
 
 const knownModes: SwarmServiceMode[] = ['replicated', 'global', 'job'];
 
+function firstWarning(response: { warnings?: string[] }): string | undefined {
+	return response.warnings?.[0];
+}
+
+async function loadServiceDetail(
+	current: ArcaneClient,
+	environmentID: EnvironmentID,
+	serviceID: string,
+	initialName: string | undefined,
+	setInspect: (value: SwarmServiceInspect) => void,
+	setErrorMessage: (value: string | undefined) => void,
+	setSummary: (value: SwarmServiceSummary) => void
+) {
+	let freshName = initialName;
+	try {
+		const result = await current.swarm.service({ serviceId: serviceID, envID: environmentID });
+		setInspect(result);
+		setErrorMessage(undefined);
+		freshName = draftFromSpec(result.spec).name || freshName;
+	} catch (error) {
+		setErrorMessage(friendlyErrorMessage(error));
+	}
+	if (freshName) {
+		const response = await current.swarm
+			.listServices({ envID: environmentID, search: freshName, limit: 50 })
+			.catch(() => undefined);
+		const match = response?.data.find((service) => service.id === serviceID);
+		if (match) {
+			setSummary(match);
+			screenCache.set(swarmKeys.service(environmentID, serviceID), match);
+		}
+	}
+}
+
 export function useSwarmServiceDetail() {
 	const { id = '', envID = '0' } = useLocalSearchParams<{ id?: string; envID?: string }>();
 	const environmentID = envID;
@@ -69,35 +106,31 @@ export function useSwarmServiceDetail() {
 	const canReadLogs = can(Permission.Swarm.servicesLogs);
 
 	const latestName = useRef<string | undefined>(undefined);
-	latestName.current = draft?.name ?? summary?.name;
+	const currentName = draft?.name ?? summary?.name;
+	useLayoutEffect(() => {
+		latestName.current = currentName;
+	});
 
 	const load = useCallback(async () => {
 		const current = useClientManager.getState().client;
 		if (!current || isLoading.current) return;
 		isLoading.current = true;
-		let freshName = latestName.current;
-		try {
-			try {
-				const result = await current.swarm.service({ serviceId: serviceID, envID: environmentID });
-				setInspect(result);
-				setErrorMessage(undefined);
-				freshName = draftFromSpec(result.spec).name || freshName;
-			} catch (error) {
-				setErrorMessage(friendlyErrorMessage(error));
+		const initialName = latestName.current;
+		await withCleanup(
+			() =>
+				loadServiceDetail(
+					current,
+					environmentID,
+					serviceID,
+					initialName,
+					setInspect,
+					setErrorMessage,
+					setSummary
+				),
+			() => {
+				isLoading.current = false;
 			}
-			if (freshName) {
-				const response = await current.swarm
-					.listServices({ envID: environmentID, search: freshName, limit: 50 })
-					.catch(() => undefined);
-				const match = response?.data.find((service) => service.id === serviceID);
-				if (match) {
-					setSummary(match);
-					screenCache.set(swarmKeys.service(environmentID, serviceID), match);
-				}
-			}
-		} finally {
-			isLoading.current = false;
-		}
+		);
 	}, [environmentID, serviceID]);
 
 	useEffect(() => {
@@ -112,35 +145,41 @@ export function useSwarmServiceDetail() {
 		const current = useClientManager.getState().client;
 		if (!current) return;
 		setRunningActionID('rollback');
-		try {
-			const response = await current.swarm.rollbackService({
-				serviceId: serviceID,
-				envID: environmentID
-			});
-			swarmChanged(environmentID);
-			showToast(Toasts.success('Rollback started'));
-			const warning = response.warnings?.[0];
-			if (warning) showToast(Toasts.info(warning));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setRunningActionID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const response = await current.swarm.rollbackService({
+						serviceId: serviceID,
+						envID: environmentID
+					});
+					swarmChanged(environmentID);
+					showToast(Toasts.success('Rollback started'));
+					const warning = firstWarning(response);
+					if (warning) showToast(Toasts.info(warning));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setRunningActionID(undefined)
+		);
 	};
 
 	const deleteService = async () => {
 		const current = useClientManager.getState().client;
 		if (!current) return;
 		setRunningActionID('delete');
-		try {
-			await current.swarm.deleteService({ serviceId: serviceID, envID: environmentID });
-			swarmChanged(environmentID);
-			showToast(Toasts.success('Service deleted'));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setRunningActionID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await current.swarm.deleteService({ serviceId: serviceID, envID: environmentID });
+					swarmChanged(environmentID);
+					showToast(Toasts.success('Service deleted'));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setRunningActionID(undefined)
+		);
 	};
 
 	const editAction: ActionButtonItem = {

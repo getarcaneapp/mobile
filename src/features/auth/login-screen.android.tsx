@@ -1,5 +1,12 @@
 import { Image } from 'expo-image';
-import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
+import {
+	useEffect,
+	useEffectEvent,
+	useLayoutEffect,
+	useRef,
+	type ReactNode,
+	type RefObject
+} from 'react';
 import {
 	ActivityIndicator,
 	Alert,
@@ -50,24 +57,28 @@ export function LoginScreen() {
 		password: useRef<TextInputInstance>(null),
 		recoveryCode: useRef<TextInputInstance>(null)
 	};
-	model.bindFocus((field) => {
-		if (field) refs[field].current?.focus();
-		else for (const ref of Object.values(refs)) ref.current?.blur();
+	useLayoutEffect(() => {
+		model.bindFocus((field) => {
+			if (field) refs[field].current?.focus();
+			else for (const ref of Object.values(refs)) ref.current?.blur();
+		});
 	});
 
 	const offer = model.savedSignInOffer;
-	useEffect(() => {
-		if (!offer) return;
+	const presentSavedSignInOffer = useEffectEvent((profileName: string) => {
 		Alert.alert(
 			'Use Saved Sign-In?',
-			model.savedSignInPrompt(offer.profile.name),
+			model.savedSignInPrompt(profileName),
 			[
 				{ text: 'Not Now', style: 'cancel', onPress: model.declineSavedSignIn },
 				{ text: 'Use Saved Sign-In', onPress: model.acceptSavedSignIn }
 			],
 			{ cancelable: true, onDismiss: model.declineSavedSignIn }
 		);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+	});
+	useEffect(() => {
+		if (!offer) return;
+		presentSavedSignInOffer(offer.profile.name);
 	}, [offer]);
 
 	const layout = reduceMotion

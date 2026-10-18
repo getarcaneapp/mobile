@@ -1,0 +1,92 @@
+name: Beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build and submit
+        type: choice
+        default: all
+        options: [all, ios, android]
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: beta
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 26
+
+jobs:
+  verify:
+    runs-on: depot-ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test
+
+  ios:
+    needs: verify
+    if: github.event_name == 'push' || inputs.platform != 'android'
+    runs-on: depot-macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # 9.0.0
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          packager: npm
+      - name: Build tools
+        run: |
+          command -v pod >/dev/null || brew install cocoapods
+          command -v fastlane >/dev/null || brew install fastlane
+      - run: pnpm install --frozen-lockfile
+      - name: Build number
+        run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
+      - name: Build
+        run: eas build --local --platform ios --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.ipa"
+      - name: Submit to TestFlight
+        run: eas submit --platform ios --profile beta --non-interactive --path "$RUNNER_TEMP/Arcane.ipa"
+
+  android:
+    needs: verify
+    if: github.event_name == 'push' || inputs.platform != 'ios'
+    runs-on: depot-ubuntu-24.04-8
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # 9.0.0
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          packager: npm
+      - run: pnpm install --frozen-lockfile
+      - name: Build number
+        run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
+      - name: Build
+        run: eas build --local --platform android --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.aab"
+      - name: Submit to Google Play internal testing
+        run: eas submit --platform android --profile beta --non-interactive --path "$RUNNER_TEMP/Arcane.aab"

@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { Permission } from '@/sdk/models/role/Permission';
 import type { SwarmNode } from '@/sdk/models/swarm/SwarmNode';
@@ -166,15 +167,18 @@ export function useSwarmNodeDetail() {
 	const run = async (action: SwarmNodeAction, actionID: string) => {
 		if (!node) return;
 		setRunningActionID(actionID);
-		try {
-			if (!(await performNodeAction(action, node, environmentID))) return;
-			swarmChanged(environmentID);
-			showToast(Toasts.success(nodeActionSuccessTitle(action)));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setRunningActionID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					if (!(await performNodeAction(action, node, environmentID))) return;
+					swarmChanged(environmentID);
+					showToast(Toasts.success(nodeActionSuccessTitle(action)));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setRunningActionID(undefined)
+		);
 	};
 
 	const saveLabels = async (labels: Record<string, string>) => {
@@ -193,15 +197,18 @@ export function useSwarmNodeDetail() {
 		const client = useClientManager.getState().client;
 		if (!client || !node) return;
 		setRunningActionID('remove');
-		try {
-			await client.swarm.deleteNode({ nodeId: node.id, force: true, envID: environmentID });
-			swarmChanged(environmentID);
-			showToast(Toasts.success('Node removed'));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setRunningActionID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.swarm.deleteNode({ nodeId: node.id, force: true, envID: environmentID });
+					swarmChanged(environmentID);
+					showToast(Toasts.success('Node removed'));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setRunningActionID(undefined)
+		);
 	};
 
 	const isManager = node ? nodeIsManager(node) : false;

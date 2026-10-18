@@ -7,16 +7,22 @@ import withReleaseScheme from './plugins/with-release-scheme.ts';
 
 const MARKETING_VERSION = '0.11.0';
 
+const buildEpochMs = Date.UTC(2020, 0, 1);
+const BUILD_NUMBER =
+	Number(process.env.ARCANE_BUILD_NUMBER) || Math.floor((Date.now() - buildEpochMs) / 60_000);
+
 const config: ExpoConfig = {
 	name: 'Arcane',
 	slug: 'arcane-mobile',
+	owner: 'getarcaneapp',
 	version: MARKETING_VERSION,
 	orientation: 'default',
 	icon: './assets/images/icon.png',
 	scheme: 'arcane-mobile',
 	userInterfaceStyle: 'automatic',
 	ios: {
-		bundleIdentifier: 'app.getarcane.mobile',
+		bundleIdentifier: 'com.getarcaneapp.ios.mobile',
+		buildNumber: String(BUILD_NUMBER),
 		appleTeamId: '4L6GXKX423',
 		supportsTablet: true,
 		icon: {
@@ -30,7 +36,8 @@ const config: ExpoConfig = {
 		}
 	},
 	android: {
-		package: 'app.getarcane.mobile',
+		package: 'app.getarcane.android',
+		versionCode: BUILD_NUMBER,
 		adaptiveIcon: {
 			backgroundColor: '#0B0B12',
 			foregroundImage: './assets/images/android-icon-foreground.png',
@@ -66,6 +73,9 @@ const config: ExpoConfig = {
 	experiments: {
 		typedRoutes: true,
 		reactCompiler: true
+	},
+	extra: {
+		eas: { projectId: 'ae4b7a03-2ba2-4ed1-9610-465565ce7c42' }
 	}
 };
 

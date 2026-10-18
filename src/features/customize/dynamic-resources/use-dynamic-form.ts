@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { useSettingsNavigation } from '@/features/settings/shared/settings-routes';
 
 import { formBody, jsonDisplayString, type BackendFormField } from './dynamic-resource';
@@ -57,14 +58,17 @@ export function useDynamicForm() {
 		if (!payload) return;
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			await payload.onSubmit(formBody(state.values, state.toggles, fields));
-			nav.back();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await payload.onSubmit(formBody(state.values, state.toggles, fields));
+					nav.back();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	return {

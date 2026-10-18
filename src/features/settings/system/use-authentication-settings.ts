@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import { useCachedClient } from '@/core/networking/use-cached-client';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
+import type { EnvironmentID } from '@/sdk/client/environment';
 import type { PublicSetting } from '@/sdk/models/settings/Settings';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
@@ -85,6 +88,18 @@ const formKeys = Object.keys(initialForm) as (keyof AuthenticationForm)[];
 const sameForm = (lhs: AuthenticationForm, rhs: AuthenticationForm) =>
 	formKeys.every((key) => lhs[key] === rhs[key]);
 
+async function fetchAuthenticationForm(
+	client: ArcaneClient,
+	environmentID: EnvironmentID
+): Promise<AuthenticationForm> {
+	const path = client.rest.environmentPath(environmentID, 'settings');
+	const text = await client.transport.rawRequest(path);
+	const dtos = client.transport.decode<PublicSetting[]>(text);
+	const dict: Record<string, string> = {};
+	for (const dto of dtos) dict[dto.key] = dto.value;
+	return formFromSettings(dict);
+}
+
 export function useAuthenticationSettings() {
 	const client = useClientManager((s) => s.client);
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
@@ -98,7 +113,9 @@ export function useAuthenticationSettings() {
 	const [oidcEnvForced, setOidcEnvForced] = useState(false);
 
 	const latestForm = useRef(form);
-	latestForm.current = form;
+	useLayoutEffect(() => {
+		latestForm.current = form;
+	});
 
 	const hasChanges = !isLoading && originalState !== undefined && !sameForm(form, originalState);
 
@@ -114,24 +131,22 @@ export function useAuthenticationSettings() {
 		setIsLoading(true);
 		setErrorMessage(undefined);
 		setOriginalState(undefined);
-		try {
-			const path = client.rest.environmentPath(activeEnvironmentID, 'settings');
-			const text = await client.transport.rawRequest(path);
-			const dtos = client.transport.decode<PublicSetting[]>(text);
-			const dict: Record<string, string> = {};
-			for (const dto of dtos) dict[dto.key] = dto.value;
-			const loaded = formFromSettings(dict);
-			setForm(loaded);
-			try {
-				const status = await client.auth.oidcStatus();
-				setOidcEnvForced(status.envForced);
-			} catch {}
-			setOriginalState(loaded);
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const loaded = await fetchAuthenticationForm(client, activeEnvironmentID);
+					setForm(loaded);
+					try {
+						const status = await client.auth.oidcStatus();
+						setOidcEnvForced(status.envForced);
+					} catch {}
+					setOriginalState(loaded);
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	}, [client, activeEnvironmentID]);
 
 	useEffect(() => {
@@ -158,40 +173,43 @@ export function useAuthenticationSettings() {
 
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			const body: Record<string, string> = {
-				authLocalEnabled: String(current.authLocalEnabled),
-				authPasswordPolicy: current.authPasswordPolicy,
-				authSessionTimeout: current.authSessionTimeout,
-				oidcEnabled: String(current.oidcEnabled),
-				oidcMergeAccounts: String(current.oidcMergeAccounts),
-				oidcSkipTlsVerify: String(current.oidcSkipTlsVerify),
-				oidcAutoRedirectToProvider: String(current.oidcAutoRedirectToProvider)
-			};
-			const setIfPresent = (key: keyof AuthenticationForm) => {
-				const trimmed = String(current[key]).trim();
-				if (trimmed !== '') body[key] = trimmed;
-			};
-			setIfPresent('oidcClientId');
-			setIfPresent('oidcClientSecret');
-			setIfPresent('oidcIssuerUrl');
-			setIfPresent('oidcScopes');
-			setIfPresent('oidcGroupsClaim');
-			setIfPresent('oidcProviderName');
-			setIfPresent('oidcProviderLogoUrl');
+		await withCleanup(
+			async () => {
+				try {
+					const body: Record<string, string> = {
+						authLocalEnabled: String(current.authLocalEnabled),
+						authPasswordPolicy: current.authPasswordPolicy,
+						authSessionTimeout: current.authSessionTimeout,
+						oidcEnabled: String(current.oidcEnabled),
+						oidcMergeAccounts: String(current.oidcMergeAccounts),
+						oidcSkipTlsVerify: String(current.oidcSkipTlsVerify),
+						oidcAutoRedirectToProvider: String(current.oidcAutoRedirectToProvider)
+					};
+					const setIfPresent = (key: keyof AuthenticationForm) => {
+						const trimmed = String(current[key]).trim();
+						if (trimmed !== '') body[key] = trimmed;
+					};
+					setIfPresent('oidcClientId');
+					setIfPresent('oidcClientSecret');
+					setIfPresent('oidcIssuerUrl');
+					setIfPresent('oidcScopes');
+					setIfPresent('oidcGroupsClaim');
+					setIfPresent('oidcProviderName');
+					setIfPresent('oidcProviderLogoUrl');
 
-			const path = client.rest.environmentPath(activeEnvironmentID, 'settings');
-			await client.rest.put<PublicSetting[]>(path, { body });
-			cached?.invalidate(activeEnvironmentID, [path, `${path}*`]);
-			setOriginalState(latestForm.current);
-			showToast(Toasts.success('Authentication settings saved'));
-		} catch (error) {
-			const message = friendlyErrorMessage(error);
-			setErrorMessage(message);
-			showToast(Toasts.error(message));
-		} finally {
-			setIsSaving(false);
-		}
+					const path = client.rest.environmentPath(activeEnvironmentID, 'settings');
+					await client.rest.put<PublicSetting[]>(path, { body });
+					if (cached) cached.invalidate(activeEnvironmentID, [path, `${path}*`]);
+					setOriginalState(latestForm.current);
+					showToast(Toasts.success('Authentication settings saved'));
+				} catch (error) {
+					const message = friendlyErrorMessage(error);
+					setErrorMessage(message);
+					showToast(Toasts.error(message));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	}, [client, activeEnvironmentID, cached]);
 
 	return {

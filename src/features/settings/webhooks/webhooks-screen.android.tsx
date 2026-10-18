@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import type { Webhook } from '@/sdk/models/webhook/Webhook';
 import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
@@ -84,11 +85,12 @@ export function WebhooksDestination() {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.loadWebhooks();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			async () => {
+				await model.loadWebhooks();
+			},
+			() => setRefreshing(false)
+		);
 	};
 
 	let content;

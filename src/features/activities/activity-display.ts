@@ -1,11 +1,12 @@
 import { EnvironmentID } from '@/sdk/client/environment';
+import { localizedStandardCompare } from '@/core/list-sort-order';
 import type {
 	Activity,
 	ActivityMessageLevel,
 	ActivityStartedBy,
 	ActivityStatus
 } from '@/sdk/models/activity/Activity';
-import { parseArcaneDate } from '@/sdk/models/base/date';
+import { arcaneTimestampMs } from '@/sdk/models/base/date';
 import { systemColors } from '@/theme/colors';
 import { relativeTimeFormat } from '@/core/relative-time';
 
@@ -100,9 +101,7 @@ export function activityDisplayName(raw: string): string {
 }
 
 export function sortedUnique(values: readonly string[]): string[] {
-	return [...new Set(values.filter((value) => value !== ''))].sort((a, b) =>
-		a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
-	);
+	return [...new Set(values.filter((value) => value !== ''))].sort(localizedStandardCompare);
 }
 
 export type ActivityTint = 'secondary' | (string & {});
@@ -123,7 +122,7 @@ export function activityStatusTint(status: ActivityStatus): ActivityTint {
 }
 
 export function dateMs(value: string | undefined): number {
-	return parseArcaneDate(value)?.getTime() ?? 0;
+	return arcaneTimestampMs(value) ?? 0;
 }
 
 export const ActivityDisplay = {

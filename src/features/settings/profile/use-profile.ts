@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import { User } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
@@ -72,29 +73,33 @@ export function useProfile() {
 		if (!client || !currentUser) return;
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			let savedSomething = false;
-			if (profileChanged) {
-				const updated = await client.users.update({
-					id: currentUser.id,
-					body: { displayName: displayName.trim(), email: email.trim() }
-				});
-				useClientManager.setState({ currentUser: updated });
-				savedSomething = true;
-			}
-			if (wantsPasswordChange && passwordValid) {
-				await client.users.changePassword({ body: { currentPassword, newPassword } });
-				setCurrentPassword('');
-				setNewPassword('');
-				setConfirmPassword('');
-				savedSomething = true;
-			}
-			if (savedSomething) showToast(Toasts.success('Account updated'));
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		const changesPassword = wantsPasswordChange && passwordValid;
+		await withCleanup(
+			async () => {
+				try {
+					let savedSomething = false;
+					if (profileChanged) {
+						const updated = await client.users.update({
+							id: currentUser.id,
+							body: { displayName: displayName.trim(), email: email.trim() }
+						});
+						useClientManager.setState({ currentUser: updated });
+						savedSomething = true;
+					}
+					if (changesPassword) {
+						await client.users.changePassword({ body: { currentPassword, newPassword } });
+						setCurrentPassword('');
+						setNewPassword('');
+						setConfirmPassword('');
+						savedSomething = true;
+					}
+					if (savedSomething) showToast(Toasts.success('Account updated'));
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	useItemDeleteConfirmation(pendingSignOut, setPendingSignOut, (action) =>

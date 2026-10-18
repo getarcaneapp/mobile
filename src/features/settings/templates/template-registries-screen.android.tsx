@@ -21,6 +21,7 @@ import {
 	useTemplateRegistries,
 	type TemplateRegistriesModel
 } from './use-template-registries';
+import { withCleanup } from '@/core/with-cleanup';
 
 export function TemplateRegistryRow({ registry }: { registry: TemplateRegistry }) {
 	return (
@@ -68,11 +69,12 @@ export function TemplateRegistriesScreen() {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			async () => {
+				await model.refresh();
+			},
+			() => setRefreshing(false)
+		);
 	};
 
 	let content;

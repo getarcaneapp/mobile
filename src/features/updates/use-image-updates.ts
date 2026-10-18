@@ -1,8 +1,9 @@
 import * as Clipboard from 'expo-clipboard';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { performAllEnvironmentsMaintenance } from '@/core/all-environments-actions';
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { ListSortOrder, localizedStandardCompare } from '@/core/list-sort-order';
 import { PaginationLoader } from '@/core/networking/pagination-loader';
 import {
@@ -10,6 +11,7 @@ import {
 	RemoteDataLimits,
 	saturatingAdd
 } from '@/core/networking/remote-data-limits';
+import type { CachedClient } from '@/core/networking/cached-client';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -118,6 +120,26 @@ async function fetchEnv(
 
 export type ImageUpdatesModel = ReturnType<typeof useImageUpdates>;
 
+async function loadEnvironments(
+	cached: CachedClient,
+	activeClient: ArcaneClient
+): Promise<Environment[]> {
+	const envs = await cached.getAllPagesGlobal(
+		'environments',
+		async (start, limit) => {
+			const response = await activeClient.environments.list({
+				query: { start, limit, sortBy: 'name', sortOrder: 'asc' }
+			});
+			return { items: response.data, pagination: response.pagination };
+		},
+		{ maximumItems: RemoteDataLimits.maximumEnvironments }
+	);
+	if (envs.length > RemoteDataLimits.maximumEnvironments) {
+		throw RemoteDataLimitError.collectionTooLarge(RemoteDataLimits.maximumEnvironments);
+	}
+	return envs;
+}
+
 export function useImageUpdates({
 	dismissOnOperationStart = false,
 	onDismiss
@@ -147,11 +169,13 @@ export function useImageUpdates({
 	const [detailTarget, setDetailTarget] = useState<ImageDetailTarget>();
 
 	const updatingKeysRef = useRef(updatingKeys);
-	updatingKeysRef.current = updatingKeys;
 	const bucketsRef = useRef(buckets);
-	bucketsRef.current = buckets;
 	const loadingRef = useRef({ isLoading, hasLoadedOnce });
-	loadingRef.current = { isLoading, hasLoadedOnce };
+	useLayoutEffect(() => {
+		updatingKeysRef.current = updatingKeys;
+		bucketsRef.current = buckets;
+		loadingRef.current = { isLoading, hasLoadedOnce };
+	});
 	const generation = useRef(0);
 	useEffect(
 		() => () => {
@@ -210,19 +234,7 @@ export function useImageUpdates({
 
 		let envs: Environment[];
 		try {
-			envs = await cached.getAllPagesGlobal(
-				'environments',
-				async (start, limit) => {
-					const response = await activeClient.environments.list({
-						query: { start, limit, sortBy: 'name', sortOrder: 'asc' }
-					});
-					return { items: response.data, pagination: response.pagination };
-				},
-				{ maximumItems: RemoteDataLimits.maximumEnvironments }
-			);
-			if (envs.length > RemoteDataLimits.maximumEnvironments) {
-				throw RemoteDataLimitError.collectionTooLarge(RemoteDataLimits.maximumEnvironments);
-			}
+			envs = await loadEnvironments(cached, activeClient);
 			if (!isCurrent()) return;
 			setEnvironmentLoadError(undefined);
 		} catch (error) {
@@ -418,21 +430,24 @@ export function useImageUpdates({
 		const activeClient = useClientManager.getState().client;
 		if (!activeClient) return;
 		setRescanningEnvID(bucket.id);
-		try {
-			const envID = bucket.env.id;
-			const postedMap = await activeClient.images.checkAllUpdates({ envID }).catch(() => undefined);
-			const index = bucketsRef.current.findIndex((b) => b.id === bucket.id);
-			if (index < 0) return;
-			const result = await fetchEnv(index, envID, activeClient);
-			if (postedMap) {
-				for (const [ref, response] of Object.entries(postedMap))
-					if (response) result.byRef[ref] = response;
-			}
-			apply(result);
-			publishUpdateCount(bucketsRef.current);
-		} finally {
-			setRescanningEnvID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				const envID = bucket.env.id;
+				const postedMap = await activeClient.images
+					.checkAllUpdates({ envID })
+					.catch(() => undefined);
+				const index = bucketsRef.current.findIndex((b) => b.id === bucket.id);
+				if (index < 0) return;
+				const result = await fetchEnv(index, envID, activeClient);
+				if (postedMap) {
+					for (const [ref, response] of Object.entries(postedMap))
+						if (response) result.byRef[ref] = response;
+				}
+				apply(result);
+				publishUpdateCount(bucketsRef.current);
+			},
+			() => setRescanningEnvID(undefined)
+		);
 	};
 
 	const recheck = async (bucket: EnvUpdateBucket, ref: string) => {
@@ -440,28 +455,33 @@ export function useImageUpdates({
 		if (!activeClient) return;
 		const key = rowKey(bucket.id, ref);
 		setCheckingKeys((keys) => new Set([...keys, key]));
-		try {
-			const response = await activeClient.images.checkUpdateByRef({
-				envID: bucket.env.id,
-				imageRef: ref
-			});
-			const current = bucketsRef.current;
-			const index = current.findIndex((b) => b.id === bucket.id);
-			const existing = current[index];
-			if (!existing) return;
-			const next = [...current];
-			next[index] = { ...existing, byRef: { ...existing.byRef, [ref]: response } };
-			commit(next);
-			publishUpdateCount(next);
-		} catch {
-			showToast(Toasts.error(`Couldn't check ${ref}`));
-		} finally {
-			setCheckingKeys((keys) => {
-				const next = new Set(keys);
-				next.delete(key);
-				return next;
-			});
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const response = await activeClient.images.checkUpdateByRef({
+						envID: bucket.env.id,
+						imageRef: ref
+					});
+					const current = bucketsRef.current;
+					const index = current.findIndex((b) => b.id === bucket.id);
+					const existing = current[index];
+					if (!existing) return;
+					const next = [...current];
+					next[index] = { ...existing, byRef: { ...existing.byRef, [ref]: response } };
+					commit(next);
+					publishUpdateCount(next);
+				} catch {
+					showToast(Toasts.error(`Couldn't check ${ref}`));
+				}
+			},
+			() => {
+				setCheckingKeys((keys) => {
+					const next = new Set(keys);
+					next.delete(key);
+					return next;
+				});
+			}
+		);
 	};
 
 	const copyRef = (item: OutdatedImage) => {

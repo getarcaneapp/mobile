@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import { ResponseCache } from '@/core/networking/response-cache';
 import { User, type UserPreferences } from '@/sdk/models/user/User';
@@ -27,20 +28,25 @@ export function useAccountPreferences() {
 		if (!client || savingRef.current) return;
 		savingRef.current = true;
 		setIsSaving(true);
-		try {
-			const updated = await client.rest.put('auth/me/profile', {
-				body: { preferences },
-				decode: User.decode
-			});
-			useClientManager.setState({ currentUser: updated });
-			ResponseCache.invalidateAll();
-			showToast(Toasts.success('Preferences saved'));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			savingRef.current = false;
-			setIsSaving(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const updated = await client.rest.put('auth/me/profile', {
+						body: { preferences },
+						decode: User.decode
+					});
+					useClientManager.setState({ currentUser: updated });
+					ResponseCache.invalidateAll();
+					showToast(Toasts.success('Preferences saved'));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => {
+				savingRef.current = false;
+				setIsSaving(false);
+			}
+		);
 	};
 
 	return {

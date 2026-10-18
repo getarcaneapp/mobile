@@ -22,6 +22,7 @@ import {
 	registryRowTitle,
 	useContainerRegistries
 } from './use-container-registries';
+import { withCleanup } from '@/core/with-cleanup';
 
 export function RegistryRow({ registry }: { registry: ContainerRegistry }) {
 	return (
@@ -48,11 +49,12 @@ export function ContainerRegistriesScreen() {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			async () => {
+				await model.refresh();
+			},
+			() => setRefreshing(false)
+		);
 	};
 
 	let content;

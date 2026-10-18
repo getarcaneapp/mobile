@@ -125,7 +125,48 @@ function present(toast: Toast) {
 	if (!toast.isPersistent) scheduleDismiss(Math.max(toast.duration, 1));
 }
 
+const activityUpdateIntervalMs = 250;
+let lastActivityUpdateAt = 0;
+let queuedActivityUpdate: Toast | undefined;
+let activityUpdateTimer: ReturnType<typeof setTimeout> | undefined;
+
+function cancelQueuedActivityUpdate() {
+	if (activityUpdateTimer) clearTimeout(activityUpdateTimer);
+	activityUpdateTimer = undefined;
+	queuedActivityUpdate = undefined;
+}
+
+function applyActivityUpdate(updated: Toast) {
+	lastActivityUpdateAt = Date.now();
+	if (pendingToast) {
+		pendingToast = updated;
+	} else {
+		clearTimer();
+		useToastPresenter.setState({ activeToast: updated });
+	}
+}
+
+function flushQueuedActivityUpdate() {
+	activityUpdateTimer = undefined;
+	const queued = queuedActivityUpdate;
+	queuedActivityUpdate = undefined;
+	if (!queued || currentToast()?.activityID !== queued.activityID) return;
+	applyActivityUpdate({ ...currentToast()!, ...activityFields(queued) });
+}
+
+function activityFields(toast: Toast): Partial<Toast> {
+	return {
+		title: toast.title,
+		symbol: toast.symbol,
+		symbolTint: toast.symbolTint,
+		activityProgress: toast.activityProgress,
+		activityState: toast.activityState,
+		isPersistent: toast.isPersistent
+	};
+}
+
 export function showToast(toast: Toast) {
+	cancelQueuedActivityUpdate();
 	clearTimer();
 	pendingToast = undefined;
 	if (useToastPresenter.getState().activeToast) {
@@ -162,12 +203,23 @@ export function showActivityToast(
 		activityState: 'running',
 		isPersistent: true
 	};
-	if (pendingToast) {
-		pendingToast = updated;
-	} else {
-		clearTimer();
-		useToastPresenter.setState({ activeToast: updated });
+	if (
+		current.title === title &&
+		current.activityProgress === normalized &&
+		current.activityState === 'running' &&
+		queuedActivityUpdate === undefined
+	)
+		return;
+	const elapsed = Date.now() - lastActivityUpdateAt;
+	if (elapsed >= activityUpdateIntervalMs && activityUpdateTimer === undefined) {
+		applyActivityUpdate(updated);
+		return;
 	}
+	queuedActivityUpdate = updated;
+	activityUpdateTimer ??= setTimeout(
+		flushQueuedActivityUpdate,
+		Math.max(activityUpdateIntervalMs - elapsed, 0)
+	);
 }
 
 const terminalTitle = (title: string, state: ToastActivityState) => {
@@ -196,6 +248,7 @@ export function finishActivityToast(
 	state: ToastActivityState,
 	progress?: number
 ) {
+	cancelQueuedActivityUpdate();
 	const current = currentToast();
 	const updatesCurrent = current?.activityID === id;
 	const base = updatesCurrent && current ? current : Toasts.activity(id, title, progress);
@@ -225,6 +278,7 @@ export function finishActivityToast(
 }
 
 export function dismissToast() {
+	cancelQueuedActivityUpdate();
 	clearTimer();
 	pendingToast = undefined;
 	useToastPresenter.setState({ activeToast: undefined });

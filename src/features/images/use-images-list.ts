@@ -8,6 +8,7 @@ import {
 } from '@/core/all-environments-actions';
 import { BulkActionRunner } from '@/core/bulk-action-runner';
 import { friendlyErrorMessage } from '@/core/errors';
+import { nextInstanceKey, withCleanup } from '@/core/with-cleanup';
 import { ListSortOrder } from '@/core/list-sort-order';
 import { ResourcePruneAction } from '@/core/resource-prune-action';
 import { lightHaptic } from '@/features/containers/container-actions';
@@ -74,12 +75,10 @@ export type ImagesListProps = {
 	allEnvironments?: boolean;
 };
 
-let listCounter = 0;
-
 export function useImagesList({ environmentID, allEnvironments = false }: ImagesListProps) {
 	const nav = useImageNavigation();
 	const client = useClientManager((s) => s.client);
-	const [listKey] = useState(() => `images-${++listCounter}`);
+	const [listKey] = useState(() => nextInstanceKey('images'));
 	const filter = useImagesFilter(listKey);
 	const updateFilter = useImagesFilterStore((s) => s.update);
 	useEffect(() => () => useImagesFilterStore.getState().remove(listKey), [listKey]);
@@ -347,43 +346,46 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 		if (!baseClient) return;
 		setIsBulkRunning(true);
 		setBulkRunningActionID('bulk-delete');
-		try {
-			let scoped;
-			try {
-				scoped = activityBatchScopedClient(baseClient);
-			} catch {
-				showToast(Toasts.error("Couldn't start bulk deletion"));
-				return;
-			}
-			const targets = list.getSnapshot().items.filter((image) => ids.includes(image.id));
-			const byID = new Map(targets.map((target) => [target.id, target]));
-			const result = await BulkActionRunner.run(
-				targets.map((target) => target.id),
-				async (id) => {
-					const image = byID.get(id);
-					if (!image) return;
-					await scoped.images.remove({ envID: image.environmentID, id: image.value.id });
+		await withCleanup(
+			async () => {
+				let scoped;
+				try {
+					scoped = activityBatchScopedClient(baseClient);
+				} catch {
+					showToast(Toasts.error("Couldn't start bulk deletion"));
+					return;
 				}
-			);
-			const failedIDs = new Set(result.failed.map((failure) => failure.id));
-			const removedIDs = new Set(
-				targets.map((target) => target.id).filter((id) => !failedIDs.has(id))
-			);
-			list.updateItems((items) => items.filter((item) => !removedIDs.has(item.id)));
-			for (const environment of new Set(targets.map((target) => target.environmentID)))
-				imagesChanged(environment);
-			exitSelectionMode();
-			if (result.failed.length === 0) {
-				showToast(
-					Toasts.success(`Deleted ${result.succeeded} image${result.succeeded === 1 ? '' : 's'}`)
+				const targets = list.getSnapshot().items.filter((image) => ids.includes(image.id));
+				const byID = new Map(targets.map((target) => [target.id, target]));
+				const result = await BulkActionRunner.run(
+					targets.map((target) => target.id),
+					async (id) => {
+						const image = byID.get(id);
+						if (!image) return;
+						await scoped.images.remove({ envID: image.environmentID, id: image.value.id });
+					}
 				);
-			} else {
-				showToast(Toasts.error(`${result.failed.length} of ${targets.length} failed`));
+				const failedIDs = new Set(result.failed.map((failure) => failure.id));
+				const removedIDs = new Set(
+					targets.map((target) => target.id).filter((id) => !failedIDs.has(id))
+				);
+				list.updateItems((items) => items.filter((item) => !removedIDs.has(item.id)));
+				for (const environment of new Set(targets.map((target) => target.environmentID)))
+					imagesChanged(environment);
+				exitSelectionMode();
+				if (result.failed.length === 0) {
+					showToast(
+						Toasts.success(`Deleted ${result.succeeded} image${result.succeeded === 1 ? '' : 's'}`)
+					);
+				} else {
+					showToast(Toasts.error(`${result.failed.length} of ${targets.length} failed`));
+				}
+			},
+			() => {
+				setIsBulkRunning(false);
+				setBulkRunningActionID(undefined);
 			}
-		} finally {
-			setIsBulkRunning(false);
-			setBulkRunningActionID(undefined);
-		}
+		);
 	};
 
 	useItemDeleteConfirmation(

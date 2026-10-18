@@ -2,6 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type {
 	ContainerRegistry,
 	CreateContainerRegistry,
@@ -76,6 +78,46 @@ function populate(registry: ContainerRegistry | undefined): Draft {
 
 const arraysEqual = (lhs: string[], rhs: string[]) =>
 	lhs.length === rhs.length && lhs.every((value, index) => value === rhs[index]);
+
+async function persistRegistry(
+	client: ArcaneClient,
+	registry: ContainerRegistry | undefined,
+	draft: Draft,
+	supportsPost26: boolean
+) {
+	const names = registryRepositoryNames(draft.repositoryNameRows, supportsPost26);
+	if (registry) {
+		const body: UpdateContainerRegistry = {
+			url: draft.url,
+			username: nilIfEmpty(draft.username),
+			token: nilIfEmpty(draft.token),
+			description: nilIfEmpty(draft.description),
+			insecure: draft.insecure,
+			enabled: draft.enabled,
+			registryType: nilIfEmpty(draft.registryType),
+			awsAccessKeyId: nilIfEmpty(draft.awsAccessKeyId),
+			awsSecretAccessKey: nilIfEmpty(draft.awsSecretAccessKey),
+			awsRegion: nilIfEmpty(draft.awsRegion),
+			repositoryNames: names
+		};
+		await client.registries.update({ id: registry.id, body });
+	} else {
+		const body: CreateContainerRegistry = {
+			url: draft.url,
+			username: draft.username,
+			token: draft.token,
+			description: nilIfEmpty(draft.description),
+			insecure: draft.insecure,
+			enabled: draft.enabled,
+			registryType: draft.registryType === '' ? 'custom' : draft.registryType,
+			awsAccessKeyId: draft.awsAccessKeyId,
+			awsSecretAccessKey: draft.awsSecretAccessKey,
+			awsRegion: draft.awsRegion,
+			repositoryNames: names
+		};
+		await client.registries.create({ body });
+	}
+}
 
 export function useRegistryForm() {
 	const { token } = useLocalSearchParams<{ token?: string }>();
@@ -153,47 +195,20 @@ export function useRegistryForm() {
 		if (!client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const names = registryRepositoryNames(draft.repositoryNameRows, supportsPost26);
-			if (registry) {
-				const body: UpdateContainerRegistry = {
-					url: draft.url,
-					username: nilIfEmpty(draft.username),
-					token: nilIfEmpty(draft.token),
-					description: nilIfEmpty(draft.description),
-					insecure: draft.insecure,
-					enabled: draft.enabled,
-					registryType: nilIfEmpty(draft.registryType),
-					awsAccessKeyId: nilIfEmpty(draft.awsAccessKeyId),
-					awsSecretAccessKey: nilIfEmpty(draft.awsSecretAccessKey),
-					awsRegion: nilIfEmpty(draft.awsRegion),
-					repositoryNames: names
-				};
-				await client.registries.update({ id: registry.id, body });
-			} else {
-				const body: CreateContainerRegistry = {
-					url: draft.url,
-					username: draft.username,
-					token: draft.token,
-					description: nilIfEmpty(draft.description),
-					insecure: draft.insecure,
-					enabled: draft.enabled,
-					registryType: draft.registryType === '' ? 'custom' : draft.registryType,
-					awsAccessKeyId: draft.awsAccessKeyId,
-					awsSecretAccessKey: draft.awsSecretAccessKey,
-					awsRegion: draft.awsRegion,
-					repositoryNames: names
-				};
-				await client.registries.create({ body });
-			}
-			showToast(Toasts.success(registry === undefined ? 'Registry created' : 'Registry updated'));
-			await payload?.onSuccess();
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		const successMessage = registry === undefined ? 'Registry created' : 'Registry updated';
+		await withCleanup(
+			async () => {
+				try {
+					await persistRegistry(client, registry, draft, supportsPost26);
+					showToast(Toasts.success(successMessage));
+					if (payload) await payload.onSuccess();
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	return {

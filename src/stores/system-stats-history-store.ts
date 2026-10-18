@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -14,9 +15,19 @@ import {
 	StreamBackoff,
 	type StatsSeries
 } from './dashboard-stream-logic';
+import { coalescedUpdates } from './coalesced-updates';
+
+export const frameCoalesceMs = 250;
 
 export function maxStatsStreams(): number {
 	return LiveStatsLimit.maxStreams(storage.number(LiveStatsLimit.preferenceKey));
+}
+
+const subscribeToStatsLimit = (listener: () => void) =>
+	storage.subscribe(LiveStatsLimit.preferenceKey, listener);
+
+export function useMaxStatsStreams(): number {
+	return useSyncExternalStore(subscribeToStatsLimit, maxStatsStreams);
 }
 
 type SystemStatsHistoryState = {
@@ -53,12 +64,22 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 	let isRunning = false;
 	let lastReconnectAt: number | undefined;
 
-	const update = (environmentID: string, transform: (series: StatsSeries) => StatsSeries) => {
-		const current = get().seriesByEnvironmentID[environmentID] ?? emptySeries;
-		const next = transform(current);
-		if (next === current) return;
-		set((s) => ({ seriesByEnvironmentID: { ...s.seriesByEnvironmentID, [environmentID]: next } }));
-	};
+	const updates = coalescedUpdates<StatsSeries>((pending) => {
+		const current = get().seriesByEnvironmentID;
+		let next: Record<string, StatsSeries> | undefined;
+		for (const [environmentID, transforms] of pending) {
+			const before = next?.[environmentID] ?? current[environmentID] ?? emptySeries;
+			let series = before;
+			for (const transform of transforms) series = transform(series);
+			if (series === before) continue;
+			next ??= { ...current };
+			next[environmentID] = series;
+		}
+		if (next) set({ seriesByEnvironmentID: next });
+	}, frameCoalesceMs);
+
+	const update = (environmentID: string, transform: (series: StatsSeries) => StatsSeries) =>
+		updates.enqueue(environmentID, transform);
 
 	const setError = (environmentID: string, message: string) =>
 		update(environmentID, (s) => ({ ...s, error: message }));
@@ -87,8 +108,10 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 							receivedFirstFrame = true;
 							clearError(environmentID);
 						}
-						if (trackedIDs.includes(environmentID))
-							update(environmentID, (s) => appendFrame(s, frame, Date.now()));
+						if (trackedIDs.includes(environmentID)) {
+							const receivedAt = Date.now();
+							update(environmentID, (s) => appendFrame(s, frame, receivedAt));
+						}
 					}
 				} catch (error) {
 					if (forGeneration !== generation || signal.aborted) return;
@@ -154,12 +177,14 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 			clientIdentity = identity;
 			client = next;
 			trackedIDs = [];
+			updates.clear();
 			set({ seriesByEnvironmentID: {} });
 		},
 
 		reconcile: (environments) => {
 			trackedIDs = environments.filter((e) => e.enabled).map((e) => e.id);
 			const target = new Set(trackedIDs);
+			updates.drop((id) => target.has(id));
 			const current = get().seriesByEnvironmentID;
 			const next: Record<string, StatsSeries> = {};
 			for (const id of trackedIDs) next[id] = current[id] ?? emptySeries;
@@ -178,6 +203,7 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 		},
 
 		stop: () => {
+			updates.flush();
 			isRunning = false;
 			generation += 1;
 			for (const controller of tasks.values()) controller.abort();

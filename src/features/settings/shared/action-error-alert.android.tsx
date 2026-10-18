@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 
 export function ActionErrorAlert({
@@ -11,7 +11,9 @@ export function ActionErrorAlert({
 	onDismiss: () => void;
 }) {
 	const dismiss = useRef(onDismiss);
-	dismiss.current = onDismiss;
+	useLayoutEffect(() => {
+		dismiss.current = onDismiss;
+	});
 	useEffect(() => {
 		if (message === undefined) return;
 		Alert.alert(

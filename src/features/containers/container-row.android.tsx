@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
 	useAnimatedStyle,
@@ -58,27 +58,33 @@ function MetricLine({
 	progress,
 	tint,
 	value,
-	delay
+	delay,
+	identity
 }: {
 	progress: number;
 	tint: string;
 	value?: string;
 	delay: number;
+	identity?: string;
 }) {
 	const reduceMotion = useReduceMotion();
 	const revealed = useSharedValue(value !== undefined ? 1 : 0);
+	const shownIdentity = useRef(identity);
 	useEffect(() => {
 		const target = value !== undefined ? 1 : 0;
-		revealed.value = reduceMotion
-			? target
-			: withDelay(
-					delay,
-					withSpring(
-						target,
-						springConfig(Motion.entrance.response, Motion.entrance.dampingFraction)
-					)
-				);
-	}, [value, delay, reduceMotion, revealed]);
+		const recycled = shownIdentity.current !== identity;
+		shownIdentity.current = identity;
+		revealed.value =
+			reduceMotion || recycled
+				? target
+				: withDelay(
+						delay,
+						withSpring(
+							target,
+							springConfig(Motion.entrance.response, Motion.entrance.dampingFraction)
+						)
+					);
+	}, [value, delay, identity, reduceMotion, revealed]);
 	const style = useAnimatedStyle(() => ({
 		opacity: revealed.value,
 		transform: [{ translateX: (1 - revealed.value) * 6 }]
@@ -91,12 +97,18 @@ function MetricLine({
 			>
 				{value ?? '—'}
 			</Text>
-			<MetricRing progress={progress} tint={tint} size={14} lineWidth={2.5} />
+			<MetricRing progress={progress} tint={tint} size={14} lineWidth={2.5} identity={identity} />
 		</Animated.View>
 	);
 }
 
-export function ContainerResourceMetrics({ sample }: { sample?: ContainerResourceSample }) {
+export function ContainerResourceMetrics({
+	sample,
+	identity
+}: {
+	sample?: ContainerResourceSample;
+	identity?: string;
+}) {
 	const memoryProgress =
 		sample && sample.memoryLimitBytes > 0 ? sample.memoryUsageBytes / sample.memoryLimitBytes : 0;
 	return (
@@ -106,12 +118,14 @@ export function ContainerResourceMetrics({ sample }: { sample?: ContainerResourc
 				tint={systemColors.blue}
 				value={sample && ContainerResourceText.cpu(sample)}
 				delay={0}
+				identity={identity}
 			/>
 			<MetricLine
 				progress={memoryProgress}
 				tint={systemColors.purple}
 				value={sample && ContainerResourceText.memoryUsed(sample)}
 				delay={Motion.stagger}
+				identity={identity}
 			/>
 		</View>
 	);
@@ -203,7 +217,7 @@ export function ContainerRow({
 			{metrics.kind === 'hidden' ? (
 				<StatusIcon status={container.status} isLive={running} />
 			) : (
-				<ContainerResourceMetrics sample={sample} />
+				<ContainerResourceMetrics sample={sample} identity={container.id} />
 			)}
 		</View>
 	);

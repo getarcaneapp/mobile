@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
@@ -26,17 +27,20 @@ export function useCreateVolume(environmentID: EnvironmentID) {
 		if (!client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const path = client.rest.environmentPath(environmentID, 'volumes');
-			await client.transport.rawRequest(path, { method: 'POST', body: { name, driver } });
-			volumesChanged(environmentID);
-			showToast(Toasts.success('Volume created'));
-			router.back();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const path = client.rest.environmentPath(environmentID, 'volumes');
+					await client.transport.rawRequest(path, { method: 'POST', body: { name, driver } });
+					volumesChanged(environmentID);
+					showToast(Toasts.success('Volume created'));
+					router.back();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	return {

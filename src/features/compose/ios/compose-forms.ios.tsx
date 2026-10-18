@@ -28,6 +28,7 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { useState, type ReactNode } from 'react';
 
+import { nextInstanceKey } from '@/core/with-cleanup';
 import { systemColors } from '@/theme/colors';
 import { DestructiveLabel } from '@/ui/components/labels';
 import { Image } from '@/ui/components/swiftui-image';
@@ -468,8 +469,6 @@ export function ComposeMappingForm({
 	);
 }
 
-let nextSelection = 0;
-
 export function ComposeCollectionForm({
 	destination
 }: {
@@ -504,7 +503,7 @@ export function ComposeCollectionForm({
 		}
 	};
 	const select = (index: number | undefined, raw: string) =>
-		setEditing({ id: `entry-${++nextSelection}`, index, raw });
+		setEditing({ id: nextInstanceKey('entry'), index, raw });
 
 	const rows = (items ?? []).map((item, index) => (
 		<ContextMenu key={`${index}-${item}`}>
@@ -590,6 +589,32 @@ function newDraft(
 	} catch {
 		return { draft: new ComposeEntryDraft(), supported: false };
 	}
+}
+
+function entryDraftRaw(
+	supported: boolean,
+	draft: ComposeEntryDraft,
+	kind: ComposeEntryKind,
+	nativeSource: string
+) {
+	return supported ? draft.yaml(kind) : nativeSource;
+}
+
+function saveEntryDraft(
+	supported: boolean,
+	draft: ComposeEntryDraft,
+	kind: ComposeEntryKind,
+	nativeSource: string,
+	externalResource: string | undefined,
+	save: (raw: string, externalResource: string | undefined) => string | undefined
+) {
+	const raw = entryDraftRaw(supported, draft, kind, nativeSource);
+	return save(
+		raw,
+		supported && externalResource !== undefined && externalResource === draft.source
+			? externalResource
+			: undefined
+	);
 }
 
 function ComposeEntrySheet({
@@ -761,7 +786,7 @@ function ComposeEntrySheet({
 								label="All settings"
 								onPress={() => {
 									try {
-										const source = supported ? draft.yaml(kind) : nativeSource;
+										const source = entryDraftRaw(supported, draft, kind, nativeSource);
 										setNativeSource(source);
 										setNativeWrapper(entryWrapper(source));
 										setShowNativeSettings(true);
@@ -782,14 +807,13 @@ function ComposeEntrySheet({
 								label="Apply"
 								onPress={() => {
 									try {
-										const raw = supported ? draft.yaml(kind) : nativeSource;
-										const result = save(
-											raw,
-											supported &&
-												externalResource !== undefined &&
-												externalResource === draft.source
-												? externalResource
-												: undefined
+										const result = saveEntryDraft(
+											supported,
+											draft,
+											kind,
+											nativeSource,
+											externalResource,
+											save
 										);
 										setError(result);
 										if (result === undefined) dismiss();

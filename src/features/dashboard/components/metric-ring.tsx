@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Animated, {
 	useAnimatedProps,
 	useSharedValue,
@@ -19,29 +19,35 @@ export function MetricRing({
 	tint,
 	size = 18,
 	lineWidth = 3,
-	motion = 'follow'
+	motion = 'follow',
+	identity
 }: {
 	progress: number;
 	tint: string;
 	size?: number;
 	lineWidth?: number;
 	motion?: 'follow' | 'gauge';
+	identity?: string;
 }) {
 	const reduceMotion = useReduceMotion();
 	const clamped = Math.min(Math.max(progress, 0), 1);
 	const value = useSharedValue(clamped);
 	const radius = (size - lineWidth) / 2;
 	const circumference = 2 * Math.PI * radius;
+	const shown = useRef({ identity, progress: clamped });
 
 	useEffect(() => {
-		if (reduceMotion) value.value = clamped;
+		const previous = shown.current;
+		shown.current = { identity, progress: clamped };
+		if (previous.identity === identity && previous.progress === clamped) return;
+		if (reduceMotion || previous.identity !== identity) value.value = clamped;
 		else if (motion === 'gauge')
 			value.value = withSpring(
 				clamped,
 				springConfig(Motion.gauge.response, Motion.gauge.dampingFraction)
 			);
 		else value.value = withTiming(clamped, timingConfig(Motion.follow));
-	}, [clamped, motion, reduceMotion, value]);
+	}, [clamped, identity, motion, reduceMotion, value]);
 
 	const animatedProps = useAnimatedProps(() => ({
 		strokeDashoffset: circumference * (1 - value.value)

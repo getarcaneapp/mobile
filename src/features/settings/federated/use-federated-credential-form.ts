@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { PaginationLoader } from '@/core/networking/pagination-loader';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { Role } from '@/sdk/models/role/Role';
@@ -34,10 +35,9 @@ export function useFederatedCredentialFormModel() {
 		if (router.canGoBack()) router.back();
 	};
 
-	const latestDismiss = useRef(dismiss);
-	latestDismiss.current = dismiss;
+	const dismissForClientChange = useEffectEvent(dismiss);
 	useEffect(() => {
-		if (clientGeneration !== initialGeneration.current) latestDismiss.current();
+		if (clientGeneration !== initialGeneration.current) dismissForClientChange();
 	}, [clientGeneration]);
 
 	useEffect(() => {
@@ -84,25 +84,31 @@ export function useFederatedCredentialFormModel() {
 			return;
 		const generation = manager.clientGeneration;
 		setSaving(true);
-		try {
-			if (credential)
-				await client.federatedCredentials.update({
-					id: credential.id,
-					body: FederatedCredentialForm.updateRequest(form)
-				});
-			else
-				await client.federatedCredentials.create({
-					body: FederatedCredentialForm.createRequest(form)
-				});
-			if (generation !== useClientManager.getState().clientGeneration) return;
+		const notifySaved = async () => {
 			await payload?.onSaved();
-			dismiss();
-			showToast(Toasts.success('Credential saved'));
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setSaving(false);
-		}
+		};
+		await withCleanup(
+			async () => {
+				try {
+					if (credential)
+						await client.federatedCredentials.update({
+							id: credential.id,
+							body: FederatedCredentialForm.updateRequest(form)
+						});
+					else
+						await client.federatedCredentials.create({
+							body: FederatedCredentialForm.createRequest(form)
+						});
+					if (generation !== useClientManager.getState().clientGeneration) return;
+					await notifySaved();
+					dismiss();
+					showToast(Toasts.success('Credential saved'));
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setSaving(false)
+		);
 	};
 
 	return {

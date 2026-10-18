@@ -5,14 +5,16 @@ export type DemoBannerProps = {
 	onEnd: () => void;
 };
 
+function secondsUntil(endsAt: Date) {
+	return Math.max(0, (endsAt.getTime() - Date.now()) / 1000);
+}
+
 export function useRemainingSeconds(endsAt: Date) {
-	const compute = () => Math.max(0, (endsAt.getTime() - Date.now()) / 1000);
-	const [remaining, setRemaining] = useState(compute);
+	const [remaining, setRemaining] = useState(() => secondsUntil(endsAt));
 	useEffect(() => {
-		setRemaining(compute());
-		const timer = setInterval(() => setRemaining(compute()), 1000);
+		setRemaining(secondsUntil(endsAt));
+		const timer = setInterval(() => setRemaining(secondsUntil(endsAt)), 1000);
 		return () => clearInterval(timer);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [endsAt]);
 	return remaining;
 }

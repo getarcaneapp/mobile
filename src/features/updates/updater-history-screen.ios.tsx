@@ -35,6 +35,7 @@ import { systemColors, withOpacity } from '@/theme/colors';
 import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-swiftui';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { AppToolbar } from '@/ui/components/toolbar';
 import { DisclosureChevron } from '@/ui/settings-row';
 import { useToolbarIcons } from '@/ui/toolbar-icon';
@@ -157,18 +158,23 @@ export function UpdaterHistoryScreen() {
 	} else {
 		content = (
 			<List modifiers={[listStyle('insetGrouped'), refreshable(() => model.load(true))]}>
-				{model.displayedRecords.map((record) => (
-					<Button
-						key={record.id}
-						onPress={() => navigation.openHistoryRecord(envID, record)}
-						modifiers={[buttonStyle('plain')]}
-					>
-						<HStack modifiers={[contentShape(shapes.rectangle())]}>
-							<UpdaterHistoryRow record={record} />
-							<DisclosureChevron />
-						</HStack>
-					</Button>
-				))}
+				<List.ForEach
+					data={model.displayedRecords}
+					keyExtractor={stableItemKey}
+					estimatedItemSize={64}
+				>
+					{({ item }) => (
+						<Button
+							onPress={() => navigation.openHistoryRecord(envID, item)}
+							modifiers={[buttonStyle('plain')]}
+						>
+							<HStack modifiers={[contentShape(shapes.rectangle())]}>
+								<UpdaterHistoryRow record={item} />
+								<DisclosureChevron />
+							</HStack>
+						</Button>
+					)}
+				</List.ForEach>
 				<PaginatedListFooter
 					hasMore={model.hasMore && model.searchText === ''}
 					loadMoreError={model.loadMoreError}

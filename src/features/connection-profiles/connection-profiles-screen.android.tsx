@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
 import {
 	Alert,
 	Pressable,
@@ -359,13 +359,11 @@ export function ConnectionProfileEditorScreen() {
 	const usernameRef = useRef<TextInputInstance>(null);
 	const passwordRef = useRef<TextInputInstance>(null);
 
+	const initialFocusField = useEffectEvent(() => model.initialFocus);
 	useEffect(() => {
-		const timer = setTimeout(
-			() => (model.initialFocus === 'name' ? nameRef : serverRef).current?.focus(),
-			350
-		);
+		const field = initialFocusField();
+		const timer = setTimeout(() => (field === 'name' ? nameRef : serverRef).current?.focus(), 350);
 		return () => clearTimeout(timer);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return (

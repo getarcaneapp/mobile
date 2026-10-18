@@ -50,7 +50,7 @@ export function ScrollableTabBarContent<Selection extends string>({
 	const reduceMotion = useReduceMotion();
 	const position = useNativeState<string | null>(selection);
 	useEffect(() => {
-		position.value = selection;
+		position.set(selection);
 	}, [position, selection]);
 	const shape = shapes.roundedRectangle({
 		cornerRadius: Radius.standard,

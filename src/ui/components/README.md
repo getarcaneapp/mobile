@@ -53,6 +53,8 @@ Ports of the reference app's shared SwiftUI components. **SwiftUI-tree** = retur
 ## Lists, forms, loading
 
 - `StableSectionedList`, `bulkListSelection` — `stable-sectioned-list.{ios,android}.tsx` — SwiftUI-tree / Standalone — Views/Components/StableSectionedList.swift
+- `VirtualizedSectionedList`, `GroupedRowSurface`, `flattenSections`, `endReachedFooter` — `virtualized-sectioned-list.tsx` — Standalone (Android, FlashList) — Views/Components/StableSectionedList.swift
+- `GroupedFlashList`, `groupPosition` — `grouped-flash-list.tsx` — Standalone (Android, FlashList) — none
 - `PaginatedListFooter`, `ResourceListContainer`, `ListUX`, `SafeExternalLink` — `paginated-list.{ios,android}.tsx` — SwiftUI-tree / Standalone — Views/Common/PaginatedListScaffold.swift
 - `AdaptiveMetadataGrid`, `MonospacedValue`, `PartialDataNotice`, `nonEmptyResourceValue` — `resource-detail.{ios,android}.tsx` — SwiftUI-tree / Standalone — Views/Common/ResourceDetailComponents.swift
 - `FormTextField`, `FormSecureField`, `FormNumberField`, `FormValueRow`, `FormPicker` — `form-fields.{ios,android}.tsx` — SwiftUI-tree / Standalone — Views/Components/FormFieldRows.swift

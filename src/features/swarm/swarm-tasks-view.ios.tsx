@@ -18,6 +18,7 @@ import type { SwarmTaskSummary } from '@/sdk/models/swarm/SwarmTask';
 import { systemColors } from '@/theme/colors';
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 
 import { swarmDate } from './swarm-common';
 import { SwarmListState, SwarmStateBadge } from './swarm-parts';
@@ -50,7 +51,7 @@ export function SwarmTaskRow({
 					{taskTitle(task, showsService)}
 				</Text>
 				<Spacer minLength={8} />
-				<SwarmStateBadge state={task.currentState} />
+				<SwarmStateBadge key={task.id} state={task.currentState} />
 			</HStack>
 			<HStack
 				spacing={12}
@@ -123,13 +124,11 @@ export function SwarmTasksList({
 						/>
 					}
 				>
-					{items.map((item) => (
-						<SwarmTaskRow
-							key={item.id}
-							task={item.value}
-							showsService={showsServiceFor(source, item.value)}
-						/>
-					))}
+					<List.ForEach data={items} keyExtractor={stableItemKey} estimatedItemSize={70}>
+						{({ item }) => (
+							<SwarmTaskRow task={item.value} showsService={showsServiceFor(source, item.value)} />
+						)}
+					</List.ForEach>
 					<PaginatedListFooter
 						hasMore={snapshot.hasMore}
 						loadMoreError={snapshot.loadMoreError}

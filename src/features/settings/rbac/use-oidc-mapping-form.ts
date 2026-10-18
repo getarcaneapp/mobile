@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { OidcRoleMapping } from '@/sdk/models/role/OidcRoleMapping';
@@ -64,21 +65,25 @@ export function useOIDCMappingForm() {
 			roleId,
 			environmentId: scope === 'global' ? undefined : environmentId
 		};
-		try {
-			if (editing) {
-				await client.oidcRoleMappings.update({ id: editing.id, body });
-			} else {
-				await client.oidcRoleMappings.create({ body });
-			}
-			showToast(Toasts.success(editing ? 'Role mapping updated' : 'Role mapping created'));
-			await payload?.onSaved();
-			nav.back();
-		} catch (error) {
-			const fields = validationFields(error);
-			setErrorMessage(fields ? formatValidationFields(fields) : friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		const successMessage = editing ? 'Role mapping updated' : 'Role mapping created';
+		await withCleanup(
+			async () => {
+				try {
+					if (editing) {
+						await client.oidcRoleMappings.update({ id: editing.id, body });
+					} else {
+						await client.oidcRoleMappings.create({ body });
+					}
+					showToast(Toasts.success(successMessage));
+					if (payload) await payload.onSaved();
+					nav.back();
+				} catch (error) {
+					const fields = validationFields(error);
+					setErrorMessage(fields ? formatValidationFields(fields) : friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	return {

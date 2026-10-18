@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, memo, useImperativeHandle, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
 	FlatList,
@@ -8,6 +8,7 @@ import {
 	StyleSheet,
 	Text,
 	View,
+	type ListRenderItemInfo,
 	type NativeScrollEvent,
 	type NativeSyntheticEvent
 } from 'react-native';
@@ -43,17 +44,20 @@ const metadataColor = (severity: LogViewerSeverity) =>
 			? systemColors.orange
 			: (colors.secondaryLabel as string);
 
-function LogLineRow({
+const LogLineRow = memo(function LogLineRow({
 	entry,
-	model,
-	wide
+	showTimestamps,
+	wrapLines,
+	wide,
+	onCopyLine
 }: {
 	entry: LogViewerLine;
-	model: LogViewerModel;
+	showTimestamps: boolean;
+	wrapLines: boolean;
 	wide: boolean;
+	onCopyLine: (text: string) => void;
 }) {
 	const { line, presentation } = entry;
-	const { showTimestamps, wrapLines } = model;
 	const hasMetadata =
 		(showTimestamps && presentation.displayTimestamp !== undefined) ||
 		!!line.service ||
@@ -72,7 +76,7 @@ function LogLineRow({
 	);
 	return (
 		<LongPressMenu
-			items={[{ id: 'copy', title: 'Copy Line', onPress: () => model.copyLine(line.text) }]}
+			items={[{ id: 'copy', title: 'Copy Line', onPress: () => onCopyLine(line.text) }]}
 			accessibilityLabel={logLineAccessibilityText(line, presentation, showTimestamps)}
 			style={[styles.row, entry.id % 2 === 0 ? styles.striped : null]}
 		>
@@ -121,7 +125,7 @@ function LogLineRow({
 			)}
 		</LongPressMenu>
 	);
-}
+});
 
 function EmptyState({ model }: { model: LogViewerModel }) {
 	const accent = useAccentColor();
@@ -198,8 +202,17 @@ export const LogConsole = forwardRef<LogConsoleHandle, { model: LogViewerModel }
 		const safeArea = useSafeAreaInsets();
 		const userIsScrolling = useRef(false);
 		const [width, setWidth] = useState(0);
-		const { snapshot, store } = model;
+		const { snapshot, store, showTimestamps, wrapLines, copyLine } = model;
 		const wide = width >= wideMinimumWidth;
+		const renderItem = ({ item }: ListRenderItemInfo<LogViewerLine>) => (
+			<LogLineRow
+				entry={item}
+				showTimestamps={showTimestamps}
+				wrapLines={wrapLines}
+				wide={wide}
+				onCopyLine={copyLine}
+			/>
+		);
 
 		useImperativeHandle(ref, () => ({
 			jumpToLatest: () => {
@@ -228,8 +241,8 @@ export const LogConsole = forwardRef<LogConsoleHandle, { model: LogViewerModel }
 					ref={list}
 					data={snapshot.lines}
 					keyExtractor={(entry) => String(entry.id)}
-					renderItem={({ item }) => <LogLineRow entry={item} model={model} wide={wide} />}
-					extraData={`${model.showTimestamps}|${model.wrapLines}|${wide}`}
+					renderItem={renderItem}
+					extraData={`${showTimestamps}|${wrapLines}|${wide}`}
 					onScrollBeginDrag={() => {
 						userIsScrolling.current = true;
 					}}

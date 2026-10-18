@@ -57,6 +57,7 @@ import { DestructiveLabel, ResourceCountSectionHeader } from '@/ui/components/la
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { ScrollableTabBar } from '@/ui/components/scrollable-tab-bar';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { ResourceActionsToolbar } from '@/ui/components/toolbar';
 import { DisclosureChevron } from '@/ui/settings-row';
 import { useToolbarIcons } from '@/ui/toolbar-icon';
@@ -198,9 +199,9 @@ export function SwarmStacksScreen() {
 								/>
 							}
 						>
-							{items.map((item) => (
-								<StackLink key={item.id} model={model} stack={item.value} />
-							))}
+							<List.ForEach data={items} keyExtractor={stableItemKey} estimatedItemSize={44}>
+								{({ item }) => <StackLink model={model} stack={item.value} />}
+							</List.ForEach>
 							<PaginatedListFooter
 								hasMore={snapshot.hasMore}
 								loadMoreError={snapshot.loadMoreError}

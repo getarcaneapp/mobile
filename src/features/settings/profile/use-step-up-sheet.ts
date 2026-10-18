@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
+
 import type { StepUpSheetProps } from './step-up-sheet.types';
 
 export function useStepUpSheet({
@@ -13,11 +15,12 @@ export function useStepUpSheet({
 	const run = async (work: () => Promise<string | undefined>) => {
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			setErrorMessage(await work());
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				setErrorMessage(await work());
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	return {

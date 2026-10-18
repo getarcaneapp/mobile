@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { EnvironmentID } from '@/sdk/client/environment';
 import type { PublicSetting } from '@/sdk/models/settings/Settings';
 import { useClientManager } from '@/stores/client-manager';
@@ -39,6 +40,17 @@ function sameState(a: BuildSettingsFormState, b: BuildSettingsFormState) {
 
 const trimWhitespace = (value: string) => value.replace(/^[ \t]+|[ \t]+$/g, '');
 
+function buildSettingsState(dtos: PublicSetting[]): BuildSettingsFormState {
+	const dict = new Map(dtos.map((dto) => [dto.key, dto.value]));
+	return {
+		buildProvider: dict.get('buildProvider') ?? 'local',
+		buildTimeout: dict.get('buildTimeout') ?? '1800',
+		buildsDirectory: dict.get('buildsDirectory') ?? '',
+		depotProjectId: dict.get('depotProjectId') ?? '',
+		depotToken: dict.get('depotToken') ?? ''
+	};
+}
+
 export function useBuildSettings(environmentID: EnvironmentID = EnvironmentID.localDocker) {
 	const client = useClientManager((s) => s.client);
 	const [form, setForm] = useState<BuildSettingsFormState>(defaults);
@@ -62,25 +74,23 @@ export function useBuildSettings(environmentID: EnvironmentID = EnvironmentID.lo
 		setErrorMessage(undefined);
 		setOriginalState(undefined);
 		setForm(defaults);
-		try {
-			const dtos: PublicSetting[] = await client.settings.getSettings({ envID: environmentID });
-			if (token !== generation.current) return;
-			const dict = new Map(dtos.map((dto) => [dto.key, dto.value]));
-			const loaded: BuildSettingsFormState = {
-				buildProvider: dict.get('buildProvider') ?? 'local',
-				buildTimeout: dict.get('buildTimeout') ?? '1800',
-				buildsDirectory: dict.get('buildsDirectory') ?? '',
-				depotProjectId: dict.get('depotProjectId') ?? '',
-				depotToken: dict.get('depotToken') ?? ''
-			};
-			setForm(loaded);
-			setOriginalState(loaded);
-		} catch (error) {
-			if (token !== generation.current) return;
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (token === generation.current) setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					const dtos: PublicSetting[] = await client.settings.getSettings({ envID: environmentID });
+					if (token !== generation.current) return;
+					const loaded = buildSettingsState(dtos);
+					setForm(loaded);
+					setOriginalState(loaded);
+				} catch (error) {
+					if (token !== generation.current) return;
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (token === generation.current) setIsLoading(false);
+			}
+		);
 	}, [client, environmentID]);
 
 	useEffect(() => {
@@ -110,31 +120,36 @@ export function useBuildSettings(environmentID: EnvironmentID = EnvironmentID.lo
 		const snapshot = form;
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			const body: Record<string, string> = {
-				buildProvider: snapshot.buildProvider,
-				buildTimeout: snapshot.buildTimeout
-			};
-			const trimmedDir = trimWhitespace(snapshot.buildsDirectory);
-			if (trimmedDir !== '') body.buildsDirectory = trimmedDir;
-			if (snapshot.buildProvider === 'depot') {
-				const trimmedProject = trimWhitespace(snapshot.depotProjectId);
-				if (trimmedProject !== '') body.depotProjectId = trimmedProject;
-				if (snapshot.depotToken !== '') body.depotToken = snapshot.depotToken;
+		await withCleanup(
+			async () => {
+				try {
+					const body: Record<string, string> = {
+						buildProvider: snapshot.buildProvider,
+						buildTimeout: snapshot.buildTimeout
+					};
+					const trimmedDir = trimWhitespace(snapshot.buildsDirectory);
+					if (trimmedDir !== '') body.buildsDirectory = trimmedDir;
+					if (snapshot.buildProvider === 'depot') {
+						const trimmedProject = trimWhitespace(snapshot.depotProjectId);
+						if (trimmedProject !== '') body.depotProjectId = trimmedProject;
+						if (snapshot.depotToken !== '') body.depotToken = snapshot.depotToken;
+					}
+					await client.rest.put<PublicSetting[]>(
+						client.rest.environmentPath(environmentID, 'settings'),
+						{ body }
+					);
+					if (token !== generation.current) return;
+					setOriginalState(snapshot);
+					showToast(Toasts.success('Build settings saved'));
+				} catch (error) {
+					if (token !== generation.current) return;
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (token === generation.current) setIsSaving(false);
 			}
-			await client.rest.put<PublicSetting[]>(
-				client.rest.environmentPath(environmentID, 'settings'),
-				{ body }
-			);
-			if (token !== generation.current) return;
-			setOriginalState(snapshot);
-			showToast(Toasts.success('Build settings saved'));
-		} catch (error) {
-			if (token !== generation.current) return;
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (token === generation.current) setIsSaving(false);
-		}
+		);
 	};
 
 	const update = (patch: Partial<BuildSettingsFormState>) =>

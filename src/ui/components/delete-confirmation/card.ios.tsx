@@ -52,7 +52,7 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 	useEffect(() => {
 		void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 		setShown(true);
-		scrim.value = animateTo(motion, 1);
+		scrim.set(animateTo(motion, 1));
 	}, [motion, scrim]);
 
 	const resolve = (action: (() => void) | undefined) => {
@@ -60,7 +60,7 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 		isDismissing.current = true;
 		if (action) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 		setShown(false);
-		scrim.value = animateTo(motion, 0);
+		scrim.set(animateTo(motion, 0));
 		setTimeout(() => onResolved(action), exitDelay(reduceMotion));
 	};
 

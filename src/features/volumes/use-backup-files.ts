@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import type { BackupFileEntry } from '@/sdk/models/backup/BackupFileEntry';
@@ -27,6 +29,59 @@ export function deletingLastPathComponent(path: string) {
 	if (index < 0) return '';
 	if (index === 0) return '/';
 	return trimmed.slice(0, index);
+}
+
+type BackupFilesOutcome =
+	| { kind: 'stale' }
+	| { kind: 'legacy'; entries: BackupFileEntry[] }
+	| { kind: 'page'; entries: BackupFileEntry[]; hasMore: boolean }
+	| { kind: 'error'; message: string };
+
+async function fetchBackupFiles(params: {
+	client: ArcaneClient;
+	scope: BackupRequestScope;
+	isUnmounted: () => boolean;
+	isCurrent: () => boolean;
+	more: boolean;
+	current: () => BackupFileEntry[];
+	environmentID: EnvironmentID;
+	backupID: string;
+	path: string;
+	search: string;
+}): Promise<BackupFilesOutcome> {
+	const { client, scope, isUnmounted, isCurrent, more, current, environmentID, backupID } = params;
+	const { path: requestPath, search: requestSearch } = params;
+	try {
+		let page;
+		try {
+			page = await client.volumes.browseBackupFiles({
+				envID: environmentID,
+				backupID,
+				path: requestPath,
+				search: requestSearch,
+				start: more ? current().length : 0,
+				limit: 50
+			});
+		} catch (error) {
+			if (!isArcaneError(error, 'notFound')) throw error;
+			const paths = await client.volumes.listBackupFiles({ envID: environmentID, backupID });
+			scope.check(isUnmounted);
+			if (!isCurrent()) return { kind: 'stale' };
+			return {
+				kind: 'legacy',
+				entries: paths
+					.filter((p) => requestSearch === '' || containsCaseInsensitive(p, requestSearch))
+					.map((p) => ({ path: p, name: lastPathComponent(p), isDirectory: false }))
+			};
+		}
+		scope.check(isUnmounted);
+		if (!isCurrent()) return { kind: 'stale' };
+		const next = [...(more ? current() : []), ...page.data];
+		return { kind: 'page', entries: next, hasMore: next.length < page.pagination.totalItems };
+	} catch (error) {
+		if (isCancellation(error) || !isCurrent()) return { kind: 'stale' };
+		return { kind: 'error', message: friendlyErrorMessage(error) };
+	}
 }
 
 export function useBackupFiles({
@@ -57,7 +112,9 @@ export function useBackupFiles({
 
 	const listIdentity = `${generation}:${path}:${search}`;
 	const latest = useRef({ listIdentity, path, search });
-	latest.current = { listIdentity, path, search };
+	useLayoutEffect(() => {
+		latest.current = { listIdentity, path, search };
+	});
 	const loadedIdentity = useRef('');
 	const loadingIdentity = useRef<string | undefined>(undefined);
 	const requestID = useRef('');
@@ -90,47 +147,46 @@ export function useBackupFiles({
 				setSelectAll(false);
 			}
 			const isCurrent = () => key === latest.current.listIdentity && requestID.current === request;
-			try {
-				let page;
-				try {
-					page = await client.volumes.browseBackupFiles({
-						envID: environmentID,
+			await withCleanup(
+				async () => {
+					const outcome = await fetchBackupFiles({
+						client,
+						scope,
+						isUnmounted: () => unmounted.current,
+						isCurrent,
+						more,
+						current: () => entriesRef.current,
+						environmentID,
 						backupID,
 						path: requestPath,
-						search: requestSearch,
-						start: more ? entriesRef.current.length : 0,
-						limit: 50
+						search: requestSearch
 					});
-				} catch (error) {
-					if (!isArcaneError(error, 'notFound')) throw error;
-					const paths = await client.volumes.listBackupFiles({ envID: environmentID, backupID });
-					scope.check(() => unmounted.current);
-					if (!isCurrent()) return;
-					updateEntries(
-						paths
-							.filter((p) => requestSearch === '' || containsCaseInsensitive(p, requestSearch))
-							.map((p) => ({ path: p, name: lastPathComponent(p), isDirectory: false }))
-					);
-					setLegacyBrowser(true);
-					setSelectAll(false);
-					setHasMore(false);
-					return;
+					switch (outcome.kind) {
+						case 'legacy':
+							updateEntries(outcome.entries);
+							setLegacyBrowser(true);
+							setSelectAll(false);
+							setHasMore(false);
+							break;
+						case 'page':
+							updateEntries(outcome.entries);
+							setHasMore(outcome.hasMore);
+							break;
+						case 'error':
+							if (more) setLoadMoreError(outcome.message);
+							else setErrorMessage(outcome.message);
+							break;
+						case 'stale':
+							break;
+					}
+				},
+				() => {
+					if (requestID.current === request && !unmounted.current) {
+						setBusy(false);
+						loadingIdentity.current = undefined;
+					}
 				}
-				scope.check(() => unmounted.current);
-				if (!isCurrent()) return;
-				const next = [...(more ? entriesRef.current : []), ...page.data];
-				updateEntries(next);
-				setHasMore(next.length < page.pagination.totalItems);
-			} catch (error) {
-				if (isCancellation(error) || !isCurrent()) return;
-				if (more) setLoadMoreError(friendlyErrorMessage(error));
-				else setErrorMessage(friendlyErrorMessage(error));
-			} finally {
-				if (requestID.current === request && !unmounted.current) {
-					setBusy(false);
-					loadingIdentity.current = undefined;
-				}
-			}
+			);
 		},
 		[environmentID, backupID, unmounted]
 	);
@@ -144,20 +200,30 @@ export function useBackupFiles({
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setBusy(true);
-		try {
-			await client.volumes.restoreBackupFiles({
-				envID: environmentID,
-				name: volumeName,
-				backupID,
-				selection: { paths: [...selected], selectAll, search: search === '' ? undefined : search }
-			});
-			scope.check(() => unmounted.current);
-			showToast(Toasts.info('Restore request accepted'));
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (!unmounted.current) setBusy(false);
-		}
+		const selection = {
+			paths: [...selected],
+			selectAll,
+			search: search === '' ? undefined : search
+		};
+		await withCleanup(
+			async () => {
+				try {
+					await client.volumes.restoreBackupFiles({
+						envID: environmentID,
+						name: volumeName,
+						backupID,
+						selection
+					});
+					scope.check(() => unmounted.current);
+					showToast(Toasts.info('Restore request accepted'));
+				} catch (error) {
+					if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (!unmounted.current) setBusy(false);
+			}
+		);
 	};
 
 	return {

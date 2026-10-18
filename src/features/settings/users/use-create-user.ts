@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import { Role } from '@/sdk/models/role/Role';
 import type { CreateUser } from '@/sdk/models/user/User';
@@ -66,37 +67,40 @@ export function useCreateUser() {
 		setIsLoading(true);
 		setErrorMessage(undefined);
 		const supportsRBAC = supportsRoleManagement;
-		try {
-			const body: CreateUser = {
-				username,
-				password,
-				displayName: undefined,
-				email: email === '' ? undefined : email,
-				roles: supportsRBAC ? undefined : isAdmin ? ['admin'] : ['user']
-			};
-			const created = await client.users.create({ body });
-			if (supportsRBAC) {
+		const body: CreateUser = {
+			username,
+			password,
+			displayName: undefined,
+			email: email === '' ? undefined : email,
+			roles: supportsRBAC ? undefined : isAdmin ? ['admin'] : ['user']
+		};
+		await withCleanup(
+			async () => {
 				try {
-					await client.users.setRoleAssignments({
-						userId: created.id,
-						assignments: [{ roleId: selectedRoleId }]
-					});
+					const created = await client.users.create({ body });
+					if (supportsRBAC) {
+						try {
+							await client.users.setRoleAssignments({
+								userId: created.id,
+								assignments: [{ roleId: selectedRoleId }]
+							});
+						} catch (error) {
+							setErrorMessage(
+								`User created, but the role could not be assigned: ${friendlyErrorMessage(error)}`
+							);
+							if (payload) await payload.onSuccess();
+							return;
+						}
+					}
+					showToast(Toasts.success('User created'));
+					if (payload) await payload.onSuccess();
+					nav.back();
 				} catch (error) {
-					setErrorMessage(
-						`User created, but the role could not be assigned: ${friendlyErrorMessage(error)}`
-					);
-					await payload?.onSuccess();
-					return;
+					setErrorMessage(friendlyErrorMessage(error));
 				}
-			}
-			showToast(Toasts.success('User created'));
-			await payload?.onSuccess();
-			nav.back();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	return {

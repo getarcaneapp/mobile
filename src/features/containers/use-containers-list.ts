@@ -1,14 +1,23 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+	useSyncExternalStore
+} from 'react';
 
 import {
 	performAllEnvironmentsMaintenance,
 	performAllEnvironmentsPrune
 } from '@/core/all-environments-actions';
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermissionCheck } from '@/core/auth/permissions';
 import { BulkActionRunner, type BulkResult } from '@/core/bulk-action-runner';
 import { friendlyErrorMessage } from '@/core/errors';
 import { ResourcePruneAction } from '@/core/resource-prune-action';
+import { nextInstanceKey, withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type {
 	ContainerResourceSample,
@@ -87,13 +96,60 @@ export type ContainerRowMetrics =
 	| { kind: 'loading' }
 	| { kind: 'sample'; sample: ContainerResourceSample };
 
+const hiddenMetrics: ContainerRowMetrics = { kind: 'hidden' };
+const loadingMetrics: ContainerRowMetrics = { kind: 'loading' };
+
+export function useContainerRowMetrics(
+	samples: ContainerResourceSampleStore,
+	item: ContainerItem
+): ContainerRowMetrics {
+	const containerID = item.value.id;
+	const environmentID = item.environmentID;
+	const live = useSyncExternalStore(samples.subscribe, () =>
+		samples.sample(containerID, environmentID)
+	);
+	const supported = useSyncExternalStore(samples.subscribe, () => samples.supports(environmentID));
+	const pending = useSyncExternalStore(samples.subscribe, () => samples.isPending(environmentID));
+	const sample = live ?? item.value.resourceSample;
+	return useMemo(() => {
+		if (!containerIsRunning(item.value) || !supported) return hiddenMetrics;
+		if (sample) return { kind: 'sample', sample };
+		return pending ? loadingMetrics : hiddenMetrics;
+	}, [item.value, supported, sample, pending]);
+}
+
 const bulkTint = {
 	green: systemColors.green,
 	red: systemColors.red,
 	orange: systemColors.orange
 } as const;
 
-let listCounter = 0;
+async function runPowerAll(action: PowerAllAction, environmentID: EnvironmentID) {
+	const current = useClientManager.getState().client;
+	if (!current) return;
+	try {
+		const result =
+			action === 'startAll'
+				? await current.system.startAllContainers({ envID: environmentID })
+				: action === 'startStopped'
+					? await current.system.startAllStoppedContainers({ envID: environmentID })
+					: await current.system.stopAllContainers({ envID: environmentID });
+		containersChanged(environmentID);
+		const changed = (action === 'stopAll' ? result.stopped : result.started)?.length ?? 0;
+		const failed = result.failed?.length ?? 0;
+		if (failed > 0) showToast(Toasts.error(`${failed} container${failed === 1 ? '' : 's'} failed`));
+		else if (changed === 0)
+			showToast(Toasts.info(`No containers to ${action === 'stopAll' ? 'stop' : 'start'}`));
+		else
+			showToast(
+				Toasts.success(
+					`${action === 'stopAll' ? 'Stopped' : 'Started'} ${pluralContainers(changed)}`
+				)
+			);
+	} catch (error) {
+		showToast(Toasts.error(friendlyErrorMessage(error)));
+	}
+}
 
 export type ContainersListProps = {
 	environmentID: EnvironmentID;
@@ -109,7 +165,7 @@ export function useContainersList({
 	const nav = useContainerNavigation();
 	const client = useClientManager((s) => s.client);
 	const accent = useAccentColor();
-	const [listKey] = useState(() => `containers-${++listCounter}`);
+	const [listKey] = useState(() => nextInstanceKey('containers'));
 	const filter = useContainersFilter(listKey);
 	const updateFilter = useContainersFilterStore((s) => s.update);
 	useEffect(() => () => useContainersFilterStore.getState().remove(listKey), [listKey]);
@@ -121,10 +177,7 @@ export function useContainersList({
 	const [list, snapshot] = useEnvironmentPagedList<ContainerSummary>(pageSize);
 	const containers = snapshot.items;
 
-	const samplesRef = useRef<ContainerResourceSampleStore | null>(null);
-	samplesRef.current ??= new ContainerResourceSampleStore();
-	const samples = samplesRef.current;
-	const samplesRevision = useSyncExternalStore(samples.subscribe, samples.getRevision);
+	const [samples] = useState(() => new ContainerResourceSampleStore());
 
 	const pinVersion = usePinnedItemsStore((s) => s.version);
 	const environmentsStoreEnabled = useEnvironmentsStore((s) => s.environments);
@@ -147,12 +200,14 @@ export function useContainersList({
 		showHidden: filter.showHidden,
 		sort: filter.sort
 	});
-	latest.current = {
-		debouncedSearch,
-		debouncedLabel,
-		showHidden: filter.showHidden,
-		sort: filter.sort
-	};
+	useLayoutEffect(() => {
+		latest.current = {
+			debouncedSearch,
+			debouncedLabel,
+			showHidden: filter.showHidden,
+			sort: filter.sort
+		};
+	});
 
 	const containersPage = useCallback((): EnvironmentFetch<ContainerSummary> | undefined => {
 		const current = useClientManager.getState().client;
@@ -256,7 +311,10 @@ export function useContainersList({
 		return pinnedEnvironmentItemIDs('container', containers);
 	}, [containers, pinVersion]);
 
-	const sortSamplesRevision = resourceSortFor(filter.sort) !== undefined ? samplesRevision : 0;
+	const sortsByResource = resourceSortFor(filter.sort) !== undefined;
+	const sortSamplesRevision = useSyncExternalStore(samples.subscribe, () =>
+		sortsByResource ? samples.getRevision() : 0
+	);
 	const sections: ContainerSection<ContainerItem>[] = useMemo(() => {
 		void sortSamplesRevision;
 		return computeContainerSections(
@@ -285,18 +343,6 @@ export function useContainersList({
 		sortSamplesRevision
 	]);
 
-	const metrics = useCallback(
-		(item: ContainerItem): ContainerRowMetrics => {
-			void samplesRevision;
-			if (!containerIsRunning(item.value) || !samples.supports(item.environmentID))
-				return { kind: 'hidden' };
-			const sample = resourceSample(item);
-			if (sample) return { kind: 'sample', sample };
-			return samples.isPending(item.environmentID) ? { kind: 'loading' } : { kind: 'hidden' };
-		},
-		[samples, resourceSample, samplesRevision]
-	);
-
 	useEffect(() => {
 		const valid = new Set(containers.map((c) => c.id));
 		setSelection((current) => {
@@ -305,16 +351,16 @@ export function useContainersList({
 		});
 	}, [containers]);
 
-	useClientManager((s) => s.accessGeneration);
+	const can = usePermissionCheck();
 	const isRBAC = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
 	const listEnvironments: ListEnvironment[] = allEnvironments
 		? snapshot.environments
 		: [{ id: environmentID }];
 	const createEnvironments = listEnvironments.filter((e) =>
-		hasPermission(Permission.Containers.create, e.id)
+		can(Permission.Containers.create, e.id)
 	);
-	const canStartAll = hasPermission(Permission.Containers.start, environmentID);
-	const canStopAll = hasPermission(Permission.Containers.stop, environmentID);
+	const canStartAll = can(Permission.Containers.start, environmentID);
+	const canStopAll = can(Permission.Containers.stop, environmentID);
 	const enabledEnvironments = environmentsStoreEnabled.filter((e) => e.enabled);
 
 	const listEnvironment = useCallback(
@@ -366,10 +412,10 @@ export function useContainersList({
 		void performListAction('stop', item.environmentID, item.value.id);
 	const restartContainer = (item: ContainerItem) =>
 		void performListAction('restart', item.environmentID, item.value.id);
-	const canKill = (item: ContainerItem) => hasPermission('containers:kill', item.environmentID);
+	const canKill = (item: ContainerItem) => can('containers:kill', item.environmentID);
 	const canUpdate = (item: ContainerItem) =>
 		containerHasAvailableUpdate(item.value) &&
-		hasPermission(Permission.Containers.autoUpdate, item.environmentID);
+		can(Permission.Containers.autoUpdate, item.environmentID);
 
 	const exitSelectionMode = useCallback(() => {
 		setIsSelecting(false);
@@ -429,6 +475,11 @@ export function useContainersList({
 		else showToast(Toasts.error(`${result.failed.length} of ${total} failed`));
 	};
 
+	const endBulkRun = () => {
+		setIsBulkRunning(false);
+		setBulkRunningActionID(undefined);
+	};
+
 	const runBulkAction = async (action: ContainerBulkAction) => {
 		const current = useClientManager.getState().client;
 		if (!current) return;
@@ -439,7 +490,7 @@ export function useContainersList({
 		}
 		setIsBulkRunning(true);
 		setBulkRunningActionID(bulkActionInfo[action].id);
-		try {
+		await withCleanup(async () => {
 			const byID = new Map(targets.map((t) => [t.id, t]));
 			const result = await BulkActionRunner.run(
 				targets.map((t) => t.id),
@@ -458,10 +509,7 @@ export function useContainersList({
 				targets.map((t) => t.environmentID),
 				(count) => `${bulkActionInfo[action].summaryVerb} ${pluralContainers(count)}`
 			);
-		} finally {
-			setIsBulkRunning(false);
-			setBulkRunningActionID(undefined);
-		}
+		}, endBulkRun);
 	};
 
 	const bulkRemoveContainers = async (ids: string[]) => {
@@ -469,7 +517,7 @@ export function useContainersList({
 		if (!current) return;
 		setIsBulkRunning(true);
 		setBulkRunningActionID('bulk-delete');
-		try {
+		await withCleanup(async () => {
 			const targets = list.getSnapshot().items.filter((c) => ids.includes(c.id));
 			const byID = new Map(targets.map((t) => [t.id, t]));
 			const result = await BulkActionRunner.run(
@@ -492,10 +540,7 @@ export function useContainersList({
 				targets.map((t) => t.environmentID),
 				(count) => `Removed ${pluralContainers(count)}`
 			);
-		} finally {
-			setIsBulkRunning(false);
-			setBulkRunningActionID(undefined);
-		}
+		}, endBulkRun);
 	};
 
 	const bulkActionItem = (action: ContainerBulkAction): ActionButtonItem => {
@@ -528,7 +573,7 @@ export function useContainersList({
 		if (
 			isRBAC &&
 			selectionEnvironmentID !== undefined &&
-			hasPermission(Permission.Containers.read, selectionEnvironmentID)
+			can(Permission.Containers.read, selectionEnvironmentID)
 		) {
 			items.push({
 				id: 'generate-compose',
@@ -552,34 +597,6 @@ export function useContainersList({
 		});
 		return items;
 	})();
-
-	const runPowerAll = async (action: PowerAllAction) => {
-		const current = useClientManager.getState().client;
-		if (!current) return;
-		try {
-			const result =
-				action === 'startAll'
-					? await current.system.startAllContainers({ envID: environmentID })
-					: action === 'startStopped'
-						? await current.system.startAllStoppedContainers({ envID: environmentID })
-						: await current.system.stopAllContainers({ envID: environmentID });
-			containersChanged(environmentID);
-			const changed = (action === 'stopAll' ? result.stopped : result.started)?.length ?? 0;
-			const failed = result.failed?.length ?? 0;
-			if (failed > 0)
-				showToast(Toasts.error(`${failed} container${failed === 1 ? '' : 's'} failed`));
-			else if (changed === 0)
-				showToast(Toasts.info(`No containers to ${action === 'stopAll' ? 'stop' : 'start'}`));
-			else
-				showToast(
-					Toasts.success(
-						`${action === 'stopAll' ? 'Stopped' : 'Started'} ${pluralContainers(changed)}`
-					)
-				);
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		}
-	};
 
 	const pruneContainers = async () => {
 		if (allEnvironments) {
@@ -617,7 +634,9 @@ export function useContainersList({
 						title: 'Stop All Containers',
 						message: 'Stop every running container in this environment.',
 						icon: 'stop.fill',
-						actions: [{ title: 'Stop All', action: () => void runPowerAll('stopAll') }],
+						actions: [
+							{ title: 'Stop All', action: () => void runPowerAll('stopAll', environmentID) }
+						],
 						dismissOnConfirm: false
 					};
 				case 'kill':
@@ -684,7 +703,7 @@ export function useContainersList({
 		containers,
 		sections,
 		pinnedIDs,
-		metrics,
+		samples,
 		searchText,
 		setSearchText,
 		filter,
@@ -711,8 +730,8 @@ export function useContainersList({
 		presentCreateContainer,
 		canStartAll,
 		canStopAll,
-		startAll: () => void runPowerAll('startAll'),
-		startStopped: () => void runPowerAll('startStopped'),
+		startAll: () => void runPowerAll('startAll', environmentID),
+		startStopped: () => void runPowerAll('startStopped', environmentID),
 		requestStopAll: () => setPendingDestructive({ kind: 'stopAll' }),
 		requestPrune: () => setPendingDestructive({ kind: 'prune' }),
 		isOperationRunning,

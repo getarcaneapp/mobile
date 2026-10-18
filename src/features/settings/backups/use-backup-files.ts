@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import type { BackupFileEntry } from '@/sdk/models/backup/BackupFileEntry';
 import type { PaginatedResponse } from '@/sdk/pagination/PaginatedResponse';
@@ -23,6 +25,71 @@ function deletingLastPathComponent(path: string): string {
 	if (index < 0) return '';
 	if (index === 0) return '/';
 	return trimmed.slice(0, index);
+}
+
+type BackupFilesOutcome =
+	| { kind: 'stale' }
+	| { kind: 'legacy'; entries: BackupFileEntry[] }
+	| { kind: 'page'; entries: BackupFileEntry[]; hasMore: boolean }
+	| { kind: 'error'; message: string };
+
+async function fetchBackupFiles(params: {
+	client: ArcaneClient;
+	scope: { check(): void };
+	isCurrent: () => boolean;
+	more: boolean;
+	current: BackupFileEntry[];
+	volumeName: string | undefined;
+	environmentID: BackupFilesTarget['environmentID'];
+	backupID: string;
+	recoveryKey: string;
+	path: string;
+	search: string;
+}): Promise<BackupFilesOutcome> {
+	const { client, scope, isCurrent, more, current, volumeName, environmentID, backupID } = params;
+	const { recoveryKey, path: currentPath, search: currentSearch } = params;
+	try {
+		let page: PaginatedResponse<BackupFileEntry>;
+		const start = more ? current.length : 0;
+		if (volumeName !== undefined) {
+			try {
+				page = await client.volumes.browseBackupFiles({
+					envID: environmentID,
+					backupID,
+					path: currentPath,
+					search: currentSearch,
+					start,
+					limit: 50
+				});
+			} catch (error) {
+				if (!isArcaneError(error, 'notFound')) throw error;
+				const paths = await client.volumes.listBackupFiles({ envID: environmentID, backupID });
+				scope.check();
+				if (!isCurrent()) return { kind: 'stale' };
+				const needle = currentSearch.toLocaleLowerCase();
+				const next = paths
+					.filter((file) => currentSearch === '' || file.toLocaleLowerCase().includes(needle))
+					.map((file) => ({ path: file, name: lastPathComponent(file), isDirectory: false }));
+				return { kind: 'legacy', entries: next };
+			}
+		} else {
+			page = await client.systemBackups.browseFiles({
+				id: backupID,
+				recoveryKey,
+				path: currentPath,
+				search: currentSearch,
+				start,
+				limit: 50
+			});
+		}
+		scope.check();
+		if (!isCurrent()) return { kind: 'stale' };
+		const next = more ? [...current, ...page.data] : page.data;
+		return { kind: 'page', entries: next, hasMore: next.length < page.pagination.totalItems };
+	} catch (error) {
+		if (isCancellation(error) || !isCurrent()) return { kind: 'stale' };
+		return { kind: 'error', message: friendlyErrorMessage(error) };
+	}
 }
 
 export function useBackupFiles(target: BackupFilesTarget & { keyToken?: string }) {
@@ -50,14 +117,16 @@ export function useBackupFiles(target: BackupFilesTarget & { keyToken?: string }
 
 	const listIdentity = `${clientGeneration}:${path}:${search}`;
 	const identityRef = useRef(listIdentity);
-	identityRef.current = listIdentity;
 	const queryRef = useRef({ path, search });
-	queryRef.current = { path, search };
 	const loadedIdentity = useRef('');
 	const loadingIdentity = useRef<string | undefined>(undefined);
 	const requestID = useRef(0);
 	const entriesRef = useRef(entries);
-	entriesRef.current = entries;
+	useLayoutEffect(() => {
+		identityRef.current = listIdentity;
+		queryRef.current = { path, search };
+		entriesRef.current = entries;
+	});
 
 	const load = useCallback(
 		async (more = false) => {
@@ -83,61 +152,49 @@ export function useBackupFiles(target: BackupFilesTarget & { keyToken?: string }
 				setSelectAll(false);
 			}
 			const isCurrent = () => key === identityRef.current && requestID.current === request;
-			try {
-				let page: PaginatedResponse<BackupFileEntry>;
-				const start = more ? current.length : 0;
-				if (volumeName !== undefined) {
-					try {
-						page = await client.volumes.browseBackupFiles({
-							envID: environmentID,
-							backupID,
-							path: currentPath,
-							search: currentSearch,
-							start,
-							limit: 50
-						});
-					} catch (error) {
-						if (!isArcaneError(error, 'notFound')) throw error;
-						const paths = await client.volumes.listBackupFiles({ envID: environmentID, backupID });
-						scope.check();
-						if (!isCurrent()) return;
-						const needle = currentSearch.toLocaleLowerCase();
-						const next = paths
-							.filter((file) => currentSearch === '' || file.toLocaleLowerCase().includes(needle))
-							.map((file) => ({ path: file, name: lastPathComponent(file), isDirectory: false }));
-						entriesRef.current = next;
-						setEntries(next);
-						setLegacyBrowser(true);
-						setSelectAll(false);
-						setHasMore(false);
-						return;
-					}
-				} else {
-					page = await client.systemBackups.browseFiles({
-						id: backupID,
+			await withCleanup(
+				async () => {
+					const outcome = await fetchBackupFiles({
+						client,
+						scope,
+						isCurrent,
+						more,
+						current,
+						volumeName,
+						environmentID,
+						backupID,
 						recoveryKey,
 						path: currentPath,
-						search: currentSearch,
-						start,
-						limit: 50
+						search: currentSearch
 					});
+					switch (outcome.kind) {
+						case 'legacy':
+							entriesRef.current = outcome.entries;
+							setEntries(outcome.entries);
+							setLegacyBrowser(true);
+							setSelectAll(false);
+							setHasMore(false);
+							break;
+						case 'page':
+							entriesRef.current = outcome.entries;
+							setEntries(outcome.entries);
+							setHasMore(outcome.hasMore);
+							break;
+						case 'error':
+							if (more) setLoadMoreError(outcome.message);
+							else setErrorMessage(outcome.message);
+							break;
+						case 'stale':
+							break;
+					}
+				},
+				() => {
+					if (requestID.current === request) {
+						setBusy(false);
+						loadingIdentity.current = undefined;
+					}
 				}
-				scope.check();
-				if (!isCurrent()) return;
-				const next = more ? [...current, ...page.data] : page.data;
-				entriesRef.current = next;
-				setEntries(next);
-				setHasMore(next.length < page.pagination.totalItems);
-			} catch (error) {
-				if (isCancellation(error) || !isCurrent()) return;
-				if (more) setLoadMoreError(friendlyErrorMessage(error));
-				else setErrorMessage(friendlyErrorMessage(error));
-			} finally {
-				if (requestID.current === request) {
-					setBusy(false);
-					loadingIdentity.current = undefined;
-				}
-			}
+			);
 		},
 		[alive, backupID, client, environmentID, recoveryKey, volumeName]
 	);
@@ -158,29 +215,34 @@ export function useBackupFiles(target: BackupFilesTarget & { keyToken?: string }
 		const scope = backupRequestScope(() => alive.current);
 		if (!client) return;
 		setBusy(true);
-		try {
-			const paths = [...selected];
-			const searchValue = search === '' ? undefined : search;
-			if (volumeName !== undefined) {
-				await client.volumes.restoreBackupFiles({
-					envID: environmentID,
-					name: volumeName,
-					backupID,
-					selection: { paths, selectAll, search: searchValue }
-				});
-			} else {
-				await client.systemBackups.restoreFiles({
-					id: backupID,
-					request: { paths, selectAll, search: searchValue, recoveryKey }
-				});
+		await withCleanup(
+			async () => {
+				const paths = [...selected];
+				const searchValue = search === '' ? undefined : search;
+				try {
+					if (volumeName !== undefined) {
+						await client.volumes.restoreBackupFiles({
+							envID: environmentID,
+							name: volumeName,
+							backupID,
+							selection: { paths, selectAll, search: searchValue }
+						});
+					} else {
+						await client.systemBackups.restoreFiles({
+							id: backupID,
+							request: { paths, selectAll, search: searchValue, recoveryKey }
+						});
+					}
+					scope.check();
+					showToast(Toasts.info('Restore request accepted'));
+				} catch (error) {
+					if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (alive.current) setBusy(false);
 			}
-			scope.check();
-			showToast(Toasts.info('Restore request accepted'));
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (alive.current) setBusy(false);
-		}
+		);
 	};
 
 	return {

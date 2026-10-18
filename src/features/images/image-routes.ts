@@ -1,5 +1,6 @@
-import { useRouter, useSegments, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
+import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 
 import { routePayloads } from '@/features/containers/container-routes';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -34,36 +35,28 @@ function query(params: Params) {
 
 export function useImageNavigation() {
 	const router = useRouter();
-	const segments = useSegments() as string[];
-	const group =
-		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(images)';
+	const group = useTabStackGroup('(images)');
 	return useMemo(() => {
 		const href = (path: string, params: Params = {}) =>
 			`/(tabs)/${group}/${path}${query(params)}` as Href;
 		const imagePath = (id: string, suffix = '') => `image/${encodeURIComponent(id)}${suffix}`;
 		return {
 			router,
-			openDetail(this: void, environmentID: EnvironmentID, summary: ImageSummary) {
+			openDetail: (environmentID: EnvironmentID, summary: ImageSummary) => {
 				imageCache.setSummary(environmentID, summary);
 				router.push(href(imagePath(summary.id), { envID: environmentID }));
 			},
-			openTag(this: void, environmentID: EnvironmentID, imageID: string) {
+			openTag: (environmentID: EnvironmentID, imageID: string) => {
 				router.push(href(imagePath(imageID, '/tag'), { envID: environmentID }));
 			},
-			openConfigPage(
-				this: void,
-				page: 'env' | 'labels',
-				environmentID: EnvironmentID,
-				imageID: string
-			) {
+			openConfigPage: (page: 'env' | 'labels', environmentID: EnvironmentID, imageID: string) => {
 				router.push(href(imagePath(imageID, `/${page}`), { envID: environmentID }));
 			},
-			openAttestation(
-				this: void,
+			openAttestation: (
 				environmentID: EnvironmentID,
 				imageID: string,
 				attestation: ImageAttestation
-			) {
+			) => {
 				router.push(
 					href(imagePath(imageID, '/attestation'), {
 						envID: environmentID,
@@ -71,27 +64,27 @@ export function useImageNavigation() {
 					})
 				);
 			},
-			openUpdates(this: void, environmentID: EnvironmentID, images: ImageSummary[]) {
+			openUpdates: (environmentID: EnvironmentID, images: ImageSummary[]) => {
 				router.push(
 					href('image-updates', { envID: environmentID, token: routePayloads.put(images) })
 				);
 			},
-			openSecurity(this: void, environmentID: EnvironmentID) {
+			openSecurity: (environmentID: EnvironmentID) => {
 				router.push(href('imageVulnerabilities', { envID: environmentID }));
 			},
-			openRegistries(this: void) {
+			openRegistries: () => {
 				router.push(href('containerRegistries'));
 			},
-			openFilter(this: void, listKey: string) {
+			openFilter: (listKey: string) => {
 				router.push(href('images-filter', { key: listKey }));
 			},
-			openPull(this: void, environmentID: EnvironmentID) {
+			openPull: (environmentID: EnvironmentID) => {
 				router.push(href('image-pull', { envID: environmentID }));
 			},
-			openUpload(this: void, environmentID: EnvironmentID) {
+			openUpload: (environmentID: EnvironmentID) => {
 				router.push(href('image-upload', { envID: environmentID }));
 			},
-			openPrune(this: void, environmentID: EnvironmentID) {
+			openPrune: (environmentID: EnvironmentID) => {
 				router.push(href('image-prune', { envID: environmentID }));
 			}
 		};

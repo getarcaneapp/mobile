@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import {
 	AndroidToolbar,
 	type AndroidToolbarItem
@@ -146,11 +147,10 @@ export function VariablesScreen() {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.load();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			() => model.load(),
+			() => setRefreshing(false)
+		);
 	};
 
 	let content;

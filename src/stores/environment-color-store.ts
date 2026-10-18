@@ -45,6 +45,14 @@ function key(server: string, environmentID: string): string {
 	return normalized + '\n' + environmentID;
 }
 
+export function environmentColorHex(
+	colors: Readonly<Record<string, string>>,
+	server: string,
+	environmentID: string
+): string | undefined {
+	return colors[key(server, environmentID)];
+}
+
 function availableColor(used: ReadonlySet<string>): string {
 	const color = palette.find((candidate) => !used.has(candidate));
 	if (color) return color;
@@ -67,7 +75,7 @@ type EnvironmentColorState = {
 export const useEnvironmentColorStore = create<EnvironmentColorState>((setState, get) => ({
 	colors: loadColors(),
 
-	hex: (server, environmentID) => get().colors[key(server, environmentID)],
+	hex: (server, environmentID) => environmentColorHex(get().colors, server, environmentID),
 
 	assignDefaults: (server, environmentIDs) => {
 		const colors = get().colors;

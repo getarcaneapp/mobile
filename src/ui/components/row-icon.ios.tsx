@@ -25,29 +25,66 @@ import { Radius } from '@/theme/tokens';
 import { imageReferenceParts, type ImageReferenceParts } from './image-reference';
 import type { RowIconProps, TextStyleName } from './row-icon.types';
 
-export function RowIcon({ systemImage, tint, size = 36, changeToken = '' }: RowIconProps) {
-	const accent = useAccentColor();
-	const color = tint ?? accent;
+function iconModifiers(color: string, size: number) {
+	return {
+		glyph: [font({ size: size * 0.46, weight: 'semibold' }), foregroundStyle(color)],
+		tile: [
+			frame({ width: size, height: size }),
+			background(
+				withOpacity(color, 0.14),
+				shapes.roundedRectangle({ cornerRadius: Radius.small, roundedCornerStyle: 'continuous' })
+			),
+			accessibilityHidden(true)
+		]
+	};
+}
+
+function BouncingRowIcon({
+	systemImage,
+	color,
+	size,
+	changeToken
+}: {
+	systemImage: string;
+	color: string;
+	size: number;
+	changeToken: string;
+}) {
 	const bounce = useNativeState<string>(changeToken);
 	useEffect(() => {
-		bounce.value = changeToken;
+		bounce.set(changeToken);
 	}, [bounce, changeToken]);
+	const { glyph, tile } = iconModifiers(color, size);
 	return (
 		<Image
 			systemName={systemImage as SFSymbol}
-			modifiers={[
-				font({ size: size * 0.46, weight: 'semibold' }),
-				foregroundStyle(color),
-				symbolEffect({ effect: 'bounce' }, { value: bounce }),
-				frame({ width: size, height: size }),
-				background(
-					withOpacity(color, 0.14),
-					shapes.roundedRectangle({ cornerRadius: Radius.small, roundedCornerStyle: 'continuous' })
-				),
-				accessibilityHidden(true)
-			]}
+			modifiers={[...glyph, symbolEffect({ effect: 'bounce' }, { value: bounce }), ...tile]}
 		/>
 	);
+}
+
+export function RowIcon({
+	systemImage,
+	tint,
+	size = 36,
+	changeToken,
+	identity
+}: RowIconProps & { identity?: string }) {
+	const accent = useAccentColor();
+	const color = tint ?? accent;
+	if (changeToken !== undefined) {
+		return (
+			<BouncingRowIcon
+				key={identity}
+				systemImage={systemImage}
+				color={color}
+				size={size}
+				changeToken={changeToken}
+			/>
+		);
+	}
+	const { glyph, tile } = iconModifiers(color, size);
+	return <Image systemName={systemImage as SFSymbol} modifiers={[...glyph, ...tile]} />;
 }
 
 export function ImageReferenceName({

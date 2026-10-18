@@ -2,6 +2,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
+import type { EnvironmentID } from '@/sdk/client/environment';
 import type { SwarmServiceInspect } from '@/sdk/models/swarm/SwarmServices';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
@@ -26,6 +29,28 @@ import {
 } from './swarm-spec-draft';
 
 export type PairsField = 'env' | 'labels';
+
+async function submitService(
+	client: ArcaneClient,
+	draft: SwarmServiceSpecDraft,
+	existing: SwarmServiceInspect | undefined,
+	envID: EnvironmentID
+): Promise<string | undefined> {
+	const spec = applyDraft(draft, existing?.spec);
+	let warnings: string[] | undefined;
+	if (existing) {
+		const response = await client.swarm.updateService({
+			serviceId: existing.id,
+			request: { version: swarmVersionIndex(existing.version) ?? 0, spec },
+			envID
+		});
+		warnings = response.warnings;
+	} else {
+		const response = await client.swarm.createService({ request: { spec }, envID });
+		warnings = response.warnings;
+	}
+	return warnings?.[0];
+}
 
 export function useSwarmServiceEditor() {
 	const router = useRouter();
@@ -74,30 +99,21 @@ export function useSwarmServiceEditor() {
 		if (!client) return;
 		setIsSaving(true);
 		setErrorMessage(undefined);
-		try {
-			const spec = applyDraft(draft, existing?.spec);
-			let warnings: string[] | undefined;
-			if (existing) {
-				const response = await client.swarm.updateService({
-					serviceId: existing.id,
-					request: { version: swarmVersionIndex(existing.version) ?? 0, spec },
-					envID
-				});
-				warnings = response.warnings;
-			} else {
-				const response = await client.swarm.createService({ request: { spec }, envID });
-				warnings = response.warnings;
-			}
-			swarmChanged(envID);
-			showToast(Toasts.success(isEditing ? 'Service updated' : 'Service created'));
-			const warning = warnings?.[0];
-			if (warning) showToast(Toasts.info(warning));
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		const successMessage = isEditing ? 'Service updated' : 'Service created';
+		await withCleanup(
+			async () => {
+				try {
+					const warning = await submitService(client, draft, existing, envID);
+					swarmChanged(envID);
+					showToast(Toasts.success(successMessage));
+					if (warning) showToast(Toasts.info(warning));
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	return {

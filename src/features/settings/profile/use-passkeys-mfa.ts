@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { passkeyAuthenticatorOptions } from '@/core/auth/auth-session';
 import { formatDate } from '@/core/date-formatting';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -61,6 +62,22 @@ export function passkeyRowDetails(passkey: PasskeySummary) {
 	};
 }
 
+async function stepUpWithAuthenticator(
+	authenticator: ArcanePasskeyAuthenticator
+): Promise<
+	{ kind: 'granted'; grant: StepUpGrant } | { kind: 'failed'; message: string | undefined }
+> {
+	try {
+		const grant = await authenticator.stepUp();
+		return { kind: 'granted', grant };
+	} catch (error) {
+		return {
+			kind: 'failed',
+			message: isUserCancellation(error) ? undefined : friendlyErrorMessage(error)
+		};
+	}
+}
+
 export function usePasskeysMFA() {
 	const clientGeneration = useClientManager((s) => s.clientGeneration);
 	const navigation = useSettingsNavigation();
@@ -79,7 +96,9 @@ export function usePasskeysMFA() {
 	const [pendingDelete, setPendingDelete] = useState<PasskeySummary>();
 
 	const latest = useRef({ passkeys, capabilities, bridgeAvailable });
-	latest.current = { passkeys, capabilities, bridgeAvailable };
+	useLayoutEffect(() => {
+		latest.current = { passkeys, capabilities, bridgeAvailable };
+	});
 	const grantRef = useRef<StepUpGrant | undefined>(undefined);
 	const queuedAction = useRef<ProtectedAction | undefined>(undefined);
 	const passkeyAuthenticator = useRef<ArcanePasskeyAuthenticator | undefined>(undefined);
@@ -104,21 +123,22 @@ export function usePasskeysMFA() {
 		const { client, clientGeneration: generation } = useClientManager.getState();
 		if (!client) return;
 		setIsLoading(true);
-		try {
-			const [loadedPasskeys, loadedCapabilities, loadedStatus, loadedBridge] = await Promise.all([
-				client.passkeys.list().catch(() => undefined),
-				client.passkeys.capabilities().catch(() => undefined),
-				client.passkeys.mfaStatus().catch(() => undefined),
-				makeAuthenticator(client).isBridgeAvailable()
-			]);
-			if (generation !== useClientManager.getState().clientGeneration) return;
-			setPasskeys(loadedPasskeys ?? []);
-			setCapabilities(loadedCapabilities);
-			setMFAStatus(loadedStatus);
-			setBridgeAvailable(loadedBridge);
-		} finally {
-			setIsLoading(false);
-		}
+		await withCleanup(
+			async () => {
+				const [loadedPasskeys, loadedCapabilities, loadedStatus, loadedBridge] = await Promise.all([
+					client.passkeys.list().catch(() => undefined),
+					client.passkeys.capabilities().catch(() => undefined),
+					client.passkeys.mfaStatus().catch(() => undefined),
+					makeAuthenticator(client).isBridgeAvailable()
+				]);
+				if (generation !== useClientManager.getState().clientGeneration) return;
+				setPasskeys(loadedPasskeys ?? []);
+				setCapabilities(loadedCapabilities);
+				setMFAStatus(loadedStatus);
+				setBridgeAvailable(loadedBridge);
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	const validStepUpGrant = () => {
@@ -177,15 +197,15 @@ export function usePasskeysMFA() {
 		if (!client) return 'No server configured';
 		const authenticator = makeAuthenticator(client);
 		passkeyAuthenticator.current = authenticator;
-		let grant: StepUpGrant;
-		try {
-			grant = await authenticator.stepUp();
-		} catch (error) {
-			return isUserCancellation(error) ? undefined : friendlyErrorMessage(error);
-		} finally {
-			if (passkeyAuthenticator.current === authenticator) passkeyAuthenticator.current = undefined;
-		}
-		await finishStepUp(grant);
+		const outcome = await withCleanup(
+			() => stepUpWithAuthenticator(authenticator),
+			() => {
+				if (passkeyAuthenticator.current === authenticator)
+					passkeyAuthenticator.current = undefined;
+			}
+		);
+		if (outcome.kind === 'failed') return outcome.message;
+		await finishStepUp(outcome.grant);
 		return undefined;
 	};
 
@@ -211,96 +231,105 @@ export function usePasskeysMFA() {
 		}
 		const generation = useClientManager.getState().clientGeneration;
 		setIsLoading(true);
-		try {
-			const stepUpToken = grant?.token;
-			switch (action.kind) {
-				case 'add': {
-					if (!latest.current.bridgeAvailable) {
-						showToast(Toasts.info('This server does not provide the mobile passkey bridge'));
-						return;
+		const stepUpToken = grant?.token;
+		await withCleanup(
+			async () => {
+				try {
+					switch (action.kind) {
+						case 'add': {
+							if (!latest.current.bridgeAvailable) {
+								showToast(Toasts.info('This server does not provide the mobile passkey bridge'));
+								return;
+							}
+							const authenticator = makeAuthenticator(client);
+							passkeyAuthenticator.current = authenticator;
+							await withCleanup(
+								async () => {
+									await authenticator.register({ name: action.name, stepUpToken });
+								},
+								() => {
+									if (passkeyAuthenticator.current === authenticator)
+										passkeyAuthenticator.current = undefined;
+								}
+							);
+							showToast(Toasts.success('Passkey added'));
+							break;
+						}
+						case 'rename':
+							if (!stepUpToken) return;
+							await client.passkeys.rename({
+								id: action.passkey.id,
+								name: action.name,
+								stepUpToken
+							});
+							showToast(Toasts.success('Passkey renamed'));
+							break;
+						case 'delete':
+							if (!stepUpToken) return;
+							await client.passkeys.delete({ id: action.passkey.id, stepUpToken });
+							showToast(Toasts.success('Passkey deleted'));
+							break;
+						case 'enableMFA': {
+							if (!stepUpToken) return;
+							const response = await client.passkeys.enableMFA({ stepUpToken });
+							presentRecoveryCodes(response.codes);
+							showToast(Toasts.success('Multi-factor authentication enabled'));
+							break;
+						}
+						case 'disableMFA':
+							if (!stepUpToken) return;
+							await client.passkeys.disableMFA({ stepUpToken });
+							showToast(Toasts.success('Multi-factor authentication disabled'));
+							break;
+						case 'regenerateRecoveryCodes': {
+							if (!stepUpToken) return;
+							const response = await client.passkeys.regenerateRecoveryCodes({ stepUpToken });
+							presentRecoveryCodes(response.codes);
+							showToast(Toasts.success('Recovery codes regenerated'));
+							break;
+						}
 					}
-					const authenticator = makeAuthenticator(client);
-					passkeyAuthenticator.current = authenticator;
-					try {
-						await authenticator.register({ name: action.name, stepUpToken });
-					} finally {
-						if (passkeyAuthenticator.current === authenticator)
-							passkeyAuthenticator.current = undefined;
-					}
-					showToast(Toasts.success('Passkey added'));
-					break;
+					if (generation !== useClientManager.getState().clientGeneration) return;
+					await load();
+				} catch (error) {
+					if (isUserCancellation(error)) return;
+					if (generation !== useClientManager.getState().clientGeneration) return;
+					showToast(Toasts.error(friendlyErrorMessage(error)));
 				}
-				case 'rename':
-					if (!stepUpToken) return;
-					await client.passkeys.rename({ id: action.passkey.id, name: action.name, stepUpToken });
-					showToast(Toasts.success('Passkey renamed'));
-					break;
-				case 'delete':
-					if (!stepUpToken) return;
-					await client.passkeys.delete({ id: action.passkey.id, stepUpToken });
-					showToast(Toasts.success('Passkey deleted'));
-					break;
-				case 'enableMFA': {
-					if (!stepUpToken) return;
-					const response = await client.passkeys.enableMFA({ stepUpToken });
-					presentRecoveryCodes(response.codes);
-					showToast(Toasts.success('Multi-factor authentication enabled'));
-					break;
-				}
-				case 'disableMFA':
-					if (!stepUpToken) return;
-					await client.passkeys.disableMFA({ stepUpToken });
-					showToast(Toasts.success('Multi-factor authentication disabled'));
-					break;
-				case 'regenerateRecoveryCodes': {
-					if (!stepUpToken) return;
-					const response = await client.passkeys.regenerateRecoveryCodes({ stepUpToken });
-					presentRecoveryCodes(response.codes);
-					showToast(Toasts.success('Recovery codes regenerated'));
-					break;
-				}
-			}
-			if (generation !== useClientManager.getState().clientGeneration) return;
-			await load();
-		} catch (error) {
-			if (isUserCancellation(error)) return;
-			if (generation !== useClientManager.getState().clientGeneration) return;
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setIsLoading(false);
-		}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
-	useEffect(() => {
+	const resetForClient = useEffectEvent(() => {
 		cancelPasskeyCeremony();
 		clearStepUp();
 		void load();
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the client changes
+	});
+	useEffect(() => {
+		resetForClient();
 	}, [clientGeneration]);
 
 	const grantExpiresAt = stepUpGrant?.expiresAt;
+	const expireStepUp = useEffectEvent((expiresAt: string) => {
+		if (grantRef.current?.expiresAt === expiresAt) clearStepUp();
+	});
 	useEffect(() => {
 		if (grantExpiresAt === undefined) return;
 		const remaining = (parseArcaneDate(grantExpiresAt)?.getTime() ?? 0) - Date.now();
-		const timer = setTimeout(
-			() => {
-				if (grantRef.current?.expiresAt === grantExpiresAt) clearStepUp();
-			},
-			Math.max(remaining, 0)
-		);
+		const timer = setTimeout(() => expireStepUp(grantExpiresAt), Math.max(remaining, 0));
 		return () => clearTimeout(timer);
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the grant's expiry only
 	}, [grantExpiresAt]);
 
+	const endSessionInBackground = useEffectEvent(() => {
+		cancelPasskeyCeremony();
+		clearStepUp();
+	});
 	useEffect(() => {
 		const subscription = AppState.addEventListener('change', (state) => {
-			if (state === 'background') {
-				cancelPasskeyCeremony();
-				clearStepUp();
-			}
+			if (state === 'background') endSessionInBackground();
 		});
 		return () => subscription.remove();
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- refs only
 	}, []);
 
 	useEffect(() => () => cancelPasskeyCeremony(), []);

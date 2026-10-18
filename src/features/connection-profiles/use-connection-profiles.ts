@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { Platform } from 'react-native';
 
 import {
@@ -34,8 +34,7 @@ export function useConnectionProfiles({ pushed = false }: { pushed?: boolean } =
 
 	useEffect(() => () => useConnectionProfileSelection.getState().end(), []);
 
-	const store = useConnectionProfileStore.getState();
-	const currentProfileID = store.profile(serverURL)?.id;
+	const currentProfileID = useConnectionProfileStore((s) => s.profile(serverURL)?.id);
 	const isCurrent = (profile: ConnectionProfile) => currentProfileID === profile.id;
 	const hasCredential = (profile: ConnectionProfile) => credentialIDs.has(profile.id);
 
@@ -140,6 +139,20 @@ export type ConnectionProfilesModel = ReturnType<typeof useConnectionProfiles>;
 
 type CredentialLoadState = 'loading' | 'ready' | 'failed';
 
+function credentialMatchesDraft(
+	credential: SavedConnectionCredential | undefined,
+	profile: ConnectionProfile,
+	serverURL: string
+): credential is SavedConnectionCredential {
+	let draftURL: string | undefined;
+	try {
+		draftURL = ConnectionProfileSync.normalizedServerURL(serverURL);
+	} catch {
+		draftURL = undefined;
+	}
+	return !!credential && draftURL === profile.serverURL;
+}
+
 export function useConnectionProfileEditor() {
 	const router = useRouter();
 	const params = useLocalSearchParams<{ id?: string; suggested?: string }>();
@@ -169,13 +182,7 @@ export function useConnectionProfileEditor() {
 		setValidationMessage(undefined);
 		try {
 			const credential = useConnectionProfileStore.getState().savedCredential(profile);
-			let draftURL: string | undefined;
-			try {
-				draftURL = ConnectionProfileSync.normalizedServerURL(serverURL);
-			} catch {
-				draftURL = undefined;
-			}
-			if (credential && draftURL === profile.serverURL) {
+			if (credentialMatchesDraft(credential, profile, serverURL)) {
 				setUsernameState(credential.username);
 				setPasswordState(credential.password);
 				setFieldsRevision((r) => r + 1);
@@ -190,7 +197,10 @@ export function useConnectionProfileEditor() {
 		}
 	};
 
-	useEffect(loadCredential, []); // eslint-disable-line react-hooks/exhaustive-deps
+	const loadInitialCredential = useEffectEvent(loadCredential);
+	useEffect(() => {
+		loadInitialCredential();
+	}, []);
 
 	const clearCredential = (notice: string) => {
 		setUsernameState('');
@@ -202,14 +212,13 @@ export function useConnectionProfileEditor() {
 
 	const save = () => {
 		if (credentialLoadState !== 'ready') return;
+		const savedMessage = profile ? 'Connection profile updated' : 'Connection profile added';
 		try {
 			const credential = SavedConnectionCredential.optional(username, password);
 			useConnectionProfileStore
 				.getState()
 				.saveConnectionProfile(profile, name, serverURL, credential);
-			showToast(
-				Toasts.success(profile ? 'Connection profile updated' : 'Connection profile added')
-			);
+			showToast(Toasts.success(savedMessage));
 			router.back();
 		} catch (error) {
 			setValidationMessage(errorText(error));

@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View, type ColorValue } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import type { PasskeySummary } from '@/sdk/models/auth/Passkey';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
@@ -96,11 +97,12 @@ export function PasskeysMFAScreen() {
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const refresh = async () => {
 		setIsRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setIsRefreshing(false);
-		}
+		await withCleanup(
+			async () => {
+				await model.refresh();
+			},
+			() => setIsRefreshing(false)
+		);
 	};
 
 	return (

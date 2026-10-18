@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { S3Destination } from '@/sdk/models/backup/S3Destination';
 import { useClientManager } from '@/stores/client-manager';
@@ -61,20 +62,25 @@ export function useBackupPolicyEditor(environmentID: EnvironmentID, volumeName: 
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setBusy(true);
-		try {
-			await client.volumes.updateBackupPolicies({
-				envID: environmentID,
-				name: volumeName,
-				request: { policies: policies.map(BackupPolicyDraft.update) }
-			});
-			scope.check(() => unmounted.current);
-			showToast(Toasts.success('Backup policies saved'));
-			router.back();
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			if (!unmounted.current) setBusy(false);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.volumes.updateBackupPolicies({
+						envID: environmentID,
+						name: volumeName,
+						request: { policies: policies.map(BackupPolicyDraft.update) }
+					});
+					scope.check(() => unmounted.current);
+					showToast(Toasts.success('Backup policies saved'));
+					router.back();
+				} catch (error) {
+					if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => {
+				if (!unmounted.current) setBusy(false);
+			}
+		);
 	};
 
 	const update = (id: string, patch: Partial<BackupPolicyDraft>) =>

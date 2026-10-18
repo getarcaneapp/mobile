@@ -40,10 +40,10 @@ export function useSettingsNavigation() {
 		return {
 			router,
 			href,
-			push(this: void, path: string, params: RouteParams = {}) {
+			push: (path: string, params: RouteParams = {}) => {
 				router.push(href(path, params));
 			},
-			back(this: void) {
+			back: () => {
 				if (router.canGoBack()) router.back();
 			}
 		};

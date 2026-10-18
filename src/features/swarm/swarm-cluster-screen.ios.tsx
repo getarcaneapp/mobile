@@ -93,7 +93,7 @@ function UnlockKeyField({
 }) {
 	const state = useNativeState(value);
 	useEffect(() => {
-		if (state.value !== value) state.value = value;
+		if (state.get() !== value) state.set(value);
 	}, [state, value]);
 	return <SecureField text={state} placeholder="Unlock key" onTextChange={onChangeText} />;
 }

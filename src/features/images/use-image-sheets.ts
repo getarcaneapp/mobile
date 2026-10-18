@@ -1,10 +1,12 @@
 import { File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import type { ImageSearchResult } from '@/sdk/models/image/ImageOperations';
@@ -22,14 +24,13 @@ export function useDismissOnContextChange(onDismiss: () => void) {
 	const generation = useClientManager((s) => s.clientGeneration);
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
 	const initial = useRef({ generation, activeEnvironmentID });
-	const dismiss = useRef(onDismiss);
-	dismiss.current = onDismiss;
+	const dismiss = useEffectEvent(onDismiss);
 	useEffect(() => {
 		if (
 			generation !== initial.current.generation ||
 			activeEnvironmentID !== initial.current.activeEnvironmentID
 		)
-			dismiss.current();
+			dismiss();
 	}, [generation, activeEnvironmentID]);
 }
 
@@ -111,6 +112,122 @@ export function usePullImage(environmentID: EnvironmentID) {
 
 type PickedFile = { uri: string; name: string; size: number };
 
+async function pickImageFile({
+	setPicked,
+	setOutput,
+	setErrorMessage
+}: {
+	setPicked: (file: PickedFile) => void;
+	setOutput: (output: string | undefined) => void;
+	setErrorMessage: (message: string | undefined) => void;
+}) {
+	try {
+		const result = await File.pickFileAsync();
+		if (result.canceled) return;
+		const file = result.result;
+		setPicked({ uri: file.uri, name: pickedFileName(file), size: file.size ?? 0 });
+		setOutput(undefined);
+		setErrorMessage(undefined);
+	} catch (error) {
+		if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
+	}
+}
+
+async function uploadImage({
+	client,
+	abort,
+	environmentID,
+	picked,
+	setErrorMessage,
+	setOutput
+}: {
+	client: ArcaneClient;
+	abort: AbortController;
+	environmentID: EnvironmentID;
+	picked: PickedFile;
+	setErrorMessage: (message: string) => void;
+	setOutput: (output: string) => void;
+}) {
+	try {
+		const result = await client
+			.withSignal(abort.signal)
+			.images.upload({ envID: environmentID, fileURL: picked.uri, filename: picked.name });
+		if (abort.signal.aborted) {
+			setErrorMessage('Cancelled');
+			return;
+		}
+		const serverOutput = result.stream.trim();
+		setOutput(serverOutput === '' ? 'Upload complete.' : serverOutput);
+		imagesChanged(environmentID);
+		showToast(Toasts.success('Image uploaded'));
+	} catch (error) {
+		setErrorMessage(
+			abort.signal.aborted || isCancellation(error) ? 'Cancelled' : friendlyErrorMessage(error)
+		);
+	}
+}
+
+async function pruneImages({
+	client,
+	environmentID,
+	mode,
+	until,
+	back
+}: {
+	client: ArcaneClient;
+	environmentID: EnvironmentID;
+	mode: ImagePruneMode;
+	until: string;
+	back: () => void;
+}) {
+	try {
+		const report = await client.images.prune({
+			envID: environmentID,
+			mode,
+			until: mode === 'olderThan' ? until : undefined
+		});
+		imagesChanged(environmentID);
+		showToast(Toasts.success(imagePruneResultMessage(report)));
+		back();
+	} catch (error) {
+		Alert.alert('Prune failed', friendlyErrorMessage(error), [{ text: 'OK' }]);
+	}
+}
+
+async function tagImage({
+	client,
+	abort,
+	environmentID,
+	imageID,
+	repository,
+	tag,
+	generation,
+	back
+}: {
+	client: ArcaneClient;
+	abort: AbortController;
+	environmentID: EnvironmentID;
+	imageID: string;
+	repository: string;
+	tag: string;
+	generation: number;
+	back: () => void;
+}) {
+	try {
+		await client.withSignal(abort.signal).images.tag({
+			envID: environmentID,
+			imageID,
+			request: { repository: repository.trim(), tag: tag === '' ? undefined : tag.trim() }
+		});
+		if (abort.signal.aborted || generation !== useClientManager.getState().clientGeneration) return;
+		imagesChanged(environmentID);
+		showToast(Toasts.success('Image tagged'));
+		back();
+	} catch (error) {
+		if (!abort.signal.aborted) showToast(Toasts.error(errorText(error)));
+	}
+}
+
 export function useUploadImage(environmentID: EnvironmentID) {
 	const router = useRouter();
 	const [picked, setPicked] = useState<PickedFile>();
@@ -120,18 +237,7 @@ export function useUploadImage(environmentID: EnvironmentID) {
 	const controller = useRef<AbortController | undefined>(undefined);
 	useEffect(() => () => controller.current?.abort(), []);
 
-	const pickFile = async () => {
-		try {
-			const result = await File.pickFileAsync();
-			if (result.canceled) return;
-			const file = result.result;
-			setPicked({ uri: file.uri, name: pickedFileName(file), size: file.size ?? 0 });
-			setOutput(undefined);
-			setErrorMessage(undefined);
-		} catch (error) {
-			if (!isCancellation(error)) setErrorMessage(friendlyErrorMessage(error));
-		}
-	};
+	const pickFile = () => pickImageFile({ setPicked, setOutput, setErrorMessage });
 
 	const startUpload = async () => {
 		const client = useClientManager.getState().client;
@@ -144,26 +250,13 @@ export function useUploadImage(environmentID: EnvironmentID) {
 		setOutput(undefined);
 		const abort = new AbortController();
 		controller.current = abort;
-		try {
-			const result = await client
-				.withSignal(abort.signal)
-				.images.upload({ envID: environmentID, fileURL: picked.uri, filename: picked.name });
-			if (abort.signal.aborted) {
-				setErrorMessage('Cancelled');
-				return;
+		await withCleanup(
+			() => uploadImage({ client, abort, environmentID, picked, setErrorMessage, setOutput }),
+			() => {
+				setIsUploading(false);
+				controller.current = undefined;
 			}
-			const serverOutput = result.stream.trim();
-			setOutput(serverOutput === '' ? 'Upload complete.' : serverOutput);
-			imagesChanged(environmentID);
-			showToast(Toasts.success('Image uploaded'));
-		} catch (error) {
-			setErrorMessage(
-				abort.signal.aborted || isCancellation(error) ? 'Cancelled' : friendlyErrorMessage(error)
-			);
-		} finally {
-			setIsUploading(false);
-			controller.current = undefined;
-		}
+		);
 	};
 
 	return {
@@ -188,20 +281,10 @@ export function useImagePrune(environmentID: EnvironmentID) {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsPruning(true);
-		try {
-			const report = await client.images.prune({
-				envID: environmentID,
-				mode,
-				until: mode === 'olderThan' ? until : undefined
-			});
-			imagesChanged(environmentID);
-			showToast(Toasts.success(imagePruneResultMessage(report)));
-			router.back();
-		} catch (error) {
-			Alert.alert('Prune failed', friendlyErrorMessage(error), [{ text: 'OK' }]);
-		} finally {
-			setIsPruning(false);
-		}
+		await withCleanup(
+			() => pruneImages({ client, environmentID, mode, until, back: () => router.back() }),
+			() => setIsPruning(false)
+		);
 	};
 
 	return {
@@ -234,22 +317,20 @@ export function useImageTag(environmentID: EnvironmentID, imageID: string) {
 		const abort = new AbortController();
 		controller.current = abort;
 		setSaving(true);
-		try {
-			await client.withSignal(abort.signal).images.tag({
-				envID: environmentID,
-				imageID,
-				request: { repository: repository.trim(), tag: tag === '' ? undefined : tag.trim() }
-			});
-			if (abort.signal.aborted || generation !== useClientManager.getState().clientGeneration)
-				return;
-			imagesChanged(environmentID);
-			showToast(Toasts.success('Image tagged'));
-			router.back();
-		} catch (error) {
-			if (!abort.signal.aborted) showToast(Toasts.error(errorText(error)));
-		} finally {
-			setSaving(false);
-		}
+		await withCleanup(
+			() =>
+				tagImage({
+					client,
+					abort,
+					environmentID,
+					imageID,
+					repository,
+					tag,
+					generation,
+					back: () => router.back()
+				}),
+			() => setSaving(false)
+		);
 	};
 
 	return {

@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { AndroidToolbar, type AndroidToolbarItem } from '@/features/containers/android-toolbar';
@@ -7,6 +7,7 @@ import { M3Section } from '@/features/containers/android-material';
 import { useEnvironmentRowColor } from '@/features/containers/hooks';
 import { environmentDisplayName } from '@/stores/environments-store';
 import { useAccentColor } from '@/theme/accent';
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { EnvironmentLoadFailuresSection } from '@/ui/components/environment-label';
 import {
@@ -14,13 +15,19 @@ import {
 	environmentTitle,
 	type ListEnvironment
 } from '@/ui/components/environment-label.types';
+import {
+	GroupedFlashList,
+	groupPosition,
+	type GroupedListEntry
+} from '@/ui/components/grouped-flash-list';
 import { m3 } from '@/ui/components/material-colors';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { ScrollableTabBar } from '@/ui/components/scrollable-tab-bar';
 import { SeverityBar } from '@/ui/components/severity-bar';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup, MaterialListItem } from '@/ui/material/list';
+import { GroupedRowSurface } from '@/ui/components/virtualized-sectioned-list';
+import { MaterialListGroup, MaterialListItem, MaterialSectionHeader } from '@/ui/material/list';
 
 import { SecurityOverview } from './security-overview';
 import {
@@ -79,6 +86,26 @@ function SummaryCard({ model }: { model: AllVulnerabilitiesModel }) {
 	);
 }
 
+const listRowStyle = { paddingHorizontal: 16, paddingVertical: 10 };
+const listContentStyle = { paddingBottom: 24 };
+const scrollStyle = { flex: 1 };
+
+type FindingEntry = GroupedListEntry & ({ type: 'header' } | { type: 'item'; item: FindingItem });
+
+function findingEntries(items: FindingItem[], hasMore: boolean) {
+	const entries: FindingEntry[] = [{ type: 'header', key: 'header:findings' }];
+	items.forEach((item, index) => {
+		const position = groupPosition(index, items.length);
+		entries.push({
+			type: 'item',
+			key: `finding:${item.id}`,
+			item,
+			grouped: { isFirst: position.isFirst, isLast: position.isLast && !hasMore }
+		});
+	});
+	return entries;
+}
+
 function FindingListRow({ model, item }: { model: AllVulnerabilitiesModel; item: FindingItem }) {
 	const environmentColor = useEnvironmentRowColor(item.environmentID, item.environmentName);
 	return (
@@ -86,7 +113,7 @@ function FindingListRow({ model, item }: { model: AllVulnerabilitiesModel; item:
 			onPress={() => model.openFinding(item)}
 			accessibilityRole="button"
 			android_ripple={{ color: colors.separator as string }}
-			style={{ paddingHorizontal: 16, paddingVertical: 10 }}
+			style={listRowStyle}
 		>
 			<VulnerabilityWithImageRow
 				item={item.value}
@@ -125,10 +152,10 @@ function OverviewContent({ model }: { model: AllVulnerabilitiesModel }) {
 	);
 }
 
-function FindingsContent({ model }: { model: AllVulnerabilitiesModel }) {
-	const { snapshot, displayedItems } = model;
+function FindingsBanners({ model }: { model: AllVulnerabilitiesModel }) {
+	const { snapshot } = model;
 	return (
-		<View style={{ gap: 12 }}>
+		<>
 			<EnvironmentLoadFailuresSection
 				failures={snapshot.failedEnvironments.map((failure) => ({
 					...failure,
@@ -164,19 +191,15 @@ function FindingsContent({ model }: { model: AllVulnerabilitiesModel }) {
 					/>
 				</MaterialListGroup>
 			) : null}
-			{displayedItems.length > 0 ? (
-				<M3Section title="Findings">
-					{displayedItems.map((item) => (
-						<FindingListRow key={item.id} model={model} item={item} />
-					))}
-					<PaginatedListFooter
-						hasMore={snapshot.hasMore}
-						loadMoreError={snapshot.loadMoreError}
-						onRetry={model.loadMore}
-						onLoadMore={model.loadMore}
-					/>
-				</M3Section>
-			) : !snapshot.isLoading ? (
+		</>
+	);
+}
+
+function FindingsEmptyContent({ model }: { model: AllVulnerabilitiesModel }) {
+	return (
+		<View style={{ gap: 12 }}>
+			<FindingsBanners model={model} />
+			{!model.snapshot.isLoading ? (
 				<View style={{ alignItems: 'center', padding: 32, gap: 8 }}>
 					<Icon name="checkmark.shield" size={44} color={colors.secondaryLabel} />
 					<Text style={[m3Type.titleLarge, { color: colors.label, textAlign: 'center' }]}>
@@ -188,6 +211,54 @@ function FindingsContent({ model }: { model: AllVulnerabilitiesModel }) {
 				</View>
 			) : null}
 		</View>
+	);
+}
+
+function FindingsList({
+	model,
+	refreshControl
+}: {
+	model: AllVulnerabilitiesModel;
+	refreshControl: ReactElement;
+}) {
+	const { snapshot, displayedItems } = model;
+	const hasBanners =
+		snapshot.failedEnvironments.length > 0 ||
+		model.focusedVulnerabilityID !== undefined ||
+		model.exportURI !== undefined;
+	return (
+		<GroupedFlashList
+			data={findingEntries(displayedItems, snapshot.hasMore)}
+			renderEntry={(entry) =>
+				entry.type === 'header' ? (
+					<MaterialSectionHeader title="Findings" />
+				) : (
+					<FindingListRow model={model} item={entry.item} />
+				)
+			}
+			header={
+				<View style={{ gap: 12, paddingBottom: hasBanners ? 12 : 0 }}>
+					<FindingsBanners model={model} />
+				</View>
+			}
+			footer={
+				snapshot.hasMore ? (
+					<GroupedRowSurface isFirst={false} isLast>
+						<PaginatedListFooter
+							hasMore={snapshot.hasMore}
+							loadMoreError={snapshot.loadMoreError}
+							onRetry={model.loadMore}
+							onLoadMore={model.loadMore}
+						/>
+					</GroupedRowSurface>
+				) : null
+			}
+			onEndReached={
+				snapshot.hasMore && snapshot.loadMoreError === undefined ? model.loadMore : undefined
+			}
+			refreshControl={refreshControl}
+			contentContainerStyle={listContentStyle}
+		/>
 	);
 }
 
@@ -298,12 +369,15 @@ export function AllVulnerabilitiesView(props: AllVulnerabilitiesProps) {
 	const [refreshing, setRefreshing] = useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(model.refresh, () => setRefreshing(false));
 	};
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
 	return (
 		<>
 			<Stack.Screen options={{ title: 'Security' }} />
@@ -315,23 +389,21 @@ export function AllVulnerabilitiesView(props: AllVulnerabilitiesProps) {
 					options={model.sectionOptions}
 					accessibilityLabel="Security sections"
 				/>
-				<ScrollView
-					style={{ flex: 1 }}
-					contentContainerStyle={{ paddingBottom: 24 }}
-					refreshControl={
-						<RefreshControl
-							refreshing={refreshing}
-							onRefresh={() => void onRefresh()}
-							colors={[systemColors.blue]}
-						/>
-					}
-				>
-					{model.selectedSection === 'overview' ? (
-						<OverviewContent model={model} />
-					) : (
-						<FindingsContent model={model} />
-					)}
-				</ScrollView>
+				{model.selectedSection !== 'overview' && model.displayedItems.length > 0 ? (
+					<FindingsList model={model} refreshControl={refreshControl} />
+				) : (
+					<ScrollView
+						style={scrollStyle}
+						contentContainerStyle={listContentStyle}
+						refreshControl={refreshControl}
+					>
+						{model.selectedSection === 'overview' ? (
+							<OverviewContent model={model} />
+						) : (
+							<FindingsEmptyContent model={model} />
+						)}
+					</ScrollView>
+				)}
 			</View>
 		</>
 	);

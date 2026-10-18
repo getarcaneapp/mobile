@@ -1,3 +1,4 @@
+import { deepEqual } from '@/core/deep-equal';
 import type {
 	ContainerCreate,
 	EndpointSettingsCreate,
@@ -232,22 +233,6 @@ function integer(value: string, label: string, allowMinusOne = false): number {
 }
 
 const isWholeNumber = (value: string) => /^[+-]?\d+$/.test(value);
-
-export function deepEqual(a: unknown, b: unknown): boolean {
-	if (a === b) return true;
-	if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') return false;
-	if (Array.isArray(a) !== Array.isArray(b)) return false;
-	if (Array.isArray(a) && Array.isArray(b)) {
-		return a.length === b.length && a.every((value, index) => deepEqual(value, b[index]));
-	}
-	const ao = a as Record<string, unknown>;
-	const bo = b as Record<string, unknown>;
-	const keys = new Set([...Object.keys(ao), ...Object.keys(bo)]);
-	for (const key of keys) {
-		if (!deepEqual(ao[key], bo[key])) return false;
-	}
-	return true;
-}
 
 export const draftsEqual = (a: ContainerConfigurationDraft, b: ContainerConfigurationDraft) =>
 	deepEqual(a, b);

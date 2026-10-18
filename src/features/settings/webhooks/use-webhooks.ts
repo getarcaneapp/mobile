@@ -1,8 +1,9 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import type { UpdateWebhook, Webhook } from '@/sdk/models/webhook/Webhook';
 import { parseArcaneDate } from '@/sdk/models/base/date';
@@ -72,22 +73,28 @@ export function useWebhooks() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [pendingDelete, setPendingDelete] = useState<Webhook>();
 	const webhooksRef = useRef(webhooks);
-	webhooksRef.current = webhooks;
+	useLayoutEffect(() => {
+		webhooksRef.current = webhooks;
+	});
 
 	const loadWebhooks = useCallback(async () => {
 		const manager = useClientManager.getState();
 		const cached = cachedClient();
 		if (!manager.client || !cached) return;
 		if (webhooksRef.current.length === 0) setIsLoading(true);
-		try {
-			const envID = manager.activeEnvironmentID;
-			const path = manager.client.rest.environmentPath(envID, 'webhooks');
-			setWebhooks(await cached.getList<Webhook>(path, envID));
-		} catch (error) {
-			presentError(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		const client = manager.client;
+		await withCleanup(
+			async () => {
+				try {
+					const envID = manager.activeEnvironmentID;
+					const path = client.rest.environmentPath(envID, 'webhooks');
+					setWebhooks(await cached.getList<Webhook>(path, envID));
+				} catch (error) {
+					presentError(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	}, []);
 
 	useEffect(() => {
@@ -118,6 +125,7 @@ export function useWebhooks() {
 	const toggleWebhook = async (webhook: Webhook) => {
 		const manager = useClientManager.getState();
 		if (!manager.client) return;
+		const successMessage = webhook.enabled ? 'Webhook disabled' : 'Webhook enabled';
 		try {
 			const body: UpdateWebhook = { enabled: !webhook.enabled };
 			const path = manager.client.rest.environmentPath(
@@ -127,7 +135,7 @@ export function useWebhooks() {
 			await manager.client.transport.rawRequest(path, { method: 'PATCH', body });
 			invalidateWebhookCaches();
 			await loadWebhooks();
-			showToast(Toasts.success(webhook.enabled ? 'Webhook disabled' : 'Webhook enabled'));
+			showToast(Toasts.success(successMessage));
 		} catch (error) {
 			presentError(friendlyErrorMessage(error));
 		}

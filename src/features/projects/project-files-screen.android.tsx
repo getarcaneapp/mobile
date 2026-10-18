@@ -1,5 +1,13 @@
 import { Stack, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+	useCallback,
+	useEffect,
+	useEffectEvent,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState
+} from 'react';
 import {
 	ActivityIndicator,
 	BackHandler,
@@ -217,6 +225,13 @@ function EditorNotice({ model }: { model: Model }) {
 	);
 }
 
+function dispatchingMenuActions(
+	actions: ComposeMenuAction[],
+	dispatch: (id: string) => void
+): ComposeMenuAction[] {
+	return actions.map((action) => ({ ...action, onPress: () => dispatch(action.id) }));
+}
+
 function NativeEditor({
 	model,
 	session,
@@ -240,17 +255,22 @@ function NativeEditor({
 }) {
 	const actions = projectFileActions(model, folderPath);
 	const latest = useRef(actions);
-	latest.current = actions;
-	const signature = JSON.stringify(actions.map((action) => [action.id, action.disabled ?? false]));
-	const menuActions = useMemo(
-		() =>
-			latest.current.map((action) => ({
-				...action,
-				onPress: () => latest.current.find((candidate) => candidate.id === action.id)?.onPress()
-			})),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[signature]
+	useLayoutEffect(() => {
+		latest.current = actions;
+	});
+	const [dispatch] = useState(
+		() => (id: string) => latest.current.find((candidate) => candidate.id === id)?.onPress()
 	);
+	const signature = JSON.stringify(actions.map((action) => [action.id, action.disabled ?? false]));
+	const [menu, setMenu] = useState(() => ({
+		signature,
+		actions: dispatchingMenuActions(actions, dispatch)
+	}));
+	let menuActions = menu.actions;
+	if (menu.signature !== signature) {
+		menuActions = dispatchingMenuActions(actions, dispatch);
+		setMenu({ signature, actions: menuActions });
+	}
 	useComposeSessionHost(session, text, setText, menuActions);
 	const destination: ComposeDestination = { screen, binding: { session }, readOnly, title };
 	return (
@@ -280,9 +300,11 @@ function ManagedFileEditor({
 	navigation?: ComposeNavigation;
 }) {
 	const entry = model.entryFor(path);
+	const loadContent = useEffectEvent((target: string) => {
+		void model.loadManagedFileContent(target);
+	});
 	useEffect(() => {
-		void model.loadManagedFileContent(path);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		loadContent(path);
 	}, [path]);
 	if (entry?.isDirectory) return <CenteredMessage icon="folder" title="Folder" message={path} />;
 	const content = model.managedFileContent(path);

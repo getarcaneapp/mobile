@@ -1,55 +1,29 @@
 import { useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
+import Animated, {
+	cancelAnimation,
+	Easing,
+	useAnimatedProps,
+	useAnimatedReaction,
+	useSharedValue,
+	withTiming
+} from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { colors } from '@/theme/colors';
 import { secondaryHex, useIsDark, useReduceMotion } from '@/ui/components/accessibility';
 
 export const riskScoreReveal = { duration: 1100, x1: 0.22, y1: 1, x2: 0.36, y2: 1 } as const;
 
-function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
-	const cx = 3 * x1;
-	const bx = 3 * (x2 - x1) - cx;
-	const ax = 1 - cx - bx;
-	const cy = 3 * y1;
-	const by = 3 * (y2 - y1) - cy;
-	const ay = 1 - cy - by;
-	const sampleX = (t: number) => ((ax * t + bx) * t + cx) * t;
-	const sampleY = (t: number) => ((ay * t + by) * t + cy) * t;
-	const slopeX = (t: number) => (3 * ax * t + 2 * bx) * t + cx;
-	return (x: number) => {
-		if (x <= 0) return 0;
-		if (x >= 1) return 1;
-		let t = x;
-		for (let i = 0; i < 8; i++) {
-			const error = sampleX(t) - x;
-			if (Math.abs(error) < 1e-5) break;
-			const slope = slopeX(t);
-			if (Math.abs(slope) < 1e-6) break;
-			t -= error / slope;
-		}
-		let lo = 0;
-		let hi = 1;
-		if (Math.abs(sampleX(t) - x) >= 1e-5) {
-			t = x;
-			for (let i = 0; i < 20; i++) {
-				const value = sampleX(t);
-				if (Math.abs(value - x) < 1e-5) break;
-				if (value < x) lo = t;
-				else hi = t;
-				t = (lo + hi) / 2;
-			}
-		}
-		return sampleY(t);
-	};
-}
-
-const easing = cubicBezier(
+const easing = Easing.bezier(
 	riskScoreReveal.x1,
 	riskScoreReveal.y1,
 	riskScoreReveal.x2,
 	riskScoreReveal.y2
 );
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 type RevealState = { displayed: number; hasAnimated: boolean };
 
@@ -85,40 +59,48 @@ export function RiskScoreRing({
 }) {
 	const isDark = useIsDark();
 	const reduceMotion = useReduceMotion();
-	const [displayed, setDisplayed] = useState(() => revealState(memoryKey).displayed);
+	const value = useSharedValue(revealState(memoryKey).displayed);
+	const [displayed, setDisplayed] = useState(() => Math.round(revealState(memoryKey).displayed));
+
+	useAnimatedReaction(
+		() => Math.round(Math.min(Math.max(value.value, 0), 100)),
+		(current, previous) => {
+			if (current !== previous) scheduleOnRN(setDisplayed, current);
+		}
+	);
 
 	useEffect(() => {
 		const state = revealState(memoryKey);
 		if (state.hasAnimated && state.displayed === target) {
-			setDisplayed(target);
+			value.value = target;
 			return;
 		}
 		state.hasAnimated = true;
 		if (reduceMotion) {
 			state.displayed = target;
-			setDisplayed(target);
+			value.value = target;
 			return;
 		}
-		const from = state.displayed;
-		const start = Date.now();
-		let frame = 0;
-		const step = () => {
-			const progress = Math.min((Date.now() - start) / riskScoreReveal.duration, 1);
-			const value = from + (target - from) * easing(progress);
-			state.displayed = value;
-			setDisplayed(value);
-			if (progress < 1) frame = requestAnimationFrame(step);
+		state.displayed = target;
+		value.value = withTiming(target, { duration: riskScoreReveal.duration, easing });
+		return () => {
+			state.displayed = value.value;
+			cancelAnimation(value);
 		};
-		frame = requestAnimationFrame(step);
-		return () => cancelAnimationFrame(frame);
-	}, [target, reduceMotion, memoryKey]);
+	}, [target, reduceMotion, memoryKey, value]);
 
 	const scheme = isDark ? 'dark' : 'light';
 	const secondary = secondaryHex[scheme];
 	const track = isDark ? 'rgba(235,235,245,0.16)' : 'rgba(60,60,67,0.18)';
 	const radius = (size - lineWidth) / 2;
 	const circumference = 2 * Math.PI * radius;
-	const fraction = Math.min(Math.max(displayed / 100, 0), 1);
+	const animatedProps = useAnimatedProps(() => {
+		const fraction = Math.min(Math.max(value.value / 100, 0), 1);
+		return {
+			strokeDashoffset: circumference * (1 - fraction),
+			strokeOpacity: fraction > 0 ? (color ? 1 : 0.6) : 0
+		};
+	});
 	const rounded = Platform.OS === 'ios' ? 'ui-rounded' : undefined;
 
 	return (
@@ -136,20 +118,17 @@ export function RiskScoreRing({
 					strokeWidth={lineWidth}
 					fill="none"
 				/>
-				{fraction > 0 ? (
-					<Circle
-						cx={size / 2}
-						cy={size / 2}
-						r={radius}
-						stroke={color ?? secondary}
-						strokeOpacity={color ? 1 : 0.6}
-						strokeWidth={lineWidth}
-						strokeLinecap="round"
-						strokeDasharray={`${circumference} ${circumference}`}
-						strokeDashoffset={circumference * (1 - fraction)}
-						fill="none"
-					/>
-				) : null}
+				<AnimatedCircle
+					cx={size / 2}
+					cy={size / 2}
+					r={radius}
+					stroke={color ?? secondary}
+					strokeWidth={lineWidth}
+					strokeLinecap="round"
+					strokeDasharray={`${circumference} ${circumference}`}
+					animatedProps={animatedProps}
+					fill="none"
+				/>
 			</Svg>
 			<View style={{ alignItems: 'center', gap: 2 }}>
 				{unavailable ? (
@@ -169,7 +148,7 @@ export function RiskScoreRing({
 								color: colors.label
 							}}
 						>
-							{String(Math.round(Math.min(Math.max(displayed, 0), 100)))}
+							{String(displayed)}
 						</Text>
 						<Text style={{ fontSize: 12, color: colors.secondaryLabel }}>/ 100</Text>
 					</>

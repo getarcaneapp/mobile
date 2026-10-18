@@ -6,15 +6,48 @@ import { AndroidToolbar } from '@/features/containers/android-toolbar';
 import { CenteredMessage } from '@/features/containers/android-material';
 import { useEnvironmentRowColor } from '@/features/containers/hooks';
 import { LongPressMenu, type RowMenuItem } from '@/features/containers/long-press-menu';
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import {
+	GroupedFlashList,
+	groupPosition,
+	type GroupedListEntry
+} from '@/ui/components/grouped-flash-list';
 import { EnvironmentLoadFailuresSection } from '@/ui/components/environment-label';
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
-import { MaterialListGroup, MaterialSectionHeader } from '@/ui/material/list';
+import { MaterialSectionHeader } from '@/ui/material/list';
 
 import { capitalized, type JobItem } from './job-model';
 import { JobRow } from './job-row';
 import { useJobsList, type JobsListModel, type JobsListProps } from './use-jobs-list';
+
+const listRowStyle = { paddingHorizontal: 16, paddingVertical: 12 };
+const failuresSpacerStyle = { height: 12 };
+
+type JobEntry = GroupedListEntry &
+	({ type: 'header'; category: string; isFirst: boolean } | { type: 'item'; job: JobItem });
+
+function jobEntries(groups: JobsListModel['groups']) {
+	const entries: JobEntry[] = [];
+	groups.forEach((group, index) => {
+		entries.push({
+			type: 'header',
+			key: `header:${group.category}`,
+			category: group.category,
+			isFirst: index === 0
+		});
+		group.jobs.forEach((job, jobIndex) => {
+			entries.push({
+				type: 'item',
+				key: `job:${group.category}:${job.id}`,
+				job,
+				grouped: groupPosition(jobIndex, group.jobs.length)
+			});
+		});
+	});
+	return entries;
+}
 
 function rowMenuItems(model: JobsListModel, job: JobItem): RowMenuItem[] {
 	const items: RowMenuItem[] = [
@@ -38,7 +71,7 @@ function JobListRow({ model, job }: { model: JobsListModel; job: JobItem }) {
 			items={rowMenuItems(model, job)}
 			title={job.value.name}
 			onPress={() => model.openDetail(job)}
-			style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+			style={listRowStyle}
 		>
 			<JobRow
 				job={job.value}
@@ -54,16 +87,19 @@ export function JobsListView(props: JobsListProps) {
 	const model = useJobsList(props);
 	const { snapshot, jobs, groups } = model;
 	const [refreshing, setRefreshing] = useState(false);
-	const firstCategory = groups[0]?.category;
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.load();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(model.load, () => setRefreshing(false));
 	};
+
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
 
 	let content;
 	if (snapshot.isLoading && jobs.length === 0) {
@@ -83,36 +119,6 @@ export function JobsListView(props: JobsListProps) {
 		);
 	} else if (jobs.length === 0) {
 		content = <CenteredMessage icon="play.square.stack" title="No Jobs" message="" />;
-	} else {
-		content = (
-			<View>
-				{snapshot.failedEnvironments.length > 0 ? <View style={{ height: 12 }} /> : null}
-				<EnvironmentLoadFailuresSection
-					failures={snapshot.failedEnvironments.map((failure) => ({
-						...failure,
-						id: failure.environment.id
-					}))}
-					retry={() => void model.load()}
-				/>
-				{groups.map((group) => (
-					<View key={group.category}>
-						{group.category === firstCategory ? (
-							<ResourceCountSectionHeader
-								title={capitalized(group.category)}
-								loadedCount={model.filteredJobCount}
-							/>
-						) : (
-							<MaterialSectionHeader title={capitalized(group.category)} />
-						)}
-						<MaterialListGroup>
-							{group.jobs.map((job) => (
-								<JobListRow key={job.id} model={model} job={job} />
-							))}
-						</MaterialListGroup>
-					</View>
-				))}
-			</View>
-		);
 	}
 
 	return (
@@ -139,21 +145,45 @@ export function JobsListView(props: JobsListProps) {
 					}
 				]}
 			/>
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{content === undefined ? (
+				<GroupedFlashList
+					data={jobEntries(groups)}
+					renderEntry={(entry) => {
+						if (entry.type === 'item') return <JobListRow model={model} job={entry.job} />;
+						return entry.isFirst ? (
+							<ResourceCountSectionHeader
+								title={capitalized(entry.category)}
+								loadedCount={model.filteredJobCount}
+							/>
+						) : (
+							<MaterialSectionHeader title={capitalized(entry.category)} />
+						);
+					}}
+					header={
+						<>
+							{snapshot.failedEnvironments.length > 0 ? <View style={failuresSpacerStyle} /> : null}
+							<EnvironmentLoadFailuresSection
+								failures={snapshot.failedEnvironments.map((failure) => ({
+									...failure,
+									id: failure.environment.id
+								}))}
+								retry={() => void model.load()}
+							/>
+						</>
+					}
+					refreshControl={refreshControl}
+				/>
+			) : (
+				<ScrollView
+					contentInsetAdjustmentBehavior="automatic"
+					style={{ backgroundColor: colors.systemGroupedBackground }}
+					contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+					keyboardShouldPersistTaps="handled"
+					refreshControl={refreshControl}
+				>
+					{content}
+				</ScrollView>
+			)}
 		</>
 	);
 }

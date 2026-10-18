@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import type { TemplateRegistry } from '@/sdk/models/template/Template';
 import { useClientManager } from '@/stores/client-manager';
@@ -47,30 +48,31 @@ export function useTemplateRegistryForm() {
 		if (!client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		try {
-			const body = {
-				name: draft.name,
-				url: draft.url,
-				description: draft.description,
-				enabled: draft.enabled
-			};
-			if (registry) {
-				await client.templates.updateRegistry({ id: registry.id, body });
-			} else {
-				await client.templates.createRegistry({ body });
-			}
-			showToast(
-				Toasts.success(
-					registry === undefined ? 'Template registry created' : 'Template registry updated'
-				)
-			);
-			await payload?.onSuccess();
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsLoading(false);
-		}
+		const successMessage =
+			registry === undefined ? 'Template registry created' : 'Template registry updated';
+		await withCleanup(
+			async () => {
+				try {
+					const body = {
+						name: draft.name,
+						url: draft.url,
+						description: draft.description,
+						enabled: draft.enabled
+					};
+					if (registry) {
+						await client.templates.updateRegistry({ id: registry.id, body });
+					} else {
+						await client.templates.createRegistry({ body });
+					}
+					showToast(Toasts.success(successMessage));
+					if (payload) await payload.onSuccess();
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsLoading(false)
+		);
 	};
 
 	return {

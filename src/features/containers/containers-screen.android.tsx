@@ -2,13 +2,14 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import { EnvironmentLoadFailuresSection } from '@/ui/components/environment-label';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { m3 } from '@/ui/components/material-colors';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
-import { StableSectionedList } from '@/ui/components/stable-sectioned-list';
+import { VirtualizedSectionedList } from '@/ui/components/virtualized-sectioned-list';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
 
@@ -18,6 +19,7 @@ import { ContainersToolbar } from './containers-toolbar';
 import { useEnvironmentRowColor } from './hooks';
 import { LongPressMenu, type RowMenuItem } from './long-press-menu';
 import {
+	useContainerRowMetrics,
 	useContainersList,
 	type ContainerItem,
 	type ContainersListModel,
@@ -83,25 +85,27 @@ function Checkbox({ checked }: { checked: boolean }) {
 	);
 }
 
+const rowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 16,
+	paddingHorizontal: 16,
+	paddingVertical: 10
+};
+
 function ContainerListRow({ model, item }: { model: ContainersListModel; item: ContainerItem }) {
 	const isPinned = model.pinnedIDs.has(item.id);
 	const environmentColor = useEnvironmentRowColor(item.environmentID, item.environmentName);
+	const metrics = useContainerRowMetrics(model.samples, item);
 	const row = (
 		<ContainerRow
 			container={item.value}
 			isPinned={isPinned}
 			environmentName={item.environmentName}
 			environmentColor={environmentColor}
-			metrics={model.metrics(item)}
+			metrics={metrics}
 		/>
 	);
-	const rowStyle = {
-		flexDirection: 'row' as const,
-		alignItems: 'center' as const,
-		gap: 16,
-		paddingHorizontal: 16,
-		paddingVertical: 10
-	};
 	if (model.isSelecting) {
 		const selected = model.selection.includes(item.id);
 		return (
@@ -167,12 +171,16 @@ export function ContainersScreen(props: ContainersListProps) {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(model.refresh, () => setRefreshing(false));
 	};
+
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
 
 	let content;
 	if (snapshot.isLoading && containers.length === 0) {
@@ -198,37 +206,56 @@ export function ContainersScreen(props: ContainersListProps) {
 				action={{ title: 'Refresh', onPress: () => void model.loadContainers() }}
 			/>
 		);
-	} else {
-		content = (
-			<>
-				<EnvironmentLoadFailuresSection
-					failures={snapshot.failedEnvironments.map((failure) => ({
-						...failure,
-						id: failure.environment.id
-					}))}
-					retry={() => void model.loadContainers()}
-				/>
-				<StableSectionedList
-					sections={model.sections}
-					preferredHeaderAccessorySectionID="running"
-					headerAccessory={() => (
-						<ResourceCountLabel
-							loadedCount={containers.length}
-							totalCount={snapshot.totalItems}
-							hasMore={snapshot.hasMore}
-						/>
-					)}
-					renderRow={(item) => <ContainerListRow model={model} item={item} />}
-				/>
-				<PaginatedListFooter
-					hasMore={snapshot.hasMore}
-					loadMoreError={snapshot.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</>
-		);
 	}
+
+	const list =
+		content === undefined ? (
+			<VirtualizedSectionedList
+				onEndReached={
+					snapshot.hasMore && snapshot.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				sections={model.sections}
+				preferredHeaderAccessorySectionID="running"
+				headerAccessory={() => (
+					<ResourceCountLabel
+						loadedCount={containers.length}
+						totalCount={snapshot.totalItems}
+						hasMore={snapshot.hasMore}
+					/>
+				)}
+				renderRow={(item) => <ContainerListRow model={model} item={item} />}
+				header={
+					<EnvironmentLoadFailuresSection
+						failures={snapshot.failedEnvironments.map((failure) => ({
+							...failure,
+							id: failure.environment.id
+						}))}
+						retry={() => void model.loadContainers()}
+					/>
+				}
+				footer={
+					<PaginatedListFooter
+						hasMore={snapshot.hasMore}
+						loadMoreError={snapshot.loadMoreError}
+						onRetry={() => void model.loadMore()}
+						onLoadMore={() => void model.loadMore()}
+					/>
+				}
+				refreshControl={refreshControl}
+			/>
+		) : (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				style={{ backgroundColor: colors.systemGroupedBackground }}
+				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+				keyboardShouldPersistTaps="handled"
+				refreshControl={refreshControl}
+			>
+				{content}
+			</ScrollView>
+		);
 
 	return (
 		<>
@@ -243,21 +270,7 @@ export function ContainersScreen(props: ContainersListProps) {
 				}}
 			/>
 			<ContainersToolbar model={model} />
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{list}
 		</>
 	);
 }

@@ -7,6 +7,9 @@ import { screenCache } from '@/features/networks/tab-routes';
 
 import { eventCacheKey, formattedEventDate, metadataMap } from './use-events';
 
+const datesDiffer = (a: string, b: string) =>
+	parseArcaneDate(a)?.getTime() !== parseArcaneDate(b)?.getTime();
+
 export function useEventDetail() {
 	const { id = '' } = useLocalSearchParams<{ id?: string }>();
 	const event = screenCache.get<Event>(eventCacheKey(id));
@@ -15,10 +18,9 @@ export function useEventDetail() {
 	return {
 		event,
 		occurred: formattedEventDate(event.timestamp),
-		recorded:
-			parseArcaneDate(event.createdAt)?.getTime() !== parseArcaneDate(event.timestamp)?.getTime()
-				? formattedEventDate(event.createdAt)
-				: undefined,
+		recorded: datesDiffer(event.createdAt, event.timestamp)
+			? formattedEventDate(event.createdAt)
+			: undefined,
 		hasResource:
 			event.resourceType !== undefined ||
 			event.resourceName !== undefined ||

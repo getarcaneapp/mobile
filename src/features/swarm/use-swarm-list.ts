@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 
 import type { Identifiable } from '@/core/networking/pagination-loader';
 import type { ArcaneClient } from '@/sdk';
@@ -24,7 +24,9 @@ export function useSwarmPagedList<Value extends Identifiable>(
 	const client = useClientManager((s) => s.client);
 	const [list, snapshot] = useEnvironmentPagedList<Value>(50);
 	const latest = useRef({ fetcher, search });
-	latest.current = { fetcher, search };
+	useLayoutEffect(() => {
+		latest.current = { fetcher, search };
+	});
 
 	const fetch = useCallback((): EnvironmentFetch<Value> | undefined => {
 		const current = useClientManager.getState().client;

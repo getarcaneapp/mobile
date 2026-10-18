@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import type { SearchBarCommands } from 'react-native-screens';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { SortOrder } from '@/sdk/models/base/pagination';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
@@ -70,11 +71,12 @@ export function APIKeysDestination() {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.loadKeys();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(
+			async () => {
+				await model.loadKeys();
+			},
+			() => setRefreshing(false)
+		);
 	};
 
 	let content;

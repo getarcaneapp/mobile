@@ -234,11 +234,11 @@ export function PressableScale({
 			{...rest}
 			style={[style, animated]}
 			onPressIn={(event) => {
-				pressed.value = reduceMotion ? 1 : animateTo(Motion.press, 1);
+				pressed.set(reduceMotion ? 1 : animateTo(Motion.press, 1));
 				onPressIn?.(event);
 			}}
 			onPressOut={(event) => {
-				pressed.value = reduceMotion ? 0 : animateTo(Motion.press, 0);
+				pressed.set(reduceMotion ? 0 : animateTo(Motion.press, 0));
 				onPressOut?.(event);
 			}}
 		/>
@@ -261,11 +261,11 @@ export function CardRowPressable({
 			{...rest}
 			style={[style, animated]}
 			onPressIn={(event) => {
-				pressed.value = animateTo(Motion.state, 1);
+				pressed.set(animateTo(Motion.state, 1));
 				onPressIn?.(event);
 			}}
 			onPressOut={(event) => {
-				pressed.value = animateTo(Motion.state, 0);
+				pressed.set(animateTo(Motion.state, 0));
 				onPressOut?.(event);
 			}}
 		/>

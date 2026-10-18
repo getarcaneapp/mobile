@@ -18,33 +18,41 @@ export function JobBadge({ text, tint }: { text: string; tint: string }) {
 	);
 }
 
+function RotatingJobIcon({ job, isRunning }: { job: JobStatus; isRunning: boolean }) {
+	const rotating = useNativeState(isRunning);
+	useEffect(() => {
+		rotating.set(isRunning);
+	}, [rotating, isRunning]);
+	return (
+		<ZStack
+			modifiers={[
+				symbolEffect({ effect: 'rotate' }, { options: { repeat: {} }, isActive: rotating })
+			]}
+		>
+			<RowIcon systemImage={jobIcon(job, isRunning)} tint={jobTint(job, isRunning)} />
+		</ZStack>
+	);
+}
+
 export function JobRow({
 	job,
 	isRunning,
 	environmentName,
-	environmentColor
+	environmentColor,
+	identity
 }: {
 	job: JobStatus;
 	isRunning: boolean;
 	environmentName?: string;
 	environmentColor?: string;
+	identity?: string;
 }) {
-	const rotating = useNativeState(isRunning);
-	useEffect(() => {
-		rotating.value = isRunning;
-	}, [rotating, isRunning]);
 	const next = relativeNamed(job.nextRun);
 	const badge = jobBadge(job);
 
 	return (
 		<HStack alignment="top" spacing={12} modifiers={[padding({ vertical: 2 })]}>
-			<ZStack
-				modifiers={[
-					symbolEffect({ effect: 'rotate' }, { options: { repeat: {} }, isActive: rotating })
-				]}
-			>
-				<RowIcon systemImage={jobIcon(job, isRunning)} tint={jobTint(job, isRunning)} />
-			</ZStack>
+			<RotatingJobIcon key={identity} job={job} isRunning={isRunning} />
 
 			<VStack alignment="leading" spacing={4}>
 				<Text modifiers={[font({ textStyle: 'body' })]}>{job.name}</Text>

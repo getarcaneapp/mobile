@@ -1,5 +1,6 @@
-import { useRouter, useSegments, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo } from 'react';
+import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { AutoUpdateRecord } from '@/sdk/models/updater/Updater';
@@ -16,9 +17,7 @@ function recordKey(environmentID: EnvironmentID, record: AutoUpdateRecord) {
 
 export function useUpdatesNavigation() {
 	const router = useRouter();
-	const segments = useSegments() as string[];
-	const group =
-		segments.find((segment, index) => index > 0 && /^\(.+\)$/.test(segment)) ?? '(updates)';
+	const group = useTabStackGroup('(updates)');
 	return useMemo(() => {
 		const href = (path: string, params: Record<string, string>) =>
 			`/(tabs)/${group}/${path}?${Object.entries(params)

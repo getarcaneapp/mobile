@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { friendlyErrorMessage } from '@/core/errors';
 import type { PermissionsManifest } from '@/sdk/models/role/PermissionsManifest';
 import type { Role } from '@/sdk/models/role/Role';
@@ -98,21 +99,25 @@ export function useRoleDetail(fallbackMode: RoleDetailMode) {
 			description: description === '' ? undefined : description,
 			permissions: [...selectedPermissions]
 		};
-		try {
-			if (role) {
-				await client.roles.update({ id: role.id, body });
-			} else {
-				await client.roles.create({ body });
-			}
-			showToast(Toasts.success(role ? 'Role updated' : 'Role created'));
-			await payload?.onUpdate();
-			nav.back();
-		} catch (error) {
-			const fields = validationFields(error);
-			setErrorMessage(fields ? formatValidationFields(fields) : friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		const successMessage = role ? 'Role updated' : 'Role created';
+		await withCleanup(
+			async () => {
+				try {
+					if (role) {
+						await client.roles.update({ id: role.id, body });
+					} else {
+						await client.roles.create({ body });
+					}
+					showToast(Toasts.success(successMessage));
+					if (payload) await payload.onUpdate();
+					nav.back();
+				} catch (error) {
+					const fields = validationFields(error);
+					setErrorMessage(fields ? formatValidationFields(fields) : friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	return {

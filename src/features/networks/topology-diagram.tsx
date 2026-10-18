@@ -1,5 +1,13 @@
 import { BlurView } from 'expo-blur';
-import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+	memo,
+	useEffect,
+	useEffectEvent,
+	useLayoutEffect,
+	useRef,
+	useState,
+	type ReactNode
+} from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -283,43 +291,48 @@ export function TopologyDiagram({
 	const [viewport, setViewport] = useState({ width: 0, height: 0 });
 	const hasFitted = useRef(false);
 	const onSelectRef = useRef(onSelect);
-	onSelectRef.current = onSelect;
+	useLayoutEffect(() => {
+		onSelectRef.current = onSelect;
+	});
 	const [select] = useState(() => (node: TopologyNode) => onSelectRef.current(node));
 
 	const fit = (size: { width: number; height: number }, animated: boolean) => {
 		if (size.width <= 0 || size.height <= 0) return;
 		const target = fitScale(size, graph.contentSize);
 		const duration = animated && !reduceMotion ? 300 : 0;
-		scale.value = duration > 0 ? withTiming(target, { duration }) : target;
-		offsetX.value = duration > 0 ? withTiming(0, { duration }) : 0;
-		offsetY.value = duration > 0 ? withTiming(0, { duration }) : 0;
-		savedScale.value = target;
-		savedX.value = 0;
-		savedY.value = 0;
+		scale.set(duration > 0 ? withTiming(target, { duration }) : target);
+		offsetX.set(duration > 0 ? withTiming(0, { duration }) : 0);
+		offsetY.set(duration > 0 ? withTiming(0, { duration }) : 0);
+		savedScale.set(target);
+		savedX.set(0);
+		savedY.set(0);
 	};
 
+	const fitViewport = useEffectEvent((width: number, height: number) => {
+		fit({ width, height }, hasFitted.current);
+		if (width > 0) hasFitted.current = true;
+	});
+
 	useEffect(() => {
-		fit(viewport, hasFitted.current);
-		if (viewport.width > 0) hasFitted.current = true;
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		fitViewport(viewport.width, viewport.height);
 	}, [viewport.width, viewport.height]);
 
 	const pan = Gesture.Pan()
 		.minDistance(5)
 		.onUpdate((event) => {
-			offsetX.value = savedX.value + event.translationX;
-			offsetY.value = savedY.value + event.translationY;
+			offsetX.set(savedX.value + event.translationX);
+			offsetY.set(savedY.value + event.translationY);
 		})
 		.onEnd(() => {
-			savedX.value = offsetX.value;
-			savedY.value = offsetY.value;
+			savedX.set(offsetX.value);
+			savedY.set(offsetY.value);
 		});
 	const pinch = Gesture.Pinch()
 		.onUpdate((event) => {
-			scale.value = Math.min(Math.max(savedScale.value * event.scale, minimumScale), maximumScale);
+			scale.set(Math.min(Math.max(savedScale.value * event.scale, minimumScale), maximumScale));
 		})
 		.onEnd(() => {
-			savedScale.value = scale.value;
+			savedScale.set(scale.value);
 		});
 	const gesture = Gesture.Simultaneous(pan, pinch);
 

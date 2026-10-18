@@ -49,6 +49,10 @@ export function pruneRankings(
 	rankings: BusiestRankings,
 	current: ReadonlySet<string>
 ): BusiestRankings {
+	const stale = Object.values(rankings).some((byEnvironment) =>
+		Object.keys(byEnvironment).some((id) => !current.has(id))
+	);
+	if (!stale) return rankings;
 	return Object.fromEntries(
 		Object.entries(rankings).map(([sort, byEnvironment]) => [
 			sort,

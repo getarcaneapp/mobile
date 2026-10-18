@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
+import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { Permission } from '@/sdk/models/role/Permission';
 import type {
@@ -122,15 +123,18 @@ export function useSwarmStackDetail() {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setRunningActionID('delete');
-		try {
-			await client.swarm.deleteStack({ name, envID: environmentID });
-			swarmChanged(environmentID);
-			showToast(Toasts.success('Stack deleted'));
-		} catch (error) {
-			showToast(Toasts.error(friendlyErrorMessage(error)));
-		} finally {
-			setRunningActionID(undefined);
-		}
+		await withCleanup(
+			async () => {
+				try {
+					await client.swarm.deleteStack({ name, envID: environmentID });
+					swarmChanged(environmentID);
+					showToast(Toasts.success('Stack deleted'));
+				} catch (error) {
+					showToast(Toasts.error(friendlyErrorMessage(error)));
+				}
+			},
+			() => setRunningActionID(undefined)
+		);
 	};
 
 	const primary: ActionButtonItem | undefined = canManage
@@ -193,6 +197,10 @@ export function validationSummary(result: SwarmStackRenderConfigResponse) {
 
 export const stackEditorConfirmationHost = 'swarm-stack-editor';
 
+function sourceEnvironment(source: SwarmStackSource): string {
+	return source.envContent ?? '';
+}
+
 export function useSwarmStackEditor() {
 	const router = useRouter();
 	const { envID = '0', stack } = useLocalSearchParams<{ envID?: string; stack?: string }>();
@@ -241,9 +249,9 @@ export function useSwarmStackEditor() {
 			const source = await client.swarm.stackSource({ name: stackName, envID: environmentID });
 			setName(stackName);
 			setCompose(source.composeContent);
-			setEnvironment(source.envContent ?? '');
+			setEnvironment(sourceEnvironment(source));
 			setOriginalCompose(source.composeContent);
-			setOriginalEnvironment(source.envContent ?? '');
+			setOriginalEnvironment(sourceEnvironment(source));
 			setIsLoaded(true);
 		} catch (error) {
 			setErrorMessage(friendlyErrorMessage(error));
@@ -259,23 +267,27 @@ export function useSwarmStackEditor() {
 		if (!client) return;
 		setIsValidating(true);
 		setErrorMessage(undefined);
-		try {
-			setValidation(
-				await client.swarm.renderStackConfig({
-					request: {
-						name: trimmedName === '' ? 'stack' : trimmedName,
-						composeContent: compose,
-						envContent: environment === '' ? undefined : environment
-					},
-					envID: environmentID
-				})
-			);
-		} catch (error) {
-			setValidation(undefined);
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsValidating(false);
-		}
+		const request = {
+			name: trimmedName === '' ? 'stack' : trimmedName,
+			composeContent: compose,
+			envContent: environment === '' ? undefined : environment
+		};
+		await withCleanup(
+			async () => {
+				try {
+					setValidation(
+						await client.swarm.renderStackConfig({
+							request,
+							envID: environmentID
+						})
+					);
+				} catch (error) {
+					setValidation(undefined);
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsValidating(false)
+		);
 	};
 
 	const save = async () => {
@@ -284,35 +296,42 @@ export function useSwarmStackEditor() {
 		setIsSaving(true);
 		setErrorMessage(undefined);
 		const envContent = environment === '' ? undefined : environment;
-		try {
-			if (stackName !== undefined && hasChanges) {
-				await client.swarm.updateStackSource({
-					name: stackName,
-					request: { composeContent: compose, envContent },
-					envID: environmentID
-				});
-			}
-			if (!isEditing || redeploy) {
-				await client.swarm.deployStack({
-					request: {
-						name: trimmedName,
-						composeContent: compose,
-						envContent,
-						withRegistryAuth,
-						prune,
-						resolveImage
-					},
-					envID: environmentID
-				});
-			}
-			swarmChanged(environmentID);
-			showToast(Toasts.success(!isEditing || redeploy ? 'Stack deployed' : 'Stack saved'));
-			dismiss();
-		} catch (error) {
-			setErrorMessage(friendlyErrorMessage(error));
-		} finally {
-			setIsSaving(false);
-		}
+		const shouldDeploy = !isEditing || redeploy;
+		const successMessage = shouldDeploy ? 'Stack deployed' : 'Stack saved';
+		await withCleanup(
+			async () => {
+				try {
+					if (stackName !== undefined) {
+						if (hasChanges) {
+							await client.swarm.updateStackSource({
+								name: stackName,
+								request: { composeContent: compose, envContent },
+								envID: environmentID
+							});
+						}
+					}
+					if (shouldDeploy) {
+						await client.swarm.deployStack({
+							request: {
+								name: trimmedName,
+								composeContent: compose,
+								envContent,
+								withRegistryAuth,
+								prune,
+								resolveImage
+							},
+							envID: environmentID
+						});
+					}
+					swarmChanged(environmentID);
+					showToast(Toasts.success(successMessage));
+					dismiss();
+				} catch (error) {
+					setErrorMessage(friendlyErrorMessage(error));
+				}
+			},
+			() => setIsSaving(false)
+		);
 	};
 
 	useDeleteConfirmation(

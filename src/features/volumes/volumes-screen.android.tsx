@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
+import { withCleanup } from '@/core/with-cleanup';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import {
@@ -11,7 +12,7 @@ import {
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { m3 } from '@/ui/components/material-colors';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
-import { StableSectionedList } from '@/ui/components/stable-sectioned-list';
+import { VirtualizedSectionedList } from '@/ui/components/virtualized-sectioned-list';
 import { Icon } from '@/ui/Icon';
 
 import { CenteredMessage } from '@/features/containers/android-material';
@@ -57,6 +58,16 @@ function Checkbox({ checked }: { checked: boolean }) {
 	);
 }
 
+const rowStyle = {
+	flexDirection: 'row' as const,
+	alignItems: 'center' as const,
+	gap: 16,
+	paddingHorizontal: 16,
+	paddingVertical: 10
+};
+
+const rowContentStyle = { flex: 1 };
+
 function VolumeListRow({ model, item }: { model: VolumesListModel; item: VolumeItem }) {
 	const isPinned = model.pinnedIDs.has(item.id);
 	const environmentColor = useEnvironmentRowColor(item.environmentID, item.environmentName);
@@ -69,13 +80,6 @@ function VolumeListRow({ model, item }: { model: VolumesListModel; item: VolumeI
 			environmentColor={environmentColor}
 		/>
 	);
-	const rowStyle = {
-		flexDirection: 'row' as const,
-		alignItems: 'center' as const,
-		gap: 16,
-		paddingHorizontal: 16,
-		paddingVertical: 10
-	};
 	if (model.isSelecting) {
 		const selected = model.selection.includes(item.id);
 		return (
@@ -87,7 +91,7 @@ function VolumeListRow({ model, item }: { model: VolumesListModel; item: VolumeI
 				style={rowStyle}
 			>
 				<Checkbox checked={selected} />
-				<View style={{ flex: 1 }}>{row}</View>
+				<View style={rowContentStyle}>{row}</View>
 			</Pressable>
 		);
 	}
@@ -98,7 +102,7 @@ function VolumeListRow({ model, item }: { model: VolumesListModel; item: VolumeI
 			onPress={() => model.openDetail(item)}
 			style={rowStyle}
 		>
-			<View style={{ flex: 1 }}>{row}</View>
+			<View style={rowContentStyle}>{row}</View>
 		</LongPressMenu>
 	);
 }
@@ -110,12 +114,16 @@ export function VolumesScreen(props: VolumesListProps) {
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		try {
-			await model.refresh();
-		} finally {
-			setRefreshing(false);
-		}
+		await withCleanup(model.refresh, () => setRefreshing(false));
 	};
+
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
 
 	let content;
 	if (snapshot.isLoading && volumes.length === 0) {
@@ -156,37 +164,56 @@ export function VolumesScreen(props: VolumesListProps) {
 				action={{ title: 'Create Volume', onPress: () => model.presentCreate(props.environmentID) }}
 			/>
 		);
-	} else {
-		content = (
-			<>
-				<EnvironmentLoadFailuresSection
-					failures={snapshot.failedEnvironments.map((failure) => ({
-						...failure,
-						id: failure.environment.id
-					}))}
-					retry={() => void model.loadVolumes()}
-				/>
-				<StableSectionedList
-					sections={model.sections}
-					preferredHeaderAccessorySectionID="used"
-					headerAccessory={() => (
-						<ResourceCountLabel
-							loadedCount={volumes.length}
-							totalCount={snapshot.totalItems}
-							hasMore={snapshot.hasMore}
-						/>
-					)}
-					renderRow={(item) => <VolumeListRow model={model} item={item} />}
-				/>
-				<PaginatedListFooter
-					hasMore={snapshot.hasMore}
-					loadMoreError={snapshot.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</>
-		);
 	}
+
+	const list =
+		content === undefined ? (
+			<VirtualizedSectionedList
+				onEndReached={
+					snapshot.hasMore && snapshot.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				sections={model.sections}
+				preferredHeaderAccessorySectionID="used"
+				headerAccessory={() => (
+					<ResourceCountLabel
+						loadedCount={volumes.length}
+						totalCount={snapshot.totalItems}
+						hasMore={snapshot.hasMore}
+					/>
+				)}
+				renderRow={(item) => <VolumeListRow model={model} item={item} />}
+				header={
+					<EnvironmentLoadFailuresSection
+						failures={snapshot.failedEnvironments.map((failure) => ({
+							...failure,
+							id: failure.environment.id
+						}))}
+						retry={() => void model.loadVolumes()}
+					/>
+				}
+				footer={
+					<PaginatedListFooter
+						hasMore={snapshot.hasMore}
+						loadMoreError={snapshot.loadMoreError}
+						onRetry={() => void model.loadMore()}
+						onLoadMore={() => void model.loadMore()}
+					/>
+				}
+				refreshControl={refreshControl}
+			/>
+		) : (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				style={{ backgroundColor: colors.systemGroupedBackground }}
+				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+				keyboardShouldPersistTaps="handled"
+				refreshControl={refreshControl}
+			>
+				{content}
+			</ScrollView>
+		);
 
 	return (
 		<>
@@ -201,21 +228,7 @@ export function VolumesScreen(props: VolumesListProps) {
 				}}
 			/>
 			<VolumesToolbar model={model} />
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{list}
 		</>
 	);
 }
