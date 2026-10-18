@@ -6,6 +6,7 @@ export type ResourceCountProps = {
 	loadedCount: number;
 	totalCount?: number;
 	hasMore?: boolean;
+	spansSections?: boolean;
 };
 
 const items = (count: number) => (count === 1 ? 'item' : 'items');
@@ -13,7 +14,8 @@ const items = (count: number) => (count === 1 ? 'item' : 'items');
 export function resourceCountText({
 	loadedCount,
 	totalCount,
-	hasMore = false
+	hasMore = false,
+	spansSections = false
 }: ResourceCountProps) {
 	const knownTotal = totalCount !== undefined && totalCount >= 0 ? totalCount : undefined;
 	if (hasMore && knownTotal !== undefined && knownTotal > loadedCount) {
@@ -26,6 +28,12 @@ export function resourceCountText({
 		return {
 			text: `${loadedCount} loaded`,
 			accessibility: `${loadedCount} ${items(loadedCount)} loaded`
+		};
+	}
+	if (spansSections) {
+		return {
+			text: `${loadedCount} total`,
+			accessibility: `${loadedCount} ${items(loadedCount)} in total`
 		};
 	}
 	const text = `${loadedCount} ${items(loadedCount)}`;

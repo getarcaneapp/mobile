@@ -214,8 +214,36 @@ export function DynamicResourceListView(config: DynamicResourceListConfig) {
 				action={{ title: 'Try Again', onPress: () => void model.load() }}
 			/>
 		);
+	} else if (items.length === 0 && model.searchText.trim() !== '') {
+		content = (
+			<CenteredMessage
+				icon="magnifyingglass"
+				title={`No Results for “${model.searchText.trim()}”`}
+				message="Check the spelling or try a new search."
+			/>
+		);
 	} else if (items.length === 0) {
-		content = <CenteredMessage icon={model.systemImage} title={model.emptyTitle} message="" />;
+		const createsDirectly =
+			model.canCreate &&
+			!(model.showsAllEnvironments && environmentActionIsMenu(model.listEnvironments));
+		content = (
+			<CenteredMessage
+				icon={model.systemImage}
+				title={model.emptyTitle}
+				message=""
+				action={
+					createsDirectly
+						? {
+								title: model.createTitle,
+								onPress: () =>
+									model.presentCreate(
+										model.showsAllEnvironments ? model.listEnvironments[0]?.id : undefined
+									)
+							}
+						: undefined
+				}
+			/>
+		);
 	} else {
 		content = (
 			<>

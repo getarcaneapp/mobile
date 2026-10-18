@@ -68,6 +68,7 @@ import {
 	type RuntimeRow,
 	type ServiceAction
 } from './use-project-detail';
+import { pluralCount } from '@/core/plural';
 
 function useIsRegularWidth() {
 	const { width } = useWindowDimensions();
@@ -157,7 +158,7 @@ function ProjectHeader({ model }: { model: ProjectDetailModel }) {
 									foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 								]}
 							>
-								{`${project.serviceCount} services · ${project.runningCount} running`}
+								{`${pluralCount(project.serviceCount, 'service')} · ${project.runningCount} running`}
 							</Text>
 						</VStack>
 					</Label>
@@ -332,18 +333,12 @@ function ProjectFilesSection({ model }: { model: ProjectDetailModel }) {
 			<FileButton onPress={() => model.openFiles({ kind: 'compose' })}>
 				<ProjectFileBrowserRow
 					name={model.composeFileName}
-					detail="Compose definition"
 					systemImage="doc.text"
 					isDirectory={false}
 				/>
 			</FileButton>
 			<FileButton onPress={() => model.openFiles({ kind: 'env' })}>
-				<ProjectFileBrowserRow
-					name=".env"
-					detail="Environment variables"
-					systemImage="key.horizontal"
-					isDirectory={false}
-				/>
+				<ProjectFileBrowserRow name=".env" systemImage="key.horizontal" isDirectory={false} />
 			</FileButton>
 			{model.fileBrowserLoading && model.fileBrowserFiles === undefined ? (
 				<HStack spacing={10}>
@@ -389,7 +384,6 @@ function ProjectFilesSection({ model }: { model: ProjectDetailModel }) {
 					<FileButton onPress={() => model.openFiles({ kind: 'files' })}>
 						<ProjectFileBrowserRow
 							name="Browse Files"
-							detail="Add or manage custom files"
 							systemImage="folder.badge.plus"
 							isDirectory
 						/>

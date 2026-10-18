@@ -372,6 +372,29 @@ export function processRow(
 	return row;
 }
 
+const processExtraLabels: Record<string, (value: string) => string> = {
+	'%CPU': (value) => `CPU ${value}%`,
+	'%MEM': (value) => `Memory ${value}%`,
+	ELAPSED: (value) => `Running ${value}`,
+	ETIME: (value) => `Running ${value}`,
+	TIME: (value) => `CPU Time ${value}`,
+	STIME: (value) => `Started ${value}`,
+	START: (value) => `Started ${value}`,
+	PPID: (value) => `Parent ${value}`,
+	STAT: (value) => `State ${value}`,
+	S: (value) => `State ${value}`,
+	TTY: (value) => `TTY ${value}`,
+	VSZ: (value) => `Virtual ${value} KB`,
+	RSS: (value) => `Resident ${value} KB`,
+	C: (value) => `CPU ${value}%`
+};
+
+export function processExtraText(extra: { title: string; value: string }): string {
+	const label = processExtraLabels[extra.title.toUpperCase()];
+	if (label) return label(extra.value);
+	return extra.title === '' ? extra.value : `${extra.title} ${extra.value}`;
+}
+
 export function processRows(list: ContainerProcessList | undefined): ProcessRow[] {
 	if (!list) return [];
 	return list.processes.map((values, index) => processRow(index, list.titles, values));

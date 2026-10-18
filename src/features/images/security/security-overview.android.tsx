@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { shortDayLabel } from '@/core/date-formatting';
 import { M3Section } from '@/features/containers/android-material';
 import type {
 	VulnerabilityRiskFinding,
@@ -28,6 +29,7 @@ import {
 } from './security-overview-logic';
 import { SeverityBadge } from './vulnerability-rows';
 import { capitalized, riskBandColor, severityFromRaw } from './vulnerability-model';
+import { pluralCount } from '@/core/plural';
 
 export type SecurityOverviewProps = {
 	overview: VulnerabilityRiskOverview;
@@ -128,9 +130,9 @@ function FindingRow({
 				>
 					{`${finding.pkgName} → ${finding.fixedVersion ?? 'No fix'}`}
 				</Text>
-				<Text
-					style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}
-				>{`${finding.imagesAffected} images`}</Text>
+				<Text style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>
+					{pluralCount(finding.imagesAffected, 'image')}
+				</Text>
 			</View>
 			<View style={{ alignItems: 'flex-end', gap: 2 }}>
 				<Text style={[m3Type.titleMedium, tabular, { color: colors.label }]}>{trailing.value}</Text>
@@ -278,10 +280,10 @@ function TrendCard({
 					/>
 					<View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
 						<Text style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>
-							{points[0]?.date ?? ''}
+							{shortDayLabel(points[0]?.date ?? '')}
 						</Text>
 						<Text style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>
-							{points[points.length - 1]?.date ?? ''}
+							{shortDayLabel(points[points.length - 1]?.date ?? '')}
 						</Text>
 					</View>
 				</>

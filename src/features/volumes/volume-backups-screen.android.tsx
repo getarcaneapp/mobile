@@ -16,15 +16,21 @@ import { M3Section, TextButtonRow, ValueRow } from '@/features/containers/androi
 
 import { LinkItem, TextRow } from './android-rows';
 import { useVolumeBackups, type VolumeBackupsModel } from './use-volume-backups';
+import { backupStorageTitle, capitalized, formattedVolumeDate } from './volume-model';
 
 function BackupSection({ model, backup }: { model: VolumeBackupsModel; backup: BackupEntry }) {
 	const noDestinations = model.destinations.length === 0;
 	return (
 		<M3Section>
-			<ValueRow title={backup.createdAt} value={formatFileBytes(backup.size)} />
-			{backup.status !== undefined ? <ValueRow title="Status" value={backup.status} /> : null}
+			<ValueRow
+				title={formattedVolumeDate(backup.createdAt)}
+				value={formatFileBytes(backup.size)}
+			/>
+			{backup.status !== undefined ? (
+				<ValueRow title="Status" value={capitalized(backup.status)} />
+			) : null}
 			{backup.destination !== undefined ? (
-				<ValueRow title="Storage" value={backup.destination} />
+				<ValueRow title="Storage" value={backupStorageTitle(backup.destination)} />
 			) : null}
 			{backup.s3DestinationName !== undefined ? (
 				<ValueRow title="S3 destination" value={backup.s3DestinationName} />

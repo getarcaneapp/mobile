@@ -21,12 +21,14 @@ function Loading({ label }: { label: string }) {
 
 export function NetworkTopologyScreen({
 	environmentID,
-	allEnvironments
+	allEnvironments,
+	focusNetworkID
 }: {
 	environmentID: EnvironmentID;
 	allEnvironments: boolean;
+	focusNetworkID?: string;
 }) {
-	const model = useNetworkTopology({ environmentID, allEnvironments });
+	const model = useNetworkTopology({ environmentID, allEnvironments, focusNetworkID });
 	const { topology, layout } = model;
 
 	const items: AndroidToolbarItem[] = [];

@@ -128,8 +128,8 @@ function OverviewTab({ model }: { model: ImageDetailModel }) {
 					</M3Section>
 					<M3Section title="Identity">
 						<ValueRow title="Image ID" value={details.id} monospaced />
-						{details.repoTags.length > 0 ? (
-							<ValueRow title="Tags" value={details.repoTags.join('\n')} monospaced />
+						{details.repoTags.length === 1 ? (
+							<ValueRow title="Tag" value={details.repoTags[0] ?? ''} monospaced />
 						) : null}
 					</M3Section>
 				</>

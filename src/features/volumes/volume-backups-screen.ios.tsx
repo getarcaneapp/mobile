@@ -31,6 +31,7 @@ import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { DisclosureChevron } from '@/ui/settings-row';
 
 import { useVolumeBackups, type VolumeBackupsModel } from './use-volume-backups';
+import { backupStorageTitle, capitalized, formattedVolumeDate } from './volume-model';
 
 function NavigationRow({ title, onPress }: { title: string; onPress: () => void }) {
 	return (
@@ -57,10 +58,12 @@ function Value({ label, value }: { label: string; value: string }) {
 function BackupSection({ model, backup }: { model: VolumeBackupsModel; backup: BackupEntry }) {
 	return (
 		<Section>
-			<Value label={backup.createdAt} value={formatFileBytes(backup.size)} />
-			{backup.status !== undefined ? <Value label="Status" value={backup.status} /> : null}
+			<Value label={formattedVolumeDate(backup.createdAt)} value={formatFileBytes(backup.size)} />
+			{backup.status !== undefined ? (
+				<Value label="Status" value={capitalized(backup.status)} />
+			) : null}
 			{backup.destination !== undefined ? (
-				<Value label="Storage" value={backup.destination} />
+				<Value label="Storage" value={backupStorageTitle(backup.destination)} />
 			) : null}
 			{backup.s3DestinationName !== undefined ? (
 				<Value label="S3 destination" value={backup.s3DestinationName} />

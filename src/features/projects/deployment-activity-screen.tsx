@@ -28,10 +28,7 @@ export function DeploymentActivityScreen() {
 				<InstallStreamSheet
 					operation={operation}
 					onCancel={() => useProjectDeploymentStore.getState().cancel()}
-					onDone={() => {
-						useProjectDeploymentStore.getState().acknowledge();
-						hide();
-					}}
+					onDone={() => useProjectDeploymentStore.getState().acknowledge()}
 					onHide={hide}
 				/>
 			) : null}

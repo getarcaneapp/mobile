@@ -25,6 +25,7 @@ import { SwarmListState, SwarmStateBadge } from './swarm-parts';
 import type { SwarmTaskSource } from './swarm-routes';
 import {
 	showsServiceFor,
+	taskErrorMessage,
 	taskNodeName,
 	taskSourceFromParams,
 	taskTitle,
@@ -66,7 +67,7 @@ export function SwarmTaskRow({
 					<Label title={`Wants ${task.desiredState}`} systemImage="arrow.right.circle" />
 				) : null}
 			</HStack>
-			{task.error ? (
+			{taskErrorMessage(task) ? (
 				<Text
 					modifiers={[
 						font({ textStyle: 'caption' }),
@@ -75,7 +76,7 @@ export function SwarmTaskRow({
 						textSelection(true)
 					]}
 				>
-					{task.error}
+					{taskErrorMessage(task)}
 				</Text>
 			) : null}
 			<Text

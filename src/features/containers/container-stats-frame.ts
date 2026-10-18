@@ -127,7 +127,7 @@ export function parseContainerStatsFrame(
 
 export interface ContainerStatsChartSeries {
 	cpu: number[];
-	memoryMegabytes: number[];
+	memoryBytes: number[];
 	networkReceive: number[];
 	networkTransmit: number[];
 	blockRead: number[];
@@ -137,7 +137,7 @@ export interface ContainerStatsChartSeries {
 export function chartSeries(frames: readonly ContainerStatsFrame[]): ContainerStatsChartSeries {
 	return {
 		cpu: frames.map((f) => f.cpuPercent),
-		memoryMegabytes: frames.map((f) => f.memoryUsed / 1_048_576),
+		memoryBytes: frames.map((f) => f.memoryUsed),
 		networkReceive: frames.map((f) => f.netRxPerSec),
 		networkTransmit: frames.map((f) => f.netTxPerSec),
 		blockRead: frames.map((f) => f.blockReadPerSec),
@@ -162,3 +162,27 @@ export const StatsText = {
 		return `${formatFileBytes(Math.trunc(Math.min(Math.max(0, bytesPerSec), 1_000_000_000_000_000)))}/s`;
 	}
 };
+
+export type StatsAxisUnit = 'percent' | 'bytes' | 'bytesPerSecond';
+
+function axisDecimals(step: number) {
+	return step > 0 && step < 1 ? Math.min(Math.ceil(-Math.log10(step) - 1e-9) + 1, 6) : 1;
+}
+
+export function axisBytes(value: number): string {
+	if (!(value > 0) || !Number.isFinite(value)) return '0 B';
+	const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+	let scaled = value;
+	let unit = 0;
+	while (unit < units.length - 1 && scaled >= 1_000) {
+		scaled /= 1_000;
+		unit += 1;
+	}
+	return `${+scaled.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+}
+
+export function statsAxisLabel(value: number, step: number, unit: StatsAxisUnit): string {
+	if (unit === 'percent') return `${+value.toFixed(axisDecimals(step))}%`;
+	const bytes = axisBytes(value);
+	return unit === 'bytesPerSecond' ? `${bytes}/s` : bytes;
+}

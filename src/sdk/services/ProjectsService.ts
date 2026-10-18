@@ -1,7 +1,7 @@
 import type { EnvironmentID } from '../client/environment';
 import { q } from '../client/url';
 import { ArcaneError, isArcaneError } from '../errors/ArcaneError';
-import { encodeArcaneJSON, encodeUTF8 } from '../http/json';
+import { encodeArcaneJSON } from '../http/json';
 import type { MultipartFile } from '../http/multipart';
 import type { RESTService } from '../http/RESTService';
 import { MessageResponse } from '../models/base/message';
@@ -253,7 +253,7 @@ export class ProjectsService {
 					fieldName: 'files',
 					filename: filename === '' ? 'file' : filename,
 					contentType: 'text/plain; charset=utf-8',
-					data: encodeUTF8(draft.content ?? '')
+					text: draft.content ?? ''
 				});
 				return { operation: 'create_file', relativePath: draft.relativePath, uploadIndex };
 			}
@@ -320,7 +320,7 @@ export class ProjectsService {
 					fieldName: 'files',
 					filename: filename === '' ? 'file' : filename,
 					contentType: 'text/plain; charset=utf-8',
-					data: encodeUTF8(change.content)
+					text: change.content
 				});
 			}
 			manifestChanges.push({

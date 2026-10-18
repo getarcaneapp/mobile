@@ -35,8 +35,6 @@ import {
 import {
 	Children,
 	isValidElement,
-	useEffect,
-	useRef,
 	type ComponentProps,
 	type ReactElement,
 	type ReactNode
@@ -50,6 +48,7 @@ import { symbolRenderingMode } from '../../../../modules/arcane-swiftui-extras';
 
 import { encodeComposeDestination, type ComposeDestination } from '../compose-destinations';
 import type { ComposeMenuAction } from '../compose-session';
+import { useSyncedNativeText } from '@/ui/components/synced-native-text';
 
 export const secondaryStyle = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
 export const tertiaryStyle = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
@@ -87,22 +86,7 @@ export function BoundField({
 	secure?: boolean;
 	modifiers?: ModifierConfig[];
 }) {
-	const state = useNativeState(value);
-	const pending = useRef<string[]>([]);
-	useEffect(() => {
-		const index = pending.current.indexOf(value);
-		if (index !== -1) {
-			pending.current = pending.current.slice(index + 1);
-			return;
-		}
-		pending.current = [];
-		if (state.get() !== value) state.set(value);
-	}, [state, value]);
-	const emit = (next: string) => {
-		pending.current.push(next);
-		if (pending.current.length > 64) pending.current.shift();
-		onChange(next);
-	};
+	const { state, onTextChange: emit } = useSyncedNativeText(value, onChange);
 	if (secure) {
 		return (
 			<SecureBoundField

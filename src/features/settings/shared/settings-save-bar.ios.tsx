@@ -162,7 +162,7 @@ export function SettingsSaveBarSpacer({
 			<Spacer
 				minLength={0}
 				modifiers={[
-					frame({ height: settingsSaveBarHeight - 36 + (afterFooterlessSection ? 36 : 0) }),
+					frame({ height: settingsSaveBarHeight + (afterFooterlessSection ? 36 : 0) }),
 					listRowBackground('#00000000'),
 					listRowSeparator('hidden'),
 					listRowInsets({ top: 0, bottom: 0 })

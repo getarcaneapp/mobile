@@ -1,7 +1,6 @@
 import type { ArcaneTransport } from '../client/ArcaneTransport';
 import type { EnvironmentID } from '../client/environment';
 import type { QueryItem } from '../client/url';
-import { MessageResponse } from '../models/base/message';
 import type { Decoder } from '../models/base/decoding';
 import type { PaginatedResponse } from '../pagination/PaginatedResponse';
 import type { ArcaneRequestOptions } from './requestOptions';
@@ -15,6 +14,8 @@ export interface RESTInit<T> {
 export interface RESTBodyInit<T> extends RESTInit<T> {
 	body?: unknown;
 }
+
+const ignoreResponseBody = (_raw: unknown): undefined => undefined;
 
 export class RESTService {
 	readonly transport: ArcaneTransport;
@@ -53,16 +54,16 @@ export class RESTService {
 		await this.transport.request(path, {
 			method: 'DELETE',
 			...init,
-			decode: MessageResponse.decode
+			decode: ignoreResponseBody
 		});
 	}
 
 	async postVoid(path: string, init: Omit<RESTBodyInit<never>, 'decode'> = {}): Promise<void> {
-		await this.transport.request(path, { method: 'POST', ...init, decode: MessageResponse.decode });
+		await this.transport.request(path, { method: 'POST', ...init, decode: ignoreResponseBody });
 	}
 
 	async putVoid(path: string, init: Omit<RESTBodyInit<never>, 'decode'> = {}): Promise<void> {
-		await this.transport.request(path, { method: 'PUT', ...init, decode: MessageResponse.decode });
+		await this.transport.request(path, { method: 'PUT', ...init, decode: ignoreResponseBody });
 	}
 
 	paginated<T>(

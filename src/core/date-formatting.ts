@@ -57,3 +57,15 @@ export function formattedClockTime(value: string): string | undefined {
 	const date = parseArcaneDate(value);
 	return date ? formatter('omitted', 'standard').format(date) : undefined;
 }
+
+const shortDayFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+
+export function shortDayLabel(value: string): string {
+	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+	if (match) {
+		const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+		return Number.isNaN(date.getTime()) ? value : shortDayFormatter.format(date);
+	}
+	const date = parseArcaneDate(value);
+	return date ? shortDayFormatter.format(date) : value;
+}

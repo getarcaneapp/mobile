@@ -4,7 +4,6 @@ import { ActivityIndicator } from 'react-native';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
 import { useAccentColor } from '@/theme/accent';
-import { isIOS26 } from '@/ui/components/swiftui-surfaces';
 import { AllEnvironmentsMaintenanceToolbarActions } from '@/ui/components/all-environments-maintenance';
 import { environmentActionIsMenu, environmentTitle } from '@/ui/components/environment-label.types';
 import { EnvironmentToolbarAction } from '@/ui/components/toolbar';
@@ -22,7 +21,7 @@ export function ImagesToolbar({ model }: { model: ImagesListModel }) {
 			{model.isAdmin ? (
 				<AppToolbar placement="left" tintColor={accent}>
 					<Stack.Toolbar.Button
-						icon={isIOS26 ? 'key.shield' : 'lock.shield'}
+						icon="shippingbox"
 						accessibilityLabel="Container Registries"
 						onPress={model.openRegistries}
 					/>

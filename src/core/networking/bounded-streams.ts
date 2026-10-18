@@ -1,3 +1,4 @@
+import { withoutSwarmLogDetails } from './swarm-log-details';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { ArcaneError, CancellationError } from '@/sdk/errors/ArcaneError';
@@ -123,7 +124,12 @@ export function boundedSwarmServiceLogs(
 		args.envID,
 		`ws/swarm/services/${encodeURIComponent(args.serviceID)}/logs`
 	);
-	return boundedLogs(client, path, '200', args.timestamps, signal);
+	const lines = boundedLogs(client, path, '200', args.timestamps, signal);
+	return {
+		async *[Symbol.asyncIterator]() {
+			for await (const line of lines) yield { ...line, text: withoutSwarmLogDetails(line.text) };
+		}
+	};
 }
 
 export class BoundedTerminalSession {

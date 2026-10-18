@@ -66,13 +66,20 @@ const capitalized = (value: string) =>
 
 export { capitalized };
 
+export function networkDriverName(driver: string | undefined) {
+	const value = (driver ?? '').trim();
+	return value === '' || value.toLowerCase() === 'null' ? 'None' : value;
+}
+
 export function networkPreview(network: NetworkItem): {
 	title: string;
 	badges: PreviewBadge[];
 	details: PreviewDetail[];
 } {
 	const value = network.value;
-	const badges: PreviewBadge[] = [{ text: capitalized(value.driver), color: systemColors.teal }];
+	const badges: PreviewBadge[] = [
+		{ text: capitalized(networkDriverName(value.driver)), color: systemColors.teal }
+	];
 	if (networkIsInternal(value)) badges.push({ text: 'Internal', color: systemColors.orange });
 	const details: PreviewDetail[] = [
 		{ icon: 'globe', label: 'Scope', value: capitalized(value.scope) }
@@ -88,7 +95,7 @@ export function networkPreview(network: NetworkItem): {
 
 export function networkMetadata(network: NetworkSummary): ResourceMetadataItem[] {
 	return [
-		{ label: 'Driver', value: network.driver, systemImage: 'gearshape' },
+		{ label: 'Driver', value: networkDriverName(network.driver), systemImage: 'gearshape' },
 		{ label: 'Scope', value: capitalized(network.scope), systemImage: 'scope' },
 		{
 			label: 'Created',

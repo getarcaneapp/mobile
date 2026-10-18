@@ -32,6 +32,19 @@ export function decodeDestination(value: string | undefined): ProjectFilesDestin
 export const sameDestination = (a: ProjectFilesDestination, b: ProjectFilesDestination) =>
 	encodeDestination(a) === encodeDestination(b);
 
+export function nextNavigationPath(
+	path: string[],
+	root: string,
+	previous: string,
+	next: string
+): string[] {
+	if (next === previous) return path;
+	if (next === root) return [];
+	const index = path.indexOf(previous);
+	if (index === -1) return path[path.length - 1] === next ? path : [...path, next];
+	return [...path.slice(0, index), next];
+}
+
 export type EditorLanguage = 'yaml' | 'env' | 'plaintext';
 
 export type ManagedProjectFileEntry = {

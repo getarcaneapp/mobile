@@ -86,7 +86,7 @@ describe('ProjectsService.create', () => {
 			['files', 'app.conf'],
 			['files', 'README.md']
 		]);
-		expect(new TextDecoder().decode(files[0]?.data as Uint8Array)).toBe('x=1');
+		expect(files[0]?.text).toBe('x=1');
 	});
 
 	it('POSTs multipart/form-data to the projects endpoint and decodes the response', async () => {

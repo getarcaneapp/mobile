@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
@@ -11,8 +11,6 @@ import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
 import { prettySortedJSON } from './image-model';
-
-export const layerID = (id: string) => (id === '<missing>' ? 'Metadata-only layer' : id);
 
 const historyDateFormat = new Intl.DateTimeFormat(undefined, {
 	year: 'numeric',
@@ -143,6 +141,24 @@ async function loadAttestationStatement({
 	}
 }
 
+const statementPreviewLineLimit = 400;
+const statementChunkLines = 40;
+
+export function statementPreviewChunks(json: string) {
+	const lines = json.split('\n');
+	const shown = lines.slice(0, statementPreviewLineLimit);
+	const chunks: string[] = [];
+	for (let start = 0; start < shown.length; start += statementChunkLines) {
+		chunks.push(shown.slice(start, start + statementChunkLines).join('\n'));
+	}
+	return {
+		chunks,
+		totalLines: lines.length,
+		isTruncated: lines.length > shown.length,
+		shownLines: shown.length
+	};
+}
+
 export function useAttestationStatement(
 	environmentID: EnvironmentID,
 	imageID: string,
@@ -176,8 +192,14 @@ export function useAttestationStatement(
 		showToast(Toasts.copied('Statement copied'));
 	};
 
+	const statementPreview = useMemo(
+		() => (statementJSON === undefined ? undefined : statementPreviewChunks(statementJSON)),
+		[statementJSON]
+	);
+
 	return {
 		statementJSON,
+		statementPreview,
 		isLoadingStatement,
 		statementError,
 		loadStatement: () => void loadStatement(),

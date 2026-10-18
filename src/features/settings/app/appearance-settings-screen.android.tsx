@@ -23,7 +23,7 @@ export function AppearanceSettingsScreen() {
 				style={{ backgroundColor: colors.systemGroupedBackground }}
 				contentContainerStyle={{ paddingBottom: 24 }}
 			>
-				<M3Section footer={AppearanceCopy.accentFooter}>
+				<M3Section>
 					<View
 						style={{
 							flexDirection: 'row',
@@ -42,7 +42,7 @@ export function AppearanceSettingsScreen() {
 					</View>
 				</M3Section>
 
-				<M3Section title="Motion" footer={AppearanceCopy.motionFooter}>
+				<M3Section title="Motion">
 					<IconSwitchRow
 						title="Launch Animation"
 						icon="sparkles"

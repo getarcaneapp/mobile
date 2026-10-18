@@ -21,15 +21,19 @@ import {
 	type CustomAccentColorPickerProps
 } from './accent-color-menu.types';
 import { m3 } from './material-colors';
+import { MenuSelectedIcon, useMenuCheckIcon } from './menu-selected-icon.android';
 import { m3Type } from './type-scale';
 
 export function AccentColorMenu({
 	selection,
 	onSelectionChange,
 	isAvailable = () => true,
-	onCustom
+	onCustom,
+	unnamedTitle = 'Custom',
+	accessibilityLabel: label = 'Accent color'
 }: AccentColorMenuProps) {
 	const [expanded, setExpanded] = useState(false);
+	const checkIcon = useMenuCheckIcon();
 	const selected = selectedAccentOption(selection);
 	const color = accentMenuColor(selection);
 	return (
@@ -37,7 +41,7 @@ export function AccentColorMenu({
 			<Pressable
 				onPress={() => setExpanded(true)}
 				accessibilityRole="button"
-				accessibilityLabel={`Accent color, ${selected?.displayName ?? 'Custom'}`}
+				accessibilityLabel={`${label}, ${selected?.displayName ?? unnamedTitle}`}
 				style={{
 					flexDirection: 'row',
 					alignItems: 'center',
@@ -47,8 +51,8 @@ export function AccentColorMenu({
 				}}
 			>
 				<View style={{ width: 9, height: 9, borderRadius: 4.5, backgroundColor: color }} />
-				<Text style={[m3Type.bodyMedium, { color }]}>{selected?.displayName ?? 'Custom'}</Text>
-				<Icon name="chevron.up.chevron.down" size={16} color={colors.tertiaryLabel} />
+				<Text style={[m3Type.bodyMedium, { color }]}>{selected?.displayName ?? unnamedTitle}</Text>
+				<Icon name="chevron.up.chevron.down" size={24} color={m3.onSurfaceVariant} />
 			</Pressable>
 			<Host matchContents style={{ position: 'absolute', right: 0, bottom: 0 }}>
 				<DropdownMenu expanded={expanded} onDismissRequest={() => setExpanded(false)}>
@@ -66,10 +70,9 @@ export function AccentColorMenu({
 									<Box modifiers={[size(12, 12), clip(Shapes.Circle), background(option.hex)]} />
 								</DropdownMenuItem.LeadingIcon>
 								<DropdownMenuItem.Text>
-									<ComposeText>
-										{selected?.id === option.id ? `${option.displayName}  ✓` : option.displayName}
-									</ComposeText>
+									<ComposeText>{option.displayName}</ComposeText>
 								</DropdownMenuItem.Text>
+								<MenuSelectedIcon selected={selected?.id === option.id} source={checkIcon} />
 							</DropdownMenuItem>
 						))}
 						{onCustom ? (

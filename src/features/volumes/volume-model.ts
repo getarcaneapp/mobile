@@ -16,6 +16,7 @@ import { useResourceMutationStore } from '@/stores/resource-mutation-store';
 import type { StableListSection } from '@/ui/components/stable-sectioned-list.types';
 import { showToast, Toasts } from '@/ui/toast';
 import { relativeTimeFormat } from '@/core/relative-time';
+import { formattedISO8601 } from '@/core/date-formatting';
 
 export type VolumeScopeFilter = 'All' | 'Local' | 'Global';
 export const VolumeScopeFilters: readonly VolumeScopeFilter[] = ['All', 'Local', 'Global'];
@@ -188,3 +189,11 @@ export function relativeNamed(value: string | undefined): string {
 }
 
 export const uuidString = () => randomUUID().toUpperCase();
+
+export function formattedVolumeDate(value: string) {
+	return value === '' ? 'Unknown' : formattedISO8601(value, 'abbreviated', 'shortened');
+}
+
+export function backupStorageTitle(destination: string) {
+	return destination.toLowerCase() === 's3' ? 'S3' : capitalized(destination);
+}

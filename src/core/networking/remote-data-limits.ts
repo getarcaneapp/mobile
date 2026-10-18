@@ -19,7 +19,7 @@ export const RemoteDataLimits = {
 } as const;
 
 export function formatFileBytes(bytes: number): string {
-	if (bytes === 0) return 'Zero KB';
+	if (bytes === 0) return '0 KB';
 	if (bytes === 1) return '1 byte';
 	if (bytes < 1_000) return `${bytes} bytes`;
 	const units = ['KB', 'MB', 'GB', 'TB', 'PB'];

@@ -21,9 +21,11 @@ import {
 	accessibilityLabel,
 	blur,
 	buttonStyle,
+	fixedSize,
 	font,
 	foregroundStyle,
 	frame,
+	lineLimit,
 	listStyle,
 	multilineTextAlignment,
 	navigationBarTitleDisplayMode,
@@ -110,7 +112,9 @@ export function ImageAttestationScreen() {
 								<Text
 									modifiers={[
 										font({ textStyle: 'caption', design: 'monospaced' }),
-										textSelection(true)
+										textSelection(true),
+										lineLimit(1),
+										truncationMode('middle')
 									]}
 								>
 									{attestation.digest}
@@ -137,6 +141,7 @@ export function ImageAttestationScreen() {
 													modifiers={[
 														font({ textStyle: 'caption2', design: 'monospaced' }),
 														foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+														lineLimit(1),
 														truncationMode('middle')
 													]}
 												>
@@ -148,19 +153,34 @@ export function ImageAttestationScreen() {
 							</Section>
 						) : null}
 						<Section title="Statement">
-							{statement.statementJSON !== undefined ? (
+							{statement.statementPreview !== undefined ? (
 								<>
 									<ScrollView axes="horizontal" showsIndicators={false}>
+										<VStack alignment="leading" spacing={0}>
+											{statement.statementPreview.chunks.map((chunk, index) => (
+												<Text
+													key={index}
+													modifiers={[
+														font({ textStyle: 'caption2', design: 'monospaced' }),
+														textSelection(true),
+														fixedSize()
+													]}
+												>
+													{chunk}
+												</Text>
+											))}
+										</VStack>
+									</ScrollView>
+									{statement.statementPreview.isTruncated ? (
 										<Text
 											modifiers={[
-												font({ textStyle: 'caption2', design: 'monospaced' }),
-												textSelection(true),
-												frame({ maxWidth: Infinity, alignment: 'leading' })
+												font({ textStyle: 'caption' }),
+												foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 											]}
 										>
-											{statement.statementJSON}
+											{`First ${statement.statementPreview.shownLines} of ${statement.statementPreview.totalLines} lines`}
 										</Text>
-									</ScrollView>
+									) : null}
 									<Button onPress={statement.copyStatement}>
 										<Label title="Copy Statement" systemImage="doc.on.doc" />
 									</Button>

@@ -53,7 +53,12 @@ export default function TabsLayout() {
 			>
 				{[...visible, ...pinnableTabs.filter((tab) => !visible.includes(tab))].map((tab) => {
 					return (
-						<NativeTabs.Trigger key={tab} name={`(${tab})`} hidden={!visible.includes(tab)}>
+						<NativeTabs.Trigger
+							key={tab}
+							name={`(${tab})`}
+							hidden={!visible.includes(tab)}
+							accessibilityLabel={tabBarTitle(tab)}
+						>
 							<NativeTabs.Trigger.Label hidden={!showTabLabels}>
 								{tabBarTitle(tab)}
 							</NativeTabs.Trigger.Label>
@@ -64,7 +69,7 @@ export default function TabsLayout() {
 						</NativeTabs.Trigger>
 					);
 				})}
-				<NativeTabs.Trigger name="(more)">
+				<NativeTabs.Trigger name="(more)" accessibilityLabel="More">
 					<NativeTabs.Trigger.Label hidden={!showTabLabels}>More</NativeTabs.Trigger.Label>
 					<NativeTabs.Trigger.Icon sf="ellipsis.circle.fill" md="more_horiz" />
 				</NativeTabs.Trigger>

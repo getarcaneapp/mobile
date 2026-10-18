@@ -5,7 +5,9 @@ import {
 	accessibilityHidden,
 	accessibilityLabel,
 	font,
-	foregroundStyle
+	foregroundStyle,
+	lineLimit,
+	truncationMode
 } from '@expo/ui/swift-ui/modifiers';
 
 import type { Volume } from '@/sdk/models/volume/Volume';
@@ -46,7 +48,9 @@ export function VolumeRow({
 			<RowIcon systemImage="externaldrive.fill" tint={systemColors.blue} />
 			<VStack alignment="leading" spacing={4}>
 				<HStack spacing={6}>
-					<Text modifiers={[font({ textStyle: 'body' })]}>{volume.name}</Text>
+					<Text modifiers={[font({ textStyle: 'body' }), lineLimit(1), truncationMode('middle')]}>
+						{volume.name}
+					</Text>
 					{isPinned ? (
 						<Image
 							systemName="pin.fill"

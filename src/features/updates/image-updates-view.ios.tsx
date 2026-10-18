@@ -466,7 +466,8 @@ function DetailRow({
 				modifiers={[
 					font(mono ? { textStyle: 'footnote', design: 'monospaced' } : { textStyle: 'footnote' }),
 					foregroundStyle(valueTint ?? 'primary'),
-					textSelection(true)
+					textSelection(true),
+					...(mono ? [lineLimit(1), truncationMode('middle')] : [])
 				]}
 			>
 				{value}

@@ -484,6 +484,7 @@ export function useProjectDetail(
 				systemImage: 'stop.fill',
 				tint: systemColors.red,
 				role: 'destructive',
+				dismissOnConfirm: false,
 				action: () => void performSimpleAction('down', 'Stopping', 'stop')
 			}
 		: {

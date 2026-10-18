@@ -1,6 +1,14 @@
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
-import { Button, ContextMenu, HStack, List, SwipeActions, VStack } from '@expo/ui/swift-ui';
+import {
+	Button,
+	ContentUnavailableView,
+	ContextMenu,
+	HStack,
+	List,
+	SwipeActions,
+	VStack
+} from '@expo/ui/swift-ui';
 import {
 	buttonStyle,
 	frame,
@@ -48,6 +56,7 @@ import {
 	type ProjectsListModel,
 	type ProjectsListProps
 } from './use-projects-list';
+import { sectionItemCount, spansSections } from '@/ui/components/stable-sectioned-list.types';
 
 function ProjectPreview({ item }: { item: ProjectItem }) {
 	const isDark = useIsDark();
@@ -227,6 +236,8 @@ export function ProjectsScreen(props: ProjectsListProps) {
 	const model = useProjectsList(props);
 	const { snapshot, projects } = model;
 
+	const visibleCount = sectionItemCount(model.sections);
+	const isFiltered = visibleCount < projects.length;
 	let content;
 	if (snapshot.isLoading && projects.length === 0) {
 		content = (
@@ -243,7 +254,7 @@ export function ProjectsScreen(props: ProjectsListProps) {
 				actions={[{ title: 'Retry', onPress: () => void model.loadProjects() }]}
 			/>
 		);
-	} else if (projects.length === 0) {
+	} else if (projects.length === 0 && model.searchText.trim() === '') {
 		content = (
 			<UnavailableView
 				title="No Projects"
@@ -269,6 +280,14 @@ export function ProjectsScreen(props: ProjectsListProps) {
 				)}
 			</UnavailableView>
 		);
+	} else if (visibleCount === 0 && !snapshot.hasMore) {
+		content = (
+			<ContentUnavailableView
+				title="No Results"
+				systemImage="magnifyingglass"
+				description="Nothing matches the current search or filter."
+			/>
+		);
 	} else {
 		content = (
 			<List modifiers={[listStyle('insetGrouped'), refreshable(model.refresh)]}>
@@ -284,9 +303,10 @@ export function ProjectsScreen(props: ProjectsListProps) {
 					preferredHeaderAccessorySectionID="active"
 					headerAccessory={() => (
 						<ResourceCountLabel
-							loadedCount={projects.length}
-							totalCount={snapshot.totalItems}
-							hasMore={snapshot.hasMore}
+							spansSections={spansSections(model.sections)}
+							loadedCount={isFiltered ? visibleCount : projects.length}
+							totalCount={isFiltered ? undefined : snapshot.totalItems}
+							hasMore={!isFiltered && snapshot.hasMore}
 						/>
 					)}
 					estimatedItemSize={46}

@@ -45,6 +45,8 @@ function EnvironmentColorPicker({
 					onSelectionChange={model.save}
 					isAvailable={model.isAvailable}
 					onCustom={() => setShowCustomColor(true)}
+					unnamedTitle={model.unnamedTitle}
+					accessibilityLabel={`${model.name} color`}
 				/>
 			</LongPressMenu>
 			<MaterialSheet isPresented={showCustomColor} onDismiss={() => setShowCustomColor(false)}>

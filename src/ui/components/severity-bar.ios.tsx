@@ -3,6 +3,7 @@ import {
 	accessibilityElement,
 	accessibilityLabel,
 	animation,
+	clipped,
 	contentTransition,
 	font,
 	foregroundStyle,
@@ -14,13 +15,23 @@ import { useState } from 'react';
 import { Motion } from '@/theme/tokens';
 
 import { useReduceMotion } from './accessibility';
-import { segmentWidth, severitySegments, type SeverityBarProps } from './severity-bar.types';
+import {
+	segmentGap,
+	segmentWidths,
+	severitySegments,
+	type SeverityBarProps
+} from './severity-bar.types';
 import { motionAwareAnimation, swiftAnimation } from './swiftui-motion';
 
 export function SeverityBar(props: SeverityBarProps) {
 	const reduceMotion = useReduceMotion();
 	const { segments, total, summary } = severitySegments(props);
 	const [width, setWidth] = useState(0);
+	const visible = segments.filter((segment) => segment.count > 0);
+	const widths = segmentWidths(
+		visible.map((segment) => segment.count),
+		width
+	);
 
 	return (
 		<VStack spacing={8} modifiers={[accessibilityElement('ignore'), accessibilityLabel(summary)]}>
@@ -37,21 +48,16 @@ export function SeverityBar(props: SeverityBarProps) {
 				/>
 				{width > 0 ? (
 					<HStack
-						spacing={total > 0 ? 2 : 0}
-						modifiers={[frame({ width, height: 8, alignment: 'leading' })]}
+						spacing={total > 0 ? segmentGap : 0}
+						modifiers={[frame({ width, height: 8, alignment: 'leading' }), clipped()]}
 					>
 						{total > 0 ? (
-							segments
-								.filter((segment) => segment.count > 0)
-								.map((segment) => (
-									<Capsule
-										key={segment.label}
-										modifiers={[
-											foregroundStyle(segment.color),
-											frame({ width: segmentWidth(segment.count, total, width) })
-										]}
-									/>
-								))
+							visible.map((segment, index) => (
+								<Capsule
+									key={segment.label}
+									modifiers={[foregroundStyle(segment.color), frame({ width: widths[index] ?? 0 })]}
+								/>
+							))
 						) : (
 							<Capsule modifiers={[foregroundStyle('#8E8E9326')]} />
 						)}

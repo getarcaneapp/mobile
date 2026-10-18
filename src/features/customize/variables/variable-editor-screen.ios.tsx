@@ -12,8 +12,7 @@ import {
 	Text,
 	Toggle,
 	Toolbar,
-	ToolbarItem,
-	useNativeState
+	ToolbarItem
 } from '@expo/ui/swift-ui';
 import {
 	autocorrectionDisabled,
@@ -26,7 +25,7 @@ import {
 	textInputAutocapitalization
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
+
 import { View } from 'react-native';
 
 import { BoundTextField } from '@/features/settings/shared/swiftui-text-field';
@@ -35,6 +34,7 @@ import { FormTextField } from '@/ui/components/form-fields';
 import { ToastHost } from '@/ui/toast';
 
 import { useVariableEditor } from './use-variable-editor';
+import { useSyncedNativeText } from '@/ui/components/synced-native-text';
 
 function BoundSecureField({
 	placeholder,
@@ -45,15 +45,12 @@ function BoundSecureField({
 	value: string;
 	onChangeText: (text: string) => void;
 }) {
-	const state = useNativeState(value);
-	useEffect(() => {
-		if (state.get() !== value) state.set(value);
-	}, [state, value]);
+	const { state, onTextChange } = useSyncedNativeText(value, onChangeText);
 	return (
 		<SecureField
 			text={state}
 			placeholder={placeholder}
-			onTextChange={onChangeText}
+			onTextChange={onTextChange}
 			modifiers={[textContentType('password')]}
 		/>
 	);

@@ -13,7 +13,13 @@ export function imageDisplayName(image: Pick<ImageSummary, 'repoTags' | 'id'>): 
 }
 
 export function byteString(bytes: number): string {
-	return bytes === 0 ? 'Zero KB' : formatFileBytes(bytes);
+	return bytes === 0 ? '0 KB' : formatFileBytes(bytes);
+}
+
+export function layerTitle(layer: { id: string; size: number }): string {
+	if (layer.size === 0) return 'Metadata-only layer';
+	if (layer.id === '' || layer.id === '<missing>') return 'Filesystem layer';
+	return layer.id;
 }
 
 export const taggedReferences = (repoTags: readonly string[]) =>

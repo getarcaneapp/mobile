@@ -31,6 +31,7 @@ import {
 	displayName,
 	liveStatsLimitMessage,
 	needsAttentionItems,
+	overviewCounts,
 	reappearRefreshIntervalMs,
 	type AttentionAction,
 	type DashboardTotalsTile,
@@ -288,9 +289,10 @@ export function useDashboardModel() {
 		[pinned, canAccess]
 	);
 
-	const selectTab = (tab: AppTab) => {
-		if (visibleTabs.has(tab)) router.navigate(`/(tabs)/(${tab})/${tab}` as never);
-		else router.push(`/(tabs)/${group}/${tab}` as never);
+	const selectTab = (tab: AppTab, params?: Record<string, string>) => {
+		if (visibleTabs.has(tab))
+			router.navigate({ pathname: `/(tabs)/(${tab})/${tab}` as never, params });
+		else router.push({ pathname: `/(tabs)/${group}/${tab}` as never, params });
 	};
 
 	const push = (path: string, params?: Record<string, string>) =>
@@ -314,8 +316,9 @@ export function useDashboardModel() {
 	const openTile = (tile: DashboardTotalsTile) => {
 		switch (tile) {
 			case 'running':
+				return selectTab('containers', { state: 'Running', request: String(Date.now()) });
 			case 'stopped':
-				return selectTab('containers');
+				return selectTab('containers', { state: 'Stopped', request: String(Date.now()) });
 			case 'images':
 				return selectTab('images');
 			case 'volumes':
@@ -335,14 +338,14 @@ export function useDashboardModel() {
 				return openEnvironment({ id: action.id, name: action.name });
 			case 'vulnerabilities':
 				return openVulnerabilities(action.id);
-			case 'containersTab':
-				return selectTab('containers');
+			case 'stoppedContainers':
+				return selectTab('containers', { state: 'Stopped', request: String(Date.now()) });
 			case 'imageUpdates':
 				return openImageUpdates();
 			case 'apiKeys':
 				return openAPIKeys();
-			case 'activityCenter':
-				return openActivityCenter();
+			case 'failedActivities':
+				return push('activity-center', { status: 'failed' });
 		}
 	};
 
@@ -450,6 +453,7 @@ export function useDashboardModel() {
 		showNextEnvironmentBatch: () => store.getState().showNextEnvironmentBatch(),
 		refreshEnvironmentDockerInfo: (id: string) => store.getState().refreshEnvironmentDockerInfo(id),
 
+		overviewCounts: overviewCounts(aggregate, view.liveCounts),
 		selectTab,
 		openEnvironment,
 		openContainer,

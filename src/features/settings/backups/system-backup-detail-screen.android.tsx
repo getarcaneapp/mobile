@@ -11,6 +11,7 @@ import { AndroidErrorText, NavItem } from './backup-android';
 import { BackupDestinationPicker } from './backup-forms-screens';
 import { useDetailEntryParam } from './backup-routes';
 import { useSystemBackupDetail } from './use-system-backup-detail';
+import { backupDestinationTitle, backupStatusTitle } from './backup-labels';
 
 function SystemBackupDetail({ entry }: { entry: BackupHistoryEntry }) {
 	const model = useSystemBackupDetail(entry);
@@ -43,8 +44,8 @@ function SystemBackupDetail({ entry }: { entry: BackupHistoryEntry }) {
 				>
 					<M3Section title="Backup">
 						<ValueRow title="Resource" value={entry.resourceName} />
-						<ValueRow title="Status" value={entry.status} />
-						<ValueRow title="Storage" value={entry.destination} />
+						<ValueRow title="Status" value={backupStatusTitle(entry.status)} />
+						<ValueRow title="Storage" value={backupDestinationTitle(entry.destination)} />
 						<ValueRow title="Size" value={model.sizeText} />
 						{entry.error !== undefined ? <AndroidErrorText message={entry.error} /> : null}
 					</M3Section>

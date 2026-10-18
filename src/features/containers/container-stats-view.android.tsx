@@ -11,7 +11,7 @@ import { DashboardCard } from '@/ui/components/surfaces';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
 
-import { StatsText } from './container-stats-frame';
+import { StatsText, type StatsAxisUnit } from './container-stats-frame';
 import { StatsLineChart, type ChartSeries } from './stats-chart';
 import { useContainerStats } from './use-container-stats';
 
@@ -27,12 +27,14 @@ function ChartCard({
 	title,
 	legend,
 	trailing,
-	series
+	series,
+	unit
 }: {
 	title: string;
 	legend?: { name: string; color: string }[];
 	trailing?: string;
 	series: ChartSeries[];
+	unit: StatsAxisUnit;
 }) {
 	return (
 		<Card>
@@ -51,7 +53,7 @@ function ChartCard({
 					</View>
 				))}
 			</View>
-			<StatsLineChart series={series} />
+			<StatsLineChart series={series} unit={unit} />
 		</Card>
 	);
 }
@@ -178,20 +180,20 @@ export function ContainerStatsView({
 							tint={accent}
 						/>
 					</View>
-					<ChartCard title="CPU" series={[{ values: series.cpu, color: accent }]} />
+					<ChartCard title="CPU" unit="percent" series={[{ values: series.cpu, color: accent }]} />
 					<ChartCard
 						title="Memory"
+						unit="bytes"
 						trailing={
 							latest && latest.memoryLimit > 0
 								? `${StatsText.memory(latest.memoryUsed)} / ${StatsText.memory(latest.memoryLimit)}`
 								: undefined
 						}
-						series={[
-							{ values: series.memoryMegabytes, color: systemColors.indigo, fillOpacity: 0.25 }
-						]}
+						series={[{ values: series.memoryBytes, color: systemColors.indigo, fillOpacity: 0.25 }]}
 					/>
 					<ChartCard
 						title="Network I/O"
+						unit="bytesPerSecond"
 						legend={[
 							{ name: 'RX', color: systemColors.green },
 							{ name: 'TX', color: systemColors.orange }
@@ -203,6 +205,7 @@ export function ContainerStatsView({
 					/>
 					<ChartCard
 						title="Block I/O"
+						unit="bytesPerSecond"
 						legend={[
 							{ name: 'Read', color: accent },
 							{ name: 'Write', color: withOpacity(accent, 0.5) }

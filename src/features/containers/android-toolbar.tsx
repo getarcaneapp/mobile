@@ -15,6 +15,7 @@ export type AndroidMenuItem = {
 	destructive?: boolean;
 	disabled?: boolean;
 	checked?: boolean;
+	selected?: boolean;
 	onPress: () => void;
 };
 
@@ -47,6 +48,7 @@ function IconGlyph({
 	color?: ColorValue;
 	disabled?: boolean;
 }) {
+	const selected = isSelectedIcon(icon);
 	return (
 		<View
 			style={{
@@ -57,9 +59,30 @@ function IconGlyph({
 				opacity: disabled ? 0.38 : 1
 			}}
 		>
-			<Icon name={icon} size={24} color={color ?? m3.onSurfaceVariant} />
+			<View
+				style={{
+					width: 40,
+					height: 40,
+					borderRadius: 20,
+					alignItems: 'center',
+					justifyContent: 'center',
+					backgroundColor: selected ? m3.secondaryContainer : 'transparent'
+				}}
+			>
+				<Icon
+					name={icon}
+					size={24}
+					color={selected ? m3.onSecondaryContainer : (color ?? m3.onSurfaceVariant)}
+				/>
+			</View>
 		</View>
 	);
+}
+
+const selectedIcons = new Set(['line.3.horizontal.decrease.circle.fill']);
+
+function isSelectedIcon(icon: string) {
+	return selectedIcons.has(icon);
 }
 
 export function AndroidToolbar({
@@ -92,7 +115,10 @@ export function AndroidToolbar({
 									disabled={item.disabled}
 									accessibilityRole="button"
 									accessibilityLabel={item.label}
-									accessibilityState={{ disabled: item.disabled }}
+									accessibilityState={{
+										disabled: item.disabled,
+										selected: isSelectedIcon(item.icon) || undefined
+									}}
 									android_ripple={{
 										color: colors.separator as string,
 										borderless: true,
@@ -111,13 +137,19 @@ export function AndroidToolbar({
 									id: entry.id,
 									title: entry.title,
 									state: entry.checked === undefined ? undefined : entry.checked ? 'on' : 'off',
+									image: entry.selected ? 'menu_check' : undefined,
 									attributes: { destructive: entry.destructive, disabled: entry.disabled }
 								}))}
 								onPressAction={({ nativeEvent }) =>
 									item.items.find((entry) => entry.id === nativeEvent.event)?.onPress()
 								}
 							>
-								<View accessible accessibilityRole="button" accessibilityLabel={item.label}>
+								<View
+									accessible
+									accessibilityRole="button"
+									accessibilityLabel={item.label}
+									accessibilityState={{ selected: isSelectedIcon(item.icon) || undefined }}
+								>
 									<IconGlyph icon={item.icon} />
 								</View>
 							</MenuView>
@@ -147,16 +179,21 @@ export function AndroidResourceActionsToolbar({
 	const [pending, setPending] = useState<ActionButtonItem>();
 	useItemDeleteConfirmation(pending, setPending, (item) => ({
 		title: resourceName ? `${item.title} ${resourceName}?` : `${item.title}?`,
-		message:
-			item.confirmationMessage ??
-			(resourceName
-				? `Are you sure you want to ${item.title.toLowerCase()} ${resourceName}?`
-				: `Are you sure you want to ${item.title.toLowerCase()}?`),
+		message: item.confirmationMessage,
 		icon: item.systemImage,
-		actions: [{ title: item.title, action: item.action }]
+		actions: [
+			{
+				title: item.title,
+				tint: item.role === 'destructive' ? undefined : item.tint,
+				action: item.action
+			}
+		],
+		dismissOnConfirm: item.dismissOnConfirm ?? true
 	}));
 	const handle = (item: ActionButtonItem) =>
-		item.role === 'destructive' ? setPending(item) : item.action();
+		item.role === 'destructive' || item.confirmationMessage !== undefined
+			? setPending(item)
+			: item.action();
 	const disabled = (item: ActionButtonItem) =>
 		isDisabled || (runningItemID !== undefined && runningItemID !== item.id);
 	const menuItems = [...secondary, ...overflow];

@@ -19,6 +19,7 @@ import {
 	ipamRows,
 	networkMetadata,
 	sortedPairs,
+	networkDriverName,
 	titled
 } from './network-model';
 import { useNetworkDetail } from './use-network-detail';
@@ -75,7 +76,7 @@ export function NetworkDetailScreen() {
 						<View style={{ flex: 1 }}>
 							<Text style={[m3Type.titleMedium, { color: colors.label }]}>{network.name}</Text>
 							<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
-								{network.driver}
+								{networkDriverName(network.driver)}
 							</Text>
 						</View>
 					</View>

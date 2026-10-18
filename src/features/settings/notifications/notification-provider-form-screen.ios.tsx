@@ -11,7 +11,6 @@ import {
 	Section,
 	Text,
 	Toggle,
-	useNativeState,
 	VStack
 } from '@expo/ui/swift-ui';
 import { Host } from '@/ui/host';
@@ -29,7 +28,7 @@ import {
 	type ModifierConfig
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
-import { useEffect, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { View } from 'react-native';
 
 import {
@@ -49,6 +48,7 @@ import {
 	useNotificationProviderForm,
 	type NotificationProviderFormModel
 } from './use-notification-provider-form';
+import { useSyncedNativeText } from '@/ui/components/synced-native-text';
 
 const plainInput: ModifierConfig[] = [
 	textInputAutocapitalization('never'),
@@ -90,15 +90,12 @@ function BoundSecureField({
 	value: string;
 	onChangeText: Setter;
 }) {
-	const state = useNativeState(value);
-	useEffect(() => {
-		if (state.get() !== value) state.set(value);
-	}, [state, value]);
+	const { state, onTextChange } = useSyncedNativeText(value, onChangeText);
 	return (
 		<SecureField
 			text={state}
 			placeholder={placeholder}
-			onTextChange={onChangeText}
+			onTextChange={onTextChange}
 			modifiers={trailingInput}
 		/>
 	);

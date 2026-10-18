@@ -35,7 +35,6 @@ import { useState } from 'react';
 import { Platform, View } from 'react-native';
 
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
-import { DockerCounts } from '@/stores/dashboard-stream-logic';
 import { useClientManager } from '@/stores/client-manager';
 import { useEnvironmentColorStore } from '@/stores/environment-color-store';
 import { useImageUpdateCountStore } from '@/stores/image-update-count-store';
@@ -61,6 +60,7 @@ import { EnvironmentRow } from './components/environment-row';
 import { DashboardPinnedSection } from './components/pinned-section';
 import { displayName } from './dashboard-logic';
 import { useDashboardModel, type DashboardModel } from './use-dashboard-model';
+import { useEnvironmentCounts } from './use-environment-counts';
 
 const environmentColumnCount = Platform.OS === 'ios' && Platform.isPad ? 2 : 1;
 
@@ -84,7 +84,10 @@ function EnvironmentCountBreakdown({
 	const updates = useImageUpdateCountStore((s) =>
 		s.count(environment.id, model.client, model.currentUser?.id)
 	);
-	const info = model.dockerInfoByEnvironmentID[environment.id];
+	const counts = useEnvironmentCounts(
+		environment.id,
+		model.dockerInfoByEnvironmentID[environment.id]
+	);
 	const volumes = model.view.volumeCounts[environment.id];
 	const color = (hex && parseHex(hex)) ?? 'secondary';
 	const cell = (text: string, label: string) => (
@@ -114,12 +117,12 @@ function EnvironmentCountBreakdown({
 			>
 				{cell(count(updates), `Updates: ${updates === undefined ? 'Unavailable' : updates}`)}
 				{cell(
-					info ? `${DockerCounts.containersRunning(info)} / ${DockerCounts.containers(info)}` : '—',
-					`Containers: ${info ? `${DockerCounts.containersRunning(info)} running of ${DockerCounts.containers(info)}` : 'Unavailable'}`
+					counts ? `${counts.running} / ${counts.total}` : '—',
+					`Containers: ${counts ? `${counts.running} running of ${counts.total}` : 'Unavailable'}`
 				)}
 				{cell(
-					info ? String(DockerCounts.images(info)) : '—',
-					`Images: ${info ? DockerCounts.images(info) : 'Unavailable'}`
+					counts ? String(counts.images) : '—',
+					`Images: ${counts ? counts.images : 'Unavailable'}`
 				)}
 				{cell(count(volumes), `Volumes: ${volumes === undefined ? 'Unavailable' : volumes}`)}
 			</HStack>
@@ -137,8 +140,8 @@ function OverviewSection({
 	setExpanded: (v: boolean) => void;
 }) {
 	const { view } = model;
-	const running = view.liveCounts?.running;
-	const total = view.liveCounts?.total;
+	const running = model.overviewCounts?.running;
+	const total = model.overviewCounts?.total;
 	return (
 		<VStack alignment="leading" spacing={10}>
 			<GlassCardBackground>
@@ -169,7 +172,7 @@ function OverviewSection({
 						<CardEntrance id="dashboard.tile.images" index={2}>
 							<DashboardStatTile
 								title="Images"
-								value={count(view.liveCounts?.images)}
+								value={count(model.overviewCounts?.images)}
 								icon="square.3.layers.3d.top.filled"
 								tint={systemColors.purple}
 								onPress={() => model.selectTab('images')}
@@ -211,6 +214,7 @@ function OverviewSection({
 				<CountAvailabilityNote
 					issues={model.countIssues}
 					allEnvironmentsPreview={model.allEnvironmentsPreview}
+					enabledEnvironmentCount={model.enabledEnvironments.length}
 					isPresented={model.showCountAvailability}
 					setPresented={model.setShowCountAvailability}
 				/>
@@ -391,9 +395,9 @@ export function DashboardScreen() {
 									environments={model.enabledEnvironments}
 									dockerInfo={model.dockerInfoByEnvironmentID}
 									counts={{
-										running: view.liveCounts?.running,
-										total: view.liveCounts?.total,
-										images: view.liveCounts?.images,
+										running: model.overviewCounts?.running,
+										total: model.overviewCounts?.total,
+										images: model.overviewCounts?.images,
 										volumes: view.volumesTotal,
 										updates: model.imageUpdatesTotal,
 										vulnerabilities: model.attention.vulnerabilities
@@ -406,6 +410,7 @@ export function DashboardScreen() {
 										<CountAvailabilityNote
 											issues={model.countIssues}
 											allEnvironmentsPreview={model.allEnvironmentsPreview}
+											enabledEnvironmentCount={model.enabledEnvironments.length}
 											isPresented={model.showCountAvailability}
 											setPresented={model.setShowCountAvailability}
 										/>

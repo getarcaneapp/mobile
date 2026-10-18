@@ -31,6 +31,25 @@ export type ImageVulnerabilitiesProps = {
 };
 
 const pageSize = 50;
+const scanPollInterval = 2000;
+const scanPollLimit = 150;
+
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function waitForScanToFinish(
+	client: ArcaneClient,
+	environmentID: EnvironmentID,
+	imageID: string
+) {
+	for (let attempt = 0; attempt < scanPollLimit; attempt += 1) {
+		const summary = await client.vulnerabilities
+			.scanSummary({ envID: environmentID, imageId: imageID })
+			.catch(() => undefined);
+		if (summary && summary.status !== 'pending' && summary.status !== 'scanning') return summary;
+		await pause(scanPollInterval);
+	}
+	return undefined;
+}
 
 const withoutKey = (current: Record<string, IgnoredVulnerability>, key: string) => {
 	const { [key]: _removed, ...rest } = current;
@@ -229,7 +248,13 @@ export function useImageVulnerabilities({
 				try {
 					await client.vulnerabilities.scanImage({ envID: environmentID, imageId: imageID });
 					await reload();
-					showToast(Toasts.success('Scan complete'));
+					const finished = await waitForScanToFinish(client, environmentID, imageID);
+					await reload();
+					if (finished?.status === 'failed') {
+						showToast(Toasts.error(finished.error ?? 'Scan failed'));
+					} else if (finished) {
+						showToast(Toasts.success('Scan complete'));
+					}
 				} catch (error) {
 					showError(friendlyErrorMessage(error));
 				}
@@ -270,11 +295,29 @@ export function useImageVulnerabilities({
 	const hasPatchPermission = useClientManager(() => hasPermission('images:patch', environmentID));
 	const canPatch = hasPatchPermission && supportsActivities;
 
+	const emptyState =
+		summary === undefined
+			? { title: 'Not Scanned', systemImage: 'shield', description: 'Run a scan to see results.' }
+			: selectedSeverities.length > 0 || vulnerabilities.length > 0
+				? {
+						title: 'No Results',
+						systemImage: 'line.3.horizontal.decrease.circle',
+						description: 'Nothing matches the current filter.'
+					}
+				: { title: 'No Vulnerabilities', systemImage: 'checkmark.shield', description: undefined };
+	const scanButtonTitle = isScanning
+		? 'Scanning…'
+		: summary === undefined
+			? 'Scan now'
+			: 'Re-scan now';
+
 	return {
 		imageID,
 		imageDisplayName,
 		environmentID,
 		isAdmin,
+		emptyState,
+		scanButtonTitle,
 		status,
 		summary,
 		displayedVulnerabilities,

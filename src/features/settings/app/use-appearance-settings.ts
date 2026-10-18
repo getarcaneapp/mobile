@@ -42,8 +42,6 @@ export function useAppearanceSettings() {
 }
 
 export const AppearanceCopy = {
-	accentFooter: "Choose a color to customize the app's appearance.",
-	motionFooter: 'Controls the launch animation.',
 	tabBarFooter:
 		'Hide labels for evenly sized tab bar items. Tab names remain available to VoiceOver.'
 } as const;

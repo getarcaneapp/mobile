@@ -14,6 +14,7 @@ import { showToast, Toasts } from '@/ui/toast';
 
 import { routePayloads } from './container-routes';
 import { shareTextFile } from './share-file';
+import { pluralCount } from '@/core/plural';
 
 export function containerLogStore(environmentID: EnvironmentID, containerID: string) {
 	return new LogViewerStore((signal) => {
@@ -93,25 +94,21 @@ export function useLogViewer(
 		copyLogs: () => void copyLogs(),
 		shareLogs: () => void shareLogs(),
 		copyLine: (text: string) => void copyLine(text),
-		statusLabel: logStatusLabel(
-			snapshot.connectionState.kind,
-			snapshot.isFollowing,
-			snapshot.lines.length === 0
-		),
-		countLabel: `${snapshot.lines.length} lines`
+		statusLabel: logStatusLabel(snapshot.connectionState.kind, snapshot.isFollowing),
+		countLabel: pluralCount(snapshot.lines.length, 'line')
 	};
 }
 
 export type LogViewerModel = ReturnType<typeof useLogViewer>;
 
-export function logStatusLabel(kind: string, isFollowing: boolean, isEmpty: boolean) {
+export function logStatusLabel(kind: string, isFollowing: boolean) {
 	switch (kind) {
 		case 'idle':
 			return 'Disconnected';
 		case 'connecting':
 			return 'Connecting';
 		case 'live':
-			return !isFollowing ? 'Paused' : isEmpty ? 'Waiting for output' : 'Live';
+			return isFollowing ? 'Live' : 'Paused';
 		case 'ended':
 			return 'Stream ended';
 		default:

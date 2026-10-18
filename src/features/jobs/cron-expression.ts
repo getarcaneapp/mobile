@@ -16,10 +16,21 @@ export const CronExpression = {
 	readable(expression: string): string | undefined {
 		const parts = expression.split(' ').filter((part) => part !== '');
 		if (parts.length === 0) return undefined;
-		if (parts.length === 6) parts.shift();
+		if (parts.length === 6) {
+			const second = parts.shift() ?? '';
+			const rest = parts.every((part) => part === '*');
+			if (rest && second === '*') return 'Every second';
+			const secondStep = stepValue(second);
+			if (rest && secondStep !== undefined)
+				return secondStep === 1 ? 'Every second' : `Every ${secondStep} seconds`;
+			if (second !== '0') return undefined;
+		}
 		if (parts.length !== 5) return undefined;
 
 		const [minute = '', hour = '', day = '', month = '', weekday = ''] = parts;
+		if (parts.every((part) => part === '*')) return 'Every minute';
+		if (minute === '0' && hour === '*' && day === '*' && month === '*' && weekday === '*')
+			return 'Every hour';
 
 		const minuteStep = stepValue(minute);
 		if (

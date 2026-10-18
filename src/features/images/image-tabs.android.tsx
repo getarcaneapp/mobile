@@ -11,13 +11,8 @@ import { m3Type, monoFamily } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
 import { MaterialListGroup } from '@/ui/material/list';
 
-import { byteString, predicateIconName, shortPredicateName } from './image-model';
-import {
-	historyDate,
-	layerID,
-	useImageHistory,
-	type ImageAttestationsModel
-} from './use-image-tabs';
+import { byteString, layerTitle, predicateIconName, shortPredicateName } from './image-model';
+import { historyDate, useImageHistory, type ImageAttestationsModel } from './use-image-tabs';
 
 function Loading() {
 	return (
@@ -103,7 +98,7 @@ export function ImageHistoryView({
 								ellipsizeMode="middle"
 								style={{ flex: 1, fontFamily: monoFamily, fontSize: 15, color: colors.label }}
 							>
-								{layerID(item.id)}
+								{layerTitle(item)}
 							</Text>
 							<Text
 								style={[

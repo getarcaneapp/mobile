@@ -218,7 +218,7 @@ export function useVolumeWorkspaceFile(
 		canEdit,
 		hasChanges,
 		readOnlyReason: content?.readOnlyReason?.replace(/_/g, ' '),
-		hasText: content?.content !== undefined,
+		hasText: content?.content !== undefined || content?.editable === true,
 		downloaded: download !== undefined,
 		canSave: !loading && hasChanges && !draft.conflict,
 		save: () => void save(),

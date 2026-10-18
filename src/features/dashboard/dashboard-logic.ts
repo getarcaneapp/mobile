@@ -11,6 +11,7 @@ import {
 	DockerCounts,
 	environmentIsOnline,
 	SystemStatsDisplay,
+	type AggregateCounts,
 	type AttentionSummary,
 	type DashboardEnvironmentState,
 	type SparklineSample
@@ -95,6 +96,19 @@ export function aggregateLiveCounts(
 	return aggregate;
 }
 
+export function overviewCounts(
+	aggregate: AggregateCounts | undefined,
+	liveCounts: DashboardLiveCounts | undefined
+): DashboardLiveCounts | undefined {
+	if (!aggregate) return liveCounts;
+	return {
+		running: aggregate.runningContainers,
+		stopped: aggregate.stoppedContainers,
+		total: aggregate.totalContainers,
+		images: aggregate.totalImages
+	};
+}
+
 export function dashboardEnvironments<E extends Pick<Environment, 'id'>>(
 	envs: readonly E[],
 	activeID: string,
@@ -140,6 +154,13 @@ export function environmentSummary(
 	const summary = visible.join(visible.length === 2 ? ' and ' : '');
 	const remaining = names.length - visible.length;
 	return remaining > 0 ? `${summary} and ${remaining} more` : summary;
+}
+
+export function showsAllEnvironmentsCountNote(
+	allEnvironmentsPreview: boolean,
+	enabledEnvironmentCount: number
+): boolean {
+	return !allEnvironmentsPreview && enabledEnvironmentCount > 1;
 }
 
 export function countAvailabilityIssues(input: {
@@ -191,10 +212,10 @@ export const severityTitle: Record<AttentionSeverity, string> = {
 export type AttentionAction =
 	| { kind: 'environment'; id: string; name: string }
 	| { kind: 'vulnerabilities'; id: string; name: string }
-	| { kind: 'containersTab' }
+	| { kind: 'stoppedContainers' }
 	| { kind: 'imageUpdates' }
 	| { kind: 'apiKeys' }
-	| { kind: 'activityCenter' };
+	| { kind: 'failedActivities' };
 
 export type NeedsAttentionItem = {
 	id: string;
@@ -256,7 +277,7 @@ export function needsAttentionItems(input: {
 			icon: 'stop.fill',
 			title: 'Stopped containers',
 			count: attention.stoppedContainers,
-			action: { kind: 'containersTab' },
+			action: { kind: 'stoppedContainers' },
 			presentsSheet: false
 		});
 	}
@@ -293,7 +314,7 @@ export function needsAttentionItems(input: {
 			icon: 'exclamationmark.triangle.fill',
 			title: 'Failed activities',
 			count: input.failedActivityCount,
-			action: { kind: 'activityCenter' },
+			action: { kind: 'failedActivities' },
 			presentsSheet: true
 		});
 	}

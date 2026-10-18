@@ -27,6 +27,8 @@ export function EnvironmentColorPicker({
 						onSelectionChange={picker.save}
 						isAvailable={picker.isAvailable}
 						onCustom={() => setShowCustomColor(true)}
+						unnamedTitle={picker.unnamedTitle}
+						accessibilityLabel={`${displayName} color`}
 					/>
 				</HStack>
 			}

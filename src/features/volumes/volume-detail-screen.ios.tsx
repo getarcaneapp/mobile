@@ -16,9 +16,11 @@ import {
 	contentShape,
 	font,
 	foregroundStyle,
+	lineLimit,
 	listStyle,
 	shapes,
-	textSelection
+	textSelection,
+	truncationMode
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
@@ -42,7 +44,7 @@ function ConsumersSection({ model }: { model: VolumeDetailModel }) {
 				if (!container) {
 					return (
 						<LabeledContent key={containerID} label="Unavailable container">
-							<MonospacedValue value={containerID} />
+							<MonospacedValue value={containerID} lineLimit={1} />
 						</LabeledContent>
 					);
 				}
@@ -128,7 +130,15 @@ export function VolumeDetailScreen() {
 							}
 						>
 							<VStack alignment="leading">
-								<Text modifiers={[font({ textStyle: 'headline' })]}>{volume.name}</Text>
+								<Text
+									modifiers={[
+										font({ textStyle: 'headline' }),
+										lineLimit(1),
+										truncationMode('middle')
+									]}
+								>
+									{volume.name}
+								</Text>
 								<Text
 									modifiers={[
 										font({ textStyle: 'subheadline' }),

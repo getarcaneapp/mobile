@@ -50,7 +50,7 @@ export function AuthenticationDestination() {
 							onIsOnChange={(isOn) => update('authLocalEnabled', isOn)}
 						/>
 						<FormNumberField
-							title="Session Timeout"
+							title="Session Timeout (minutes)"
 							placeholder="1440"
 							text={form.authSessionTimeout}
 							onChangeText={(text) => update('authSessionTimeout', text)}

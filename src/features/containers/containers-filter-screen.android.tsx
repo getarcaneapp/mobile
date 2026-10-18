@@ -43,7 +43,7 @@ export function ContainersFilterScreen() {
 				contentContainerStyle={{ paddingBottom: 32 }}
 				keyboardShouldPersistTaps="handled"
 			>
-				<M3Section title="Sort" footer="Live CPU and memory require Arcane 2.16 or later.">
+				<M3Section title="Sort">
 					<RadioGroup
 						options={ContainerListSorts.map((option) => ({
 							value: option.id,

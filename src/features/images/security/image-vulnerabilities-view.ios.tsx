@@ -27,6 +27,7 @@ import {
 	shapes,
 	tint
 } from '@expo/ui/swift-ui/modifiers';
+import type { SFSymbol } from 'sf-symbols-typescript';
 import { Stack } from 'expo-router';
 import { View } from 'react-native';
 
@@ -163,7 +164,7 @@ function ScanList({ model }: { model: ImageVulnerabilitiesModel }) {
 			<Button onPress={() => void model.runScan()} modifiers={[disabled(model.isScanning)]}>
 				<HStack modifiers={[padding({ all: 14 }), contentShape(shapes.rectangle())]}>
 					<Label
-						title={model.isScanning ? 'Scanning…' : 'Re-scan now'}
+						title={model.scanButtonTitle}
 						systemImage="magnifyingglass"
 						modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' })]}
 					/>
@@ -174,13 +175,9 @@ function ScanList({ model }: { model: ImageVulnerabilitiesModel }) {
 
 			{displayedVulnerabilities.length === 0 && !model.isLoading ? (
 				<ContentUnavailableView
-					title="No vulnerabilities"
-					systemImage="checkmark.shield"
-					description={
-						summary === undefined
-							? 'Run a scan to see results.'
-							: 'Nothing matches the current filter.'
-					}
+					title={model.emptyState.title}
+					systemImage={model.emptyState.systemImage as SFSymbol}
+					description={model.emptyState.description}
 					modifiers={[padding({ top: 24 })]}
 				/>
 			) : (

@@ -1,3 +1,4 @@
+import { titleCasedWords } from '@/core/title-case';
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -192,11 +193,11 @@ function EventRow({ event }: { event: Event }) {
 							</Text>
 							<Text
 								modifiers={[
-									font({ textStyle: 'caption', design: 'monospaced' }),
+									font({ textStyle: 'caption' }),
 									foregroundStyle({ type: 'hierarchical', style: 'tertiary' })
 								]}
 							>
-								{event.type}
+								{titleCasedWords(event.type)}
 							</Text>
 						</>
 					) : null}

@@ -24,6 +24,7 @@ import {
 	type FormValueRowProps
 } from './form-fields.types';
 import { m3 } from './material-colors';
+import { MenuSelectedIcon, useMenuCheckIcon } from './menu-selected-icon.android';
 import { m3Type, monoFamily } from './type-scale';
 
 const keyboard: Record<FormKeyboardType, KeyboardTypeOptions> = {
@@ -293,6 +294,7 @@ export function FormPicker<Value extends string | number>({
 	helper
 }: FormPickerProps<Value>) {
 	const [expanded, setExpanded] = useState(false);
+	const checkIcon = useMenuCheckIcon();
 	const current = options.find((o) => o.value === selection);
 	return (
 		<View>
@@ -307,7 +309,7 @@ export function FormPicker<Value extends string | number>({
 						<Text style={[m3Type.bodyLarge, { color: colors.secondaryLabel }]}>
 							{current?.label ?? ''}
 						</Text>
-						<Icon name="chevron.up.chevron.down" size={18} color={colors.secondaryLabel} />
+						<Icon name="chevron.up.chevron.down" size={24} color={colors.secondaryLabel} />
 					</View>
 				</InlineRow>
 			</Pressable>
@@ -323,10 +325,9 @@ export function FormPicker<Value extends string | number>({
 								}}
 							>
 								<DropdownMenuItem.Text>
-									<ComposeText>
-										{option.value === selection ? `${option.label}  ✓` : option.label}
-									</ComposeText>
+									<ComposeText>{option.label}</ComposeText>
 								</DropdownMenuItem.Text>
+								<MenuSelectedIcon selected={option.value === selection} source={checkIcon} />
 							</DropdownMenuItem>
 						))}
 					</DropdownMenu.Items>

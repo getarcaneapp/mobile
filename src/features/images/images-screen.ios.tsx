@@ -1,6 +1,14 @@
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
-import { Button, ContextMenu, HStack, List, SwipeActions, VStack } from '@expo/ui/swift-ui';
+import {
+	Button,
+	ContentUnavailableView,
+	ContextMenu,
+	HStack,
+	List,
+	SwipeActions,
+	VStack
+} from '@expo/ui/swift-ui';
 import {
 	buttonStyle,
 	environment,
@@ -37,6 +45,7 @@ import {
 	type ImagesListModel,
 	type ImagesListProps
 } from './use-images-list';
+import { sectionItemCount, spansSections } from '@/ui/components/stable-sectioned-list.types';
 
 function ImagePreview({ row }: { row: ImageRowModel }) {
 	const accent = useAccentColor();
@@ -129,6 +138,8 @@ export function ImagesScreen(props: ImagesListProps) {
 	const model = useImagesList(props);
 	const { snapshot, images } = model;
 
+	const visibleCount = sectionItemCount(model.sections);
+	const isFiltered = visibleCount < images.length;
 	let content;
 	if (snapshot.isLoading && images.length === 0) {
 		content = (
@@ -145,7 +156,7 @@ export function ImagesScreen(props: ImagesListProps) {
 				actions={[{ title: 'Retry', onPress: () => void model.loadImages() }]}
 			/>
 		);
-	} else if (images.length === 0) {
+	} else if (images.length === 0 && model.searchText.trim() === '') {
 		content = (
 			<UnavailableView
 				title="No Images"
@@ -167,6 +178,14 @@ export function ImagesScreen(props: ImagesListProps) {
 					<Button label="Pull Image" onPress={() => model.presentPull(props.environmentID)} />
 				)}
 			</UnavailableView>
+		);
+	} else if (visibleCount === 0 && !snapshot.hasMore) {
+		content = (
+			<ContentUnavailableView
+				title="No Results"
+				systemImage="magnifyingglass"
+				description="Nothing matches the current search or filter."
+			/>
 		);
 	} else {
 		content = (
@@ -197,9 +216,10 @@ export function ImagesScreen(props: ImagesListProps) {
 					preferredHeaderAccessorySectionID="used"
 					headerAccessory={() => (
 						<ResourceCountLabel
-							loadedCount={images.length}
-							totalCount={snapshot.totalItems}
-							hasMore={snapshot.hasMore}
+							spansSections={spansSections(model.sections)}
+							loadedCount={isFiltered ? visibleCount : images.length}
+							totalCount={isFiltered ? undefined : snapshot.totalItems}
+							hasMore={!isFiltered && snapshot.hasMore}
 						/>
 					)}
 					estimatedItemSize={60}

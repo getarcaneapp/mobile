@@ -6,6 +6,7 @@ import type { JobStatus } from '@/sdk/models/jobSchedule/JobSchedule';
 import { EnvironmentLabel } from '@/ui/components/environment-label';
 import { RowIcon } from '@/ui/components/row-icon';
 
+import { CronExpression } from './cron-expression';
 import { jobBadge, jobIcon, jobTint, relativeNamed } from './job-model';
 
 const tertiary = { type: 'hierarchical', style: 'tertiary' } as const;
@@ -48,6 +49,7 @@ export function JobRow({
 	identity?: string;
 }) {
 	const next = relativeNamed(job.nextRun);
+	const readableSchedule = CronExpression.readable(job.schedule);
 	const badge = jobBadge(job);
 
 	return (
@@ -69,11 +71,15 @@ export function JobRow({
 				<HStack spacing={6}>
 					<Text
 						modifiers={[
-							font({ textStyle: 'caption', design: 'monospaced' }),
+							font(
+								readableSchedule !== undefined
+									? { textStyle: 'caption' }
+									: { textStyle: 'caption', design: 'monospaced' }
+							),
 							foregroundStyle(tertiary)
 						]}
 					>
-						{job.schedule}
+						{readableSchedule ?? job.schedule}
 					</Text>
 					{next !== undefined ? (
 						<>

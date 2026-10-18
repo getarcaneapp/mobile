@@ -10,6 +10,7 @@ import { BackupDestinationPicker } from './backup-forms-screens';
 import { useDetailEntryParam } from './backup-routes';
 import { NavigationTextRow, RedText } from './backup-rows';
 import { useSystemBackupDetail } from './use-system-backup-detail';
+import { backupDestinationTitle, backupStatusTitle } from './backup-labels';
 
 function Value({ label, value }: { label: string; value: string }) {
 	return (
@@ -37,8 +38,8 @@ function SystemBackupDetail({ entry }: { entry: BackupHistoryEntry }) {
 						<List modifiers={[listStyle('insetGrouped'), disabled(model.busy)]}>
 							<Section title="Backup">
 								<Value label="Resource" value={entry.resourceName} />
-								<Value label="Status" value={entry.status} />
-								<Value label="Storage" value={entry.destination} />
+								<Value label="Status" value={backupStatusTitle(entry.status)} />
+								<Value label="Storage" value={backupDestinationTitle(entry.destination)} />
 								<Value label="Size" value={model.sizeText} />
 								{entry.error !== undefined ? <RedText>{entry.error}</RedText> : null}
 							</Section>

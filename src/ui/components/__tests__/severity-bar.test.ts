@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it, vi } from 'vite-plus/test';
 
 import type { VulnerabilityRiskOverview } from '../../../sdk/types/VulnerabilityRiskOverview';
-import { segmentWidth, severitySegments } from '../severity-bar.types';
+import { segmentGap, segmentWidths, severitySegments } from '../severity-bar.types';
 
 vi.mock('@/theme/colors', () => ({
 	systemColors: { red: 'red', orange: 'orange', yellow: 'yellow', blue: 'blue', gray: 'gray' }
@@ -45,14 +45,29 @@ describe('severitySegments', () => {
 		);
 	});
 
-	it('gives each visible segment a proportional width of at least 6pt', () => {
+	it('gives each visible segment a proportional width of at least 6pt that fits the bar', () => {
 		const width = 338;
-		const widths = result.segments.map((segment) =>
-			segmentWidth(segment.count, result.total, width)
+		const widths = segmentWidths(
+			result.segments.map((segment) => segment.count),
+			width
 		);
+		const gaps = segmentGap * (widths.length - 1);
+		assert.equal(widths.length, 5);
+		assert.ok(widths.every((w) => w >= 6 - 1e-9));
+		assert.ok(Math.abs(widths.reduce((sum, w) => sum + w, 0) + gaps - width) < 1e-9);
+		assert.ok((widths[2] ?? 0) > (widths[1] ?? 0));
+	});
+
+	it('fits two lopsided segments inside the bar', () => {
+		const widths = segmentWidths([1, 0, 280, 0, 0], 300);
+		assert.equal(widths.length, 2);
 		assert.equal(widths[0], 6);
-		assert.ok(Math.abs((widths[2] ?? 0) - (width * 3660) / 5636) < 1e-9);
-		assert.ok(widths.every((w) => w < width));
+		assert.ok(Math.abs((widths[1] ?? 0) - (300 - segmentGap - 6)) < 1e-9);
+	});
+
+	it('shares a too-narrow bar evenly', () => {
+		const widths = segmentWidths([1, 1, 1, 1, 1], 20);
+		assert.ok(widths.every((w) => Math.abs(w - 2.4) < 1e-9));
 	});
 
 	it('clamps negative and non-finite counts to zero', () => {

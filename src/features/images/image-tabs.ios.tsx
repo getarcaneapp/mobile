@@ -7,6 +7,7 @@ import {
 	font,
 	foregroundStyle,
 	frame,
+	lineLimit,
 	listStyle,
 	monospacedDigit,
 	opacity,
@@ -23,13 +24,8 @@ import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-sw
 import { MonospacedValue } from '@/ui/components/resource-detail';
 import { RowIcon } from '@/ui/components/row-icon';
 
-import { byteString, predicateIconName, shortPredicateName } from './image-model';
-import {
-	historyDate,
-	layerID,
-	useImageHistory,
-	type ImageAttestationsModel
-} from './use-image-tabs';
+import { byteString, layerTitle, predicateIconName, shortPredicateName } from './image-model';
+import { historyDate, useImageHistory, type ImageAttestationsModel } from './use-image-tabs';
 
 function Unavailable({
 	title,
@@ -95,7 +91,7 @@ export function ImageHistoryView({
 						modifiers={[frame({ maxWidth: Infinity, alignment: 'leading' })]}
 					>
 						<HStack>
-							<MonospacedValue value={layerID(item.id)} lineLimit={1} />
+							<MonospacedValue value={layerTitle(item)} lineLimit={1} />
 							<Spacer minLength={8} />
 							<Text
 								modifiers={[
@@ -222,7 +218,9 @@ export function ImageAttestationsView({
 							font({ textStyle: 'caption2', design: 'monospaced' }),
 							foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
 							frame({ maxWidth: Infinity, alignment: 'leading' }),
-							padding({ horizontal: 4 })
+							padding({ horizontal: 4 }),
+							lineLimit(1),
+							truncationMode('middle')
 						]}
 					>
 						{`Subject digest: ${result.subjectDigest}`}

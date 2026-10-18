@@ -34,6 +34,7 @@ export type ActionButtonItem = {
 	tint: string;
 	role?: 'destructive';
 	confirmationMessage?: string;
+	dismissOnConfirm?: boolean;
 	action: () => void;
 };
 
@@ -65,17 +66,21 @@ export function ResourceActionsToolbar({
 
 	useItemDeleteConfirmation(pendingDestructive, setPendingDestructive, (item) => ({
 		title: resourceName ? `${item.title} ${resourceName}?` : `${item.title}?`,
-		message:
-			item.confirmationMessage ??
-			(resourceName
-				? `Are you sure you want to ${item.title.toLowerCase()} ${resourceName}?`
-				: `Are you sure you want to ${item.title.toLowerCase()}?`),
+		message: item.confirmationMessage,
 		icon: item.systemImage,
-		actions: [{ title: item.title, action: item.action }]
+		actions: [
+			{
+				title: item.title,
+				tint: item.role === 'destructive' ? undefined : item.tint,
+				action: item.action
+			}
+		],
+		dismissOnConfirm: item.dismissOnConfirm ?? true
 	}));
 
 	const handle = (item: ActionButtonItem) => {
-		if (item.role === 'destructive') setPendingDestructive(item);
+		if (item.role === 'destructive' || item.confirmationMessage !== undefined)
+			setPendingDestructive(item);
 		else item.action();
 	};
 	const disabled = (item: ActionButtonItem) =>

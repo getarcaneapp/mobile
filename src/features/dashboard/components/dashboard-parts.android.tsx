@@ -11,7 +11,12 @@ import { SkeletonCircle, SkeletonRect, SkeletonShimmer } from '@/ui/components/s
 import { GlassCard } from '@/ui/components/surfaces';
 import { m3Type } from '@/ui/components/type-scale';
 
-import { greetingFor, typedGreetings, type DashboardCountIssue } from '../dashboard-logic';
+import {
+	greetingFor,
+	showsAllEnvironmentsCountNote,
+	typedGreetings,
+	type DashboardCountIssue
+} from '../dashboard-logic';
 import { MaterialSheet } from './material-sheet';
 
 export function DashboardStatTile({
@@ -164,16 +169,19 @@ export function UpdateAllButton({
 export function CountAvailabilityNote({
 	issues,
 	allEnvironmentsPreview,
+	enabledEnvironmentCount,
 	isPresented,
 	setPresented
 }: {
 	issues: DashboardCountIssue[];
 	allEnvironmentsPreview: boolean;
+	enabledEnvironmentCount: number;
 	isPresented: boolean;
 	setPresented: (value: boolean) => void;
 }) {
 	if (issues.length === 0) {
-		if (allEnvironmentsPreview) return null;
+		if (!showsAllEnvironmentsCountNote(allEnvironmentsPreview, enabledEnvironmentCount))
+			return null;
 		return (
 			<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 4 }}>
 				<Icon name="server.rack" size={12} color={colors.secondaryLabel} />

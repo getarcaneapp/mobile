@@ -56,7 +56,7 @@ export function EventDetailScreen() {
 					) : null}
 				</M3Section>
 				<M3Section title="Event">
-					<ValueRow title="Type" value={event.type} />
+					<ValueRow title="Type" value={model.typeTitle} />
 					<ValueRow title="Occurred" value={model.occurred} />
 					{model.recorded ? <ValueRow title="Recorded" value={model.recorded} /> : null}
 				</M3Section>
@@ -73,8 +73,8 @@ export function EventDetailScreen() {
 					<M3Section title="Context">
 						{event.username ? <ValueRow title="User" value={event.username} /> : null}
 						{event.userId ? <ValueRow title="User ID" value={event.userId} monospaced /> : null}
-						{event.environmentId ? (
-							<ValueRow title="Environment" value={event.environmentId} monospaced />
+						{model.environmentName !== undefined ? (
+							<ValueRow title="Environment" value={model.environmentName} />
 						) : null}
 					</M3Section>
 				) : null}

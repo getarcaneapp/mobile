@@ -50,7 +50,8 @@ import { View } from 'react-native';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { DockerInfo } from '@/sdk/models/system/DockerInfo';
-import { DockerCounts, environmentIsOnline } from '@/stores/dashboard-stream-logic';
+import { environmentIsOnline } from '@/stores/dashboard-stream-logic';
+import { useEnvironmentCounts } from '../use-environment-counts';
 import type { BusiestEntry } from '@/stores/busiest-containers-logic';
 import { useAccentColor } from '@/theme/accent';
 import { systemColors, withOpacity } from '@/theme/colors';
@@ -91,6 +92,7 @@ import {
 import { DashboardRowChevron, DashboardSectionTitle, DashboardStatTile } from './dashboard-parts';
 import { MetricRing } from './metric-ring';
 import { UsageChart } from './usage-chart';
+import { pluralCount } from '@/core/plural';
 
 export type AllEnvironmentsDashboardProps = {
 	environments: Environment[];
@@ -643,15 +645,16 @@ function HostRow({
 }) {
 	const isOnline = environmentIsOnline(environment);
 	const disk = useHostDiskPercent(environment.id);
-	const running = info ? DockerCounts.containersRunning(info) : undefined;
-	const total = info ? DockerCounts.containers(info) : undefined;
-	const images = info ? DockerCounts.images(info) : undefined;
+	const counts = useEnvironmentCounts(environment.id, info);
+	const running = counts?.running;
+	const total = counts?.total;
+	const images = counts?.images;
 	const label = [
 		displayName(environment),
 		isOnline ? 'online' : 'offline',
 		info ? `${running} of ${total} containers running` : undefined,
-		info ? `${images} images` : undefined,
-		volumes !== undefined ? `${volumes} volumes` : undefined,
+		images !== undefined ? pluralCount(images, 'image') : undefined,
+		volumes !== undefined ? pluralCount(volumes, 'volume') : undefined,
 		disk !== undefined ? `disk ${disk.toFixed(0)} percent full` : undefined
 	]
 		.filter(Boolean)

@@ -83,7 +83,7 @@ function ActivityRow({ activity }: { activity: Activity }) {
 					{ActivityDisplay.subtitle(activity)}
 				</Text>
 				{activity.latestMessage !== '' ? (
-					<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
+					<Text numberOfLines={3} style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
 						{activity.latestMessage}
 					</Text>
 				) : null}
@@ -295,8 +295,8 @@ function ActivityEntryView({
 			return entry.showsCount ? (
 				<ResourceCountSectionHeader
 					title={entry.title}
-					loadedCount={model.state.filteredActivityCount}
-					hasMore={model.state.hasMore}
+					loadedCount={model.countHeader.loadedCount}
+					hasMore={model.countHeader.hasMore}
 				/>
 			) : (
 				<MaterialSectionHeader title={entry.title} />
@@ -418,8 +418,10 @@ function toolbarItems(model: ActivitiesScreenModel): ActivityToolbarItem[] {
 	return items;
 }
 
-export function ActivitiesScreen(_props: { onDone?: () => void } = {}) {
-	const model = useActivitiesScreen();
+export function ActivitiesScreen({
+	initialStatusFilter
+}: { onDone?: () => void; initialStatusFilter?: ActivityStatusFilter } = {}) {
+	const model = useActivitiesScreen(initialStatusFilter);
 	const { state } = model;
 	const [refreshing, setRefreshing] = useState(false);
 

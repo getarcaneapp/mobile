@@ -5,6 +5,7 @@ import {
 	accessibilityHidden,
 	accessibilityLabel,
 	background,
+	fixedSize,
 	font,
 	foregroundStyle,
 	frame,
@@ -95,7 +96,7 @@ export function ImageReferenceName({
 	textStyle?: TextStyleName;
 }) {
 	return (
-		<Text modifiers={[font({ textStyle })]}>
+		<Text key={`${reference.namespace}\u0000${reference.name}`} modifiers={[font({ textStyle })]}>
 			<Text modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>
 				{reference.namespace}
 			</Text>
@@ -108,10 +109,15 @@ export function ImageReferenceLine({ reference }: { reference: string }) {
 	const parts = imageReferenceParts(reference);
 	return (
 		<HStack spacing={6} modifiers={[accessibilityElement('ignore'), accessibilityLabel(reference)]}>
-			<Text modifiers={[font({ textStyle: 'caption' }), lineLimit(1), truncationMode('head')]}>
-				<Text modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>
-					{parts.namespace}
-				</Text>
+			<Text
+				key={reference}
+				modifiers={[font({ textStyle: 'caption' }), lineLimit(1), truncationMode('head')]}
+			>
+				{parts.namespace ? (
+					<Text modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>
+						{parts.namespace}
+					</Text>
+				) : null}
 				<Text>{parts.name}</Text>
 			</Text>
 			{parts.tag ? <TagChip text={parts.tag} /> : null}
@@ -126,6 +132,7 @@ export function TagChip({ text }: { text: string }) {
 				font({ textStyle: 'caption', design: 'monospaced' }),
 				foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
 				lineLimit(1),
+				fixedSize({ horizontal: true, vertical: false }),
 				padding({ horizontal: 6, vertical: 2 }),
 				background(
 					'#8E8E931F',

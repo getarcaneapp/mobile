@@ -16,6 +16,7 @@ import { EnvironmentLabel } from '@/ui/components/environment-label';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type, monoFamily } from '@/ui/components/type-scale';
 
+import { CronExpression } from './cron-expression';
 import { jobBadge, jobIcon, jobTint, relativeNamed } from './job-model';
 
 const rowStyle = { flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 16 };
@@ -73,6 +74,7 @@ export function JobRow({
 	environmentColor?: string;
 }) {
 	const next = relativeNamed(job.nextRun);
+	const readableSchedule = CronExpression.readable(job.schedule);
 	const badge = jobBadge(job);
 	return (
 		<View style={rowStyle}>
@@ -89,8 +91,16 @@ export function JobRow({
 					</Text>
 				) : null}
 				<View style={metaStyle}>
-					<Text style={[m3Type.bodySmall, { color: colors.tertiaryLabel, fontFamily: monoFamily }]}>
-						{job.schedule}
+					<Text
+						style={[
+							m3Type.bodySmall,
+							{
+								color: colors.tertiaryLabel,
+								fontFamily: readableSchedule !== undefined ? undefined : monoFamily
+							}
+						]}
+					>
+						{readableSchedule ?? job.schedule}
 					</Text>
 					{next !== undefined ? (
 						<>

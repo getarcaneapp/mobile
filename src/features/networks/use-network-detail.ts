@@ -161,7 +161,8 @@ export function useNetworkDetail() {
 		requestDelete: () => setShowDeleteConfirm(true),
 		requestDisconnect: (row: NetworkContainerRowData) =>
 			setPendingDisconnect({ id: row.id, name: containerRowDisplayName(row) }),
-		openTopology: () => nav.push('networkTopology', { envID: environmentID, scoped: '1' }),
+		openTopology: () =>
+			nav.push('networkTopology', { envID: environmentID, scoped: '1', network: id }),
 		openConnect: () => {
 			const payload: ConnectSheetPayload = {
 				excludedContainerIDs: connectedContainerIDs,

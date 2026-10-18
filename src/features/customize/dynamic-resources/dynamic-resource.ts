@@ -288,3 +288,10 @@ export function formBody(
 	}
 	return object;
 }
+
+const choiceAcronyms = new Set(['http', 'https', 'ssh', 'tls', 'oidc', 's3']);
+
+export function choiceLabel(option: string): string {
+	if (choiceAcronyms.has(option.toLowerCase())) return option.toUpperCase();
+	return option.charAt(0).toUpperCase() + option.slice(1);
+}

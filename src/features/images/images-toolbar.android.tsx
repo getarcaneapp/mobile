@@ -35,7 +35,7 @@ export function ImagesToolbar({ model }: { model: ImagesListModel }) {
 				{
 					kind: 'button',
 					id: 'registries',
-					icon: 'key.shield',
+					icon: 'shippingbox',
 					label: 'Container Registries',
 					onPress: model.openRegistries
 				}

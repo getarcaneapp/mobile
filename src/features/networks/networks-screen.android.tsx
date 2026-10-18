@@ -28,7 +28,12 @@ import { CenteredMessage } from '@/features/containers/android-material';
 import { useEnvironmentRowColor } from '@/features/containers/hooks';
 import { LongPressMenu, type RowMenuItem } from '@/features/containers/long-press-menu';
 
-import { networkContainerCount, networkIsInternal, type NetworkItem } from './network-model';
+import {
+	networkContainerCount,
+	networkDriverName,
+	networkIsInternal,
+	type NetworkItem
+} from './network-model';
 import {
 	useNetworksList,
 	type NetworksListModel,
@@ -70,7 +75,7 @@ export function NetworkRow({
 				<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{network.name}</Text>
 				<View style={networkMetaStyle}>
 					<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
-						{network.driver}
+						{networkDriverName(network.driver)}
 					</Text>
 					{networkIsInternal(network) ? (
 						<Text style={[m3Type.bodyMedium, { color: systemColors.orange }]}>• Internal</Text>
@@ -231,11 +236,14 @@ export function NetworksScreen(props: NetworksListProps) {
 		/>
 	);
 
+	const visibleCount = systemNetworks.length + userNetworks.length;
+	const isFiltered = visibleCount < networks.length;
 	const count = (
 		<ResourceCountLabel
-			loadedCount={networks.length}
-			totalCount={snapshot.totalItems}
-			hasMore={snapshot.hasMore}
+			loadedCount={isFiltered ? visibleCount : networks.length}
+			totalCount={isFiltered ? undefined : snapshot.totalItems}
+			hasMore={!isFiltered && snapshot.hasMore}
+			spansSections={systemNetworks.length > 0 && userNetworks.length > 0}
 		/>
 	);
 	let content;
@@ -254,7 +262,7 @@ export function NetworksScreen(props: NetworksListProps) {
 				action={{ title: 'Retry', onPress: () => void model.loadNetworks() }}
 			/>
 		);
-	} else if (networks.length === 0) {
+	} else if (networks.length === 0 && model.searchText.trim() === '') {
 		const first = model.listEnvironments[0];
 		content = (
 			<CenteredMessage
@@ -273,6 +281,14 @@ export function NetworksScreen(props: NetworksListProps) {
 							}
 						: undefined
 				}
+			/>
+		);
+	} else if (visibleCount === 0 && !snapshot.hasMore) {
+		content = (
+			<CenteredMessage
+				icon="magnifyingglass"
+				title="No Results"
+				message="Nothing matches the current search or filter."
 			/>
 		);
 	}

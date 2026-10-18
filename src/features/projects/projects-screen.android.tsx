@@ -33,6 +33,7 @@ import {
 	type ProjectsListModel,
 	type ProjectsListProps
 } from './use-projects-list';
+import { sectionItemCount, spansSections } from '@/ui/components/stable-sectioned-list.types';
 
 const rowStyle = { paddingHorizontal: 16, paddingVertical: 10 };
 
@@ -180,6 +181,8 @@ export function ProjectsScreen(props: ProjectsListProps) {
 		/>
 	);
 
+	const visibleCount = sectionItemCount(model.sections);
+	const isFiltered = visibleCount < projects.length;
 	let content;
 	if (snapshot.isLoading && projects.length === 0) {
 		content = (
@@ -196,7 +199,7 @@ export function ProjectsScreen(props: ProjectsListProps) {
 				action={{ title: 'Retry', onPress: () => void model.loadProjects() }}
 			/>
 		);
-	} else if (projects.length === 0) {
+	} else if (projects.length === 0 && model.searchText.trim() === '') {
 		content = props.allEnvironments ? (
 			<View style={{ flex: 1, justifyContent: 'center' }}>
 				<CenteredMessage
@@ -224,6 +227,14 @@ export function ProjectsScreen(props: ProjectsListProps) {
 				}}
 			/>
 		);
+	} else if (visibleCount === 0 && !snapshot.hasMore) {
+		content = (
+			<CenteredMessage
+				icon="magnifyingglass"
+				title="No Results"
+				message="Nothing matches the current search or filter."
+			/>
+		);
 	}
 
 	const list =
@@ -238,9 +249,10 @@ export function ProjectsScreen(props: ProjectsListProps) {
 				preferredHeaderAccessorySectionID="active"
 				headerAccessory={() => (
 					<ResourceCountLabel
-						loadedCount={projects.length}
-						totalCount={snapshot.totalItems}
-						hasMore={snapshot.hasMore}
+						spansSections={spansSections(model.sections)}
+						loadedCount={isFiltered ? visibleCount : projects.length}
+						totalCount={isFiltered ? undefined : snapshot.totalItems}
+						hasMore={!isFiltered && snapshot.hasMore}
 					/>
 				)}
 				renderRow={(item) => <ProjectListRow model={model} item={item} />}

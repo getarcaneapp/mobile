@@ -37,7 +37,12 @@ import { SkeletonCircle, SkeletonRect, SkeletonShimmer } from '@/ui/components/s
 import { GlassCardBackground } from '@/ui/components/swiftui-surfaces';
 import { cardRowLinkStyle, motionAwareAnimation, hashKey } from '@/ui/components/swiftui-motion';
 
-import { greetingFor, typedGreetings, type DashboardCountIssue } from '../dashboard-logic';
+import {
+	greetingFor,
+	showsAllEnvironmentsCountNote,
+	typedGreetings,
+	type DashboardCountIssue
+} from '../dashboard-logic';
 
 export function DashboardStatTile({
 	title,
@@ -253,16 +258,19 @@ export function UpdateAllButton({
 export function CountAvailabilityNote({
 	issues,
 	allEnvironmentsPreview,
+	enabledEnvironmentCount,
 	isPresented,
 	setPresented
 }: {
 	issues: DashboardCountIssue[];
 	allEnvironmentsPreview: boolean;
+	enabledEnvironmentCount: number;
 	isPresented: boolean;
 	setPresented: (value: boolean) => void;
 }) {
 	if (issues.length === 0) {
-		if (allEnvironmentsPreview) return null;
+		if (!showsAllEnvironmentsCountNote(allEnvironmentsPreview, enabledEnvironmentCount))
+			return null;
 		return (
 			<HStack spacing={4} modifiers={[padding({ horizontal: 4 })]}>
 				<Image

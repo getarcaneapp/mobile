@@ -1,10 +1,17 @@
+import { encodeUTF8 } from './json';
+
 export interface MultipartFile {
 	fieldName: string;
 	filename: string;
 	contentType?: string;
 	uri?: string;
+	text?: string;
 	data?: Blob | Uint8Array | ArrayBuffer;
 }
+
+const isReactNative =
+	typeof navigator !== 'undefined' &&
+	(navigator as { product?: string } | undefined)?.product === 'ReactNative';
 
 export interface MultipartEndpoint {
 	path: string;
@@ -75,16 +82,24 @@ export function makeMultipartFormData(
 				[uriPartSource]: { uri, filename: file.filename, type }
 			};
 			form.append(file.fieldName, part as unknown as Blob);
-		} else if (file.data !== undefined) {
-			const blob =
-				file.data instanceof Blob
-					? file.data
-					: new Blob([file.data instanceof Uint8Array ? copyBytes(file.data) : file.data], {
-							type
-						});
-			form.append(file.fieldName, blob, file.filename);
+		} else if (file.text !== undefined || file.data !== undefined) {
+			const data = file.text !== undefined ? encodeUTF8(file.text) : file.data;
+			if (data instanceof Blob) {
+				form.append(file.fieldName, data, file.filename);
+			} else if (isReactNative) {
+				const bytes =
+					data instanceof Uint8Array ? data : new Uint8Array(data ?? new ArrayBuffer(0));
+				form.append(file.fieldName, {
+					name: file.filename,
+					type,
+					bytes: async () => bytes
+				} as unknown as Blob);
+			} else {
+				const buffer = data instanceof Uint8Array ? copyBytes(data) : (data ?? new ArrayBuffer(0));
+				form.append(file.fieldName, new Blob([buffer], { type }), file.filename);
+			}
 		} else {
-			throw new Error(`MultipartFile "${file.fieldName}" needs a uri or data`);
+			throw new Error(`MultipartFile "${file.fieldName}" needs a uri, text or data`);
 		}
 	}
 	return form;

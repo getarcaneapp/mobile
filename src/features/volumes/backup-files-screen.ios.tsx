@@ -121,9 +121,11 @@ export function BackupFilesScreen() {
 					))}
 					{model.entries.length === 0 && !model.busy && model.errorMessage === undefined ? (
 						<ContentUnavailableView
-							title="No Files"
-							systemImage="folder"
-							description="Try another folder or search."
+							title={model.search === '' ? 'No Files' : `No Results for “${model.search}”`}
+							systemImage={model.search === '' ? 'folder' : 'magnifyingglass'}
+							description={
+								model.search === '' ? undefined : 'Check the spelling or try a new search.'
+							}
 						/>
 					) : null}
 					<PaginatedListFooter

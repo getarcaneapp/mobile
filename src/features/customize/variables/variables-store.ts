@@ -190,7 +190,13 @@ export class VariablesStore {
 	private mergeSyncStatuses(statuses: EnvironmentSyncStatus[]) {
 		if (statuses.length === 0) return;
 		const byID = new Map(this.state.syncStatuses.map((status) => [status.environmentID, status]));
-		for (const status of statuses) byID.set(status.environmentID, status);
+		for (const status of statuses) {
+			byID.set(status.environmentID, {
+				...status,
+				environmentName:
+					status.environmentName || this.environmentNamesByID.get(status.environmentID)
+			});
+		}
 		const name = (status: EnvironmentSyncStatus) => status.environmentName ?? status.environmentID;
 		this.update({
 			syncStatuses: [...byID.values()].sort((lhs, rhs) =>

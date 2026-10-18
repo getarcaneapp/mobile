@@ -13,6 +13,7 @@ import {
 import {
 	background,
 	buttonStyle,
+	contentShape,
 	disabled,
 	font,
 	foregroundStyle,
@@ -494,7 +495,11 @@ function Route({
 		<ComposeLink destination={destination} modifiers={[buttonStyle('plain')]}>
 			<HStack
 				spacing={12}
-				modifiers={[padding({ all: 14 }), frame({ maxWidth: Infinity, alignment: 'leading' })]}
+				modifiers={[
+					padding({ all: 14 }),
+					frame({ maxWidth: Infinity, alignment: 'leading' }),
+					contentShape(shapes.rectangle())
+				]}
 			>
 				<Image
 					systemName={icon as SFSymbol}

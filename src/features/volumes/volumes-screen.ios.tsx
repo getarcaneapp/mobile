@@ -1,6 +1,15 @@
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
-import { Button, ContextMenu, HStack, List, Spacer, SwipeActions, VStack } from '@expo/ui/swift-ui';
+import {
+	Button,
+	ContentUnavailableView,
+	ContextMenu,
+	HStack,
+	List,
+	Spacer,
+	SwipeActions,
+	VStack
+} from '@expo/ui/swift-ui';
 import {
 	buttonStyle,
 	environment,
@@ -32,6 +41,7 @@ import { useVolumesList, type VolumesListModel, type VolumesListProps } from './
 import { volumePreviewDetails, type VolumeItem } from './volume-model';
 import { VolumeRow } from './volume-row';
 import { VolumesToolbar } from './volumes-toolbar';
+import { sectionItemCount, spansSections } from '@/ui/components/stable-sectioned-list.types';
 
 function VolumePreview({ model, item }: { model: VolumesListModel; item: VolumeItem }) {
 	return (
@@ -119,6 +129,8 @@ export function VolumesScreen(props: VolumesListProps) {
 	const model = useVolumesList(props);
 	const { snapshot, volumes } = model;
 
+	const visibleCount = sectionItemCount(model.sections);
+	const isFiltered = visibleCount < volumes.length;
 	let content;
 	if (snapshot.isLoading && volumes.length === 0) {
 		content = (
@@ -135,7 +147,7 @@ export function VolumesScreen(props: VolumesListProps) {
 				actions={[{ title: 'Retry', onPress: () => void model.loadVolumes() }]}
 			/>
 		);
-	} else if (volumes.length === 0) {
+	} else if (volumes.length === 0 && model.searchText.trim() === '') {
 		content = (
 			<UnavailableView
 				title="No Volumes"
@@ -157,6 +169,14 @@ export function VolumesScreen(props: VolumesListProps) {
 					<Button label="Create Volume" onPress={() => model.presentCreate(props.environmentID)} />
 				)}
 			</UnavailableView>
+		);
+	} else if (visibleCount === 0 && !snapshot.hasMore) {
+		content = (
+			<ContentUnavailableView
+				title="No Results"
+				systemImage="magnifyingglass"
+				description="Nothing matches the current search or filter."
+			/>
 		);
 	} else {
 		content = (
@@ -187,9 +207,10 @@ export function VolumesScreen(props: VolumesListProps) {
 					preferredHeaderAccessorySectionID="used"
 					headerAccessory={() => (
 						<ResourceCountLabel
-							loadedCount={volumes.length}
-							totalCount={snapshot.totalItems}
-							hasMore={snapshot.hasMore}
+							spansSections={spansSections(model.sections)}
+							loadedCount={isFiltered ? visibleCount : volumes.length}
+							totalCount={isFiltered ? undefined : snapshot.totalItems}
+							hasMore={!isFiltered && snapshot.hasMore}
 						/>
 					)}
 					estimatedItemSize={48}

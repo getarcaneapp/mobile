@@ -213,10 +213,7 @@ export function ProfileScreen() {
 							/>
 						</Section>
 
-						<Section
-							title="Language"
-							footer={<Text>Language selection is coming in a future update.</Text>}
-						>
+						<Section title="Language">
 							<LabeledContent label="Language">
 								<Text modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>
 									English

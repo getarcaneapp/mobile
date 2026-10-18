@@ -60,6 +60,7 @@ import {
 	useProjectFilesWorkspace,
 	type ProjectFilesWorkspaceModel
 } from './use-project-files-workspace';
+import { ToastHost } from '@/ui/toast';
 
 type Model = ProjectFilesWorkspaceModel;
 
@@ -654,33 +655,38 @@ export function ProjectFilesScreen() {
 				items={[
 					...(combined
 						? chromeItems
-						: [
-								model.previewEnabled
-									? ({
-											kind: 'menu',
-											id: 'add',
-											icon: 'ellipsis',
-											label: 'Project file actions',
-											items: previewMenu
-										} as const)
-									: ({
-											kind: 'menu',
-											id: 'add',
-											icon: 'plus',
-											label: 'Add file or folder',
-											items: menu
-										} as const)
-							]),
-					model.isSaving
-						? { kind: 'spinner', id: 'save', label: 'Save' }
-						: {
-								kind: 'button',
-								id: 'save',
-								icon: 'checkmark',
-								label: 'Save',
-								disabled: !model.canEdit || !model.hasChanges,
-								onPress: model.save
-							}
+						: !model.previewEnabled && current.kind !== 'files' && current.kind !== 'folder'
+							? []
+							: [
+									model.previewEnabled
+										? ({
+												kind: 'menu',
+												id: 'add',
+												icon: 'ellipsis',
+												label: 'Project file actions',
+												items: previewMenu
+											} as const)
+										: ({
+												kind: 'menu',
+												id: 'add',
+												icon: 'plus',
+												label: 'Add file or folder',
+												items: menu
+											} as const)
+								]),
+					...(model.isSaving
+						? [{ kind: 'spinner', id: 'save', label: 'Save' } as const]
+						: model.canEdit && model.hasChanges
+							? [
+									{
+										kind: 'button',
+										id: 'save',
+										icon: 'checkmark',
+										label: 'Save',
+										onPress: model.save
+									} as const
+								]
+							: [])
 				]}
 			/>
 			{loading ? (
@@ -703,6 +709,7 @@ export function ProjectFilesScreen() {
 				</View>
 			) : null}
 			<DeleteConfirmationHost hostID={projectFilesConfirmationHost} />
+			<ToastHost reservesTabBarSpace={false} />
 		</View>
 	);
 }

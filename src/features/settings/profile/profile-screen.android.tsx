@@ -175,7 +175,7 @@ export function ProfileScreen() {
 						/>
 					</M3Section>
 
-					<M3Section title="Language" footer="Language selection is coming in a future update.">
+					<M3Section title="Language">
 						<ValueRow title="Language" value="English" selectable={false} />
 					</M3Section>
 

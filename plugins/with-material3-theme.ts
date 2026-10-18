@@ -29,6 +29,21 @@ const DIALOG_BACKGROUND_XML = `<?xml version="1.0" encoding="utf-8"?>
 </inset>
 `;
 
+const MENU_CHECK = 'menu_check';
+
+const MENU_CHECK_XML = `<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorPrimary">
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z" />
+</vector>
+`;
+
 const withMaterialDependency: ConfigPlugin = (config) =>
 	withAppBuildGradle(config, (mod) => {
 		if (!mod.modResults.contents.includes('com.google.android.material:material')) {
@@ -54,6 +69,7 @@ const withDialogBackground: ConfigPlugin = (config) =>
 			);
 			fs.mkdirSync(drawables, { recursive: true });
 			fs.writeFileSync(path.join(drawables, `${DIALOG_BACKGROUND}.xml`), DIALOG_BACKGROUND_XML);
+			fs.writeFileSync(path.join(drawables, `${MENU_CHECK}.xml`), MENU_CHECK_XML);
 			return config;
 		}
 	]);

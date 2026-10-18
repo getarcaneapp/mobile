@@ -5,6 +5,7 @@ import { Pressable, Text, View, type ColorValue } from 'react-native';
 
 import { colors } from '@/theme/colors';
 import { m3 } from '@/ui/components/material-colors';
+import { MenuSelectedIcon, useMenuCheckIcon } from '@/ui/components/menu-selected-icon.android';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
 import { M3Switch } from '@/ui/material/switch';
@@ -25,6 +26,7 @@ export function MenuValueRow<Value extends string | number>({
 	onSelect: (value: Value) => void;
 }) {
 	const [expanded, setExpanded] = useState(false);
+	const checkIcon = useMenuCheckIcon();
 	const selected = options.find((option) => option.value === selection);
 	return (
 		<View>
@@ -44,7 +46,7 @@ export function MenuValueRow<Value extends string | number>({
 				<Icon name={icon} size={24} color={iconColor} />
 				<Text style={[m3Type.bodyLarge, { color: colors.label, flex: 1 }]}>{title}</Text>
 				<Text style={[m3Type.bodyMedium, { color: m3.primary }]}>{selected?.title}</Text>
-				<Icon name="chevron.up.chevron.down" size={16} color={colors.tertiaryLabel} />
+				<Icon name="chevron.up.chevron.down" size={24} color={m3.onSurfaceVariant} />
 			</Pressable>
 			<Host matchContents style={{ position: 'absolute', right: 16, bottom: 0 }}>
 				<DropdownMenu expanded={expanded} onDismissRequest={() => setExpanded(false)}>
@@ -58,10 +60,9 @@ export function MenuValueRow<Value extends string | number>({
 								}}
 							>
 								<DropdownMenuItem.Text>
-									<ComposeText>
-										{option.value === selection ? `${option.title}  ✓` : option.title}
-									</ComposeText>
+									<ComposeText>{option.title}</ComposeText>
 								</DropdownMenuItem.Text>
+								<MenuSelectedIcon selected={option.value === selection} source={checkIcon} />
 							</DropdownMenuItem>
 						))}
 					</DropdownMenu.Items>

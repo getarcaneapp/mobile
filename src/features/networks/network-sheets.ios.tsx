@@ -48,6 +48,15 @@ export function CreateNetworkScreen() {
 					<Form
 						modifiers={[navigationTitle('Create Network'), navigationBarTitleDisplayMode('inline')]}
 					>
+						{model.errorMessage ? (
+							<Section>
+								<Label
+									title={model.errorMessage}
+									systemImage="exclamationmark.triangle"
+									modifiers={[foregroundStyle(systemColors.red)]}
+								/>
+							</Section>
+						) : null}
 						<Section title="Network Details">
 							<FormTextField
 								title="Name"
@@ -56,14 +65,12 @@ export function CreateNetworkScreen() {
 								onChangeText={model.setName}
 								autocapitalization="never"
 								autocorrectionDisabled
-								helper="Use a short Docker network name with no spaces."
 							/>
 							<FormPicker
 								title="Driver"
 								selection={model.driver}
 								onSelectionChange={model.setDriver}
 								options={networkDrivers}
-								helper="Bridge is the standard single-host Docker network driver."
 							/>
 							<Toggle label="Internal" isOn={model.isInternal} onIsOnChange={model.setIsInternal} />
 						</Section>
@@ -94,16 +101,7 @@ export function CreateNetworkScreen() {
 								helper="Optional sub-range carved from the subnet."
 							/>
 						</Section>
-						<Section footer={<Text>{model.footer}</Text>}>{null}</Section>
-						{model.errorMessage ? (
-							<Section>
-								<Label
-									title={model.errorMessage}
-									systemImage="exclamationmark.triangle"
-									modifiers={[foregroundStyle(systemColors.red)]}
-								/>
-							</Section>
-						) : null}
+						{model.footer ? <Section footer={<Text>{model.footer}</Text>}>{null}</Section> : null}
 					</Form>
 					<Toolbar.Content>
 						<ToolbarItem placement="cancellationAction">

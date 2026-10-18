@@ -93,35 +93,43 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 		[processor, publish]
 	);
 
-	const connect = useCallback(async () => {
-		const client = useClientManager.getState().client;
-		if (!client) {
-			setConnectError('Not connected to a server.');
-			return;
-		}
-		if (state.current.isConnected || state.current.isConnecting) return;
-		setIsConnecting(true);
-		setConnectError(undefined);
-		const run = ++generation.current;
-		try {
-			const terminal = await boundedExec(client, { envID: environmentID, id: containerID, shell });
-			if (run !== generation.current) {
-				await terminal.close();
+	const connect = useCallback(
+		async (requestedShell?: string) => {
+			const client = useClientManager.getState().client;
+			if (!client) {
+				setConnectError('Not connected to a server.');
 				return;
 			}
-			processor.clear();
-			setOutputLines([]);
-			follow.resume();
-			session.current = terminal;
-			setIsConnected(true);
-			setIsConnecting(false);
-			void consumeOutput(terminal, run);
-		} catch (error) {
-			if (run !== generation.current) return;
-			setConnectError(friendlyErrorMessage(error));
-			setIsConnecting(false);
-		}
-	}, [environmentID, containerID, shell, processor, follow, consumeOutput]);
+			if (!requestedShell && (state.current.isConnected || state.current.isConnecting)) return;
+			state.current = { isConnected: false, isConnecting: true };
+			setIsConnecting(true);
+			setConnectError(undefined);
+			const run = ++generation.current;
+			try {
+				const terminal = await boundedExec(client, {
+					envID: environmentID,
+					id: containerID,
+					shell: requestedShell ?? shell
+				});
+				if (run !== generation.current) {
+					await terminal.close();
+					return;
+				}
+				processor.clear();
+				setOutputLines([]);
+				follow.resume();
+				session.current = terminal;
+				setIsConnected(true);
+				setIsConnecting(false);
+				void consumeOutput(terminal, run);
+			} catch (error) {
+				if (run !== generation.current) return;
+				setConnectError(friendlyErrorMessage(error));
+				setIsConnecting(false);
+			}
+		},
+		[environmentID, containerID, shell, processor, follow, consumeOutput]
+	);
 
 	const connectOnMount = useEffectEvent(() => void connect());
 	const teardownOnUnmount = useEffectEvent(() => void teardown());
@@ -138,7 +146,11 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 		outputLines,
 		outputRevision,
 		shell,
-		setShell,
+		selectShell: (next: string) => {
+			if (next === shell) return;
+			setShell(next);
+			void teardown().then(() => connect(next));
+		},
 		connectError,
 		isConnecting,
 		isConnected,

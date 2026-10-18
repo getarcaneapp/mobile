@@ -49,6 +49,7 @@ import {
 	ipamRows,
 	networkMetadata,
 	sortedPairs,
+	networkDriverName,
 	titled,
 	type NetworkContainerRowData
 } from './network-model';
@@ -212,7 +213,7 @@ export function NetworkDetailScreen() {
 										foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 									]}
 								>
-									{network.driver}
+									{networkDriverName(network.driver)}
 								</Text>
 							</VStack>
 						</Label>
@@ -226,7 +227,7 @@ export function NetworkDetailScreen() {
 							</LabeledContent>
 						))}
 						<InfoRow label="ID">
-							<MonospacedValue value={network.id} />
+							<MonospacedValue value={network.id} lineLimit={1} />
 						</InfoRow>
 						{inspect ? (
 							<>

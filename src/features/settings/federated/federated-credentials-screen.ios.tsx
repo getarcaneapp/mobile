@@ -116,12 +116,20 @@ export function FederatedCredentialsDestination() {
 				actions={[{ title: 'Try Again', onPress: () => void model.reload() }]}
 			/>
 		);
+	} else if (credentials.length === 0 && model.search.trim() !== '') {
+		content = (
+			<ContentUnavailableView
+				title={`No Results for “${model.search.trim()}”`}
+				systemImage="magnifyingglass"
+				description="Check the spelling or try a new search."
+			/>
+		);
 	} else if (credentials.length === 0) {
 		content = (
 			<ContentUnavailableWithActions
 				title="No Federated Credentials"
 				systemImage="key"
-				description="Create a credential or try a different search."
+				description="Create a credential to let workloads sign in with tokens from an external OIDC issuer."
 				actions={model.canManage ? [{ title: 'Create Credential', onPress: model.showCreate }] : []}
 			/>
 		);

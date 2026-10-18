@@ -49,10 +49,7 @@ export function ContainersFilterScreen() {
 			<NavigationStack>
 				<Toolbar>
 					<Form modifiers={[navigationTitle('Filter'), navigationBarTitleDisplayMode('inline')]}>
-						<Section
-							header={<Text>Sort</Text>}
-							footer={<Text>Live CPU and memory require Arcane 2.16 or later.</Text>}
-						>
+						<Section header={<Text>Sort</Text>}>
 							<Picker
 								label="Sort"
 								selection={filter.sort}

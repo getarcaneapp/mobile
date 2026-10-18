@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { Platform } from 'react-native';
 
 import { ArcaneAppIcon } from '../../../../modules/arcane-app-icon';
 
@@ -20,6 +21,8 @@ const previews: Record<string, number> = {
 	'AppIcon-Techy-Arcane': require('@/assets/app-icons/previews/AppIcon-Techy-Arcane.png'),
 	'AppIcon-Terminal': require('@/assets/app-icons/previews/AppIcon-Terminal.png')
 };
+
+const iosOnlyIcons = new Set(['AppIcon-Liquid-Glass-Dark', 'AppIcon-Liquid-Glass-Light']);
 
 function previewFor(name: string | undefined): number | undefined {
 	return previews[name ?? 'AppIcon'];
@@ -76,11 +79,14 @@ export const AlternateAppIcons = {
 			displayName: 'Default',
 			preview: previewFor(undefined)
 		},
-		...[...ArcaneAppIcon.alternateIconNames].sort().map((name) => ({
-			alternateName: name,
-			displayName: prettify(name),
-			preview: previewFor(name)
-		}))
+		...[...ArcaneAppIcon.alternateIconNames]
+			.filter((name) => Platform.OS === 'ios' || !iosOnlyIcons.has(name))
+			.sort()
+			.map((name) => ({
+				alternateName: name,
+				displayName: prettify(name),
+				preview: previewFor(name)
+			}))
 	] as AppIconOption[],
 	async setAlternateIconName(name: string | undefined): Promise<void> {
 		await ArcaneAppIcon.setAlternateIconName(name);

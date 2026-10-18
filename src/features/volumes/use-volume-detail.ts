@@ -18,7 +18,13 @@ import { showToast, Toasts } from '@/ui/toast';
 
 import { useContainerNavigation } from '@/features/containers/container-routes';
 
-import { byteString, capitalized, VolumeRename, volumesChanged } from './volume-model';
+import {
+	byteString,
+	capitalized,
+	formattedVolumeDate,
+	VolumeRename,
+	volumesChanged
+} from './volume-model';
 import { useVolumeNavigation, volumeCache } from './volume-routes';
 import { showErrorAlert } from './volume-support';
 
@@ -137,7 +143,7 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 	const metadata: ResourceMetadataItem[] = [
 		{ label: 'Driver', value: volume.driver, systemImage: 'gearshape' },
 		{ label: 'Scope', value: capitalized(volume.scope), systemImage: 'scope' },
-		{ label: 'Created', value: volume.createdAt, systemImage: 'calendar' },
+		{ label: 'Created', value: formattedVolumeDate(volume.createdAt), systemImage: 'calendar' },
 		{
 			label: 'Size',
 			value:

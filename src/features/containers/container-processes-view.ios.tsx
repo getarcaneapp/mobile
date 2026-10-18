@@ -21,6 +21,7 @@ import { Radius } from '@/theme/tokens';
 import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-swiftui';
 import { MonospacedValue } from '@/ui/components/resource-detail';
 
+import { processExtraText } from './container-model';
 import { useContainerProcesses } from './use-container-processes';
 
 export function ContainerProcessesView({
@@ -117,7 +118,7 @@ export function ContainerProcessesView({
 										lineLimit(2)
 									]}
 								>
-									{row.extras.map((extra) => `${extra.title} ${extra.value}`).join(' · ')}
+									{row.extras.map(processExtraText).join(' · ')}
 								</Text>
 							) : null}
 						</VStack>

@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 
+import { titleCasedWords } from '@/core/title-case';
 import type { Event } from '@/sdk/models/event/Event';
 import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
@@ -15,7 +16,7 @@ import { ResourceCountLabel } from '@/ui/components/labels';
 import { m3 } from '@/ui/components/material-colors';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
-import { m3Type, monoFamily } from '@/ui/components/type-scale';
+import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
 
 import { CenteredMessage } from '@/features/containers/android-material';
@@ -190,10 +191,8 @@ function EventListRow({ model, event }: { model: EventsModel; event: Event }) {
 					{event.type !== '' ? (
 						<>
 							<Text style={[m3Type.bodySmall, { color: colors.tertiaryLabel }]}>•</Text>
-							<Text
-								style={[m3Type.bodySmall, { color: colors.tertiaryLabel, fontFamily: monoFamily }]}
-							>
-								{event.type}
+							<Text style={[m3Type.bodySmall, { color: colors.tertiaryLabel }]}>
+								{titleCasedWords(event.type)}
 							</Text>
 						</>
 					) : null}

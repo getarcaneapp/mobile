@@ -45,6 +45,7 @@ import {
 	type RuntimeRow,
 	type ServiceAction
 } from './use-project-detail';
+import { pluralCount } from '@/core/plural';
 
 function RowPressable({ onPress, children }: { onPress?: () => void; children: ReactNode }) {
 	return (
@@ -84,7 +85,7 @@ function ProjectHeader({ model }: { model: ProjectDetailModel }) {
 					<View style={{ flex: 1 }}>
 						<Text style={[m3Type.titleMedium, { color: colors.label }]}>{model.displayName}</Text>
 						<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
-							{`${project.serviceCount} services · ${project.runningCount} running`}
+							{`${pluralCount(project.serviceCount, 'service')} · ${project.runningCount} running`}
 						</Text>
 					</View>
 				</View>
@@ -308,18 +309,12 @@ function ServicesTab({ model }: { model: ProjectDetailModel }) {
 				<RowPressable onPress={() => model.openFiles({ kind: 'compose' })}>
 					<ProjectFileBrowserRow
 						name={model.composeFileName}
-						detail="Compose definition"
 						systemImage="doc.text"
 						isDirectory={false}
 					/>
 				</RowPressable>
 				<RowPressable onPress={() => model.openFiles({ kind: 'env' })}>
-					<ProjectFileBrowserRow
-						name=".env"
-						detail="Environment variables"
-						systemImage="key.horizontal"
-						isDirectory={false}
-					/>
+					<ProjectFileBrowserRow name=".env" systemImage="key.horizontal" isDirectory={false} />
 				</RowPressable>
 				{model.fileBrowserLoading && model.fileBrowserFiles === undefined ? (
 					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16 }}>
@@ -358,7 +353,6 @@ function ServicesTab({ model }: { model: ProjectDetailModel }) {
 						<RowPressable onPress={() => model.openFiles({ kind: 'files' })}>
 							<ProjectFileBrowserRow
 								name="Browse Files"
-								detail="Add or manage custom files"
 								systemImage="folder.badge.plus"
 								isDirectory
 							/>

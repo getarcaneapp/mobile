@@ -20,6 +20,10 @@ const palette = [
 	'#477D91'
 ];
 
+export function isDefaultEnvironmentColor(hex: string): boolean {
+	return palette.includes(hex.toUpperCase());
+}
+
 function loadColors(): Record<string, string> {
 	const raw = storage.json<unknown>(colorsKey);
 	if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return {};

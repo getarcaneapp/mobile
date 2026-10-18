@@ -445,6 +445,7 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 		sections,
 		listEnvironments,
 		isAdmin,
+		searchText,
 		setSearchText,
 		activeFilterCount,
 		loadImages,

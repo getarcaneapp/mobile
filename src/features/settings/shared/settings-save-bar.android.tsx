@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '@/theme/colors';
 import { m3 } from '@/ui/components/material-colors';
@@ -64,40 +64,44 @@ export function SettingsSaveBar(props: SettingsSaveBarProps) {
 		onSave,
 		onRevert
 	} = props;
-	const insets = useSafeAreaInsets();
-	if (!isPresented) return null;
+	if (!isPresented || (!hasChanges && !isSaving)) return null;
 	const { saveDisabled, revertDisabled } = saveBarState(props);
 	return (
-		<View
+		<SafeAreaView
+			edges={['bottom']}
 			pointerEvents="box-none"
-			style={{
-				position: 'absolute',
-				right: 16,
-				bottom: insets.bottom + 16,
-				flexDirection: 'row',
-				gap: 12
-			}}
+			style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
 		>
-			{hasChanges ? (
+			<View
+				pointerEvents="box-none"
+				style={{
+					flexDirection: 'row',
+					justifyContent: 'flex-end',
+					gap: 12,
+					padding: 16
+				}}
+			>
+				{hasChanges ? (
+					<Fab
+						icon="arrow.uturn.backward"
+						label="Revert Changes"
+						onPress={onRevert}
+						disabled={revertDisabled}
+						container={m3.secondaryContainer as string}
+						content={m3.onSecondaryContainer as string}
+					/>
+				) : null}
 				<Fab
-					icon="arrow.uturn.backward"
-					label="Revert Changes"
-					onPress={onRevert}
-					disabled={revertDisabled}
-					container={m3.secondaryContainer as string}
-					content={m3.onSecondaryContainer as string}
+					icon="checkmark"
+					label={saveAccessibilityLabel}
+					onPress={onSave}
+					disabled={saveDisabled}
+					busy={isSaving}
+					container={m3.primaryContainer as string}
+					content={m3.onPrimaryContainer as string}
 				/>
-			) : null}
-			<Fab
-				icon="checkmark"
-				label={saveAccessibilityLabel}
-				onPress={onSave}
-				disabled={saveDisabled}
-				busy={isSaving}
-				container={m3.primaryContainer as string}
-				content={m3.onPrimaryContainer as string}
-			/>
-		</View>
+			</View>
+		</SafeAreaView>
 	);
 }
 

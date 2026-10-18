@@ -34,12 +34,27 @@ async function fetchTopology(current: ArcaneClient, target: EnvironmentID) {
 	return response;
 }
 
+export function focusedTopology(topology: NetworkTopology, networkID: string | undefined) {
+	if (networkID === undefined) return topology;
+	const focus = topology.nodes.find(
+		(node) => node.type === 'network' && (node.id === networkID || node.id.startsWith(networkID))
+	);
+	if (!focus) return topology;
+	const edges = topology.edges.filter(
+		(edge) => edge.source === focus.id || edge.target === focus.id
+	);
+	const ids = new Set([focus.id, ...edges.flatMap((edge) => [edge.source, edge.target])]);
+	return { nodes: topology.nodes.filter((node) => ids.has(node.id)), edges };
+}
+
 export function useNetworkTopology({
 	environmentID,
-	allEnvironments
+	allEnvironments,
+	focusNetworkID
 }: {
 	environmentID: EnvironmentID;
 	allEnvironments: boolean;
+	focusNetworkID?: string;
 }) {
 	const nav = useTabRouter();
 	const client = useClientManager((s) => s.client);
@@ -60,6 +75,7 @@ export function useNetworkTopology({
 		latest.current = { shownEnvironmentID, loadingEnvironmentID, hasTopology };
 	});
 
+	const focusRef = useRef(focusNetworkID);
 	const loadTopology = useCallback(async (refresh = false) => {
 		const target = latest.current.shownEnvironmentID;
 		const current = useClientManager.getState().client;
@@ -70,7 +86,7 @@ export function useNetworkTopology({
 		await withCleanup(
 			async () => {
 				try {
-					const response = await fetchTopology(current, target);
+					const response = focusedTopology(await fetchTopology(current, target), focusRef.current);
 					if (target !== latest.current.shownEnvironmentID) return;
 					setTopology(response);
 					setLayout(makeTopologyLayout(response));

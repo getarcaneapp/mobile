@@ -32,7 +32,7 @@ export function AppearanceSettingsScreen() {
 			<Stack.Screen options={{ title: 'Appearance', headerLargeTitleEnabled: false }} />
 			<Host style={{ flex: 1 }}>
 				<Form>
-					<Section footer={<Text>{AppearanceCopy.accentFooter}</Text>}>
+					<Section>
 						<HStack spacing={12}>
 							<SettingsRow
 								title="Accent Color"
@@ -47,7 +47,7 @@ export function AppearanceSettingsScreen() {
 						</HStack>
 					</Section>
 
-					<Section header={<Text>Motion</Text>} footer={<Text>{AppearanceCopy.motionFooter}</Text>}>
+					<Section header={<Text>Motion</Text>}>
 						<Toggle
 							isOn={model.launchAnimationEnabled}
 							onIsOnChange={model.setLaunchAnimationEnabled}

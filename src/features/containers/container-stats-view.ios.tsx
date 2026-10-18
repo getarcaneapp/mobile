@@ -32,7 +32,7 @@ import { SkeletonRect, SkeletonShimmer } from '@/ui/components/skeleton';
 import { DashboardCardBackground } from '@/ui/components/swiftui-surfaces';
 import { LoadingCrossfade } from '@/ui/components/swiftui-motion';
 
-import { StatsText } from './container-stats-frame';
+import { StatsText, type StatsAxisUnit } from './container-stats-frame';
 import { StatsLineChart, type ChartSeries } from './stats-chart';
 import { useContainerStats } from './use-container-stats';
 
@@ -50,7 +50,7 @@ function Card({ children }: { children: ReactNode }) {
 	);
 }
 
-function Chart({ series }: { series: ChartSeries[] }) {
+function Chart({ series, unit }: { series: ChartSeries[]; unit: StatsAxisUnit }) {
 	return (
 		<HStack
 			modifiers={[
@@ -60,7 +60,7 @@ function Chart({ series }: { series: ChartSeries[] }) {
 		>
 			<RNHostView>
 				<View style={{ flex: 1, height: 140 }}>
-					<StatsLineChart series={series} />
+					<StatsLineChart series={series} unit={unit} />
 				</View>
 			</RNHostView>
 		</HStack>
@@ -70,11 +70,13 @@ function Chart({ series }: { series: ChartSeries[] }) {
 function ChartCard({
 	title,
 	legend,
-	series
+	series,
+	unit
 }: {
 	title: string;
 	legend?: { name: string; color: string }[];
 	series: ChartSeries[];
+	unit: StatsAxisUnit;
 }) {
 	return (
 		<Card>
@@ -101,7 +103,7 @@ function ChartCard({
 					</HStack>
 				) : null}
 			</HStack>
-			<Chart series={series} />
+			<Chart series={series} unit={unit} />
 		</Card>
 	);
 }
@@ -261,7 +263,11 @@ export function ContainerStatsView({
 										/>
 									</Grid.Row>
 								</Grid>
-								<ChartCard title="CPU" series={[{ values: series.cpu, color: accent }]} />
+								<ChartCard
+									title="CPU"
+									unit="percent"
+									series={[{ values: series.cpu, color: accent }]}
+								/>
 								<Card>
 									<HStack>
 										<Text modifiers={[font({ textStyle: 'headline' })]}>Memory</Text>
@@ -278,9 +284,10 @@ export function ContainerStatsView({
 										) : null}
 									</HStack>
 									<Chart
+										unit="bytes"
 										series={[
 											{
-												values: series.memoryMegabytes,
+												values: series.memoryBytes,
 												color: systemColors.indigo,
 												fillOpacity: 0.25
 											}
@@ -289,6 +296,7 @@ export function ContainerStatsView({
 								</Card>
 								<ChartCard
 									title="Network I/O"
+									unit="bytesPerSecond"
 									legend={[
 										{ name: 'RX', color: systemColors.green },
 										{ name: 'TX', color: systemColors.orange }
@@ -300,6 +308,7 @@ export function ContainerStatsView({
 								/>
 								<ChartCard
 									title="Block I/O"
+									unit="bytesPerSecond"
 									legend={[
 										{ name: 'Read', color: accent },
 										{ name: 'Write', color: withOpacity(accent, 0.5) }

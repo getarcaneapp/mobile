@@ -26,6 +26,7 @@ import {
 	type ImagesListModel,
 	type ImagesListProps
 } from './use-images-list';
+import { sectionItemCount, spansSections } from '@/ui/components/stable-sectioned-list.types';
 
 function Checkbox({ checked }: { checked: boolean }) {
 	return (
@@ -118,6 +119,8 @@ export function ImagesScreen(props: ImagesListProps) {
 		/>
 	);
 
+	const visibleCount = sectionItemCount(model.sections);
+	const isFiltered = visibleCount < images.length;
 	let content;
 	if (snapshot.isLoading && images.length === 0) {
 		content = (
@@ -134,7 +137,7 @@ export function ImagesScreen(props: ImagesListProps) {
 				action={{ title: 'Retry', onPress: () => void model.loadImages() }}
 			/>
 		);
-	} else if (images.length === 0) {
+	} else if (images.length === 0 && model.searchText.trim() === '') {
 		content = (
 			<View style={{ flex: 1 }}>
 				<CenteredMessage
@@ -169,6 +172,14 @@ export function ImagesScreen(props: ImagesListProps) {
 				) : null}
 			</View>
 		);
+	} else if (visibleCount === 0 && !snapshot.hasMore) {
+		content = (
+			<CenteredMessage
+				icon="magnifyingglass"
+				title="No Results"
+				message="Nothing matches the current search or filter."
+			/>
+		);
 	}
 
 	const list =
@@ -183,9 +194,10 @@ export function ImagesScreen(props: ImagesListProps) {
 				preferredHeaderAccessorySectionID="used"
 				headerAccessory={() => (
 					<ResourceCountLabel
-						loadedCount={images.length}
-						totalCount={snapshot.totalItems}
-						hasMore={snapshot.hasMore}
+						spansSections={spansSections(model.sections)}
+						loadedCount={isFiltered ? visibleCount : images.length}
+						totalCount={isFiltered ? undefined : snapshot.totalItems}
+						hasMore={!isFiltered && snapshot.hasMore}
 					/>
 				)}
 				renderRow={(row) => <ImageListRow model={model} row={row} />}

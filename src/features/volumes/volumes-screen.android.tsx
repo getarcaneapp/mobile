@@ -23,6 +23,7 @@ import { useVolumesList, type VolumesListModel, type VolumesListProps } from './
 import type { VolumeItem } from './volume-model';
 import { VolumeRow } from './volume-row';
 import { VolumesToolbar } from './volumes-toolbar';
+import { sectionItemCount, spansSections } from '@/ui/components/stable-sectioned-list.types';
 
 function rowMenuItems(model: VolumesListModel, item: VolumeItem, isPinned: boolean): RowMenuItem[] {
 	const items: RowMenuItem[] = [
@@ -125,6 +126,8 @@ export function VolumesScreen(props: VolumesListProps) {
 		/>
 	);
 
+	const visibleCount = sectionItemCount(model.sections);
+	const isFiltered = visibleCount < volumes.length;
 	let content;
 	if (snapshot.isLoading && volumes.length === 0) {
 		content = (
@@ -141,7 +144,7 @@ export function VolumesScreen(props: VolumesListProps) {
 				action={{ title: 'Retry', onPress: () => void model.loadVolumes() }}
 			/>
 		);
-	} else if (volumes.length === 0) {
+	} else if (volumes.length === 0 && model.searchText.trim() === '') {
 		content = props.allEnvironments ? (
 			<View style={{ flex: 1 }}>
 				<CenteredMessage
@@ -164,6 +167,14 @@ export function VolumesScreen(props: VolumesListProps) {
 				action={{ title: 'Create Volume', onPress: () => model.presentCreate(props.environmentID) }}
 			/>
 		);
+	} else if (visibleCount === 0 && !snapshot.hasMore) {
+		content = (
+			<CenteredMessage
+				icon="magnifyingglass"
+				title="No Results"
+				message="Nothing matches the current search or filter."
+			/>
+		);
 	}
 
 	const list =
@@ -178,9 +189,10 @@ export function VolumesScreen(props: VolumesListProps) {
 				preferredHeaderAccessorySectionID="used"
 				headerAccessory={() => (
 					<ResourceCountLabel
-						loadedCount={volumes.length}
-						totalCount={snapshot.totalItems}
-						hasMore={snapshot.hasMore}
+						spansSections={spansSections(model.sections)}
+						loadedCount={isFiltered ? visibleCount : volumes.length}
+						totalCount={isFiltered ? undefined : snapshot.totalItems}
+						hasMore={!isFiltered && snapshot.hasMore}
 					/>
 				)}
 				renderRow={(item) => <VolumeListRow model={model} item={item} />}

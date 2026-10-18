@@ -2,6 +2,7 @@ import type { EnvironmentID } from '@/sdk/client/environment';
 import type { SwarmTaskSummary } from '@/sdk/models/swarm/SwarmTask';
 
 import { shortID } from './swarm-common';
+export { taskErrorMessage } from './swarm-task-error';
 import type { SwarmTaskSource } from './swarm-routes';
 import { useSwarmPagedList } from './use-swarm-list';
 

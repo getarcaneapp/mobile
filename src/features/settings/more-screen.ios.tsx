@@ -50,58 +50,63 @@ export function MoreScreen() {
 			<Host style={{ flex: 1 }}>
 				<ZStack>
 					<List modifiers={[listStyle('insetGrouped')]}>
-						<Section>
-							<Button
-								onPress={() => router.push('/(tabs)/(more)/profile')}
-								modifiers={[buttonStyle('plain'), accessibilityHint('Opens profile')]}
-							>
-								<HStack modifiers={[contentShape(shapes.rectangle())]}>
-									<UserAccountLabel />
-									<Spacer />
-									<DisclosureChevron />
-								</HStack>
-							</Button>
-							<Button
-								onPress={() => router.push('/(tabs)/(more)/app-settings')}
-								modifiers={[buttonStyle('plain')]}
-							>
-								<HStack modifiers={[contentShape(shapes.rectangle())]}>
-									<SettingsRow
-										title="App Settings"
-										systemImage="gearshape.fill"
-										color={systemColors.gray}
-									/>
-									<Spacer />
-									<DisclosureChevron />
-								</HStack>
-							</Button>
-							<Button
-								onPress={() => router.push('/(tabs)/(more)/preview-features')}
-								modifiers={[buttonStyle('plain')]}
-							>
-								<HStack modifiers={[contentShape(shapes.rectangle())]}>
-									<SettingsRow
-										title="Preview Features"
-										systemImage="flask.fill"
-										color={systemColors.purple}
-									/>
-									<Spacer />
-									<DisclosureChevron />
-								</HStack>
-							</Button>
-							<Button onPress={() => router.push('/whats-new')} modifiers={[buttonStyle('plain')]}>
-								<HStack modifiers={[contentShape(shapes.rectangle())]}>
-									<SettingsRow
-										title="What's New"
-										systemImage="sparkles"
-										color={systemColors.yellow}
-										titleColor="primary"
-									/>
-									<Spacer />
-									<DisclosureChevron />
-								</HStack>
-							</Button>
-						</Section>
+						{search.trim() === '' ? (
+							<Section>
+								<Button
+									onPress={() => router.push('/(tabs)/(more)/profile')}
+									modifiers={[buttonStyle('plain'), accessibilityHint('Opens profile')]}
+								>
+									<HStack modifiers={[contentShape(shapes.rectangle())]}>
+										<UserAccountLabel />
+										<Spacer />
+										<DisclosureChevron />
+									</HStack>
+								</Button>
+								<Button
+									onPress={() => router.push('/(tabs)/(more)/app-settings')}
+									modifiers={[buttonStyle('plain')]}
+								>
+									<HStack modifiers={[contentShape(shapes.rectangle())]}>
+										<SettingsRow
+											title="App Settings"
+											systemImage="gearshape.fill"
+											color={systemColors.gray}
+										/>
+										<Spacer />
+										<DisclosureChevron />
+									</HStack>
+								</Button>
+								<Button
+									onPress={() => router.push('/(tabs)/(more)/preview-features')}
+									modifiers={[buttonStyle('plain')]}
+								>
+									<HStack modifiers={[contentShape(shapes.rectangle())]}>
+										<SettingsRow
+											title="Preview Features"
+											systemImage="flask.fill"
+											color={systemColors.purple}
+										/>
+										<Spacer />
+										<DisclosureChevron />
+									</HStack>
+								</Button>
+								<Button
+									onPress={() => router.push('/whats-new')}
+									modifiers={[buttonStyle('plain')]}
+								>
+									<HStack modifiers={[contentShape(shapes.rectangle())]}>
+										<SettingsRow
+											title="What's New"
+											systemImage="sparkles"
+											color={systemColors.yellow}
+											titleColor="primary"
+										/>
+										<Spacer />
+										<DisclosureChevron />
+									</HStack>
+								</Button>
+							</Section>
+						) : null}
 						{filteredGroups.map((group) => (
 							<Section key={group.title} title={group.title}>
 								{group.tabs.map((tab) => {

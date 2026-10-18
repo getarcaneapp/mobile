@@ -20,7 +20,11 @@ export function NetworksDestination() {
 }
 
 export function NetworkTopologyDestination() {
-	const { envID, scoped } = useLocalSearchParams<{ envID?: string; scoped?: string }>();
+	const { envID, scoped, network } = useLocalSearchParams<{
+		envID?: string;
+		scoped?: string;
+		network?: string;
+	}>();
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
 	const allEnvironmentsPreview = useClientManager((s) => s.allEnvironmentsPreview);
 	const isScoped = scoped === '1' && envID !== undefined;
@@ -28,9 +32,10 @@ export function NetworkTopologyDestination() {
 	const allEnvironments = isScoped ? false : allEnvironmentsPreview;
 	return (
 		<NetworkTopologyScreen
-			key={`${environmentID}|${allEnvironments}`}
+			key={`${environmentID}|${allEnvironments}|${network ?? ''}`}
 			environmentID={environmentID}
 			allEnvironments={allEnvironments}
+			focusNetworkID={isScoped ? network : undefined}
 		/>
 	);
 }

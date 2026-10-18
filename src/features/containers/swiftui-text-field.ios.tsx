@@ -1,6 +1,7 @@
-import { TextField, useNativeState } from '@expo/ui/swift-ui';
+import { TextField } from '@expo/ui/swift-ui';
 import type { ModifierConfig } from '@expo/ui/swift-ui/modifiers';
-import { useEffect } from 'react';
+
+import { useSyncedNativeText } from '@/ui/components/synced-native-text';
 
 export function BoundTextField({
 	placeholder,
@@ -15,16 +16,13 @@ export function BoundTextField({
 	axis?: 'horizontal' | 'vertical';
 	modifiers?: ModifierConfig[];
 }) {
-	const state = useNativeState(value);
-	useEffect(() => {
-		if (state.get() !== value) state.set(value);
-	}, [state, value]);
+	const { state, onTextChange } = useSyncedNativeText(value, onChangeText);
 	return (
 		<TextField
 			text={state}
 			placeholder={placeholder}
 			axis={axis}
-			onTextChange={onChangeText}
+			onTextChange={onTextChange}
 			modifiers={modifiers}
 		/>
 	);

@@ -253,15 +253,18 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 	const perform = async (operation: () => Promise<void>) => {
 		const scope = new BackupRequestScope();
 		setBusy(true);
+		let succeeded = false;
 		try {
 			await operation();
 			scope.check(() => unmounted.current);
 			showToast(Toasts.info('Backup operation accepted'));
-			await load();
+			succeeded = true;
 		} catch (error) {
 			if (!isCancellation(error)) showToast(Toasts.error(friendlyErrorMessage(error)));
 		}
-		if (!unmounted.current) setBusy(false);
+		if (unmounted.current) return;
+		setBusy(false);
+		if (succeeded) await load();
 	};
 
 	useLayoutEffect(() => {

@@ -6,6 +6,8 @@ export type AccentColorMenuProps = {
 	onSelectionChange: (hex: string) => void;
 	isAvailable?: (hex: string) => boolean;
 	onCustom?: () => void;
+	unnamedTitle?: string;
+	accessibilityLabel?: string;
 };
 
 export function selectedAccentOption(selection: string): AccentColorOption | undefined {

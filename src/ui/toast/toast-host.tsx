@@ -15,6 +15,7 @@ import { colors } from '@/theme/colors';
 import { useAccentColor } from '@/theme/accent';
 import { springConfig } from '@/theme/motion';
 import { Motion } from '@/theme/tokens';
+import { CapsuleProgressBorder } from '@/ui/components/capsule-progress-border';
 import { GlassSurface } from '@/ui/glass';
 import { Icon } from '@/ui/Icon';
 
@@ -130,6 +131,14 @@ function ToastCapsule({ toast }: { toast: Toast }) {
 							content
 						)}
 					</Animated.View>
+					<CapsuleProgressBorder
+						fraction={toast.activityProgress}
+						isActive={
+							toast.activityState === 'running' ||
+							(toast.isPersistent === true && toast.activityState === undefined)
+						}
+						tint={toast.symbolTint ?? (colors.secondaryLabel as string)}
+					/>
 				</GlassSurface>
 			</Animated.View>
 		</GestureDetector>

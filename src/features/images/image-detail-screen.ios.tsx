@@ -142,14 +142,24 @@ function ImageHeader({ model }: { model: ImageDetailModel }) {
 	);
 }
 
-function MonospacedRow({ label, value }: { label: string; value: string }) {
+function MonospacedRow({
+	label,
+	value,
+	singleLine = false
+}: {
+	label: string;
+	value: string;
+	singleLine?: boolean;
+}) {
 	return (
 		<LabeledContent label={label}>
 			<Text
 				modifiers={[
 					font({ textStyle: 'body', design: 'monospaced' }),
 					textSelection(true),
-					fixedSize({ horizontal: false, vertical: true })
+					...(singleLine
+						? [lineLimit(1), truncationMode('middle')]
+						: [fixedSize({ horizontal: false, vertical: true })])
 				]}
 			>
 				{value}
@@ -176,9 +186,9 @@ function OverviewTab({ model }: { model: ImageDetailModel }) {
 						))}
 					</Section>
 					<Section title="Identity">
-						<MonospacedRow label="Image ID" value={details.id} />
-						{details.repoTags.length > 0 ? (
-							<MonospacedRow label="Tags" value={details.repoTags.join('\n')} />
+						<MonospacedRow label="Image ID" value={details.id} singleLine />
+						{details.repoTags.length === 1 ? (
+							<MonospacedRow label="Tag" value={details.repoTags[0] ?? ''} />
 						) : null}
 					</Section>
 				</>

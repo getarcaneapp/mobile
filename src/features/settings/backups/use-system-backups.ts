@@ -8,6 +8,7 @@ import type { BackupHistoryEntry } from '@/sdk/models/backup/BackupHistoryEntry'
 import { parseArcaneDate } from '@/sdk/models/base/date';
 import { useClientManager } from '@/stores/client-manager';
 
+import { backupDestinationTitle, backupStatusTitle } from './backup-labels';
 import {
 	backupRequestScope,
 	useAliveRef,
@@ -22,7 +23,7 @@ export function backupEntryDate(entry: BackupHistoryEntry): string {
 }
 
 export function backupEntrySummary(entry: BackupHistoryEntry): string {
-	return `${entry.status} · ${entry.destination} · ${formatFileBytes(entry.size)}`;
+	return `${backupStatusTitle(entry.status)} · ${backupDestinationTitle(entry.destination)} · ${formatFileBytes(entry.size)}`;
 }
 
 function appendPage<T>(more: boolean, current: T[], data: T[]): T[] {

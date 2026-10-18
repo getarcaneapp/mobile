@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, usePreventRemove } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
 	Pressable,
@@ -160,6 +160,11 @@ export function VolumeBrowserScreen() {
 	const model = useVolumeBrowser(envID, name);
 	const [showPathDialog, setShowPathDialog] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
+
+	usePreventRemove(model.segments.length > 0, ({ data }) => {
+		if (data.action.type === 'GO_BACK' || data.action.type === 'POP') model.goUp();
+		else model.goToRoot();
+	});
 
 	const menu: AndroidMenuItem[] = [];
 	if (model.canManageFiles)

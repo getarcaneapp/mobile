@@ -59,14 +59,16 @@ function findingEntries(vulnerabilities: VulnerabilityRecord[], hasMore: boolean
 	return entries;
 }
 
-function EmptyMessage({ icon, title, message }: { icon: string; title: string; message: string }) {
+function EmptyMessage({ icon, title, message }: { icon: string; title: string; message?: string }) {
 	return (
 		<View style={emptyStyle}>
 			<Icon name={icon} size={44} color={colors.secondaryLabel} />
 			<Text style={[m3Type.titleLarge, { color: colors.label, textAlign: 'center' }]}>{title}</Text>
-			<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel, textAlign: 'center' }]}>
-				{message}
-			</Text>
+			{message ? (
+				<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel, textAlign: 'center' }]}>
+					{message}
+				</Text>
+			) : null}
 		</View>
 	);
 }
@@ -192,7 +194,7 @@ function ScanList({ model }: { model: ImageVulnerabilitiesModel }) {
 						>
 							<Icon name="magnifyingglass" size={20} color={m3.primary} />
 							<Text style={[m3Type.labelLarge, { color: m3.primary, flex: 1 }]}>
-								{model.isScanning ? 'Scanning…' : 'Re-scan now'}
+								{model.scanButtonTitle}
 							</Text>
 							{model.isScanning ? (
 								<ActivityIndicator size="small" color={m3.primary as string} />
@@ -202,13 +204,9 @@ function ScanList({ model }: { model: ImageVulnerabilitiesModel }) {
 
 					{isEmpty ? (
 						<EmptyMessage
-							icon="checkmark.shield"
-							title="No vulnerabilities"
-							message={
-								summary === undefined
-									? 'Run a scan to see results.'
-									: 'Nothing matches the current filter.'
-							}
+							icon={model.emptyState.systemImage}
+							title={model.emptyState.title}
+							message={model.emptyState.description}
 						/>
 					) : null}
 				</View>

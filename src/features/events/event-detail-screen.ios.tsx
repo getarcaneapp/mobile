@@ -72,7 +72,7 @@ export function EventDetailScreen() {
 						) : null}
 					</Section>
 					<Section title="Event">
-						<Value label="Type" value={event.type} />
+						<Value label="Type" value={model.typeTitle} />
 						<Value label="Occurred" value={model.occurred} />
 						{model.recorded ? <Value label="Recorded" value={model.recorded} /> : null}
 					</Section>
@@ -89,8 +89,8 @@ export function EventDetailScreen() {
 						<Section title="Context">
 							{event.username ? <Value label="User" value={event.username} /> : null}
 							{event.userId ? <Value label="User ID" value={event.userId} mono /> : null}
-							{event.environmentId ? (
-								<Value label="Environment" value={event.environmentId} mono />
+							{model.environmentName !== undefined ? (
+								<Value label="Environment" value={model.environmentName} />
 							) : null}
 						</Section>
 					) : null}

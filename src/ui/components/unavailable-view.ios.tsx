@@ -35,18 +35,22 @@ export function UnavailableView({
 				systemImage={systemImage as SFSymbol}
 				description={description}
 			/>
-			{actions.map((action) =>
-				action.isBusy ? (
-					<ProgressView key={action.title} />
-				) : (
-					<Button
-						key={action.title}
-						label={action.title}
-						onPress={action.onPress}
-						modifiers={[font({ textStyle: 'subheadline' }), disabled(action.disabled ?? false)]}
-					/>
-				)
-			)}
+			{actions.length > 0 ? (
+				<VStack spacing={12}>
+					{actions.map((action) =>
+						action.isBusy ? (
+							<ProgressView key={action.title} />
+						) : (
+							<Button
+								key={action.title}
+								label={action.title}
+								onPress={action.onPress}
+								modifiers={[font({ textStyle: 'subheadline' }), disabled(action.disabled ?? false)]}
+							/>
+						)
+					)}
+				</VStack>
+			) : null}
 			{children != null ? (
 				<Group modifiers={[font({ textStyle: 'subheadline' })]}>{children}</Group>
 			) : null}

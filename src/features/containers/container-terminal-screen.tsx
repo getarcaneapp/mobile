@@ -116,9 +116,8 @@ export function ContainerTerminalScreen() {
 									...terminalShells.map((shell) => ({
 										id: shell,
 										title: shell,
-										checked: terminal.shell === shell,
-										disabled: terminal.isConnected || terminal.isConnecting,
-										onPress: () => terminal.setShell(shell)
+										selected: terminal.shell === shell,
+										onPress: () => terminal.selectShell(shell)
 									})),
 									{
 										id: 'copy',
@@ -150,17 +149,12 @@ export function ContainerTerminalScreen() {
 					</AppToolbar>
 					<AppToolbar placement="right" tintColor={accent}>
 						<Stack.Toolbar.Menu icon="terminal" accessibilityLabel="Terminal options">
-							<Stack.Toolbar.Menu
-								inline
-								title="Shell"
-								disabled={terminal.isConnected || terminal.isConnecting}
-							>
+							<Stack.Toolbar.Menu inline title="Shell">
 								{terminalShells.map((shell) => (
 									<Stack.Toolbar.MenuAction
 										key={shell}
 										isOn={terminal.shell === shell}
-										disabled={terminal.isConnected || terminal.isConnecting}
-										onPress={() => terminal.setShell(shell)}
+										onPress={() => terminal.selectShell(shell)}
 									>
 										{shell}
 									</Stack.Toolbar.MenuAction>

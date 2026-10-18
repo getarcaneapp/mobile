@@ -43,7 +43,7 @@ import {
 	tint
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
-import { useEffect, useEffectEvent, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 
 import { systemColors, withOpacity } from '@/theme/colors';
@@ -72,6 +72,7 @@ import { ProjectFileBrowserRow } from './project-file-row';
 import {
 	encodeDestination,
 	decodeDestination,
+	nextNavigationPath,
 	isProtectedEntry,
 	ProjectFileWorkspaceHelpers,
 	type ManagedProjectFileEntry,
@@ -84,6 +85,7 @@ import {
 	useProjectFilesWorkspace,
 	type ProjectFilesWorkspaceModel
 } from './use-project-files-workspace';
+import { ToastHost } from '@/ui/toast';
 
 type Model = ProjectFilesWorkspaceModel;
 
@@ -315,23 +317,22 @@ function WorkspaceToolbar({
 						<Button label="Done" onPress={model.done} modifiers={toolbarSymbol} />
 					</ToolbarItem>
 				) : null}
-				<ToolbarItem placement="topBarTrailing">
-					<Button
-						onPress={model.save}
-						modifiers={[
-							accessibilityLabel('Save'),
-							disabled(!model.canEdit || !model.hasChanges || model.isSaving),
-							...toolbarSymbol
-						]}
-					>
-						{model.isSaving ? (
-							<ProgressView modifiers={[scaleEffect(0.8)]} />
-						) : (
-							<Image systemName="checkmark" />
-						)}
-					</Button>
-				</ToolbarItem>
-				{!combined ? (
+				{(model.canEdit && model.hasChanges) || model.isSaving ? (
+					<ToolbarItem placement="topBarTrailing">
+						<Button
+							onPress={model.save}
+							modifiers={[accessibilityLabel('Save'), disabled(model.isSaving), ...toolbarSymbol]}
+						>
+							{model.isSaving ? (
+								<ProgressView modifiers={[scaleEffect(0.8)]} />
+							) : (
+								<Image systemName="checkmark" />
+							)}
+						</Button>
+					</ToolbarItem>
+				) : null}
+				{!combined &&
+				(model.previewEnabled || destination.kind === 'files' || destination.kind === 'folder') ? (
 					<ToolbarItem placement="topBarTrailing">
 						<Menu
 							label={<Image systemName={model.previewEnabled ? 'ellipsis' : 'plus'} />}
@@ -723,6 +724,15 @@ export function ProjectFilesScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const model = useProjectFilesWorkspace();
 	const [path, setPath] = useState<string[]>([]);
+	const [rootDestination] = useState(() => model.selected);
+	const rootKey = encodeDestination(rootDestination);
+	const selectedKey = encodeDestination(model.selected);
+	const lastSelectedKey = useRef(rootKey);
+	useEffect(() => {
+		const previous = lastSelectedKey.current;
+		lastSelectedKey.current = selectedKey;
+		setPath((current) => nextNavigationPath(current, rootKey, previous, selectedKey));
+	}, [rootKey, selectedKey]);
 
 	const root =
 		model.isLoading && !model.hasLoaded ? (
@@ -742,7 +752,7 @@ export function ProjectFilesScreen() {
 				</Toolbar.Content>
 			</Toolbar>
 		) : (
-			<WorkspaceContent model={model} destination={model.selected} isRoot />
+			<WorkspaceContent model={model} destination={rootDestination} isRoot />
 		);
 
 	return (
@@ -767,6 +777,7 @@ export function ProjectFilesScreen() {
 				</NavigationStack>
 			</Host>
 			<DeleteConfirmationHost hostID={projectFilesConfirmationHost} />
+			<ToastHost reservesTabBarSpace={false} />
 		</View>
 	);
 }

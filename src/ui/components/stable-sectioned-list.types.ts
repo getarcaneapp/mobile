@@ -39,3 +39,17 @@ export function bulkListSelection<Value>(
 ): Value[] | undefined {
 	return isSelecting ? selection : undefined;
 }
+
+export function sectionItemCount<
+	SectionID extends string | number,
+	Item extends { id: string | number }
+>(sections: StableListSection<SectionID, Item>[]): number {
+	return sections.reduce((sum, section) => sum + section.items.length, 0);
+}
+
+export function spansSections<
+	SectionID extends string | number,
+	Item extends { id: string | number }
+>(sections: StableListSection<SectionID, Item>[]): boolean {
+	return sections.filter((section) => section.items.length > 0).length > 1;
+}

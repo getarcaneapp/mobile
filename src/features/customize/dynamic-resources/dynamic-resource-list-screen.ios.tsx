@@ -207,6 +207,17 @@ function ListToolbar({ model }: { model: DynamicResourceListModel }) {
 	);
 }
 
+function emptyStateCreatesDirectly(model: DynamicResourceListModel) {
+	return (
+		model.canCreate &&
+		!(model.showsAllEnvironments && environmentActionIsMenu(model.listEnvironments))
+	);
+}
+
+function presentEmptyStateCreate(model: DynamicResourceListModel) {
+	model.presentCreate(model.showsAllEnvironments ? model.listEnvironments[0]?.id : undefined);
+}
+
 export function DynamicResourceListView(config: DynamicResourceListConfig) {
 	const model = useDynamicResourceList(config);
 	const { snapshot, items } = model;
@@ -227,11 +238,24 @@ export function DynamicResourceListView(config: DynamicResourceListConfig) {
 				actions={[{ title: 'Try Again', onPress: () => void model.load() }]}
 			/>
 		);
-	} else if (items.length === 0) {
+	} else if (items.length === 0 && model.searchText.trim() !== '') {
 		content = (
 			<ContentUnavailableView
+				title={`No Results for “${model.searchText.trim()}”`}
+				systemImage="magnifyingglass"
+				description="Check the spelling or try a new search."
+			/>
+		);
+	} else if (items.length === 0) {
+		content = (
+			<UnavailableView
 				title={model.emptyTitle}
 				systemImage={model.systemImage as SFSymbol}
+				actions={
+					emptyStateCreatesDirectly(model)
+						? [{ title: model.createTitle, onPress: () => presentEmptyStateCreate(model) }]
+						: []
+				}
 			/>
 		);
 	} else {

@@ -73,12 +73,23 @@ export function configRows(details: ContainerDetails): ConfigRow[] {
 	return rows;
 }
 
+const restartPolicyTitles: Record<string, string> = {
+	no: 'Never',
+	always: 'Always',
+	'unless-stopped': 'Unless Stopped',
+	'on-failure': 'On Failure'
+};
+
+export function restartPolicyTitle(policy: string) {
+	return restartPolicyTitles[policy] ?? policy;
+}
+
 export function hostConfigRows(details: ContainerDetails) {
 	const host = details.hostConfig;
 	const rows: { title: string; value: string; monospacedDigit?: boolean }[] = [];
 	if (host.networkMode !== undefined) rows.push({ title: 'Network Mode', value: host.networkMode });
 	if (host.restartPolicy !== undefined)
-		rows.push({ title: 'Restart Policy', value: host.restartPolicy });
+		rows.push({ title: 'Restart Policy', value: restartPolicyTitle(host.restartPolicy) });
 	if ((host.memory ?? 0) > 0)
 		rows.push({
 			title: 'Memory Limit',

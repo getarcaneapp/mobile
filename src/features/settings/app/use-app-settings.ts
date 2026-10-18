@@ -23,7 +23,7 @@ export const supportLinks = [
 	{ title: 'Documentation', url: 'https://getarcane.app', systemImage: 'globe', color: 'blue' },
 	{
 		title: 'Report an Issue',
-		url: 'https://github.com/getarcaneapp/ios/issues',
+		url: 'https://github.com/getarcaneapp/mobile/issues',
 		systemImage: 'exclamationmark.bubble',
 		color: 'orange'
 	},

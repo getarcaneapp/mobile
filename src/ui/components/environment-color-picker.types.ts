@@ -1,5 +1,8 @@
 import { useClientManager } from '@/stores/client-manager';
-import { useEnvironmentColorStore } from '@/stores/environment-color-store';
+import {
+	isDefaultEnvironmentColor,
+	useEnvironmentColorStore
+} from '@/stores/environment-color-store';
 import { AccentColorOptions } from '@/theme/accent';
 import { showToast, Toasts } from '@/ui/toast';
 
@@ -16,6 +19,7 @@ export function useEnvironmentColorPicker(environmentID: string) {
 	const colors = useEnvironmentColorStore((s) => s.colors);
 	return {
 		selectedHex,
+		unnamedTitle: isDefaultEnvironmentColor(selectedHex) ? 'Default' : 'Custom',
 		save: (hex: string) => {
 			if (!useEnvironmentColorStore.getState().set(hex, server, environmentID)) {
 				showToast(

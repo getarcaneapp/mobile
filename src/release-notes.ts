@@ -13,6 +13,9 @@ export const releaseNotes: ReleaseNote[] = [
 		version: '0.11.0',
 		new: [
 			{
+				text: 'Git Repositories and other customize lists have a create button when empty.'
+			},
+			{
 				text: 'On Android, connection profiles back up to your Google account and saved sign-ins can go to Google Password Manager.'
 			},
 			{
@@ -20,6 +23,72 @@ export const releaseNotes: ReleaseNote[] = [
 			}
 		],
 		changed: [
+			{
+				text: 'Dashboard attention items and container tiles open filtered lists.'
+			},
+			{
+				text: 'Switching the terminal shell reconnects with the new shell.'
+			},
+			{
+				text: 'Hashes and digests show on one line, shortened in the middle.'
+			},
+			{
+				text: 'Resource list headers show a total when a list has more than one section.'
+			},
+			{
+				text: 'Android dropdowns, overflow menus and share buttons use Material icons.'
+			},
+			{
+				text: 'Android single-choice menus mark the selection with a check.'
+			},
+			{
+				text: 'Android Save buttons appear only with unsaved changes.'
+			},
+			{
+				text: 'Project Files shows Save only with unsaved changes.'
+			},
+			{
+				text: 'Session Timeout shows its unit.'
+			},
+			{
+				text: 'Events show readable types and environment names.'
+			},
+			{
+				text: 'Jobs describe cron schedules in words.'
+			},
+			{
+				text: 'Container stats charts show units on their axes.'
+			},
+			{
+				text: 'Container processes use readable column labels.'
+			},
+			{
+				text: 'stderr log lines are labelled STDERR unless they carry an error level.'
+			},
+			{
+				text: 'Images toolbar Container Registries button uses a registry icon.'
+			},
+			{
+				text: 'Searching More shows only matching destinations.'
+			},
+			{
+				text: 'Run Updater asks for confirmation.'
+			},
+			{
+				text: 'Updater run durations are rounded.'
+			},
+			{
+				text: 'Confirmation dialogs drop the repeated question.'
+			},
+			{
+				text: 'Volume and backup dates use your locale format.'
+			},
+			{
+				text: 'Restart policies show readable names.'
+			},
+			{
+				text: 'Choice fields show readable labels.'
+			},
 			{
 				text: 'Smoother scrolling in long lists, live charts, logs, and terminals.'
 			},
@@ -51,7 +120,168 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Android dialogs use Material 3 styling and your wallpaper colors.'
 			}
 		],
+		removed: [
+			{
+				text: 'Done button on Android Container Inspect.'
+			},
+			{
+				text: 'Liquid Glass app icons on Android.'
+			},
+			{
+				text: 'Add file or folder from the compose and env editors.'
+			},
+			{
+				text: 'Filler captions in project files and Appearance settings.'
+			},
+			{
+				text: 'Container Rename, which Arcane servers do not support.'
+			}
+		],
 		fixed: [
+			{
+				text: "Dashboard container counts including Arcane's hidden internal container."
+			},
+			{
+				text: 'Report an Issue opening the old iOS repository.'
+			},
+			{
+				text: 'Default environment colors showing as Custom.'
+			},
+			{
+				text: 'Variable rows tinted with the accent color.'
+			},
+			{
+				text: 'Swarm service images showing an ellipsis instead of the name and tag.'
+			},
+			{
+				text: 'Swarm task status messages shown as errors.'
+			},
+			{
+				text: 'Docker swarm details at the start of every service log line.'
+			},
+			{
+				text: 'Android Save buttons covering form fields.'
+			},
+			{
+				text: 'Back in the Android volume file browser leaving the browser instead of going up a folder.'
+			},
+			{
+				text: 'Android filter buttons not showing when a filter is active.'
+			},
+			{
+				text: 'Networks with no driver showing null.'
+			},
+			{
+				text: 'Empty states suggesting a search when none is active.'
+			},
+			{
+				text: 'Environment color pickers reading as Accent color to VoiceOver and TalkBack.'
+			},
+			{
+				text: 'Zero sizes and rates showing Zero KB.'
+			},
+			{
+				text: 'Backups showing raw status and storage values.'
+			},
+			{
+				text: 'Image history marking filesystem layers as metadata-only.'
+			},
+			{
+				text: 'Security trend chart showing raw dates.'
+			},
+			{
+				text: 'Unknown vulnerability severity showing a question mark.'
+			},
+			{
+				text: 'Log status bar repeating Waiting for Output.'
+			},
+			{
+				text: 'Dashboard all-environments caption showing with a single environment.'
+			},
+			{
+				text: 'Activity Center count ignoring the active filter.'
+			},
+			{
+				text: 'Saving new or edited project files.'
+			},
+			{
+				text: 'Creating networks.'
+			},
+			{
+				text: 'Stopping or killing a container, or stopping a project, no longer leaves its detail screen.'
+			},
+			{
+				text: 'Closing a finished deploy no longer leaves the project.'
+			},
+			{
+				text: 'Deleting webhooks, OIDC role mappings, and other items no longer shows a decoding error.'
+			},
+			{
+				text: 'Typing quickly in form fields no longer drops or reorders characters.'
+			},
+			{
+				text: 'Numeric settings above 100 keep their values.'
+			},
+			{
+				text: 'Volume backup lists refresh after creating or deleting a backup.'
+			},
+			{
+				text: 'Severity bars stay inside their card.'
+			},
+			{
+				text: 'Attestation statements display their contents.'
+			},
+			{
+				text: 'Image names refresh after tags change.'
+			},
+			{
+				text: 'Vulnerability scans wait for results before reporting completion.'
+			},
+			{
+				text: 'Browse Files on volumes opens the file workspace on servers without the legacy browser.'
+			},
+			{
+				text: 'Empty files in volume workspaces open in the editor.'
+			},
+			{
+				text: 'Topology from a network focuses on that network.'
+			},
+			{
+				text: 'Searches and filters with no matches show No Results.'
+			},
+			{
+				text: 'Disabled toolbar buttons appear dimmed.'
+			},
+			{
+				text: 'Container status refreshes after starting or stopping.'
+			},
+			{
+				text: 'Environment cards show the image update count.'
+			},
+			{
+				text: 'Variable sync status shows environment names.'
+			},
+			{
+				text: 'Empty-state buttons no longer overlap.'
+			},
+			{
+				text: 'Save buttons no longer cover the last form row.'
+			},
+			{
+				text: 'Compose editor cards respond to taps anywhere on the card.'
+			},
+			{
+				text: 'Toasts appear over the Project Files sheet.'
+			},
+			{
+				text: 'New project files open with a back button.'
+			},
+			{
+				text: 'Tab bar items read their names to VoiceOver.'
+			},
+			{
+				text: 'Counts use singular nouns for one item.'
+			},
 			{
 				text: 'Toasts always show their glass background on iOS.'
 			},

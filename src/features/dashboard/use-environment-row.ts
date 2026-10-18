@@ -10,6 +10,7 @@ import { useClientManager } from '@/stores/client-manager';
 import { SystemStatsDisplay } from '@/stores/dashboard-stream-logic';
 import { useDashboardEnvironmentState } from '@/stores/dashboard-stream-store';
 import { useEnvironmentColorStore } from '@/stores/environment-color-store';
+import { useImageUpdateCountStore } from '@/stores/image-update-count-store';
 import { useStatsSeries } from '@/stores/system-stats-history-store';
 import { showToast, Toasts } from '@/ui/toast';
 
@@ -37,6 +38,9 @@ export function useEnvironmentRow(
 	const [isSyncing, setIsSyncing] = useState(false);
 	const [canUpgrade, setCanUpgrade] = useState(false);
 	const canPrune = useClientManager(() => hasPermission(Permission.System.prune, environment.id));
+	const client = useClientManager((s) => s.client);
+	const userID = useClientManager((s) => s.currentUser?.id);
+	const imageUpdateCount = useImageUpdateCountStore((s) => s.count(environment.id, client, userID));
 
 	const snapshot = loadedSnapshot(streamState);
 	const stats = series?.latest;
@@ -90,7 +94,10 @@ export function useEnvironmentRow(
 		subtitle: environmentRowSubtitle(streamState, dockerInfo),
 		statusTint: environmentStatusTint(streamState, dockerInfo),
 		streamError: streamState?.streamError === true,
-		updatesText: actionCountText(actionItems, 'image_updates'),
+		updatesText:
+			imageUpdateCount !== undefined
+				? String(imageUpdateCount)
+				: actionCountText(actionItems, 'image_updates'),
 		containersText: `${counts.running}/${counts.total}`,
 		imagesText: String(counts.images),
 		vulnerabilitiesText: actionCountText(actionItems, 'actionable_vulnerabilities'),

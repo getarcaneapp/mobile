@@ -31,8 +31,7 @@ function createNetworkBody(fields: {
 	gateway: string;
 	ipRange: string;
 }) {
-	const body: Record<string, unknown> = {
-		name: fields.name,
+	const options: Record<string, unknown> = {
 		driver: fields.driver,
 		internal: fields.isInternal
 	};
@@ -44,9 +43,9 @@ function createNetworkBody(fields: {
 		if (trimmedSubnet !== '') config.subnet = trimmedSubnet;
 		if (trimmedGateway !== '') config.gateway = trimmedGateway;
 		if (trimmedRange !== '') config.ipRange = trimmedRange;
-		body.ipam = { config: [config] };
+		options.ipam = { config: [config] };
 	}
-	return body;
+	return { name: fields.name.trim(), options };
 }
 
 async function notifyConnected(payload: ConnectSheetPayload | undefined) {
@@ -108,10 +107,10 @@ export function useCreateNetwork(environmentID: EnvironmentID) {
 		ipRange,
 		setIPRange,
 		errorMessage,
-		canCreate: name !== '' && !isLoading,
+		canCreate: name.trim() !== '' && !isLoading,
 		footer: isInternal
 			? 'Internal networks block external connectivity for attached containers.'
-			: 'Bridge is the standard single-host Docker network driver.',
+			: undefined,
 		cancel: dismiss,
 		create: () => void createNetwork()
 	};

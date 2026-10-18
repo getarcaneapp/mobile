@@ -12,8 +12,7 @@ import {
 	Section,
 	Spacer,
 	Text,
-	VStack,
-	useNativeState
+	VStack
 } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
@@ -31,13 +30,13 @@ import {
 	tint
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
 
 import { systemColors } from '@/theme/colors';
 import { DestructiveLabel } from '@/ui/components/labels';
 
 import { copyToClipboard, CopyValueRow } from './swarm-parts';
 import { maskedToken, useSwarmCluster, type SwarmClusterModel } from './use-swarm-cluster';
+import { useSyncedNativeText } from '@/ui/components/synced-native-text';
 
 function TokenRow({
 	model,
@@ -91,11 +90,8 @@ function UnlockKeyField({
 	value: string;
 	onChangeText: (text: string) => void;
 }) {
-	const state = useNativeState(value);
-	useEffect(() => {
-		if (state.get() !== value) state.set(value);
-	}, [state, value]);
-	return <SecureField text={state} placeholder="Unlock key" onTextChange={onChangeText} />;
+	const { state, onTextChange } = useSyncedNativeText(value, onChangeText);
+	return <SecureField text={state} placeholder="Unlock key" onTextChange={onTextChange} />;
 }
 
 export function SwarmClusterScreen() {

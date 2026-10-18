@@ -61,7 +61,7 @@ export function EditTabsScreen() {
 								actions={model.replacements(tab).map((replacement) => ({
 									id: replacement,
 									title: tabTitle[replacement],
-									state: replacement === tab ? 'on' : 'off'
+									image: replacement === tab ? 'menu_check' : undefined
 								}))}
 								onPressAction={({ nativeEvent }) => {
 									const replacement = model
@@ -86,7 +86,7 @@ export function EditTabsScreen() {
 									<Text
 										style={[m3Type.labelMedium, { color: colors.secondaryLabel }]}
 									>{`Tab ${index + 1}`}</Text>
-									<Icon name="chevron.up.chevron.down" size={16} color={colors.tertiaryLabel} />
+									<Icon name="chevron.up.chevron.down" size={24} color={colors.secondaryLabel} />
 								</View>
 							</MenuView>
 							<MoveButton

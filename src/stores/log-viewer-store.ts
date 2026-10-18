@@ -23,7 +23,11 @@ export const LogViewerFormatting = {
 		switch (level?.trim().toLowerCase()) {
 			case 'error':
 			case 'err':
-			case 'stderr':
+			case 'crit':
+			case 'critical':
+			case 'fatal':
+			case 'emerg':
+			case 'alert':
 				return 'error';
 			case 'warn':
 			case 'warning':
@@ -50,6 +54,16 @@ export const LogViewerFormatting = {
 		}
 	},
 
+	parsedLevel(line: Pick<LogLine, 'level' | 'text'>): string | undefined {
+		const level = line.level?.trim().toLowerCase();
+		if (level !== 'stdout' && level !== 'stderr') return line.level;
+		const head = line.text.slice(0, 160);
+		const match =
+			/\[(emerg|alert|crit|critical|fatal|error|err|warn|warning|debug)\]/i.exec(head) ??
+			/\blevel=["']?(fatal|error|err|warn|warning|debug)\b/i.exec(head);
+		return match?.[1] ?? line.level;
+	},
+
 	displayTimestamp(value: string): string {
 		const formatted = formattedClockTime(value);
 		if (formatted !== undefined) return formatted;
@@ -63,7 +77,7 @@ export const LogViewerFormatting = {
 		if (showTimestamps && timestamp) metadata.push(`[${timestamp}]`);
 		const service = line.service?.trim();
 		if (service) metadata.push(`[${service}]`);
-		const level = LogViewerFormatting.levelLabel(line.level);
+		const level = LogViewerFormatting.levelLabel(LogViewerFormatting.parsedLevel(line));
 		if (level) metadata.push(`[${level}]`);
 		metadata.push(line.text);
 		return metadata.join(' ');
@@ -88,9 +102,10 @@ export interface LogLinePresentation {
 }
 
 export function logLinePresentation(line: LogLine): LogLinePresentation {
+	const level = LogViewerFormatting.parsedLevel(line);
 	return {
-		severity: LogViewerFormatting.severity(line.level),
-		levelLabel: LogViewerFormatting.levelLabel(line.level),
+		severity: LogViewerFormatting.severity(level),
+		levelLabel: LogViewerFormatting.levelLabel(level),
 		displayTimestamp: line.timestamp
 			? LogViewerFormatting.displayTimestamp(line.timestamp)
 			: undefined

@@ -6,8 +6,7 @@ import {
 	Text,
 	TextField,
 	VStack,
-	HStack,
-	useNativeState
+	HStack
 } from '@expo/ui/swift-ui';
 import {
 	autocorrectionDisabled as autocorrectionDisabledModifier,
@@ -28,7 +27,6 @@ import {
 	textSelection,
 	type ModifierConfig
 } from '@expo/ui/swift-ui/modifiers';
-import { useEffect } from 'react';
 
 import {
 	adjustNumber,
@@ -40,14 +38,7 @@ import {
 	type FormTextFieldProps,
 	type FormValueRowProps
 } from './form-fields.types';
-
-function useSyncedText(text: string) {
-	const state = useNativeState(text);
-	useEffect(() => {
-		if (state.get() !== text) state.set(text);
-	}, [state, text]);
-	return state;
-}
+import { useSyncedNativeText } from './synced-native-text';
 
 function HelperCaption({ helper }: { helper?: string }) {
 	if (!helper) return null;
@@ -63,6 +54,8 @@ function HelperCaption({ helper }: { helper?: string }) {
 		</Text>
 	);
 }
+
+const unboundedStepperMaximum = 2_147_483_647;
 
 const bodyFont = (monospaced?: boolean) =>
 	font({ textStyle: 'body', design: monospaced ? 'monospaced' : 'default' });
@@ -83,7 +76,7 @@ export function FormTextField(props: FormTextFieldProps) {
 		helper,
 		disabled = false
 	} = props;
-	const state = useSyncedText(text);
+	const { state, onTextChange } = useSyncedNativeText(text, onChangeText);
 	const valueColor = disabled ? 'secondary' : 'primary';
 	const inputModifiers: ModifierConfig[] = [
 		foregroundStyle(valueColor),
@@ -102,7 +95,7 @@ export function FormTextField(props: FormTextFieldProps) {
 					<TextField
 						text={state}
 						placeholder={placeholder}
-						onTextChange={onChangeText}
+						onTextChange={onTextChange}
 						modifiers={[multilineTextAlignment('trailing'), ...inputModifiers]}
 					/>
 				</LabeledContent>
@@ -124,7 +117,7 @@ export function FormTextField(props: FormTextFieldProps) {
 				text={state}
 				placeholder={placeholder}
 				axis={axis}
-				onTextChange={onChangeText}
+				onTextChange={onTextChange}
 				modifiers={[...inputModifiers, ...(lineLimit ? [lineLimitModifier(lineLimit)] : [])]}
 			/>
 			<HelperCaption helper={helper} />
@@ -141,14 +134,14 @@ export function FormSecureField({
 	helper,
 	disabled = false
 }: FormSecureFieldProps) {
-	const state = useSyncedText(text);
+	const { state, onTextChange } = useSyncedNativeText(text, onChangeText);
 	return (
 		<VStack alignment="trailing" spacing={4}>
 			<LabeledContent label={title}>
 				<SecureField
 					text={state}
 					placeholder={placeholder}
-					onTextChange={onChangeText}
+					onTextChange={onTextChange}
 					modifiers={[
 						multilineTextAlignment('trailing'),
 						foregroundStyle(disabled ? 'secondary' : 'primary'),
@@ -173,7 +166,7 @@ export function FormNumberField({
 	helper,
 	disabled = false
 }: FormNumberFieldProps) {
-	const state = useSyncedText(text);
+	const { state, onTextChange } = useSyncedNativeText(text, onChangeText);
 	return (
 		<VStack alignment="trailing" spacing={4}>
 			<LabeledContent label={title}>
@@ -181,7 +174,7 @@ export function FormNumberField({
 					<TextField
 						text={state}
 						placeholder={placeholder}
-						onTextChange={onChangeText}
+						onTextChange={onTextChange}
 						modifiers={[
 							multilineTextAlignment('trailing'),
 							keyboardTypeModifier('numeric'),
@@ -194,7 +187,7 @@ export function FormNumberField({
 						value={numberFieldValue(text, minValue)}
 						step={step}
 						min={minValue ?? 0}
-						max={maxValue}
+						max={maxValue ?? unboundedStepperMaximum}
 						onValueChange={(value) => {
 							const delta = value - numberFieldValue(text, minValue);
 							onChangeText(adjustNumber(text, delta, minValue, maxValue));

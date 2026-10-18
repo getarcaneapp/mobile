@@ -64,6 +64,8 @@ export function useUpdatesScreen() {
 		title: 'Run Updater',
 		systemImage: 'play.fill',
 		tint: systemColors.orange,
+		confirmationMessage: 'Applies available image updates to containers and projects.',
+		dismissOnConfirm: false,
 		action: () => launch('runUpdater')
 	};
 

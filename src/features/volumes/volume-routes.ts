@@ -84,6 +84,8 @@ export function useVolumeNavigation() {
 			},
 			openWorkspace: (environmentID: EnvironmentID, name: string) =>
 				open('workspace', environmentID, name),
+			replaceWithWorkspace: (environmentID: EnvironmentID, name: string) =>
+				router.replace(href(volumePath(name, '/workspace'), { envID: environmentID })),
 			openWorkspaceFile(environmentID: EnvironmentID, name: string, file: ProjectFile) {
 				volumeCache.setWorkspaceFile(environmentID, name, file);
 				open('workspace-file', environmentID, name, { relativePath: file.relativePath });

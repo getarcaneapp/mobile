@@ -54,14 +54,12 @@ export function CreateNetworkScreen() {
 						onChangeText={model.setName}
 						autocapitalization="never"
 						autocorrectionDisabled
-						helper="Use a short Docker network name with no spaces."
 					/>
 					<FormPicker
 						title="Driver"
 						selection={model.driver}
 						onSelectionChange={model.setDriver}
 						options={networkDrivers}
-						helper="Bridge is the standard single-host Docker network driver."
 					/>
 					<SwitchRow
 						title="Internal"

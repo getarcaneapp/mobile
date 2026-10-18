@@ -46,7 +46,11 @@ export function VolumeRow({
 			<RowIcon systemImage="externaldrive.fill" tint={systemColors.blue} />
 			<View style={bodyStyle}>
 				<View style={titleLineStyle}>
-					<Text style={[m3Type.bodyLarge, { color: colors.label, flexShrink: 1 }]}>
+					<Text
+						numberOfLines={1}
+						ellipsizeMode="middle"
+						style={[m3Type.bodyLarge, { color: colors.label, flexShrink: 1 }]}
+					>
 						{volume.name}
 					</Text>
 					{isPinned ? <Icon name="pin.fill" size={12} color={systemColors.yellow} /> : null}

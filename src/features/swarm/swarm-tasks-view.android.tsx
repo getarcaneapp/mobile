@@ -18,6 +18,7 @@ import { SwarmListState, SwarmStateBadge } from './swarm-parts';
 import type { SwarmTaskSource } from './swarm-routes';
 import {
 	showsServiceFor,
+	taskErrorMessage,
 	taskNodeName,
 	taskSourceFromParams,
 	taskTitle,
@@ -66,9 +67,9 @@ export function SwarmTaskRow({
 					</View>
 				) : null}
 			</View>
-			{task.error ? (
+			{taskErrorMessage(task) ? (
 				<Text numberOfLines={3} style={[m3Type.bodySmall, { color: systemColors.red }]}>
-					{task.error}
+					{taskErrorMessage(task)}
 				</Text>
 			) : null}
 			<Text style={[m3Type.labelSmall, { color: colors.tertiaryLabel }]}>

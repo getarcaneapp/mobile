@@ -262,7 +262,7 @@ export function ChoiceRow({
 			>
 				{current?.label ?? selection}
 			</Text>
-			<Icon name="chevron.up.chevron.down" size={18} color={colors.secondaryLabel} />
+			<Icon name="chevron.up.chevron.down" size={24} color={colors.secondaryLabel} />
 		</View>
 	);
 	if (disabled) return row;
@@ -273,7 +273,7 @@ export function ChoiceRow({
 			actions={choices.map((choice, index) => ({
 				id: String(index),
 				title: choice.label,
-				state: choice.value === selection ? 'on' : 'off'
+				image: choice.value === selection ? 'menu_check' : undefined
 			}))}
 			onPressAction={({ nativeEvent }) => {
 				const choice = choices[Number(nativeEvent.event)];

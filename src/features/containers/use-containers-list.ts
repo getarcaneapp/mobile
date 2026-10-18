@@ -72,7 +72,8 @@ import {
 	pluralContainers,
 	resourceSortFor,
 	type ContainerBulkAction,
-	type ContainerSection
+	type ContainerSection,
+	type ContainerStateFilter
 } from './container-model';
 import { useContainerNavigation } from './container-routes';
 import { useContainersFilter, useContainersFilterStore } from './containers-filter-store';
@@ -155,12 +156,16 @@ export type ContainersListProps = {
 	environmentID: EnvironmentID;
 	environmentName: string;
 	allEnvironments?: boolean;
+	requestedStateFilter?: ContainerStateFilter;
+	stateFilterRequest?: string;
 };
 
 export function useContainersList({
 	environmentID,
 	environmentName,
-	allEnvironments = false
+	allEnvironments = false,
+	requestedStateFilter,
+	stateFilterRequest
 }: ContainersListProps) {
 	const nav = useContainerNavigation();
 	const client = useClientManager((s) => s.client);
@@ -169,6 +174,9 @@ export function useContainersList({
 	const filter = useContainersFilter(listKey);
 	const updateFilter = useContainersFilterStore((s) => s.update);
 	useEffect(() => () => useContainersFilterStore.getState().remove(listKey), [listKey]);
+	useEffect(() => {
+		if (requestedStateFilter) updateFilter(listKey, { stateFilter: requestedStateFilter });
+	}, [listKey, requestedStateFilter, stateFilterRequest, updateFilter]);
 
 	const [searchText, setSearchText] = useState('');
 	const debouncedSearch = useDebounced(searchText, 200);

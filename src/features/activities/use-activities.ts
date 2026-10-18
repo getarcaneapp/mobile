@@ -19,7 +19,11 @@ import { useClientManager } from '@/stores/client-manager';
 import { singleActionConfig, useDeleteConfirmation } from '@/ui/components/delete-confirmation';
 import { showToast, Toasts } from '@/ui/toast';
 
-import { ActivityDisplay } from './activity-display';
+import {
+	ActivityDisplay,
+	activityCountHeader,
+	type ActivityStatusFilter
+} from './activity-display';
 import { useActivityNavigation } from './activity-routes';
 
 function useIsNotBackground(): boolean {
@@ -70,8 +74,14 @@ function withoutActivityDetails({
 	return rest;
 }
 
-export function useActivitiesScreen() {
-	const [store] = useState(createActivityCenterStore);
+function createFilteredActivityCenterStore(statusFilter: ActivityStatusFilter | undefined) {
+	const store = createActivityCenterStore();
+	if (statusFilter) store.getState().setStatusFilter(statusFilter);
+	return store;
+}
+
+export function useActivitiesScreen(initialStatusFilter?: ActivityStatusFilter) {
+	const [store] = useState(() => createFilteredActivityCenterStore(initialStatusFilter));
 	const { client, supportsActivities, currentUser, notBackground, taskID } = useActivitySession();
 	const recordClear = useActivityHistoryMutationStore((s) => s.recordClear);
 	const navigation = useActivityNavigation();
@@ -145,6 +155,13 @@ export function useActivitiesScreen() {
 		(state.typeFilter !== '' ? 1 : 0) +
 		(state.resourceFilter !== '' ? 1 : 0);
 
+	const countHeader = activityCountHeader({
+		shownCount: state.runningItems.length + state.historyItems.length,
+		activityCount: state.filteredActivityCount,
+		hasMore: state.hasMore,
+		isFiltering: activeFilterCount > 0 || state.searchText.trim() !== ''
+	});
+
 	const loadMore = useCallback(() => {
 		const { isLoading, isLoadingMore } = store.getState();
 		if (isLoading || isLoadingMore) return;
@@ -159,6 +176,7 @@ export function useActivitiesScreen() {
 		setSearchText,
 		canClearHistory,
 		activeFilterCount,
+		countHeader,
 		requestClear: () => setShowClearConfirm(true),
 		retry: () => store.getState().retryLiveUpdates(),
 		loadMore,

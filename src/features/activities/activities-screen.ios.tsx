@@ -17,6 +17,7 @@ import {
 	accessibilityLabel,
 	buttonStyle,
 	font,
+	lineLimit,
 	foregroundStyle,
 	frame,
 	listStyle,
@@ -188,7 +189,8 @@ function ActivityRow({ activity }: { activity: Activity }) {
 					<Text
 						modifiers={[
 							font({ textStyle: 'subheadline' }),
-							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
+							foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+							lineLimit(3)
 						]}
 					>
 						{activity.latestMessage}
@@ -280,8 +282,8 @@ function ActivitySection({
 				showsCount ? (
 					<ResourceCountSectionHeader
 						title={title}
-						loadedCount={model.state.filteredActivityCount}
-						hasMore={model.state.hasMore}
+						loadedCount={model.countHeader.loadedCount}
+						hasMore={model.countHeader.hasMore}
 					/>
 				) : (
 					<Text>{title}</Text>
@@ -415,8 +417,11 @@ function ActivitiesToolbar({ model }: { model: ActivitiesScreenModel }) {
 	);
 }
 
-export function ActivitiesScreen({ onDone }: { onDone?: () => void } = {}) {
-	const model = useActivitiesScreen();
+export function ActivitiesScreen({
+	onDone,
+	initialStatusFilter
+}: { onDone?: () => void; initialStatusFilter?: ActivityStatusFilter } = {}) {
+	const model = useActivitiesScreen(initialStatusFilter);
 	const { state } = model;
 
 	let content;

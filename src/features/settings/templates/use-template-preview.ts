@@ -244,7 +244,7 @@ export type TemplatePreviewModel = ReturnType<typeof useTemplatePreview>;
 
 export function templateSummaryAccessibility(template: Template, content: TemplateContent): string {
 	const source = template.isRemote ? 'Remote' : 'Local';
-	return `${source} template. ${content.services.length} services. ${content.envVariables.length} environment variables.`;
+	return `${source} template. ${plural(content.services.length, 'service')}. ${plural(content.envVariables.length, 'environment variable')}.`;
 }
 
 export const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`;

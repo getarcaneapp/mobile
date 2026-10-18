@@ -277,6 +277,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 					systemImage: 'stop.fill',
 					tint: systemColors.red,
 					role: 'destructive',
+					dismissOnConfirm: false,
 					action: () => void performAction('stop', 'stop')
 				}
 			: {
@@ -374,13 +375,6 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 					}
 				]
 			: []),
-		{
-			id: 'rename',
-			title: 'Rename',
-			systemImage: 'pencil',
-			tint: accent,
-			action: () => nav.openSubpage('rename', environmentID, container.id, { name: displayedName })
-		},
 		...(isRunning && canKill
 			? [
 					{
@@ -391,6 +385,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 						role: 'destructive' as const,
 						confirmationMessage:
 							'This sends SIGKILL and stops the container immediately without a graceful shutdown.',
+						dismissOnConfirm: false,
 						action: () => void performAction('kill', 'kill')
 					}
 				]
@@ -422,7 +417,10 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 					},
 					{
 						label: 'Uptime / Status',
-						value: nonEmpty(containerStatusText(container.status)) ?? statusString,
+						value:
+							(container.state.toLowerCase() === 'running') === details.state.running
+								? (nonEmpty(containerStatusText(container.status)) ?? capitalized(statusString))
+								: capitalized(statusString),
 						systemImage: 'clock'
 					},
 					{ label: 'Address', value: primaryAddress, systemImage: 'network', monospaced: true },

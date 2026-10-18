@@ -47,32 +47,34 @@ export function MoreScreen() {
 					</View>
 				) : (
 					<>
-						<MaterialListGroup>
-							<MaterialListItem
-								headline={displayName}
-								supporting={user?.username ? `@${user.username}` : 'Profile'}
-								icon="person.crop.circle"
-								onPress={() => router.push('/(tabs)/(more)/profile')}
-							/>
-							<MaterialListItem
-								headline="App Settings"
-								icon="gearshape.fill"
-								iconColor={systemColors.gray}
-								onPress={() => router.push('/(tabs)/(more)/app-settings')}
-							/>
-							<MaterialListItem
-								headline="Preview Features"
-								icon="flask.fill"
-								iconColor={systemColors.purple}
-								onPress={() => router.push('/(tabs)/(more)/preview-features')}
-							/>
-							<MaterialListItem
-								headline="What's New"
-								icon="sparkles"
-								iconColor={systemColors.yellow}
-								onPress={() => router.push('/whats-new')}
-							/>
-						</MaterialListGroup>
+						{search.trim() === '' ? (
+							<MaterialListGroup>
+								<MaterialListItem
+									headline={displayName}
+									supporting={user?.username ? `@${user.username}` : 'Profile'}
+									icon="person.crop.circle"
+									onPress={() => router.push('/(tabs)/(more)/profile')}
+								/>
+								<MaterialListItem
+									headline="App Settings"
+									icon="gearshape.fill"
+									iconColor={systemColors.gray}
+									onPress={() => router.push('/(tabs)/(more)/app-settings')}
+								/>
+								<MaterialListItem
+									headline="Preview Features"
+									icon="flask.fill"
+									iconColor={systemColors.purple}
+									onPress={() => router.push('/(tabs)/(more)/preview-features')}
+								/>
+								<MaterialListItem
+									headline="What's New"
+									icon="sparkles"
+									iconColor={systemColors.yellow}
+									onPress={() => router.push('/whats-new')}
+								/>
+							</MaterialListGroup>
+						) : null}
 						{filteredGroups.map((group) => (
 							<View key={group.title}>
 								<MaterialSectionHeader title={group.title} />

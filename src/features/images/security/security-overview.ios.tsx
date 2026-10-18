@@ -12,6 +12,7 @@ import {
 	Text,
 	VStack
 } from '@expo/ui/swift-ui';
+import { shortDayLabel } from '@/core/date-formatting';
 import { Image } from '@/ui/components/swiftui-image';
 import {
 	accessibilityElement,
@@ -58,6 +59,7 @@ import {
 } from './security-overview-logic';
 import { SeverityBadge } from './vulnerability-rows';
 import { capitalized, riskBandColor, severityFromRaw } from './vulnerability-model';
+import { pluralCount } from '@/core/plural';
 
 export type SecurityOverviewProps = {
 	overview: VulnerabilityRiskOverview;
@@ -162,7 +164,9 @@ function FindingRow({
 						font({ textStyle: 'caption2' }),
 						foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 					]}
-				>{`${finding.imagesAffected} images`}</Text>
+				>
+					{pluralCount(finding.imagesAffected, 'image')}
+				</Text>
 			</VStack>
 			<Spacer minLength={8} />
 			<VStack alignment="trailing" spacing={2}>
@@ -355,9 +359,9 @@ function TrendCard({
 							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 						]}
 					>
-						<Text>{points[0]?.date ?? ''}</Text>
+						<Text>{shortDayLabel(points[0]?.date ?? '')}</Text>
 						<Spacer />
-						<Text>{points[points.length - 1]?.date ?? ''}</Text>
+						<Text>{shortDayLabel(points[points.length - 1]?.date ?? '')}</Text>
 					</HStack>
 				</>
 			) : (

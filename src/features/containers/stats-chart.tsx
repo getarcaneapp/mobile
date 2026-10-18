@@ -4,6 +4,8 @@ import Svg, { G, Line, Path } from 'react-native-svg';
 
 import { colors } from '@/theme/colors';
 
+import { statsAxisLabel, type StatsAxisUnit } from './container-stats-frame';
+
 export type ChartSeries = { values: number[]; color: string; fillOpacity?: number };
 
 export function niceTicks(maximum: number, count = 4): number[] {
@@ -16,14 +18,6 @@ export function niceTicks(maximum: number, count = 4): number[] {
 	for (let value = 0; value < maximum + step * 0.999; value += step)
 		ticks.push(Number(value.toPrecision(12)));
 	return ticks;
-}
-
-function tickLabel(value: number, step: number) {
-	if (value >= 1_000_000_000) return `${+(value / 1_000_000_000).toFixed(1)}B`;
-	if (value >= 1_000_000) return `${+(value / 1_000_000).toFixed(1)}M`;
-	if (value >= 1_000) return `${+(value / 1_000).toFixed(1)}k`;
-	const decimals = step > 0 && step < 1 ? Math.min(Math.ceil(-Math.log10(step) - 1e-9) + 1, 6) : 1;
-	return `${+value.toFixed(decimals)}`;
 }
 
 const round = (value: number) => Math.round(value * 10) / 10;
@@ -62,16 +56,18 @@ function monotonePath(points: [number, number][]): string {
 
 export function StatsLineChart({
 	series,
+	unit,
 	height = 140
 }: {
 	series: ChartSeries[];
+	unit: StatsAxisUnit;
 	height?: number;
 }) {
 	const [width, setWidth] = useState(0);
 	const maximum = Math.max(0, ...series.flatMap((s) => s.values));
 	const ticks = niceTicks(maximum);
 	const top = ticks[ticks.length - 1] || 1;
-	const labels = ticks.map((tick) => tickLabel(tick, ticks[1] ?? 0));
+	const labels = ticks.map((tick) => statsAxisLabel(tick, ticks[1] ?? 0, unit));
 	const axisWidth = Math.max(34, Math.max(...labels.map((label) => label.length)) * 6 + 10);
 	const plotWidth = Math.max(width - axisWidth, 0);
 	const y = (value: number) =>

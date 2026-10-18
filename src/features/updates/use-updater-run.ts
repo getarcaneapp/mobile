@@ -14,7 +14,7 @@ import {
 	type EnvironmentUpdateSceneModel
 } from '@/features/environments/environment-update-scene.types';
 
-import { loadBoundedUpdaterStatus, runBoundedUpdater } from './updates-logic';
+import { loadBoundedUpdaterStatus, runBoundedUpdater, updaterDurationText } from './updates-logic';
 
 export type UpdaterRunPhase =
 	| { kind: 'starting' }
@@ -47,7 +47,7 @@ export function completionSubtitle(result: UpdaterResult): string {
 	const parts = [`${result.updated} updated`];
 	if (result.failed > 0) parts.push(`${result.failed} failed`);
 	if (result.skipped > 0) parts.push(`${result.skipped} skipped`);
-	parts.push(`in ${result.duration}`);
+	parts.push(`in ${updaterDurationText(result.duration)}`);
 	return parts.join(' · ');
 }
 

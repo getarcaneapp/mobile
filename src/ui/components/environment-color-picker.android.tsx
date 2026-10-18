@@ -36,6 +36,8 @@ export function EnvironmentColorPicker({
 				onSelectionChange={picker.save}
 				isAvailable={picker.isAvailable}
 				onCustom={() => setShowCustomColor(true)}
+				unnamedTitle={picker.unnamedTitle}
+				accessibilityLabel={`${displayName} color`}
 			/>
 			{showCustomColor ? (
 				<Host style={{ position: 'absolute' }}>

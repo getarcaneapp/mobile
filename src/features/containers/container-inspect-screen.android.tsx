@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
@@ -10,7 +10,6 @@ import { CenteredMessage } from './android-material';
 import { useContainerInspect } from './use-container-inspect';
 
 export function ContainerInspectScreen() {
-	const router = useRouter();
 	const { id = '', envID = '0' } = useLocalSearchParams<{ id?: string; envID?: string }>();
 	const model = useContainerInspect(envID, id);
 	return (
@@ -34,13 +33,6 @@ export function ContainerInspectScreen() {
 						label: 'Copy',
 						disabled: model.rawJSON === '',
 						onPress: () => void model.copy()
-					},
-					{
-						kind: 'button',
-						id: 'done',
-						icon: 'checkmark',
-						label: 'Done',
-						onPress: () => router.back()
 					}
 				]}
 			/>

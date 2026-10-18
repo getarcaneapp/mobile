@@ -62,6 +62,32 @@ export function abbreviatedDuration(seconds: number): string {
 	return parts.join(' ');
 }
 
+const goDurationUnits: Record<string, number> = {
+	h: 3600,
+	m: 60,
+	s: 1,
+	ms: 0.001,
+	us: 0.000001,
+	µs: 0.000001,
+	ns: 0.000000001
+};
+
+export function goDurationSeconds(text: string): number | undefined {
+	const trimmed = text.trim();
+	if (!/^(\d+(\.\d+)?(h|m|s|ms|us|µs|ns))+$/.test(trimmed)) return undefined;
+	let total = 0;
+	for (const match of trimmed.matchAll(/(\d+(?:\.\d+)?)(ms|us|µs|ns|h|m|s)/g)) {
+		total += Number(match[1]) * (goDurationUnits[match[2] ?? ''] ?? 0);
+	}
+	return total;
+}
+
+export function updaterDurationText(text: string): string {
+	const seconds = goDurationSeconds(text);
+	if (seconds === undefined) return text;
+	return seconds < 1 ? 'under 1s' : abbreviatedDuration(seconds);
+}
+
 export function splitRefTag(ref: string): { repo: string; tag?: string } {
 	const colon = ref.lastIndexOf(':');
 	if (colon < 0) return { repo: ref };

@@ -8,8 +8,8 @@ import { FormPicker, FormSecureField, FormTextField } from '@/ui/components/form
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
 
-import type { BackendFormField } from './dynamic-resource';
 import { useDynamicForm, type DynamicFormModel } from './use-dynamic-form';
+import { choiceLabel, type BackendFormField } from './dynamic-resource';
 
 function FieldView({ model, field }: { model: DynamicFormModel; field: BackendFormField }) {
 	const text = model.value(field.id);
@@ -29,7 +29,10 @@ function FieldView({ model, field }: { model: DynamicFormModel; field: BackendFo
 					title={field.label}
 					selection={text}
 					onSelectionChange={onChangeText}
-					options={field.type.options.map((option) => ({ label: option, value: option }))}
+					options={field.type.options.map((option) => ({
+						label: choiceLabel(option),
+						value: option
+					}))}
 				/>
 			);
 		case 'secure':
@@ -45,7 +48,7 @@ function FieldView({ model, field }: { model: DynamicFormModel; field: BackendFo
 			return (
 				<FormTextField
 					title={field.label}
-					placeholder={model.placeholder(field, 'Value')}
+					placeholder={model.placeholder(field, field.required ? 'Required' : 'Optional')}
 					text={text}
 					onChangeText={onChangeText}
 					autocapitalization="never"
@@ -70,7 +73,7 @@ function FieldView({ model, field }: { model: DynamicFormModel; field: BackendFo
 			return (
 				<FormTextField
 					title={field.label}
-					placeholder={field.placeholder === '' ? 'Value' : field.placeholder}
+					placeholder={model.placeholder(field, field.required ? 'Required' : 'Optional')}
 					text={text}
 					onChangeText={onChangeText}
 					autocapitalization="never"

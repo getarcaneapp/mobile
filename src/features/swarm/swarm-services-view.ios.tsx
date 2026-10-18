@@ -18,11 +18,13 @@ import {
 } from '@expo/ui/swift-ui';
 import {
 	buttonStyle,
+	contentShape,
 	disabled,
 	fixedSize,
 	font,
 	foregroundStyle,
 	labelsHidden,
+	layoutPriority,
 	lineLimit,
 	listStyle,
 	monospacedDigit,
@@ -30,9 +32,8 @@ import {
 	navigationTitle,
 	refreshable,
 	scrollEdgeEffectStyle,
-	tint,
-	contentShape,
-	shapes
+	shapes,
+	tint
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
@@ -68,7 +69,7 @@ export function SwarmServiceRow({
 	return (
 		<HStack spacing={12}>
 			<RowIcon systemImage="shippingbox.fill" tint={healthy ? undefined : systemColors.orange} />
-			<VStack alignment="leading" spacing={3}>
+			<VStack alignment="leading" spacing={3} modifiers={[layoutPriority(1)]}>
 				<Text modifiers={[font({ textStyle: 'body' }), lineLimit(1)]}>{service.name}</Text>
 				<ImageReferenceLine reference={service.image} />
 				{showsStack && service.stackName ? (

@@ -9,6 +9,7 @@ import { m3Type, monoFamily } from '@/ui/components/type-scale';
 import { MaterialListGroup, MaterialSectionHeader } from '@/ui/material/list';
 
 import { CenteredMessage } from './android-material';
+import { processExtraText } from './container-model';
 import { useContainerProcesses } from './use-container-processes';
 
 export function ContainerProcessesView({
@@ -113,7 +114,7 @@ export function ContainerProcessesView({
 								numberOfLines={2}
 								style={{ fontFamily: monoFamily, fontSize: 11, color: colors.secondaryLabel }}
 							>
-								{row.extras.map((extra) => `${extra.title} ${extra.value}`).join(' · ')}
+								{row.extras.map(processExtraText).join(' · ')}
 							</Text>
 						) : null}
 					</View>

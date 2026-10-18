@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+	useCallback,
+	useEffect,
+	useEffectEvent,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState
+} from 'react';
 
 import { usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -9,6 +17,7 @@ import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { FileEntry } from '@/sdk/models/volume/Browse';
 import { Permission } from '@/sdk/models/role/Permission';
+import { ArcaneError } from '@/sdk/errors/ArcaneError';
 import { useClientManager } from '@/stores/client-manager';
 
 import { useDebounced } from '@/features/containers/hooks';
@@ -30,6 +39,7 @@ async function fetchVolumeEntries(params: {
 	currentPathRef: { current: string };
 	setEntries: (value: FileEntry[]) => void;
 	setErrorMessage: (value: string) => void;
+	setBrowseUnsupported: (value: boolean) => void;
 }) {
 	const { client, environmentID, volumeName, requestedPath, generation, loadGeneration } = params;
 	try {
@@ -43,6 +53,9 @@ async function fetchVolumeEntries(params: {
 		params.setEntries(nextEntries);
 	} catch (error) {
 		if (loadGeneration.current !== generation || isCancellation(error)) return;
+		if (requestedPath === '/' && error instanceof ArcaneError && error.kind === 'notFound') {
+			params.setBrowseUnsupported(true);
+		}
 		params.setErrorMessage(friendlyErrorMessage(error));
 		params.setEntries([]);
 	}
@@ -54,6 +67,7 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 	const [entries, setEntries] = useState<FileEntry[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>();
+	const [browseUnsupported, setBrowseUnsupported] = useState(false);
 	const [searchText, setSearchText] = useState('');
 	const debouncedSearchText = useDebounced(searchText, 200);
 	const loadGeneration = useRef(0);
@@ -99,7 +113,8 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 					loadGeneration,
 					currentPathRef,
 					setEntries,
-					setErrorMessage
+					setErrorMessage,
+					setBrowseUnsupported
 				}),
 			() => {
 				if (loadGeneration.current === generation) setIsLoading(false);
@@ -122,6 +137,14 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 		capabilities !== undefined &&
 		ServerCapabilities.supportsRoleManagement(capabilities) &&
 		canReadVolumes;
+
+	const redirectToWorkspace = useEffectEvent(() =>
+		nav.replaceWithWorkspace(environmentID, volumeName)
+	);
+
+	useEffect(() => {
+		if (browseUnsupported && canManageFiles) redirectToWorkspace();
+	}, [browseUnsupported, canManageFiles]);
 
 	return {
 		environmentID,

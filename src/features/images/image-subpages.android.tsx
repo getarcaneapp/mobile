@@ -84,16 +84,31 @@ export function ImageAttestationScreen() {
 					</M3Section>
 				) : null}
 				<M3Section title="Statement">
-					{statement.statementJSON !== undefined ? (
+					{statement.statementPreview !== undefined ? (
 						<>
 							<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-								<Text
-									selectable
-									style={{ fontFamily: monoFamily, fontSize: 11, color: colors.label, padding: 16 }}
-								>
-									{statement.statementJSON}
-								</Text>
+								<View style={{ padding: 16 }}>
+									{statement.statementPreview.chunks.map((chunk, index) => (
+										<Text
+											key={index}
+											selectable
+											style={{ fontFamily: monoFamily, fontSize: 11, color: colors.label }}
+										>
+											{chunk}
+										</Text>
+									))}
+								</View>
 							</ScrollView>
+							{statement.statementPreview.isTruncated ? (
+								<Text
+									style={[
+										m3Type.bodySmall,
+										{ color: colors.secondaryLabel, paddingHorizontal: 16, paddingBottom: 8 }
+									]}
+								>
+									{`First ${statement.statementPreview.shownLines} of ${statement.statementPreview.totalLines} lines`}
+								</Text>
+							) : null}
 							<TextButtonRow title="Copy Statement" onPress={statement.copyStatement} />
 						</>
 					) : statement.isLoadingStatement ? (

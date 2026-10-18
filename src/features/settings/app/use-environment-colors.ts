@@ -2,7 +2,10 @@ import { useEffect } from 'react';
 
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { useClientManager } from '@/stores/client-manager';
-import { useEnvironmentColorStore } from '@/stores/environment-color-store';
+import {
+	isDefaultEnvironmentColor,
+	useEnvironmentColorStore
+} from '@/stores/environment-color-store';
 import { environmentDisplayName, useEnvironmentsStore } from '@/stores/environments-store';
 import { AccentColorOptions } from '@/theme/accent';
 import { showToast, Toasts } from '@/ui/toast';
@@ -52,6 +55,7 @@ export function useEnvironmentColor(environment: Environment) {
 	return {
 		name: environmentDisplayName(environment),
 		selectedHex,
+		unnamedTitle: isDefaultEnvironmentColor(selectedHex) ? 'Default' : 'Custom',
 		save,
 		isAvailable: (hex: string) =>
 			useEnvironmentColorStore.getState().isAvailable(hex, serverURL, environment.id)

@@ -11,6 +11,8 @@ import {
 } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
+	accessibilityLabel,
+	accessibilityValue,
 	contentShape,
 	disabled,
 	fixedSize,
@@ -37,7 +39,9 @@ export function AccentColorMenu({
 	selection,
 	onSelectionChange,
 	isAvailable = () => true,
-	onCustom
+	onCustom,
+	unnamedTitle = 'Custom',
+	accessibilityLabel: label = 'Accent color'
 }: AccentColorMenuProps) {
 	const selected = selectedAccentOption(selection);
 	const scheme = useColorScheme() === 'light' ? 'light' : 'dark';
@@ -45,6 +49,10 @@ export function AccentColorMenu({
 	const dots = scheme === 'light' ? accentMenuDotsLight : accentMenuDotsDark;
 	return (
 		<Menu
+			modifiers={[
+				accessibilityLabel(label),
+				accessibilityValue(selected?.displayName ?? unnamedTitle)
+			]}
 			label={
 				<HStack
 					spacing={8}
@@ -55,7 +63,7 @@ export function AccentColorMenu({
 					]}
 				>
 					<Circle modifiers={[foregroundStyle(color), frame({ width: 9, height: 9 })]} />
-					<Text modifiers={[foregroundStyle(color)]}>{selected?.displayName ?? 'Custom'}</Text>
+					<Text modifiers={[foregroundStyle(color)]}>{selected?.displayName ?? unnamedTitle}</Text>
 					<Image
 						systemName="chevron.up.chevron.down"
 						modifiers={[

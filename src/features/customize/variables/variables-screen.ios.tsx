@@ -20,6 +20,7 @@ import {
 	accessibilityElement,
 	accessibilityHidden,
 	accessibilityHint,
+	buttonStyle,
 	contentShape,
 	font,
 	foregroundStyle,
@@ -175,7 +176,7 @@ function VariableListRow({ model, variable }: { model: VariablesModel; variable:
 					{model.canUpdate ? (
 						<Button
 							onPress={() => model.openEditor(variable)}
-							modifiers={[accessibilityHint('Opens variable editor')]}
+							modifiers={[buttonStyle('plain'), accessibilityHint('Opens variable editor')]}
 						>
 							{row}
 						</Button>

@@ -164,7 +164,11 @@ export function BackupFilesScreen() {
 					</M3Section>
 				) : null}
 				{model.entries.length === 0 && !model.busy && model.errorMessage === undefined ? (
-					<CenteredMessage icon="folder" title="No Files" message="Try another folder or search." />
+					<CenteredMessage
+						icon={model.search === '' ? 'folder' : 'magnifyingglass'}
+						title={model.search === '' ? 'No Files' : `No Results for “${model.search}”`}
+						message={model.search === '' ? '' : 'Check the spelling or try a new search.'}
+					/>
 				) : null}
 				<PaginatedListFooter
 					key={model.entries.length}

@@ -2,6 +2,7 @@ import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
 	Button,
+	ContentUnavailableView,
 	ContextMenu,
 	HStack,
 	List,
@@ -48,6 +49,7 @@ import { useEnvironmentRowColor } from '@/features/containers/hooks';
 import {
 	networkContainerCount,
 	networkIsInternal,
+	networkDriverName,
 	networkPreview,
 	type NetworkItem
 } from './network-model';
@@ -79,7 +81,7 @@ export function NetworkRow({
 							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 						]}
 					>
-						{network.driver}
+						{networkDriverName(network.driver)}
 					</Text>
 					{networkIsInternal(network) ? (
 						<Text
@@ -228,6 +230,8 @@ export function NetworksScreen(props: NetworksListProps) {
 	const model = useNetworksList(props);
 	const { snapshot, networks, systemNetworks, userNetworks } = model;
 
+	const visibleCount = systemNetworks.length + userNetworks.length;
+	const isFiltered = visibleCount < networks.length;
 	let content;
 	if (snapshot.isLoading && networks.length === 0) {
 		content = (
@@ -244,7 +248,7 @@ export function NetworksScreen(props: NetworksListProps) {
 				actions={[{ title: 'Retry', onPress: () => void model.loadNetworks() }]}
 			/>
 		);
-	} else if (networks.length === 0) {
+	} else if (networks.length === 0 && model.searchText.trim() === '') {
 		content = (
 			<UnavailableView
 				title="No Networks"
@@ -270,13 +274,22 @@ export function NetworksScreen(props: NetworksListProps) {
 				)}
 			</UnavailableView>
 		);
+	} else if (visibleCount === 0 && !snapshot.hasMore) {
+		content = (
+			<ContentUnavailableView
+				title="No Results"
+				systemImage="magnifyingglass"
+				description="Nothing matches the current search or filter."
+			/>
+		);
 	} else {
 		const countHeader = (title: string) => (
 			<ResourceCountSectionHeader
 				title={title}
-				loadedCount={networks.length}
-				totalCount={snapshot.totalItems}
-				hasMore={snapshot.hasMore}
+				loadedCount={isFiltered ? visibleCount : networks.length}
+				totalCount={isFiltered ? undefined : snapshot.totalItems}
+				hasMore={!isFiltered && snapshot.hasMore}
+				spansSections={systemNetworks.length > 0 && userNetworks.length > 0}
 			/>
 		);
 		content = (

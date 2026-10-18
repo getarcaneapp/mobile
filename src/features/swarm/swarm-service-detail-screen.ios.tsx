@@ -67,7 +67,7 @@ function Overview({ model }: { model: SwarmServiceDetailModel }) {
 							modifiers={[
 								font({ textStyle: 'caption' }),
 								foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
-								lineLimit(2),
+								lineLimit(1),
 								truncationMode('middle'),
 								textSelection(true)
 							]}

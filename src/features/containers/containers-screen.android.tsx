@@ -25,6 +25,7 @@ import {
 	type ContainersListModel,
 	type ContainersListProps
 } from './use-containers-list';
+import { sectionItemCount, spansSections } from '@/ui/components/stable-sectioned-list.types';
 
 function rowMenuItems(
 	model: ContainersListModel,
@@ -182,6 +183,8 @@ export function ContainersScreen(props: ContainersListProps) {
 		/>
 	);
 
+	const visibleCount = sectionItemCount(model.sections);
+	const isFiltered = visibleCount < containers.length;
 	let content;
 	if (snapshot.isLoading && containers.length === 0) {
 		content = (
@@ -193,7 +196,7 @@ export function ContainersScreen(props: ContainersListProps) {
 		content = (
 			<EmptyState icon="exclamationmark.triangle" title="Error" message={snapshot.errorMessage} />
 		);
-	} else if (containers.length === 0) {
+	} else if (containers.length === 0 && model.searchText.trim() === '') {
 		content = (
 			<EmptyState
 				icon="cube.box"
@@ -204,6 +207,14 @@ export function ContainersScreen(props: ContainersListProps) {
 						: 'No containers found in this environment.'
 				}
 				action={{ title: 'Refresh', onPress: () => void model.loadContainers() }}
+			/>
+		);
+	} else if (visibleCount === 0 && !snapshot.hasMore) {
+		content = (
+			<EmptyState
+				icon="magnifyingglass"
+				title="No Results"
+				message="Nothing matches the current search or filter."
 			/>
 		);
 	}
@@ -220,9 +231,10 @@ export function ContainersScreen(props: ContainersListProps) {
 				preferredHeaderAccessorySectionID="running"
 				headerAccessory={() => (
 					<ResourceCountLabel
-						loadedCount={containers.length}
-						totalCount={snapshot.totalItems}
-						hasMore={snapshot.hasMore}
+						spansSections={spansSections(model.sections)}
+						loadedCount={isFiltered ? visibleCount : containers.length}
+						totalCount={isFiltered ? undefined : snapshot.totalItems}
+						hasMore={!isFiltered && snapshot.hasMore}
 					/>
 				)}
 				renderRow={(item) => <ContainerListRow model={model} item={item} />}

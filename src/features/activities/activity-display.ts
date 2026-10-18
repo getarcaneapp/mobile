@@ -328,3 +328,14 @@ export function retainingActiveActivities(
 			activity.status === 'running'
 	);
 }
+
+export function activityCountHeader(input: {
+	shownCount: number;
+	activityCount: number;
+	hasMore: boolean;
+	isFiltering: boolean;
+}): { loadedCount: number; hasMore: boolean } {
+	return input.isFiltering
+		? { loadedCount: input.shownCount, hasMore: false }
+		: { loadedCount: input.activityCount, hasMore: input.hasMore };
+}
