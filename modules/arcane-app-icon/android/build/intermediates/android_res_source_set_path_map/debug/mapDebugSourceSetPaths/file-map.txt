@@ -1,9 +1,0 @@
-expo.modules.arcaneappicon.arcane-app-icon-pngs-0 /Users/kmendell/code/getarcaneapp/iOS-rn/modules/arcane-app-icon/android/build/generated/res/pngs/debug
-expo.modules.arcaneappicon.arcane-app-icon-updated_navigation_xml-1 /Users/kmendell/code/getarcaneapp/iOS-rn/modules/arcane-app-icon/android/build/generated/updated_navigation_xml/debug
-expo.modules.arcaneappicon.arcane-app-icon-mergeDebugResources-2 /Users/kmendell/code/getarcaneapp/iOS-rn/modules/arcane-app-icon/android/build/intermediates/incremental/debug/mergeDebugResources/merged.dir
-expo.modules.arcaneappicon.arcane-app-icon-mergeDebugResources-3 /Users/kmendell/code/getarcaneapp/iOS-rn/modules/arcane-app-icon/android/build/intermediates/incremental/debug/mergeDebugResources/stripped.dir
-expo.modules.arcaneappicon.arcane-app-icon-debug-4 /Users/kmendell/code/getarcaneapp/iOS-rn/modules/arcane-app-icon/android/build/intermediates/merged_res/debug/mergeDebugResources
-expo.modules.arcaneappicon.arcane-app-icon-debug-5 /Users/kmendell/code/getarcaneapp/iOS-rn/modules/arcane-app-icon/android/build/intermediates/packaged_res/debug/packageDebugResources
-expo.modules.arcaneappicon.arcane-app-icon-debug-6 /Users/kmendell/code/getarcaneapp/iOS-rn/modules/arcane-app-icon/android/src/debug/res
-expo.modules.arcaneappicon.arcane-app-icon-main-7 /Users/kmendell/code/getarcaneapp/iOS-rn/modules/arcane-app-icon/android/src/main/res
-gradleHome-0 /Users/kmendell/.gradle

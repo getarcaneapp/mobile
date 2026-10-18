@@ -53,6 +53,9 @@ export const releaseNotes: ReleaseNote[] = [
 		],
 		fixed: [
 			{
+				text: 'The Android app icon and themed icon use the Arcane logo.'
+			},
+			{
 				text: 'On Android, long lists no longer load every page on their own before you scroll.'
 			},
 			{

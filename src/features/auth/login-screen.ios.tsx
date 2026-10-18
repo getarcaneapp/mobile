@@ -99,11 +99,15 @@ type Refs = {
 export function LoginScreen() {
 	const model = useLoginModel();
 	const reduceMotion = useReduceMotion();
+	const serverURLRef = useRef<TextFieldRef>(null);
+	const usernameRef = useRef<TextFieldRef>(null);
+	const passwordRef = useRef<SecureFieldRef>(null);
+	const recoveryCodeRef = useRef<TextFieldRef>(null);
 	const refs: Refs = {
-		serverURL: useRef<TextFieldRef>(null),
-		username: useRef<TextFieldRef>(null),
-		password: useRef<SecureFieldRef>(null),
-		recoveryCode: useRef<TextFieldRef>(null)
+		serverURL: serverURLRef,
+		username: usernameRef,
+		password: passwordRef,
+		recoveryCode: recoveryCodeRef
 	};
 
 	const ignore = () => {};
@@ -115,11 +119,15 @@ export function LoginScreen() {
 	});
 
 	const { serverURL, username, password, recoveryCode } = model;
+	const serverURLText = useNativeState(serverURL);
+	const usernameText = useNativeState(username);
+	const passwordText = useNativeState(password);
+	const recoveryCodeText = useNativeState(recoveryCode);
 	const texts = {
-		serverURL: useNativeState(serverURL),
-		username: useNativeState(username),
-		password: useNativeState(password),
-		recoveryCode: useNativeState(recoveryCode)
+		serverURL: serverURLText,
+		username: usernameText,
+		password: passwordText,
+		recoveryCode: recoveryCodeText
 	};
 	const syncTexts = useEffectEvent(
 		(values: { serverURL: string; username: string; password: string; recoveryCode: string }) => {

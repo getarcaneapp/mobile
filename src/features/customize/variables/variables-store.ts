@@ -259,5 +259,6 @@ export function syncStatusPresentation(state: VariableSyncState): {
 
 export function useVariablesStore(): [VariablesStore, VariablesSnapshot] {
 	const [store] = useState(() => new VariablesStore());
-	return [store, useSyncExternalStore(store.subscribe, store.getSnapshot)];
+	const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot);
+	return [store, snapshot];
 }

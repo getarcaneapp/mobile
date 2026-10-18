@@ -36,13 +36,12 @@ export interface DeleteVariablePayload {
 }
 
 function useVariablePermissions() {
-	return {
-		canRead: usePermission(Permission.Variables.read, null),
-		canCreate: usePermission(Permission.Variables.create, null),
-		canUpdate: usePermission(Permission.Variables.update, null),
-		canDelete: usePermission(Permission.Variables.delete, null),
-		canSync: usePermission(Permission.Variables.sync, null)
-	};
+	const canRead = usePermission(Permission.Variables.read, null);
+	const canCreate = usePermission(Permission.Variables.create, null);
+	const canUpdate = usePermission(Permission.Variables.update, null);
+	const canDelete = usePermission(Permission.Variables.delete, null);
+	const canSync = usePermission(Permission.Variables.sync, null);
+	return { canRead, canCreate, canUpdate, canDelete, canSync };
 }
 
 function requireClient() {

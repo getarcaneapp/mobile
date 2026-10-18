@@ -39,7 +39,7 @@ const config: ExpoConfig = {
 		package: 'app.getarcane.android',
 		versionCode: BUILD_NUMBER,
 		adaptiveIcon: {
-			backgroundColor: '#0B0B12',
+			backgroundImage: './assets/images/android-icon-background.png',
 			foregroundImage: './assets/images/android-icon-foreground.png',
 			monochromeImage: './assets/images/android-icon-monochrome.png'
 		},

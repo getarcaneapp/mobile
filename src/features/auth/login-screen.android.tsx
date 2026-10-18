@@ -51,11 +51,15 @@ type Refs = Record<LoginField, RefObject<TextInputInstance | null>>;
 export function LoginScreen() {
 	const model = useLoginModel();
 	const reduceMotion = useReduceMotion();
+	const serverURLRef = useRef<TextInputInstance>(null);
+	const usernameRef = useRef<TextInputInstance>(null);
+	const passwordRef = useRef<TextInputInstance>(null);
+	const recoveryCodeRef = useRef<TextInputInstance>(null);
 	const refs: Refs = {
-		serverURL: useRef<TextInputInstance>(null),
-		username: useRef<TextInputInstance>(null),
-		password: useRef<TextInputInstance>(null),
-		recoveryCode: useRef<TextInputInstance>(null)
+		serverURL: serverURLRef,
+		username: usernameRef,
+		password: passwordRef,
+		recoveryCode: recoveryCodeRef
 	};
 	useLayoutEffect(() => {
 		model.bindFocus((field) => {
