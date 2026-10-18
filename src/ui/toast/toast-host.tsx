@@ -115,8 +115,8 @@ function ToastCapsule({ toast }: { toast: Toast }) {
 				style={{ paddingHorizontal: 15 }}
 				accessibilityRole="alert"
 			>
-				<Animated.View entering={FadeIn} exiting={FadeOut}>
-					<GlassSurface style={{ borderRadius: 999, borderCurve: 'continuous' }}>
+				<GlassSurface style={{ borderRadius: 999, borderCurve: 'continuous' }}>
+					<Animated.View entering={FadeIn} exiting={FadeOut}>
 						{tapAction ? (
 							<Pressable
 								onPress={() => {
@@ -129,8 +129,8 @@ function ToastCapsule({ toast }: { toast: Toast }) {
 						) : (
 							content
 						)}
-					</GlassSurface>
-				</Animated.View>
+					</Animated.View>
+				</GlassSurface>
 			</Animated.View>
 		</GestureDetector>
 	);

@@ -8,8 +8,9 @@ import withReleaseScheme from './plugins/with-release-scheme.ts';
 const MARKETING_VERSION = '0.11.0';
 
 const buildEpochMs = Date.UTC(2020, 0, 1);
-const BUILD_NUMBER =
-	Number(process.env.ARCANE_BUILD_NUMBER) || Math.floor((Date.now() - buildEpochMs) / 60_000);
+const arcaneBuildNumber = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+	.process?.env?.ARCANE_BUILD_NUMBER;
+const BUILD_NUMBER = Number(arcaneBuildNumber) || Math.floor((Date.now() - buildEpochMs) / 60_000);
 
 const config: ExpoConfig = {
 	name: 'Arcane',

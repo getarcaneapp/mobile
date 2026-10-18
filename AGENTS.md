@@ -97,7 +97,7 @@ src/
 
 ### Beta releases
 
-- `.github/workflows/beta.yml` builds on Depot runners with `eas build --local` (iOS on `depot-macos-26`, Android on Linux) and submits with `eas submit` to TestFlight and Google Play internal testing. Builds never run on EAS servers.
+- `.github/workflows/beta.yml` builds on Depot runners with `eas build --local` (iOS on `depot-macos-26`, Android on Linux); builds never run on EAS servers. Pushes to `main` submit with the `internal` profile (TestFlight internal testers, Play internal testing). Public TestFlight and Play closed or production releases are done by hand.
 - Build numbers are automatic: `app.config.ts` sets iOS `buildNumber` and Android `versionCode` to minutes since 2020-01-01 UTC (CI pins one value per job via `ARCANE_BUILD_NUMBER`). Never set them by hand.
 - Signing credentials and store API keys live in EAS; CI only needs `EXPO_TOKEN`.
 

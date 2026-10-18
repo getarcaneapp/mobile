@@ -9,10 +9,11 @@ on:
         default: all
         options: [all, ios, android]
   push:
-    tags: ['v*']
+    branches: [main]
+    paths-ignore: ['**.md', '.github/assets/**']
 
 concurrency:
-  group: beta
+  group: beta-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -58,7 +59,7 @@ jobs:
       - name: Build
         run: vpx eas-cli@latest build --local --platform ios --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.ipa"
       - name: Submit to TestFlight
-        run: vpx eas-cli@latest submit --platform ios --profile beta --non-interactive --path "$RUNNER_TEMP/Arcane.ipa"
+        run: vpx eas-cli@latest submit --platform ios --profile internal --non-interactive --path "$RUNNER_TEMP/Arcane.ipa"
 
   android:
     needs: verify
@@ -83,5 +84,5 @@ jobs:
         run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
       - name: Build
         run: vpx eas-cli@latest build --local --platform android --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.aab"
-      - name: Submit to Google Play internal testing
-        run: vpx eas-cli@latest submit --platform android --profile beta --non-interactive --path "$RUNNER_TEMP/Arcane.aab"
+      - name: Submit to Google Play
+        run: vpx eas-cli@latest submit --platform android --profile internal --non-interactive --path "$RUNNER_TEMP/Arcane.aab"

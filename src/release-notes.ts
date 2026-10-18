@@ -53,6 +53,9 @@ export const releaseNotes: ReleaseNote[] = [
 		],
 		fixed: [
 			{
+				text: 'Toasts always show their glass background on iOS.'
+			},
+			{
 				text: 'The Android app icon and themed icon use the Arcane logo.'
 			},
 			{

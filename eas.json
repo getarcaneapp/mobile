@@ -18,7 +18,7 @@
 		}
 	},
 	"submit": {
-		"beta": {
+		"internal": {
 			"ios": {
 				"ascAppId": "6767286199"
 			},
