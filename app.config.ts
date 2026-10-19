@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import type { ExpoConfig } from 'expo/config';
 
 import withCloudSync from './modules/arcane-cloud-sync/plugin/with-cloud-sync.ts';
@@ -8,8 +10,11 @@ import withReleaseScheme from './plugins/with-release-scheme.ts';
 const MARKETING_VERSION = '0.11.0';
 
 const buildEpochMs = Date.UTC(2020, 0, 1);
-const arcaneBuildNumber = (globalThis as { process?: { env?: Record<string, string | undefined> } })
-	.process?.env?.ARCANE_BUILD_NUMBER;
+const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+const arcaneBuildNumber = env?.ARCANE_BUILD_NUMBER;
+const googleServicesFile =
+	env?.GOOGLE_SERVICES_JSON ??
+	(fs.existsSync('./google-services.json') ? './google-services.json' : undefined);
 const BUILD_NUMBER = Number(arcaneBuildNumber) || Math.floor((Date.now() - buildEpochMs) / 60_000);
 
 const config: ExpoConfig = {
@@ -44,7 +49,8 @@ const config: ExpoConfig = {
 			foregroundImage: './assets/images/android-icon-foreground.png',
 			monochromeImage: './assets/images/android-icon-monochrome.png'
 		},
-		predictiveBackGestureEnabled: true
+		predictiveBackGestureEnabled: true,
+		googleServicesFile
 	},
 	plugins: [
 		'expo-router',
@@ -55,6 +61,14 @@ const config: ExpoConfig = {
 				dark: { backgroundColor: '#000000' },
 				image: './assets/images/launch-blank.png',
 				imageWidth: 1
+			}
+		],
+		[
+			'expo-notifications',
+			{
+				icon: './assets/images/notification-icon.png',
+				color: '#AF52DE',
+				defaultChannel: 'arcane'
 			}
 		],
 		'expo-secure-store',

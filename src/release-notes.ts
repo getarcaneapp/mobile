@@ -20,6 +20,9 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Alternate app icons on Android, under Appearance > App Icon.'
+			},
+			{
+				text: 'Push notifications on Android.'
 			}
 		],
 		changed: [

@@ -6,6 +6,13 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import {
+	androidPushChannelID,
+	installationRequestBody,
+	isUnsupportedPlatformError,
+	pushPlatformFor,
+	tokenUpdateBody
+} from '@/core/push-relay';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { CancellationError, isArcaneError } from '@/sdk/errors/ArcaneError';
 import type { MobilePushDevice, MobilePushStatus } from '@/sdk/models/mobilePush/MobilePush';
@@ -30,13 +37,25 @@ export type PushCredentials = {
 	bindings: Record<string, PushServerBinding>;
 };
 
+const supportedPushPlatform = pushPlatformFor(Platform.OS);
+const pushPlatform = supportedPushPlatform ?? 'apns';
+
+export const systemNotificationSettingsName =
+	pushPlatform === 'fcm' ? 'Android Settings' : 'iOS Settings';
+
 export class PushError extends Error {
 	static serverDisabled = () =>
 		new PushError("Your Arcane admin hasn't enabled mobile push notifications.");
 	static notAuthorized = () =>
-		new PushError('Notifications are turned off for Arcane in iOS Settings.');
+		new PushError(`Notifications are turned off for Arcane in ${systemNotificationSettingsName}.`);
 	static noDeviceToken = () =>
-		new PushError("Couldn't register this device with Apple Push Notifications.");
+		new PushError(
+			pushPlatform === 'fcm'
+				? "Couldn't register this device with Firebase Cloud Messaging."
+				: "Couldn't register this device with Apple Push Notifications."
+		);
+	static relayPlatformUnsupported = () =>
+		new PushError("This push relay doesn't support Android notifications yet.");
 	static relay = (status: number, message: string) =>
 		new PushError(`Push relay error (${status}): ${message}`);
 	static notSignedIn = () => new PushError('Sign in to enable push notifications.');
@@ -73,6 +92,7 @@ let apnsEnvironmentPromise: Promise<string> | undefined;
 
 function detectAPNSEnvironment(): Promise<string> {
 	apnsEnvironmentPromise ??= (async () => {
+		if (pushPlatform === 'fcm') return '';
 		if (!Device.isDevice) return 'sandbox';
 		try {
 			return (await Application.getIosPushNotificationServiceEnvironmentAsync()) === 'development'
@@ -83,6 +103,14 @@ function detectAPNSEnvironment(): Promise<string> {
 		}
 	})();
 	return apnsEnvironmentPromise;
+}
+
+async function ensureAndroidChannel() {
+	if (pushPlatform !== 'fcm') return;
+	await Notifications.setNotificationChannelAsync(androidPushChannelID, {
+		name: 'Alerts',
+		importance: Notifications.AndroidImportance.HIGH
+	});
 }
 
 function authorizationStatus(
@@ -143,6 +171,8 @@ async function relayData(
 				const decoded = JSON.parse(text) as { error?: { message?: unknown } };
 				if (typeof decoded.error?.message === 'string') message = decoded.error.message;
 			} catch {}
+			if (isUnsupportedPlatformError(response.status, message))
+				throw PushError.relayPlatformUnsupported();
 			throw PushError.relay(response.status, message);
 		}
 		return text;
@@ -171,10 +201,12 @@ async function relayRequestVoid(
 }
 
 function updateRelayToken(creds: PushCredentials) {
-	return relayRequestVoid(creds, 'PUT', `/v1/installations/${creds.installationId}/token`, {
-		deviceToken: creds.deviceToken,
-		apnsEnvironment: creds.apnsEnvironment
-	});
+	return relayRequestVoid(
+		creds,
+		'PUT',
+		`/v1/installations/${creds.installationId}/token`,
+		tokenUpdateBody(pushPlatform, creds.deviceToken, creds.apnsEnvironment)
+	);
 }
 
 type PushNotificationState = {
@@ -189,6 +221,7 @@ type PushNotificationState = {
 	binding: (origin: string | undefined) => PushServerBinding | undefined;
 	isAuthorizationDenied: () => boolean;
 
+	observeDeviceToken: () => () => void;
 	sessionDidChange: () => void;
 	refreshAuthorizationStatus: () => Promise<void>;
 	registerIfAuthorized: () => Promise<void>;
@@ -265,12 +298,12 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 			bootstrap,
 			'POST',
 			'/v1/installations',
-			{
-				platform: 'apns',
-				apnsEnvironment: environment,
+			installationRequestBody(
+				pushPlatform,
 				deviceToken,
-				appVersion: Application.nativeApplicationVersion ?? 'unknown'
-			},
+				environment,
+				Application.nativeApplicationVersion ?? 'unknown'
+			),
 			false
 		);
 		const next: PushCredentials = {
@@ -293,10 +326,19 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 		errorMessage: undefined,
 		credentials: undefined,
 
-		isSupported: Platform.OS === 'ios',
+		isSupported: supportedPushPlatform !== undefined,
 		isEnabled: (origin) => get().binding(origin) !== undefined,
 		binding: (origin) => (origin ? get().credentials?.bindings[origin] : undefined),
 		isAuthorizationDenied: () => get().authorizationStatus === 'denied',
+
+		observeDeviceToken: () => {
+			if (!get().isSupported) return () => {};
+			void get().registerIfAuthorized();
+			const subscription = Notifications.addPushTokenListener((token) => {
+				if (typeof token.data === 'string') void get().didRegister(token.data);
+			});
+			return () => subscription.remove();
+		},
 
 		sessionDidChange: () => {
 			operationID = ++nextOperationID;
@@ -314,6 +356,7 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 			const status = get().authorizationStatus;
 			if (status !== 'authorized' && status !== 'provisional') return;
 			try {
+				await ensureAndroidChannel();
 				const token = await Notifications.getDevicePushTokenAsync();
 				if (typeof token.data === 'string') await get().didRegister(token.data);
 			} catch {}
@@ -386,6 +429,8 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 				const client = manager.client;
 				const origin = manager.serverOrigin();
 				if (!client || !origin) throw PushError.notSignedIn();
+				await ensureAndroidChannel();
+				checkSession();
 				const permissions = await Notifications.requestPermissionsAsync({
 					ios: { allowAlert: true, allowSound: true, allowBadge: true }
 				});
@@ -404,7 +449,8 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 				const creds = await ensureInstallation(status.relayUrl, token, checkSession);
 				checkSession();
 
-				const label = Device.deviceName ?? Device.modelName ?? 'iPhone';
+				const label =
+					Device.deviceName ?? Device.modelName ?? (pushPlatform === 'fcm' ? 'Android' : 'iPhone');
 				const pairing = await client.mobilePush.pairingToken();
 				checkSession();
 				let paired = await relayRequest<PairResponse>(

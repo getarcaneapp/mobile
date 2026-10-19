@@ -9,6 +9,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { Keys, useStoredString } from '@/core/storage';
 import { useClientManager } from '@/stores/client-manager';
 import { useLaunchSplash } from '@/stores/launch-splash-store';
+import { usePushNotificationCoordinator } from '@/stores/push-notification-coordinator';
 import { useAccentColor } from '@/theme/accent';
 import { useAppearanceRemountKey } from '@/theme/use-appearance-remount';
 import { ArcaneLaunchSplash } from '@/ui/components/arcane-launch-splash';
@@ -30,6 +31,8 @@ export default function RootLayout() {
 	useEffect(() => {
 		void useClientManager.getState().checkExistingAuth();
 	}, []);
+
+	useEffect(() => usePushNotificationCoordinator.getState().observeDeviceToken(), []);
 
 	useEffect(() => {
 		const subscription = AppState.addEventListener('change', (state) => {

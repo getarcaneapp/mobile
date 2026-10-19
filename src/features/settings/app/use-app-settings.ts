@@ -11,7 +11,10 @@ import { defaults, Keys, storage, useStoredBool, useStoredString } from '@/core/
 import { useBusiestContainersStore } from '@/stores/busiest-containers-store';
 import { useClientManager } from '@/stores/client-manager';
 import { LiveStatsLimit } from '@/stores/dashboard-stream-logic';
-import { usePushNotificationCoordinator } from '@/stores/push-notification-coordinator';
+import {
+	systemNotificationSettingsName,
+	usePushNotificationCoordinator
+} from '@/stores/push-notification-coordinator';
 import { useSystemStatsHistoryStore } from '@/stores/system-stats-history-store';
 import { clearImageCache } from '@/ui/components/cached-async-image';
 import { useItemDeleteConfirmation } from '@/ui/components/delete-confirmation';
@@ -121,7 +124,8 @@ export function useAppSettings() {
 		if (!showsPushToggle) return toasts;
 		if (push.serverStatus?.enabled !== true)
 			return toasts + ' Push is turned off on your Arcane server.';
-		if (push.isAuthorizationDenied()) return toasts + ' Notifications are off in iOS Settings.';
+		if (push.isAuthorizationDenied())
+			return toasts + ` Notifications are off in ${systemNotificationSettingsName}.`;
 		return toasts;
 	})();
 
