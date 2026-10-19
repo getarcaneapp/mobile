@@ -126,11 +126,10 @@ function authorizationStatus(
 		case Notifications.IosAuthorizationStatus.EPHEMERAL:
 			return 'ephemeral';
 		default:
-			return permissions.status === 'denied'
+			if (permissions.status === 'granted') return 'authorized';
+			return permissions.status === 'denied' && !permissions.canAskAgain
 				? 'denied'
-				: permissions.status === 'granted'
-					? 'authorized'
-					: 'notDetermined';
+				: 'notDetermined';
 	}
 }
 
