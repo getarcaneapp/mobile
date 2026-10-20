@@ -21,6 +21,8 @@ export const presentAuthSession: AuthSessionPresenter = async (url, callbackSche
 		const result = await WebBrowser.openAuthSessionAsync(url, `${callbackScheme}://`, {
 			preferEphemeralSession: true
 		});
+		if (result.type === WebBrowser.WebBrowserResultType.LOCKED)
+			throw new Error('Another sign-in window is already open. Close it and try again.');
 		if (result.type !== 'success') throw new CancellationError();
 		return result.url;
 	} finally {

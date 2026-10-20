@@ -8,6 +8,7 @@ import {
 	RemoteDataLimits,
 	saturatingAdd
 } from '@/core/networking/remote-data-limits';
+import { LiveActivities } from '@/core/live-activities';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { DeployOptions } from '@/sdk/models/project/Project';
@@ -96,7 +97,14 @@ function displayText(event: OperationStreamEvent): string | undefined {
 export const useProjectDeploymentStore = create<State>((set, get) => {
 	const patch = (update: Partial<ProjectOperation>) => {
 		const operation = get().operation;
-		if (operation) set({ operation: { ...operation, ...update } });
+		if (!operation) return;
+		const next = { ...operation, ...update };
+		set({ operation: next });
+		if (next.status.kind === 'running')
+			LiveActivities.update(next.id, {
+				phase: next.currentPhase ?? 'Working',
+				progress: next.progressFraction
+			});
 	};
 
 	const trim = (lines: InstallStreamLine[]) => {
@@ -207,6 +215,11 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 			currentPhase: message === 'Cancelled' ? 'Cancelled' : 'Failed'
 		});
 		void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+		LiveActivities.finish(
+			operation.id,
+			message === 'Cancelled' ? 'cancelled' : 'failure',
+			operation.progressFraction
+		);
 		if (!get().isSheetPresented) {
 			const cancelled = message === 'Cancelled';
 			finishActivityToast(operation.id, operation.title, cancelled ? 'cancelled' : 'failure');
@@ -268,6 +281,11 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 				seenPhases: []
 			};
 			set({ operation });
+			LiveActivities.start(
+				operation.id,
+				{ title: operation.title, symbolName: kindSymbol[kind], environmentName },
+				{ phase: 'Starting' }
+			);
 			if (present) present();
 			else reportProgress();
 
@@ -315,6 +333,7 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 					]);
 					useResourceMutationStore.getState().markChanged('projects', envID);
 					void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+					LiveActivities.finish(operation.id, 'success');
 					if (!get().isSheetPresented)
 						finishActivityToast(operation.id, operation.title, 'success');
 					finishPresentation(operation);

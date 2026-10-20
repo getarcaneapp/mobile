@@ -1,0 +1,15 @@
+{
+	"type": "widget",
+	"name": "ArcaneWidgets",
+	"displayName": "Arcane",
+	"bundleIdentifier": ".ArcaneWidgets",
+	"deploymentTarget": "18.0",
+	"frameworks": ["SwiftUI", "WidgetKit", "ActivityKit", "AppIntents"],
+	"colors": {
+		"$accent": "#AF52DE",
+		"$widgetBackground": "#000000"
+	},
+	"entitlements": {
+		"com.apple.security.application-groups": ["group.com.getarcaneapp.ios.mobile"]
+	}
+}

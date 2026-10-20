@@ -1,0 +1,213 @@
+import AppIntents
+import SwiftUI
+import WidgetKit
+
+struct EnvironmentEntity: AppEntity {
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Environment"
+    static let defaultQuery = EnvironmentEntityQuery()
+
+    var id: String
+    var name: String
+
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(name)")
+    }
+}
+
+struct EnvironmentEntityQuery: EntityQuery {
+    func entities(for identifiers: [String]) async throws -> [EnvironmentEntity] {
+        let environments = WidgetSnapshotStore.load()?.environments ?? []
+        return
+            environments
+            .filter { identifiers.contains($0.id) }
+            .map { EnvironmentEntity(id: $0.id, name: $0.name) }
+    }
+
+    func suggestedEntities() async throws -> [EnvironmentEntity] {
+        (WidgetSnapshotStore.load()?.environments ?? [])
+            .map { EnvironmentEntity(id: $0.id, name: $0.name) }
+    }
+
+    func defaultResult() async -> EnvironmentEntity? { nil }
+}
+
+struct StatusWidgetConfigurationIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Arcane Status"
+    static let description = IntentDescription("Choose an environment, or leave empty for all environments.")
+
+    @Parameter(title: "Environment")
+    var environment: EnvironmentEntity?
+}
+
+struct StatusEntry: TimelineEntry {
+    let date: Date
+    let snapshot: WidgetSnapshot?
+    let environmentID: String?
+
+    static func placeholderEntry() -> StatusEntry {
+        StatusEntry(
+            date: Date(),
+            snapshot: WidgetSnapshot(
+                schemaVersion: WidgetSnapshot.currentSchemaVersion,
+                generatedAt: Date(),
+                serverConfigured: true,
+                serverOrigin: nil,
+                isDemo: false,
+                accentHex: nil,
+                activeEnvironmentID: "0",
+                environments: [
+                    .init(
+                        id: "0", name: "Local Docker", online: true,
+                        running: 12, stopped: 2, total: 14, images: 31,
+                        updatesAvailable: 3, actionableVulnerabilities: 5)
+                ]
+            ),
+            environmentID: nil
+        )
+    }
+}
+
+struct StatusProvider: AppIntentTimelineProvider {
+    func placeholder(in _: Context) -> StatusEntry {
+        .placeholderEntry()
+    }
+
+    func snapshot(for configuration: StatusWidgetConfigurationIntent, in context: Context) async -> StatusEntry {
+        if context.isPreview { return .placeholderEntry() }
+        return StatusEntry(
+            date: Date(),
+            snapshot: WidgetSnapshotStore.load(),
+            environmentID: configuration.environment?.id
+        )
+    }
+
+    func timeline(for configuration: StatusWidgetConfigurationIntent, in _: Context) async -> Timeline<StatusEntry> {
+        let entry = StatusEntry(
+            date: Date(),
+            snapshot: WidgetSnapshotStore.load(),
+            environmentID: configuration.environment?.id
+        )
+        return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(30 * 60)))
+    }
+}
+
+struct StatusWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+            kind: "com.getarcaneapp.ios.mobile.status",
+            intent: StatusWidgetConfigurationIntent.self,
+            provider: StatusProvider()
+        ) { entry in
+            StatusWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Status")
+        .description("Container status for one environment or all environments.")
+        .supportedFamilies([.systemSmall, .accessoryCircular, .accessoryRectangular, .accessoryInline])
+    }
+}
+
+struct StatusWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: StatusEntry
+
+    private var accent: Color { WidgetTheme.accent(from: entry.snapshot) }
+
+    private var scoped: WidgetSnapshot.EnvSummary? {
+        guard let id = entry.environmentID else { return nil }
+        return entry.snapshot?.environments.first(where: { $0.id == id })
+    }
+
+    private var title: String { scoped?.name ?? "All Environments" }
+    private var running: Int { scoped?.running ?? entry.snapshot?.totalRunning ?? 0 }
+    private var total: Int { scoped?.total ?? entry.snapshot?.totalContainers ?? 0 }
+    private var updates: Int { scoped?.updatesAvailable ?? entry.snapshot?.totalUpdates ?? 0 }
+    private var online: Bool {
+        if let scoped { return scoped.online }
+        let snapshot = entry.snapshot
+        return (snapshot?.onlineEnvironments ?? 0) > 0
+    }
+
+    private var deepLinkURL: URL {
+        WidgetLink.open(tab: "containers", environmentID: scoped?.id, environmentName: scoped?.name)
+    }
+
+    var body: some View {
+        Group {
+            if entry.snapshot?.serverConfigured == true {
+                configured
+            } else {
+                WidgetUnconfiguredView()
+            }
+        }
+        .widgetContainerBackground()
+        .widgetURL(deepLinkURL)
+    }
+
+    @ViewBuilder
+    private var configured: some View {
+        switch family {
+        case .accessoryCircular:
+            Gauge(value: total > 0 ? Double(running) / Double(total) : 0) {
+                Text("CTR")
+            } currentValueLabel: {
+                Text("\(running)")
+            }
+            .gaugeStyle(.accessoryCircular)
+        case .accessoryInline:
+            Text("\(running)/\(total) running")
+        case .accessoryRectangular:
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 4) {
+                    StatusDot(online: online)
+                    Text(title).font(.headline).lineLimit(1)
+                }
+                Text("\(running) of \(total) running")
+                    .font(.caption2)
+                if updates > 0 {
+                    Text("\(updates) update\(updates == 1 ? "" : "s") available")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        default:
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 6) {
+                    StatusDot(online: online)
+                    Text(title)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Spacer(minLength: 0)
+                }
+
+                Spacer(minLength: 0)
+
+                Text("\(running)")
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(accent)
+                    .widgetAccentable()
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                Text("of \(total) running")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 0)
+
+                if updates > 0 {
+                    WidgetCountChip(
+                        count: updates,
+                        systemImage: "arrow.triangle.2.circlepath",
+                        tint: .secondary
+                    )
+                } else {
+                    Label("Up to date", systemImage: "checkmark.circle")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+    }
+}

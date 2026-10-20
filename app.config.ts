@@ -35,8 +35,12 @@ const config: ExpoConfig = {
 			light: './assets/images/icon.png',
 			dark: './assets/images/icon-dark.png'
 		},
+		entitlements: {
+			'com.apple.security.application-groups': ['group.com.getarcaneapp.ios.mobile']
+		},
 		infoPlist: {
 			ITSAppUsesNonExemptEncryption: false,
+			NSSupportsLiveActivities: true,
 			NSAppTransportSecurity: { NSAllowsArbitraryLoads: true },
 			NSFaceIDUsageDescription: 'Arcane uses Face ID to unlock saved credentials.'
 		}
@@ -72,6 +76,7 @@ const config: ExpoConfig = {
 			}
 		],
 		'expo-secure-store',
+		'@bacons/apple-targets',
 		'expo-localization',
 		'expo-sharing',
 		[

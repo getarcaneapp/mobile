@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { withCleanup } from '@/core/with-cleanup';
 import { passkeyAuthenticatorOptions } from '@/core/auth/auth-session';
@@ -322,6 +322,7 @@ export function usePasskeysMFA() {
 	}, [grantExpiresAt]);
 
 	const endSessionInBackground = useEffectEvent(() => {
+		if (Platform.OS === 'android' && passkeyAuthenticator.current) return;
 		cancelPasskeyCeremony();
 		clearStepUp();
 	});

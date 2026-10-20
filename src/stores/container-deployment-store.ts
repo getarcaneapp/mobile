@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { cachedClient } from '@/core/networking/use-cached-client';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { LiveActivities } from '@/core/live-activities';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { UpdaterResult } from '@/sdk/models/updater/Updater';
 import { useClientManager } from '@/stores/client-manager';
@@ -29,6 +30,14 @@ const verb: Record<ContainerDeploymentKind, string> = {
 	containerRedeploy: 'Redeploy',
 	containerUpdate: 'Update'
 };
+const kindSymbol: Record<ContainerDeploymentKind, string> = {
+	containerRedeploy: 'arrow.triangle.2.circlepath',
+	containerUpdate: 'arrow.up.circle.fill'
+};
+const kindPhase: Record<ContainerDeploymentKind, string> = {
+	containerRedeploy: 'Redeploying',
+	containerUpdate: 'Updating'
+};
 
 function failureMessages(result: UpdaterResult): string[] {
 	return result.items.flatMap((item) =>
@@ -41,7 +50,7 @@ let operationCounter = 0;
 export const useContainerDeploymentStore = create<ContainerDeploymentState>((set, get) => ({
 	isRunning: false,
 
-	start: ({ kind, envID, targetID, targetName, updateTargets = [] }) => {
+	start: ({ kind, envID, targetID, targetName, environmentName, updateTargets = [] }) => {
 		if (get().isRunning) {
 			showToast(Toasts.info('Another deployment is running'));
 			return false;
@@ -53,6 +62,11 @@ export const useContainerDeploymentStore = create<ContainerDeploymentState>((set
 		const title = `${verb[kind]} ${targetName}`;
 		set({ isRunning: true });
 		showActivityToast(id, title);
+		LiveActivities.start(
+			id,
+			{ title, symbolName: kindSymbol[kind], environmentName },
+			{ phase: kindPhase[kind] }
+		);
 
 		void (async () => {
 			let failure: string | undefined;
@@ -62,8 +76,13 @@ export const useContainerDeploymentStore = create<ContainerDeploymentState>((set
 				} else {
 					const failures: string[] = [];
 					for (const [index, target] of updateTargets.entries()) {
-						if (updateTargets.length > 1)
+						if (updateTargets.length > 1) {
 							showActivityToast(id, `Updating ${target.name}`, index / updateTargets.length);
+							LiveActivities.update(id, {
+								phase: `Updating ${target.name}`,
+								progress: index / updateTargets.length
+							});
+						}
 						try {
 							const result = await client.updater.updateContainer({
 								containerId: target.id,
@@ -83,6 +102,10 @@ export const useContainerDeploymentStore = create<ContainerDeploymentState>((set
 				failure = isCancellation(error) ? 'Cancelled' : friendlyErrorMessage(error);
 			}
 
+			LiveActivities.finish(
+				id,
+				failure === undefined ? 'success' : failure === 'Cancelled' ? 'cancelled' : 'failure'
+			);
 			if (useClientManager.getState().clientGeneration !== session) {
 				set({ isRunning: false });
 				return;

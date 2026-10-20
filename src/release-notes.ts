@@ -23,6 +23,12 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Push notifications on Android.'
+			},
+			{
+				text: 'Home Screen and Lock Screen widgets on iOS: Status, Environments, and Updates & Vulnerabilities.'
+			},
+			{
+				text: 'Live Activities on iOS for deploys, redeploys, image pulls, and container updates.'
 			}
 		],
 		changed: [
@@ -143,6 +149,12 @@ export const releaseNotes: ReleaseNote[] = [
 		fixed: [
 			{
 				text: "Dashboard container counts including Arcane's hidden internal container."
+			},
+			{
+				text: 'Adding a passkey or confirming with a passkey on Android cancelling as soon as the browser opened.'
+			},
+			{
+				text: 'Passkey and SSO sign-in silently doing nothing when another sign-in window is already open.'
 			},
 			{
 				text: 'Report an Issue opening the old iOS repository.'

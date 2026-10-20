@@ -1,6 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { LiveActivities } from '@/core/live-activities';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -39,7 +40,7 @@ let pullRunning = false;
 export function startImagePull(
 	environmentID: EnvironmentID,
 	reference: string,
-	_environmentName: string
+	environmentName: string
 ): boolean {
 	if (pullRunning) {
 		showToast(Toasts.info('Another deployment is running'));
@@ -52,9 +53,15 @@ export function startImagePull(
 	const title = `Pull ${reference}`;
 	pullRunning = true;
 	showActivityToast(id, title);
+	LiveActivities.start(
+		id,
+		{ title, symbolName: 'arrow.down', environmentName },
+		{ phase: 'Pulling' }
+	);
 
 	void (async () => {
 		let failure: string | undefined;
+		let progress: number | undefined;
 		try {
 			const { name, tag } = parseImageNameAndTag(reference);
 			for await (const event of client.images.pullStream({
@@ -64,13 +71,20 @@ export function startImagePull(
 				if (event.error) failure = event.error;
 				const detail = event.progressDetail;
 				if (detail?.current !== undefined && detail.total !== undefined && detail.total > 0) {
-					showActivityToast(id, title, Math.min(Math.max(detail.current / detail.total, 0), 1));
+					progress = Math.min(Math.max(detail.current / detail.total, 0), 1);
+					showActivityToast(id, title, progress);
+					LiveActivities.update(id, { phase: 'Pulling', progress });
 				}
 			}
 		} catch (error) {
 			failure = isCancellation(error) ? 'Cancelled' : friendlyErrorMessage(error);
 		}
 		pullRunning = false;
+		LiveActivities.finish(
+			id,
+			failure === undefined ? 'success' : failure === 'Cancelled' ? 'cancelled' : 'failure',
+			progress
+		);
 		if (useClientManager.getState().clientGeneration !== session) return;
 		if (failure === undefined) {
 			invalidateImageCaches(environmentID);

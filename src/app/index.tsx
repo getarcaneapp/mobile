@@ -1,8 +1,10 @@
 import { Redirect, type Href } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 
 import { AppTabIDs, type AppTab } from '@/core/app-tab';
 import { Keys, storage } from '@/core/storage';
+import { PendingLaunchRoute, tabHref } from '@/core/widgets/widget-links';
 import { useClientManager } from '@/stores/client-manager';
 import { useLaunchSplash } from '@/stores/launch-splash-store';
 import { resolveTabs, useNavTabsStore } from '@/stores/nav-tabs-store';
@@ -12,6 +14,8 @@ function initialTabHref(): Href {
 	const manager = useClientManager.getState();
 	const available = new Set<AppTab>(AppTabIDs.filter(manager.canAccess));
 	const visible = resolveTabs(useNavTabsStore.getState().pinnedTabs, available);
+	const pending = PendingLaunchRoute.peek();
+	if (pending && available.has(pending)) return tabHref(pending, visible) as Href;
 	const allowed: string[] = [...visible, 'settings'];
 	const remember = storage.bool(Keys.rememberLastTab) ?? true;
 	const saved = remember ? storage.string(Keys.lastSelectedTabID) : undefined;
@@ -24,6 +28,9 @@ function initialTabHref(): Href {
 export default function Index() {
 	const authState = useClientManager((s) => s.authState);
 	const showsLaunchSplash = useLaunchSplash((s) => s.isPresented);
+	useEffect(() => {
+		if (authState === 'authenticated' || authState === 'login') PendingLaunchRoute.clear();
+	}, [authState]);
 	if (authState === 'authenticating') {
 		return showsLaunchSplash ? null : (
 			<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
