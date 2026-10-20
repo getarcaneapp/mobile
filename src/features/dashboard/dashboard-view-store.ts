@@ -3,6 +3,7 @@ import { createStore } from 'zustand/vanilla';
 import type { Activity } from '@/sdk/models/activity/Activity';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { useActivityHistoryMutationStore } from '@/stores/activity-history-mutation-store';
+import { useBusiestContainersStore } from '@/stores/busiest-containers-store';
 import { useClientManager } from '@/stores/client-manager';
 import { useDashboardStreamStore } from '@/stores/dashboard-stream-store';
 import { useEnvironmentsStore } from '@/stores/environments-store';
@@ -115,7 +116,10 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 			};
 		};
 
-		const loadImageUpdatesTotal = async (envs: Environment[]): Promise<CountResult> => {
+		const loadImageUpdatesTotal = async (
+			envs: Environment[],
+			replace: boolean
+		): Promise<CountResult> => {
 			const client = manager().client;
 			if (!client)
 				return { total: undefined, unavailableEnvironmentIDs: envs.map((e) => e.id), counts: {} };
@@ -128,9 +132,9 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 			);
 			const counts: Record<string, number> = {};
 			for (const [id, count] of results) if (count !== undefined) counts[id] = count;
-			useImageUpdateCountStore
-				.getState()
-				.setSummaryCounts(counts, manager().client, manager().currentUser?.id);
+			const countStore = useImageUpdateCountStore.getState();
+			if (replace) countStore.setCounts(counts, manager().client, manager().currentUser?.id);
+			else countStore.setSummaryCounts(counts, manager().client, manager().currentUser?.id);
 			const unavailable = envs.filter((e) => counts[e.id] === undefined).map((e) => e.id);
 			return {
 				total:
@@ -235,7 +239,7 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 					const enabledEnvironments = enabled(envs);
 					const [volumes, updates] = await Promise.all([
 						loadVolumesTotal(enabledEnvironments),
-						loadImageUpdatesTotal(enabledEnvironments)
+						loadImageUpdatesTotal(enabledEnvironments, refresh)
 					]);
 					if (!isCancelled()) {
 						set({
@@ -273,6 +277,11 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 				}
 				await get().loadData(true);
 				const client = manager().client;
+				if (client && manager().refreshedDashboardPreview)
+					void useBusiestContainersStore.getState().refresh(
+						client,
+						enabled(get().allEnvironments).map((e) => e.id)
+					);
 				await environmentsStore().refreshDockerInformation(client);
 				await environmentsStore().refreshActionItems(client);
 				if (isCancelled()) return;

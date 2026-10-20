@@ -148,6 +148,9 @@ export const releaseNotes: ReleaseNote[] = [
 		],
 		fixed: [
 			{
+				text: 'Pull to refresh on the dashboard leaving the Updates count and Busiest Containers stale.'
+			},
+			{
 				text: "Dashboard container counts including Arcane's hidden internal container."
 			},
 			{
