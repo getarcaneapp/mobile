@@ -171,7 +171,7 @@ export function primaryRef(image: ImageSummary): string | undefined {
 export function resolvedInfo(
 	image: ImageSummary,
 	ref: string,
-	bucket: EnvUpdateBucket
+	bucket: Pick<EnvUpdateBucket, 'byRef'>
 ): ImageUpdateResponse | undefined {
 	const cached = bucket.byRef[ref];
 	if (cached) return cached;
@@ -181,7 +181,7 @@ export function resolvedInfo(
 	return undefined;
 }
 
-export function outdatedImages(bucket: EnvUpdateBucket): OutdatedImage[] {
+export function outdatedImages(bucket: Pick<EnvUpdateBucket, 'images' | 'byRef'>): OutdatedImage[] {
 	const items: OutdatedImage[] = [];
 	for (const image of bucket.images) {
 		const ref = primaryRef(image);

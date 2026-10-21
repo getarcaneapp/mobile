@@ -5,7 +5,6 @@ import { performAllEnvironmentsMaintenance } from '@/core/all-environments-actio
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
 import { ListSortOrder, localizedStandardCompare } from '@/core/list-sort-order';
-import { PaginationLoader } from '@/core/networking/pagination-loader';
 import {
 	RemoteDataLimitError,
 	RemoteDataLimits,
@@ -17,9 +16,7 @@ import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
-import type { ImageSummary, ImageUsedBy } from '@/sdk/models/image/ImageSummary';
-import { ImageUpdateInfo } from '@/sdk/models/image/ImageUpdateInfo';
-import type { ImageUpdateResponse, ImageUpdateSummary } from '@/sdk/models/imageUpdate/ImageUpdate';
+import type { ImageUsedBy } from '@/sdk/models/image/ImageSummary';
 import { useClientManager } from '@/stores/client-manager';
 import { useContainerDeploymentStore } from '@/stores/container-deployment-store';
 import { environmentDisplayName } from '@/stores/environments-store';
@@ -29,6 +26,7 @@ import type { AllEnvironmentsMaintenanceAction } from '@/ui/components/all-envir
 import { useAllEnvironmentsMaintenanceConfirmation } from '@/ui/components/all-environments-maintenance';
 import { showToast, Toasts } from '@/ui/toast';
 
+import { fetchEnvironmentUpdates, type EnvironmentUpdates } from './environment-updates';
 import {
 	actionableConsumers,
 	containsInsensitive,
@@ -56,66 +54,14 @@ export type ImageDetailState =
 	| { kind: 'image'; item: OutdatedImage; hasUpdate: boolean; bucket: EnvUpdateBucket }
 	| { kind: 'updatedAway' };
 
-type EnvLoadResult = {
-	index: number;
-	summary?: ImageUpdateSummary;
-	images: ImageSummary[];
-	byRef: Record<string, ImageUpdateResponse>;
-	totalImages: number;
-	error?: string;
-};
+type EnvLoadResult = EnvironmentUpdates & { index: number };
 
 async function fetchEnv(
 	index: number,
 	envID: EnvironmentID,
 	client: ArcaneClient
 ): Promise<EnvLoadResult> {
-	const pendingSummary = client.images.updateSummary({ envID }).catch(() => undefined);
-
-	let images: ImageSummary[];
-	let listError: string | undefined;
-	try {
-		images = await PaginationLoader.collect(async (start, limit) => {
-			const response = await client.images.list({ envID, query: { start, limit } });
-			return { items: response.data, pagination: response.pagination };
-		});
-	} catch (error) {
-		images = [];
-		listError = error instanceof Error ? error.message : String(error);
-	}
-
-	const refs = [
-		...new Set(images.flatMap((image) => image.repoTags).filter((tag) => tag !== '<none>:<none>'))
-	];
-
-	const byRef: Record<string, ImageUpdateResponse> = {};
-	for (const image of images) {
-		const info = image.updateInfo;
-		if (!info || !ImageUpdateInfo.hasCheckResult(info)) continue;
-		const response = ImageUpdateInfo.asUpdateResponse(info);
-		for (const tag of image.repoTags) if (tag !== '<none>:<none>') byRef[tag] = response;
-	}
-
-	const batches: string[][] = [];
-	for (let offset = 0; offset < refs.length; offset += 100)
-		batches.push(refs.slice(offset, offset + 100));
-	const maps = await Promise.all(
-		batches.map((batch) =>
-			client.images
-				.updateInfoByRefs({ envID, imageRefs: batch })
-				.catch(() => ({}) as Record<string, ImageUpdateInfo | undefined>)
-		)
-	);
-	for (const map of maps) {
-		for (const [ref, info] of Object.entries(map)) {
-			if (!info) continue;
-			byRef[ref] = ImageUpdateInfo.asUpdateResponse(info);
-		}
-	}
-
-	const summary = await pendingSummary;
-	const error = summary === undefined && listError !== undefined ? listError : undefined;
-	return { index, summary, images, byRef, totalImages: images.length, error };
+	return { index, ...(await fetchEnvironmentUpdates(envID, client)) };
 }
 
 export type ImageUpdatesModel = ReturnType<typeof useImageUpdates>;

@@ -25,9 +25,9 @@ async function loadUpdateSummary(
 		const loaded = await client.images.updateSummary({ envID: environmentID });
 		setSummary(loaded);
 		const manager = useClientManager.getState();
-		useImageUpdateCountStore
+		void useImageUpdateCountStore
 			.getState()
-			.setCount(loaded.imagesWithUpdates, environmentID, manager.client, manager.currentUser?.id);
+			.refreshCount(environmentID, manager.client, manager.currentUser?.id);
 	} catch (error) {
 		setErrorMessage(friendlyErrorMessage(error));
 	}

@@ -1,5 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 
+import { environmentUpdateCount } from '@/features/updates/environment-updates';
+
 import type { Activity } from '@/sdk/models/activity/Activity';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { useActivityHistoryMutationStore } from '@/stores/activity-history-mutation-store';
@@ -116,25 +118,22 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 			};
 		};
 
-		const loadImageUpdatesTotal = async (
-			envs: Environment[],
-			replace: boolean
-		): Promise<CountResult> => {
+		const loadImageUpdatesTotal = async (envs: Environment[]): Promise<CountResult> => {
 			const client = manager().client;
 			if (!client)
 				return { total: undefined, unavailableEnvironmentIDs: envs.map((e) => e.id), counts: {} };
 			if (envs.length === 0) return { total: 0, unavailableEnvironmentIDs: [], counts: {} };
 			const results = await Promise.all(
 				envs.map(async (e) => {
-					const summary = await client.images.updateSummary({ envID: e.id }).catch(() => undefined);
-					return [e.id, summary?.imagesWithUpdates] as const;
+					const count = await environmentUpdateCount(e.id, client).catch(() => undefined);
+					return [e.id, count] as const;
 				})
 			);
 			const counts: Record<string, number> = {};
 			for (const [id, count] of results) if (count !== undefined) counts[id] = count;
-			const countStore = useImageUpdateCountStore.getState();
-			if (replace) countStore.setCounts(counts, manager().client, manager().currentUser?.id);
-			else countStore.setSummaryCounts(counts, manager().client, manager().currentUser?.id);
+			useImageUpdateCountStore
+				.getState()
+				.setCounts(counts, manager().client, manager().currentUser?.id);
 			const unavailable = envs.filter((e) => counts[e.id] === undefined).map((e) => e.id);
 			return {
 				total:
@@ -239,7 +238,7 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 					const enabledEnvironments = enabled(envs);
 					const [volumes, updates] = await Promise.all([
 						loadVolumesTotal(enabledEnvironments),
-						loadImageUpdatesTotal(enabledEnvironments, refresh)
+						loadImageUpdatesTotal(enabledEnvironments)
 					]);
 					if (!isCancelled()) {
 						set({

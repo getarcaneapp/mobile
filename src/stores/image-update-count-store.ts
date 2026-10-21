@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
+import { environmentUpdateCount } from '@/features/updates/environment-updates';
 
 type Scope = { transport: object; userID: string };
 
@@ -37,11 +38,6 @@ type ImageUpdateCountState = {
 		userID: string | undefined
 	) => void;
 	setCounts: (
-		counts: Record<string, number>,
-		client: ArcaneClient | undefined,
-		userID: string | undefined
-	) => void;
-	setSummaryCounts: (
 		counts: Record<string, number>,
 		client: ArcaneClient | undefined,
 		userID: string | undefined
@@ -107,22 +103,10 @@ export const useImageUpdateCountStore = create<ImageUpdateCountState>((set, get)
 			set({ scope, counts, authoritativeEnvironmentIDs: authoritative });
 		},
 
-		setSummaryCounts: (newCounts, client, userID) => {
-			const scope = scopeFor(client, userID);
-			if (!scope) return;
-			const { counts, authoritative } = prepare(scope);
-			for (const [id, count] of Object.entries(newCounts)) {
-				if (!authoritative.has(id)) counts[id] = count;
-			}
-			set({ scope, counts, authoritativeEnvironmentIDs: authoritative });
-		},
-
 		refreshCount: async (environmentID, client, userID) => {
 			if (!client) return;
-			try {
-				const summary = await client.images.updateSummary({ envID: environmentID });
-				get().setCount(summary.imagesWithUpdates, environmentID, client, userID);
-			} catch {}
+			const count = await environmentUpdateCount(environmentID, client).catch(() => undefined);
+			if (count !== undefined) get().setCount(count, environmentID, client, userID);
 		}
 	};
 });

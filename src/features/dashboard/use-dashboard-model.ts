@@ -33,6 +33,7 @@ import {
 	needsAttentionItems,
 	overviewCounts,
 	reappearRefreshIntervalMs,
+	resolveImageUpdateCount,
 	type AttentionAction,
 	type DashboardTotalsTile,
 	type NeedsAttentionItem
@@ -74,7 +75,6 @@ export function useDashboardModel() {
 	const attention = useDashboardStreamStore((s) => s.attention);
 	const streamFailed = useDashboardStreamStore((s) => s.streamFailed);
 	const streamUnsupported = useDashboardStreamStore((s) => s.streamUnsupported);
-	useImageUpdateCountStore((s) => s.counts);
 	const latestClear = useActivityHistoryMutationStore((s) => s.latestClear);
 	const mutationVersions = useResourceMutationStore((s) => s.versions);
 	usePinnedItemsStore((s) => s.version);
@@ -242,7 +242,18 @@ export function useDashboardModel() {
 		() => view.allEnvironments.filter((e) => e.enabled),
 		[view.allEnvironments]
 	);
-	const imageUpdatesTotal = view.imageUpdatesTotal();
+	const sharedImageUpdatesTotal = useImageUpdateCountStore((s) =>
+		s.total(
+			client,
+			currentUser?.id,
+			enabledEnvironments.map((e) => e.id)
+		)
+	);
+	const imageUpdatesTotal = resolveImageUpdateCount(
+		sharedImageUpdatesTotal,
+		aggregate?.imageUpdates,
+		view.supplementalImageUpdatesTotal
+	);
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
 	const canPrune = useClientManager(() =>
 		allEnvironmentsPreview
