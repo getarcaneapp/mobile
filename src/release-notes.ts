@@ -25,6 +25,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Push notifications on Android.'
 			},
 			{
+				text: 'On Android, Firebase settings are entered at runtime under App Settings > Firebase.'
+			},
+			{
 				text: 'Home Screen and Lock Screen widgets on iOS: Status, Environments, and Updates & Vulnerabilities.'
 			},
 			{

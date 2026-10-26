@@ -84,6 +84,15 @@ export function AppSettingsScreen() {
 							disabled={model.pushToggleDisabled}
 						/>
 					) : null}
+					{model.showsFirebaseRow ? (
+						<MaterialListItem
+							headline="Firebase"
+							icon="flame.fill"
+							iconColor={systemColors.orange}
+							trailingText={model.firebaseReady ? 'On' : 'Not set'}
+							onPress={model.openFirebaseSettings}
+						/>
+					) : null}
 				</M3Section>
 
 				<M3Section title="Support">
