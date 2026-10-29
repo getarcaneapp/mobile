@@ -15,6 +15,7 @@ const arcaneBuildNumber = env?.ARCANE_BUILD_NUMBER;
 const googleServicesFile =
 	env?.GOOGLE_SERVICES_JSON ??
 	(fs.existsSync('./google-services.json') ? './google-services.json' : undefined);
+const androidPackage = env?.ARCANE_ANDROID_PACKAGE || 'app.getarcane.android';
 const BUILD_NUMBER = Number(arcaneBuildNumber) || Math.floor((Date.now() - buildEpochMs) / 60_000);
 
 const config: ExpoConfig = {
@@ -46,7 +47,7 @@ const config: ExpoConfig = {
 		}
 	},
 	android: {
-		package: 'app.getarcane.android',
+		package: androidPackage,
 		versionCode: BUILD_NUMBER,
 		adaptiveIcon: {
 			backgroundImage: './assets/images/android-icon-background.png',

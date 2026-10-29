@@ -20,7 +20,9 @@ import { clearImageCache } from '@/ui/components/cached-async-image';
 import { useItemDeleteConfirmation } from '@/ui/components/delete-confirmation';
 import { showToast, Toasts } from '@/ui/toast';
 
+import { useSettingsNavigation } from '../shared/settings-routes';
 import { ActivityToastScope } from './activity-toast-scope';
+import { AppSettingsRoutes } from './app-settings-routes';
 
 export const supportLinks = [
 	{ title: 'Documentation', url: 'https://getarcane.app', systemImage: 'globe', color: 'blue' },
@@ -92,6 +94,7 @@ export function useAppSettings() {
 	const clientGeneration = useClientManager((s) => s.clientGeneration);
 	const origin = useClientManager((s) => s.serverOrigin());
 	const push = usePushNotificationCoordinator();
+	const navigation = useSettingsNavigation();
 
 	const refreshCacheSize = useCallback(() => setCacheSizeBytes(cacheDiskBytes()), []);
 
@@ -116,12 +119,14 @@ export function useAppSettings() {
 	const showsPushToggle = supportsMobilePush && push.isSupported;
 	const pushAvailable = push.serverStatus?.enabled === true && !push.isAuthorizationDenied();
 	const pushEnabled = push.isEnabled(origin);
+	const showsFirebaseRow = push.isSupported && Platform.OS === 'android';
 	const setPushEnabled = (enabled: boolean) => void (enabled ? push.enable() : push.disable());
 
 	const notificationsFooter = (() => {
 		const scope = ActivityToastScope.subtitle(activityToastScope);
 		const toasts = `Toasts show ${scope.charAt(0).toLowerCase() + scope.slice(1)}.`;
 		if (!showsPushToggle) return toasts;
+		if (!push.firebaseReady) return toasts + ' Enter your Firebase settings to turn on push.';
 		if (push.serverStatus?.enabled !== true)
 			return toasts + ' Push is turned off on your Arcane server.';
 		if (push.isAuthorizationDenied())
@@ -173,7 +178,10 @@ export function useAppSettings() {
 		showsPushToggle,
 		pushEnabled,
 		setPushEnabled,
-		pushToggleDisabled: push.isBusy || !pushAvailable,
+		pushToggleDisabled: push.isBusy || !pushAvailable || (!pushEnabled && !push.firebaseReady),
+		showsFirebaseRow,
+		firebaseReady: push.firebaseReady,
+		openFirebaseSettings: () => navigation.push(AppSettingsRoutes.firebase),
 		notificationsFooter,
 		cacheSizeText,
 		clearCache: () => setPendingDestructive('clearCache'),
