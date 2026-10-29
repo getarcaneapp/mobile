@@ -81,7 +81,41 @@ export interface EnvironmentUpdateResult {
 	fromVersion?: string;
 	toVersion?: string;
 	error?: string;
+	stage?: EnvironmentUpdateStage;
+	stageStartedAt?: ISODateString;
+	percent?: number;
+	logs?: string[];
 }
+
+export type EnvironmentUpdateStage =
+	| 'checking'
+	| 'starting'
+	| 'pulling'
+	| 'upgrading'
+	| 'reconnecting'
+	| 'verifying'
+	| (string & {});
+
+export const EnvironmentUpdateStage = {
+	label(this: void, stage: EnvironmentUpdateStage): string {
+		switch (stage) {
+			case 'checking':
+				return 'Checking for updates';
+			case 'starting':
+				return 'Starting';
+			case 'pulling':
+				return 'Pulling image';
+			case 'upgrading':
+				return 'Replacing container';
+			case 'reconnecting':
+				return 'Reconnecting';
+			case 'verifying':
+				return 'Verifying';
+			default:
+				return stage.charAt(0).toUpperCase() + stage.slice(1);
+		}
+	}
+} as const;
 
 export const EnvironmentUpdateResult = {
 	id(this: void, value: EnvironmentUpdateResult): string {
@@ -96,7 +130,11 @@ export const EnvironmentUpdateResult = {
 			status: D.nested(o, 'status', EnvironmentUpdateResultStatus.decode),
 			fromVersion: D.optString(o, 'fromVersion'),
 			toVersion: D.optString(o, 'toVersion'),
-			error: D.optString(o, 'error')
+			error: D.optString(o, 'error'),
+			stage: D.optString(o, 'stage'),
+			stageStartedAt: D.optString(o, 'stageStartedAt'),
+			percent: D.optInt(o, 'percent'),
+			logs: D.optArray(o, 'logs', D.str)
 		};
 	}
 } as const;
@@ -173,5 +211,36 @@ export const SystemContainerActionResult = {
 	encode(this: void, value: SystemContainerActionResult): Record<string, unknown> {
 		const { activityID, ...rest } = value;
 		return { ...rest, activityId: activityID };
+	}
+} as const;
+
+export type UpgradeProgressEventType = 'stage' | 'progress' | 'log' | 'done' | (string & {});
+
+export interface UpgradeProgressEvent {
+	type: UpgradeProgressEventType;
+	percent: number;
+	message?: string;
+	fromVersion?: string;
+	toVersion?: string;
+	at?: ISODateString;
+	replay?: boolean;
+}
+
+export const UpgradeProgressEvent = {
+	isDone(this: void, value: UpgradeProgressEvent): boolean {
+		return value.type === 'done';
+	},
+
+	decode(this: void, raw: unknown): UpgradeProgressEvent {
+		const o = D.object(raw, 'UpgradeProgressEvent');
+		return {
+			type: D.optString(o, 'type') ?? 'progress',
+			percent: D.optInt(o, 'percent') ?? 0,
+			message: D.optString(o, 'message'),
+			fromVersion: D.optString(o, 'fromVersion'),
+			toVersion: D.optString(o, 'toVersion'),
+			at: D.optString(o, 'at'),
+			replay: D.optBoolean(o, 'replay')
+		};
 	}
 } as const;

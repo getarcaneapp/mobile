@@ -37,6 +37,7 @@ import {
 } from '@/core/networking/server-identity';
 import { Keys, storage } from '@/core/storage';
 import { ArcaneClient } from '@/sdk/client/ArcaneClient';
+import type { APIGeneration } from '@/sdk/client/apiGeneration';
 import { EnvironmentID, RetryPolicy } from '@/sdk/client/environment';
 import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import { ArcaneError, CancellationError } from '@/sdk/errors/ArcaneError';
@@ -45,6 +46,8 @@ import {
 	type AuthenticationResult,
 	type MFAChallenge
 } from '@/sdk/models/auth/Login';
+import type { SessionBootstrap } from '@/sdk/models/auth/SessionBootstrap';
+import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { PermissionsManifest } from '@/sdk/models/role/PermissionsManifest';
 import type { User } from '@/sdk/models/user/User';
 import { VersionInfo } from '@/sdk/models/version/VersionInfo';
@@ -77,6 +80,8 @@ type ClientManagerState = {
 	pendingMFAChallenge: MFAChallenge | undefined;
 	supportsPost26MobileFeatures: boolean;
 	supportsMobilePush: boolean;
+	apiGeneration: APIGeneration | undefined;
+	takeBootstrapEnvironments: (sessionIdentity: string) => Environment[] | undefined;
 
 	isDemoActive: boolean;
 	isStartingDemo: boolean;
@@ -147,12 +152,47 @@ export function shouldSuggestLocalDNSHint(
 	return dnsAddresses.every(isPublicIPAddress);
 }
 
+async function sessionBootstrapIfAvailable(
+	client: ArcaneClient
+): Promise<SessionBootstrap | undefined> {
+	if ((await client.apiGeneration()) !== 'v3') return undefined;
+	return client.auth.sessionBootstrap().catch(() => undefined);
+}
+
+function rememberedAPIGeneration(serverURL: string | undefined): APIGeneration | undefined {
+	const origin = serverURL ? canonicalServerOrigin(serverURL) : undefined;
+	const stored = storage.string(Keys.serverAPIGeneration);
+	if (!origin || !stored) return undefined;
+	const separator = stored.indexOf('@');
+	if (separator < 0 || stored.slice(separator + 1) !== origin) return undefined;
+	const generation = stored.slice(0, separator);
+	return generation === 'v3' || generation === 'legacy' ? generation : undefined;
+}
+
+function rememberAPIGeneration(
+	serverURL: string | undefined,
+	generation: APIGeneration | undefined
+): void {
+	const origin = serverURL ? canonicalServerOrigin(serverURL) : undefined;
+	if (!origin || !generation) return;
+	storage.set(Keys.serverAPIGeneration, `${generation}@${origin}`);
+}
+
+function previewModes(generation: APIGeneration | undefined) {
+	if (generation === 'v3') return { allEnvironmentsPreview: true, refreshedDashboardPreview: true };
+	return {
+		allEnvironmentsPreview: storage.bool(Keys.allEnvironmentsPreview) ?? false,
+		refreshedDashboardPreview: storage.bool(Keys.refreshedDashboardPreview) ?? false
+	};
+}
+
 export const useClientManager = create<ClientManagerState>((set, get) => {
 	let credentialLease = new CredentialLease();
 	const credentialPersistence = new CredentialPersistenceCoordinator();
 	const bootstrapControllers = new Map<string, AbortController>();
 	const bootstrapClients = new Map<string, ArcaneClient>();
 	let configuredClientURL: string | undefined;
+	let bootstrapEnvironments: { session: string; environments: Environment[] } | undefined;
 	let needsConnectionBootstrapRetry = false;
 	let isRetryingConnectionBootstrap = false;
 	let lastBootstrapDNSAddresses: string[] = [];
@@ -235,6 +275,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 
 	const clearSessionState = () => {
 		avatarFetchKey = undefined;
+		bootstrapEnvironments = undefined;
 		clearPendingAuthentication();
 		set({
 			currentUser: undefined,
@@ -242,10 +283,15 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			serverCapabilities: undefined,
 			permissionsManifest: undefined,
 			supportsPost26MobileFeatures: false,
-			supportsMobilePush: false
+			supportsMobilePush: false,
+			apiGeneration: undefined,
+			...previewModes(rememberedAPIGeneration(get().parsedServerURL))
 		});
 		bumpAccess();
 	};
+
+	const usesV3Defaults = () =>
+		get().apiGeneration === 'v3' || rememberedAPIGeneration(get().parsedServerURL) === 'v3';
 
 	const signOutLocally = () => {
 		retireAuthentication();
@@ -347,19 +393,50 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		set({ currentUser: user, serverCapabilities: capabilities });
 		bumpAccess();
 		const loadsPermissions = capabilities.mode === 'rbac';
-		const [manifest, versionInfo] = await Promise.all([
+		const bootstrap = await sessionBootstrapIfAvailable(client);
+		if (!isCurrentAuthentication(generation)) return;
+		if (bootstrap) {
+			const environments = bootstrap.environments;
+			bootstrapEnvironments =
+				environments.pagination.totalItems >= 0 &&
+				environments.data.length >= environments.pagination.totalItems
+					? { session: get().cacheSessionIdentity, environments: environments.data }
+					: undefined;
+			rememberAPIGeneration(get().parsedServerURL, 'v3');
+			set({
+				...previewModes('v3'),
+				currentUser: bootstrap.user,
+				serverCapabilities: ServerCapabilities.make(
+					ServerCapabilities.detect(bootstrap.user),
+					bootstrap.version.enabledFeatures ?? []
+				),
+				permissionsManifest: bootstrap.permissionsManifest,
+				supportsPost26MobileFeatures: VersionInfo.supportsPost26MobileFeatures(bootstrap.version),
+				supportsMobilePush: VersionInfo.supportsMobilePush(bootstrap.version),
+				apiGeneration: 'v3',
+				pendingMFAChallenge: undefined,
+				authState: 'authenticated'
+			});
+			bumpAccess();
+			return;
+		}
+		const [manifest, versionInfo, apiGeneration] = await Promise.all([
 			loadsPermissions
 				? client.roles.availablePermissions().catch(() => undefined)
 				: Promise.resolve(undefined),
-			client.version.appVersion().catch(() => undefined)
+			client.version.appVersion().catch(() => undefined),
+			client.apiGeneration().then(() => client.currentAPIGeneration())
 		]);
 		if (!isCurrentAuthentication(generation)) return;
+		rememberAPIGeneration(get().parsedServerURL, apiGeneration);
 		set({
+			...previewModes(apiGeneration),
 			permissionsManifest: loadsPermissions ? manifest : undefined,
 			supportsPost26MobileFeatures: versionInfo
 				? VersionInfo.supportsPost26MobileFeatures(versionInfo)
 				: false,
 			supportsMobilePush: versionInfo ? VersionInfo.supportsMobilePush(versionInfo) : false,
+			apiGeneration,
 			pendingMFAChallenge: undefined,
 			authState: 'authenticated'
 		});
@@ -468,12 +545,17 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		pendingMFAChallenge: undefined,
 		supportsPost26MobileFeatures: false,
 		supportsMobilePush: false,
+		apiGeneration: undefined,
+		takeBootstrapEnvironments: (sessionIdentity) => {
+			const seeded = bootstrapEnvironments;
+			bootstrapEnvironments = undefined;
+			return seeded?.session === sessionIdentity ? seeded.environments : undefined;
+		},
 		isDemoActive: false,
 		isStartingDemo: false,
 		demoEndsAt: undefined,
 		demoExpiredMessage: undefined,
-		allEnvironmentsPreview: storage.bool(Keys.allEnvironmentsPreview) ?? false,
-		refreshedDashboardPreview: storage.bool(Keys.refreshedDashboardPreview) ?? false,
+		...previewModes(rememberedAPIGeneration(initialParsed)),
 		activeEnvironmentID: savedEnvID ?? EnvironmentID.localDocker,
 		activeEnvironmentName:
 			savedEnvID !== undefined
@@ -543,12 +625,14 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		},
 
 		setAllEnvironmentsPreview: (enabled) => {
+			if (usesV3Defaults()) return;
 			storage.set(Keys.allEnvironmentsPreview, enabled);
 			set({ allEnvironmentsPreview: enabled });
 			bumpAccess();
 		},
 
 		setRefreshedDashboardPreview: (enabled) => {
+			if (usesV3Defaults()) return;
 			storage.set(Keys.refreshedDashboardPreview, enabled);
 			set({ refreshedDashboardPreview: enabled });
 		},

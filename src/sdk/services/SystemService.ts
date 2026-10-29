@@ -8,8 +8,10 @@ import type { SystemStats } from '../models/system/SystemStats';
 import {
 	EnvironmentUpdateJob,
 	SystemContainerActionResult,
+	UpgradeProgressEvent,
 	type UpgradeCheckResult
 } from '../models/system/Upgrade';
+import { NDJSONStream } from '../streaming/NDJSONStream';
 import { StatsStream } from '../streaming/Streams';
 
 export class SystemService {
@@ -98,6 +100,17 @@ export class SystemService {
 	triggerUpdateAll(args: { envID?: EnvironmentID } = {}): Promise<EnvironmentUpdateJob> {
 		return this.rest.post(this.rest.environmentPath(args.envID, 'system/upgrade/all'), {
 			decode: EnvironmentUpdateJob.decode
+		});
+	}
+
+	upgradeProgress(args: { envID?: EnvironmentID } = {}): NDJSONStream<UpgradeProgressEvent> {
+		return new NDJSONStream<UpgradeProgressEvent>(this.rest.transport, {
+			path: this.rest.environmentPath(args.envID, 'system/upgrade/progress'),
+			method: 'GET',
+			contentType: null,
+			terminalAction: (event) =>
+				UpgradeProgressEvent.isDone(event) ? { kind: 'finish' } : { kind: 'continueStreaming' },
+			decode: UpgradeProgressEvent.decode
 		});
 	}
 

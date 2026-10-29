@@ -20,7 +20,7 @@ import {
 } from '@/features/activities/activity-display';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { ArcaneTransport } from '@/sdk/client/ArcaneTransport';
-import type { EnvironmentID } from '@/sdk/client/environment';
+import { EnvironmentID } from '@/sdk/client/environment';
 import type {
 	Activity,
 	ActivityDetail,
@@ -44,6 +44,40 @@ export type ActivityHistoryClearResult = {
 type StreamWarning = 'loadPartial' | 'missed' | 'environmentFailure' | 'persistentFailure';
 
 type ActivityEnvironment = { id: EnvironmentID; name: string };
+
+type ActivitySource = { key: string; environments: ActivityEnvironment[] };
+
+const defaultAggregateLimit = 64;
+
+async function aggregateLimit(client: ArcaneClient): Promise<number> {
+	const settings = await client.settings
+		.getPublicSettings({ envID: EnvironmentID.localDocker })
+		.catch(() => []);
+	const value = Number(settings.find((setting) => setting.key === 'allEnvironmentsLimit')?.value);
+	return Number.isFinite(value) && value >= 2 ? Math.floor(value) : defaultAggregateLimit;
+}
+
+async function activitySources(
+	client: ArcaneClient,
+	environments: ActivityEnvironment[]
+): Promise<ActivitySource[]> {
+	if ((await client.apiGeneration()) !== 'v3' || environments.length < 2) {
+		return environments.map((environment) => ({
+			key: environment.id,
+			environments: [environment]
+		}));
+	}
+	const limit = await aggregateLimit(client);
+	const sources: ActivitySource[] = [];
+	for (let start = 0; start < environments.length; start += limit) {
+		const chunk = environments.slice(start, start + limit);
+		sources.push({
+			key: chunk.map((environment) => environment.id).join(','),
+			environments: chunk
+		});
+	}
+	return sources;
+}
 
 export type ActivityCenterState = {
 	activities: Activity[];
@@ -590,59 +624,64 @@ export function createActivityCenterStore(): ActivityCenterStore {
 						if (!environmentNames.has(environment.id))
 							environmentNames.set(environment.id, environment.name);
 					}
-					const requests: [ActivityEnvironment, number][] = [];
-					for (const environment of environments) {
-						const id = environment.id;
-						if (!paginationByEnvironment.has(id)) {
+					const sources = await activitySources(activeClient, environments);
+					if (loadGeneration !== generation) return;
+					const requests: [ActivitySource, number][] = [];
+					for (const source of sources) {
+						const key = source.key;
+						if (!paginationByEnvironment.has(key)) {
 							paginationByEnvironment.set(
-								id,
+								key,
 								ProgressivePaginationState.reset(ProgressivePaginationState.initial)
 							);
-							failedPageEnvironmentIDs.add(id);
+							failedPageEnvironmentIDs.add(key);
 						}
 						if (
 							!(
 								reset ||
-								paginationByEnvironment.get(id)?.hasMore === true ||
-								failedPageEnvironmentIDs.has(id)
+								paginationByEnvironment.get(key)?.hasMore === true ||
+								failedPageEnvironmentIDs.has(key)
 							)
 						)
 							continue;
-						requests.push([environment, paginationByEnvironment.get(id)?.nextStart ?? 0]);
+						requests.push([source, paginationByEnvironment.get(key)?.nextStart ?? 0]);
 					}
 					let failures = 0;
 					await progressiveFanOut(
 						requests,
-						async ([environment, start]): Promise<
-							[ActivityEnvironment, number, ResourcePage<Activity> | undefined]
+						async ([source, start]): Promise<
+							[ActivitySource, number, ResourcePage<Activity> | undefined, number]
 						> => {
 							try {
 								const response = await activeClient.activities.listPaginated({
-									envID: environment.id,
+									envID: source.key,
 									order: 'desc',
 									start,
 									limit: pageSize
 								});
 								return [
-									environment,
+									source,
 									start,
-									{ items: response.data, pagination: response.pagination }
+									{ items: response.data, pagination: response.pagination },
+									response.failedEnvironments?.length ?? 0
 								];
 							} catch {
-								return [environment, start, undefined];
+								return [source, start, undefined, 0];
 							}
 						},
 						(batch) => {
 							if (loadGeneration !== generation) return;
-							for (const [environment, start, page] of batch) {
-								const id = environment.id;
+							for (const [source, start, page, failedEnvironments] of batch) {
+								const key = source.key;
 								if (!page) {
 									failures += 1;
-									failedPageEnvironmentIDs.add(id);
+									failedPageEnvironmentIDs.add(key);
 									continue;
 								}
-								failedPageEnvironmentIDs.delete(id);
-								const state = paginationByEnvironment.get(id) ?? ProgressivePaginationState.initial;
+								failures += failedEnvironments;
+								failedPageEnvironmentIDs.delete(key);
+								const state =
+									paginationByEnvironment.get(key) ?? ProgressivePaginationState.initial;
 								const received = ProgressivePaginationState.receive(state, {
 									pagination: page.pagination,
 									itemCount: page.items.length,
@@ -650,31 +689,48 @@ export function createActivityCenterStore(): ActivityCenterStore {
 									requestedLimit: pageSize,
 									generation: state.generation
 								});
-								paginationByEnvironment.set(id, received ?? state);
-								const normalized = page.items.map((activity) => normalize(activity, environment));
-								activityBuckets.set(
-									id,
-									sortActivities(
-										PaginationLoader.merge(
-											normalized,
-											reset ? [] : (activityBuckets.get(id) ?? []),
-											false
-										)
-									)
+								paginationByEnvironment.set(key, received ?? state);
+								const grouped = new Map<string, Activity[]>(
+									source.environments.map((environment) => [environment.id, []])
 								);
+								for (const activity of page.items) {
+									const environment =
+										source.environments.length === 1 && source.environments[0]
+											? source.environments[0]
+											: environmentFor(activity.environmentID);
+									const normalized = normalize(activity, environment);
+									const id =
+										source.environments.length === 1 ? environment.id : activity.environmentID;
+									grouped.set(id, [...(grouped.get(id) ?? []), normalized]);
+								}
+								for (const [id, items] of grouped) {
+									activityBuckets.set(
+										id,
+										sortActivities(
+											PaginationLoader.merge(
+												items,
+												reset ? [] : (activityBuckets.get(id) ?? []),
+												false
+											)
+										)
+									);
+								}
 							}
 							rebuildActivities();
 							if (get().activities.length > 0) set({ isLoading: false });
 						}
 					);
 					if (loadGeneration !== generation) return;
-					const validIDs = new Set(environmentIDs);
-					activityBuckets = new Map([...activityBuckets].filter(([key]) => validIDs.has(key)));
+					const validEnvironmentIDs = new Set(environmentIDs);
+					const validSourceKeys = new Set(sources.map((source) => source.key));
+					activityBuckets = new Map(
+						[...activityBuckets].filter(([key]) => validEnvironmentIDs.has(key))
+					);
 					paginationByEnvironment = new Map(
-						[...paginationByEnvironment].filter(([key]) => validIDs.has(key))
+						[...paginationByEnvironment].filter(([key]) => validSourceKeys.has(key))
 					);
 					failedPageEnvironmentIDs = new Set(
-						[...failedPageEnvironmentIDs].filter((id) => validIDs.has(id))
+						[...failedPageEnvironmentIDs].filter((key) => validSourceKeys.has(key))
 					);
 					set({
 						hasMore:

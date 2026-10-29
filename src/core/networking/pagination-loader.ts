@@ -46,7 +46,9 @@ export const PaginationLoader = {
 			if (nextStart > maxSafeOffset || nextStart <= at)
 				throw RemoteDataLimitError.collectionTooLarge(itemLimit);
 			let reachedEnd: boolean;
-			if (page.pagination.totalItems >= 0) {
+			if (page.pagination.hasNextPage !== undefined && page.pagination.totalItems < 0) {
+				reachedEnd = !page.pagination.hasNextPage;
+			} else if (page.pagination.totalItems >= 0) {
 				reachedEnd = nextStart >= page.pagination.totalItems;
 			} else if (page.pagination.totalPages >= 0) {
 				reachedEnd = page.pagination.currentPage >= page.pagination.totalPages;
@@ -157,7 +159,9 @@ export const ProgressivePaginationState = {
 		}
 		if (itemCount <= 0) return { ...state, totalItems, nextStart: candidateStart, hasMore: false };
 		let hasMore: boolean;
-		if (pagination.totalItems >= 0) {
+		if (pagination.hasNextPage !== undefined && pagination.totalItems < 0) {
+			hasMore = pagination.hasNextPage;
+		} else if (pagination.totalItems >= 0) {
 			hasMore = candidateStart < pagination.totalItems;
 		} else if (pagination.totalPages >= 0) {
 			hasMore = pagination.currentPage < pagination.totalPages;

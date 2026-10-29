@@ -8,6 +8,7 @@ import {
 	type OIDCDeviceAuthResponse,
 	type OIDCStatusInfo
 } from '../models/auth/OIDC';
+import { SessionBootstrap } from '../models/auth/SessionBootstrap';
 import { MessageResponse } from '../models/base/message';
 import { User } from '../models/user/User';
 import type { AuthManager } from './AuthManager';
@@ -53,6 +54,15 @@ export class AuthService {
 		}
 		await this.authManager.clearIfCredentialGenerationMatches(generation);
 		if (remoteError !== undefined) throw remoteError;
+	}
+
+	async sessionBootstrap(): Promise<SessionBootstrap> {
+		const bootstrap = await this.transport.request('auth/bootstrap', {
+			decode: SessionBootstrap.decode
+		});
+		this.authManager.recordCapabilities(bootstrap.user);
+		this.authManager.recordEnabledFeatures(bootstrap.version.enabledFeatures ?? []);
+		return bootstrap;
 	}
 
 	async me(): Promise<User> {

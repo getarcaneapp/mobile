@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
@@ -20,7 +21,8 @@ import {
 	systemUpgradeCopy,
 	useSystemUpgrade,
 	useSystemUpgradeRoute,
-	type SystemUpgradeModel
+	type SystemUpgradeModel,
+	type SystemUpgradeProgress
 } from './system-upgrade-model';
 
 const cardStyle = (radius: number) => ({
@@ -117,6 +119,53 @@ function InfoCard({
 				<Text style={[m3Type.titleMedium, { color: colors.label, flex: 1 }]}>{title}</Text>
 			</View>
 			<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>{body}</Text>
+		</View>
+	);
+}
+
+function ProgressCard({ progress }: { progress: SystemUpgradeProgress }) {
+	const percent = Math.round(progress.fraction * 100);
+	const fraction = useSharedValue(progress.fraction);
+	useEffect(() => {
+		fraction.set(withTiming(progress.fraction, { duration: 300 }));
+	}, [fraction, progress.fraction]);
+	const fillStyle = useAnimatedStyle(() => ({ width: `${fraction.get() * 100}%` }));
+	return (
+		<View
+			accessible
+			accessibilityRole="progressbar"
+			accessibilityLabel="Upgrade progress"
+			accessibilityValue={{ min: 0, max: 100, now: percent }}
+			style={[cardStyle(Radius.card), { gap: 12, padding: 20 }]}
+		>
+			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+				<Text style={[m3Type.titleMedium, { color: colors.label, flex: 1 }]}>Progress</Text>
+				<Text
+					style={[
+						m3Type.labelLarge,
+						{ color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }
+					]}
+				>
+					{`${percent}%`}
+				</Text>
+			</View>
+			<View
+				style={{
+					height: 4,
+					borderRadius: 2,
+					overflow: 'hidden',
+					backgroundColor: withOpacity(systemColors.blue, 0.24)
+				}}
+			>
+				<Animated.View
+					style={[{ height: 4, borderRadius: 2, backgroundColor: systemColors.blue }, fillStyle]}
+				/>
+			</View>
+			{progress.detail ? (
+				<Text numberOfLines={2} style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
+					{progress.detail}
+				</Text>
+			) : null}
 		</View>
 	);
 }
@@ -255,6 +304,29 @@ function PhaseContent({ model, onUpgrade }: { model: SystemUpgradeModel; onUpgra
 				</View>
 			);
 		case 'triggered':
+			if (phase.progress?.finished) {
+				return (
+					<HeroCard
+						tint={systemColors.green}
+						icon="checkmark.circle.fill"
+						title="Upgrade Complete"
+						subtitle={phase.message}
+					/>
+				);
+			}
+			if (phase.progress) {
+				return (
+					<View style={{ gap: 20 }}>
+						<HeroCard
+							tint={systemColors.blue}
+							icon="arrow.triangle.2.circlepath"
+							title="Upgrading Arcane"
+							subtitle={phase.message}
+						/>
+						<ProgressCard progress={phase.progress} />
+					</View>
+				);
+			}
 			return (
 				<View style={{ gap: 20 }}>
 					<HeroCard

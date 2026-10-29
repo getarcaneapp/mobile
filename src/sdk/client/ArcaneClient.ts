@@ -44,6 +44,7 @@ import { ArcaneTransport } from './ArcaneTransport';
 import { EnvironmentID, RetryPolicy } from './environment';
 import { expoStreamingFetch } from './expoStreamingFetch';
 import type { ServerCapabilities } from './ServerCapabilities';
+import { APIGenerationState, type APIGeneration } from './apiGeneration';
 
 export interface ArcaneClientConfiguration {
 	baseURL: string;
@@ -57,6 +58,7 @@ export interface ArcaneClientConfiguration {
 	fetch?: FetchLike;
 	streamingFetch?: FetchLike;
 	webSocket?: WebSocketStreamConfig;
+	apiGeneration?: APIGeneration;
 }
 
 interface ResolvedConfiguration extends ArcaneClientConfiguration {
@@ -149,7 +151,8 @@ export class ArcaneClient {
 				additionalHeaders: resolved.additionalHeaders,
 				proxySession: resolved.proxySession,
 				timeoutMs: resolved.timeoutMs,
-				webSocket: resolved.webSocket
+				webSocket: resolved.webSocket,
+				apiGeneration: new APIGenerationState(resolved.apiGeneration)
 			});
 		const rest = new RESTService(this.transport, resolved.defaultEnvironmentID);
 		this.rest = rest;
@@ -213,5 +216,13 @@ export class ArcaneClient {
 
 	serverCapabilities(): ServerCapabilities {
 		return this.authManager.currentCapabilities();
+	}
+
+	apiGeneration(): Promise<APIGeneration> {
+		return this.transport.apiGeneration();
+	}
+
+	currentAPIGeneration(): APIGeneration | undefined {
+		return this.transport.currentAPIGeneration();
 	}
 }

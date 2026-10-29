@@ -5,7 +5,7 @@ import { friendlyErrorMessage } from '@/core/errors';
 import { useCachedClient } from '@/core/networking/use-cached-client';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
-import type { PublicSetting } from '@/sdk/models/settings/Settings';
+import { PublicSetting } from '@/sdk/models/settings/Settings';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
@@ -91,13 +91,14 @@ const sameForm = (lhs: AuthenticationForm, rhs: AuthenticationForm) =>
 async function fetchAuthenticationForm(
 	client: ArcaneClient,
 	environmentID: EnvironmentID
-): Promise<AuthenticationForm> {
+): Promise<{ form: AuthenticationForm; oidcLocked: boolean }> {
 	const path = client.rest.environmentPath(environmentID, 'settings');
 	const text = await client.transport.rawRequest(path);
 	const dtos = client.transport.decode<PublicSetting[]>(text);
 	const dict: Record<string, string> = {};
 	for (const dto of dtos) dict[dto.key] = dto.value;
-	return formFromSettings(dict);
+	const oidcLocked = PublicSetting.isLocked(dtos.find((dto) => dto.key === 'oidcEnabled'));
+	return { form: formFromSettings(dict), oidcLocked };
 }
 
 export function useAuthenticationSettings() {
@@ -134,11 +135,15 @@ export function useAuthenticationSettings() {
 		await withCleanup(
 			async () => {
 				try {
-					const loaded = await fetchAuthenticationForm(client, activeEnvironmentID);
+					const { form: loaded, oidcLocked } = await fetchAuthenticationForm(
+						client,
+						activeEnvironmentID
+					);
 					setForm(loaded);
+					setOidcEnvForced(oidcLocked);
 					try {
 						const status = await client.auth.oidcStatus();
-						setOidcEnvForced(status.envForced);
+						setOidcEnvForced(oidcLocked || status.envForced === true);
 					} catch {}
 					setOriginalState(loaded);
 				} catch (error) {

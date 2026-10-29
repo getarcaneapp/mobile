@@ -304,6 +304,14 @@ export function DashboardScreen() {
 								onPress={model.openActivityCenter}
 							/>
 						) : null}
+						{model.canAddEnvironment ? (
+							<ToolbarIconButton
+								icon="plus"
+								label="Add Environment"
+								color={m3.onSurfaceVariant}
+								onPress={model.openAddEnvironment}
+							/>
+						) : null}
 						{model.canPrune ? (
 							<ToolbarIconButton
 								icon="trash"

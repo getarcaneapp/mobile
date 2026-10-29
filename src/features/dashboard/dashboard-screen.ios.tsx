@@ -350,6 +350,14 @@ export function DashboardScreen() {
 						onPress={model.openActivityCenter}
 					/>
 				) : null}
+				{model.canAddEnvironment ? (
+					<Stack.Toolbar.Button
+						icon="plus"
+						separateBackground
+						accessibilityLabel="Add Environment"
+						onPress={model.openAddEnvironment}
+					/>
+				) : null}
 				{model.canPrune ? (
 					<Stack.Toolbar.Button
 						icon="trash"

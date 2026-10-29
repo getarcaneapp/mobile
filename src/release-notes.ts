@@ -29,9 +29,30 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Live Activities on iOS for deploys, redeploys, image pulls, and container updates.'
+			},
+			{
+				text: 'Support for Arcane 3 servers.'
+			},
+			{
+				text: 'Live progress, stage, and percentage while Arcane upgrades on Arcane 3 servers.'
+			},
+			{
+				text: 'Settings set by environment variables are locked and marked on Arcane 3 servers.'
+			},
+			{
+				text: 'Add agent environments from the dashboard on Arcane 3 servers.'
+			},
+			{
+				text: 'Lists refresh automatically when resources change on Arcane 3 servers.'
 			}
 		],
 		changed: [
+			{
+				text: 'All Environments and the refreshed dashboard are always on with Arcane 3 servers.'
+			},
+			{
+				text: 'Activity Center loads every environment in one request on Arcane 3 servers.'
+			},
 			{
 				text: 'Dashboard attention items and container tiles open filtered lists.'
 			},

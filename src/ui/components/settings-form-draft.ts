@@ -6,7 +6,7 @@ import { PaginationLoader } from '@/core/networking/pagination-loader';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
-import type { PublicSetting } from '@/sdk/models/settings/Settings';
+import type { PublicSetting, SettingLockReason } from '@/sdk/models/settings/Settings';
 import { showToast, Toasts } from '@/ui/toast';
 
 import type { SettingFieldDef } from './settings-form.types';
@@ -16,6 +16,7 @@ export type EnvironmentSettingsDraftState = {
 	environmentName: string;
 	values: Record<string, string>;
 	original: Record<string, string>;
+	locks: Record<string, SettingLockReason>;
 	hasLoaded: boolean;
 	isLoading: boolean;
 	isSaving: boolean;
@@ -44,6 +45,17 @@ export function changedValues(
 export const draftHasChanges = (
 	state: Pick<EnvironmentSettingsDraftState, 'values' | 'original'>
 ) => Object.keys(changedValues(state)).length > 0;
+
+export function settingLockCaption(reason: SettingLockReason | undefined): string | undefined {
+	switch (reason) {
+		case undefined:
+			return undefined;
+		case 'readOnly':
+			return 'Settings are read-only on this server';
+		default:
+			return 'Set by an environment variable';
+	}
+}
 
 export function isFieldVisible(field: SettingFieldDef, values: Record<string, string>): boolean {
 	const condition = field.visibleWhen;
@@ -133,6 +145,7 @@ export function createEnvironmentSettingsDraft(
 			environmentName,
 			values: {},
 			original: {},
+			locks: {},
 			hasLoaded: false,
 			isLoading: false,
 			isSaving: false,
@@ -151,8 +164,12 @@ export function createEnvironmentSettingsDraft(
 					});
 					if (generation !== loadGeneration) return;
 					const loaded: Record<string, string> = {};
-					for (const setting of settings) loaded[setting.key] = setting.value;
-					set({ values: loaded, original: { ...loaded }, hasLoaded: true });
+					const locks: Record<string, SettingLockReason> = {};
+					for (const setting of settings) {
+						loaded[setting.key] = setting.value;
+						if (setting.locked) locks[setting.key] = setting.lockReason ?? 'env';
+					}
+					set({ values: loaded, original: { ...loaded }, locks, hasLoaded: true });
 				} catch (error) {
 					if (generation !== loadGeneration) return;
 					set({ errorMessage: friendlyErrorMessage(error) });
@@ -175,6 +192,7 @@ export function createEnvironmentSettingsDraft(
 					return false;
 				}
 				const changes = changedValues(get());
+				for (const key of Object.keys(get().locks)) delete changes[key];
 				if (Object.keys(changes).length === 0) return true;
 				set({ isSaving: true, errorMessage: undefined });
 				try {

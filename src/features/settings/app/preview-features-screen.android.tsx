@@ -24,26 +24,38 @@ export function PreviewFeaturesScreen() {
 						onValueChange={model.setNativeComposeEditor}
 					/>
 				</M3Section>
-				<M3Section footer={PreviewFeaturesCopy.dashboardFooter}>
-					<SwitchRow
-						title="Refreshed Dashboard"
-						value={model.refreshedDashboardPreview}
-						onValueChange={model.setRefreshedDashboardPreview}
-					/>
-					<TextButtonRow title="Replay Walkthrough" onPress={model.showDashboardIntroduction} />
-					{model.refreshedDashboardPreview ? (
+				{model.usesV3Defaults ? (
+					<M3Section>
 						<MaterialListItem headline="Edit Tiles" onPress={model.openTilesEditor} />
-					) : null}
-				</M3Section>
-				<M3Section footer={PreviewFeaturesCopy.allEnvironmentsFooter}>
-					<SwitchRow
-						title="All Environments"
-						value={model.allEnvironmentsPreview}
-						onValueChange={model.setAllEnvironmentsPreview}
-					/>
-					<TextButtonRow title="Replay Walkthrough" onPress={model.showIntroduction} />
-					<MaterialListItem headline="Environment Colors" onPress={model.openEnvironmentColors} />
-				</M3Section>
+						<MaterialListItem headline="Environment Colors" onPress={model.openEnvironmentColors} />
+					</M3Section>
+				) : (
+					<>
+						<M3Section footer={PreviewFeaturesCopy.dashboardFooter}>
+							<SwitchRow
+								title="Refreshed Dashboard"
+								value={model.refreshedDashboardPreview}
+								onValueChange={model.setRefreshedDashboardPreview}
+							/>
+							<TextButtonRow title="Replay Walkthrough" onPress={model.showDashboardIntroduction} />
+							{model.refreshedDashboardPreview ? (
+								<MaterialListItem headline="Edit Tiles" onPress={model.openTilesEditor} />
+							) : null}
+						</M3Section>
+						<M3Section footer={PreviewFeaturesCopy.allEnvironmentsFooter}>
+							<SwitchRow
+								title="All Environments"
+								value={model.allEnvironmentsPreview}
+								onValueChange={model.setAllEnvironmentsPreview}
+							/>
+							<TextButtonRow title="Replay Walkthrough" onPress={model.showIntroduction} />
+							<MaterialListItem
+								headline="Environment Colors"
+								onPress={model.openEnvironmentColors}
+							/>
+						</M3Section>
+					</>
+				)}
 			</ScrollView>
 		</>
 	);

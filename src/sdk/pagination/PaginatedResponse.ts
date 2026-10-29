@@ -1,9 +1,15 @@
 import type { PaginationResponse } from '../models/base/pagination';
 
+export interface EnvironmentFailure {
+	environment: { id: string; name?: string };
+	message?: string;
+}
+
 export interface PaginatedResponse<T> {
 	success: boolean;
 	data: T[];
 	pagination: PaginationResponse;
+	failedEnvironments?: EnvironmentFailure[];
 }
 
 export type PageFetcher<Element> = (
@@ -37,7 +43,9 @@ export class ArcanePaginator<Element> implements AsyncIterable<Element> {
 			const pageStride =
 				response.pagination.itemsPerPage > 0 ? response.pagination.itemsPerPage : this.limit;
 			start += pageStride;
-			if (response.pagination.totalItems >= 0) {
+			if (response.pagination.hasNextPage !== undefined && response.pagination.totalItems < 0) {
+				finished = buffer.length === 0 || !response.pagination.hasNextPage;
+			} else if (response.pagination.totalItems >= 0) {
 				finished = buffer.length === 0 || start >= response.pagination.totalItems;
 			} else if (response.pagination.totalPages >= 0) {
 				finished =

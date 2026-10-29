@@ -7,6 +7,7 @@ import {
 	AllEnvironmentsIntroduction,
 	RefreshedDashboardIntroduction
 } from '@/features/settings/app/preview-walkthrough';
+import { useClientManager } from '@/stores/client-manager';
 import { useLaunchSplash } from '@/stores/launch-splash-store';
 
 import { automaticWhatsNew, migrateLegacyPresentation } from './whats-new-model';
@@ -14,6 +15,7 @@ import { automaticWhatsNew, migrateLegacyPresentation } from './whats-new-model'
 const sheetDismissalDelay = 450;
 
 function nextIntroduction(): string | undefined {
+	if (useClientManager.getState().apiGeneration === 'v3') return undefined;
 	if (!(storage.bool(AllEnvironmentsIntroduction.seenKey) ?? false))
 		return AppSettingsRoutes.allEnvironmentsIntroduction;
 	if (!(storage.bool(RefreshedDashboardIntroduction.seenKey) ?? false))

@@ -7,7 +7,11 @@ import { cachedClient } from '@/core/networking/use-cached-client';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { ArcaneError, ArcaneServerError } from '@/sdk/errors/ArcaneError';
 import { ArcaneRequestOptions } from '@/sdk/http/requestOptions';
-import { EnvironmentUpdateJob, type EnvironmentUpdateResult } from '@/sdk/models/system/Upgrade';
+import {
+	EnvironmentUpdateJob,
+	EnvironmentUpdateStage,
+	type EnvironmentUpdateResult
+} from '@/sdk/models/system/Upgrade';
 import { User } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
 import { useResourceMutationStore } from '@/stores/resource-mutation-store';
@@ -105,15 +109,32 @@ export function phaseKey(phase: UpdateAllPhase): number {
 	}
 }
 
+function resultProgress(result: EnvironmentUpdateResult): number {
+	if (isCompletedResult(result)) return 1;
+	return Math.min(1, Math.max(0, (result.percent ?? 0) / 100));
+}
+
 function progressModel(job: EnvironmentUpdateJob) {
 	const results = resultsInProcessingOrder(job.results ?? []);
 	const done = completedResultCount(results);
+	const reportsPercent = results.some((r) => r.percent !== undefined);
+	let progress: number | undefined;
+	if (results.length > 0) {
+		progress = reportsPercent
+			? results.reduce((sum, r) => sum + resultProgress(r), 0) / results.length
+			: done / results.length;
+	}
 	return {
 		results,
 		done,
-		progress: results.length === 0 ? undefined : done / results.length,
+		progress,
 		active: results.find((r) => r.status === 'updating')
 	};
+}
+
+function activeStageSuffix(active: EnvironmentUpdateResult | undefined): string {
+	if (!active?.stage) return '';
+	return ` · ${EnvironmentUpdateStage.label(active.stage)}`;
 }
 
 export function sceneModel(
@@ -160,7 +181,9 @@ export function sceneModel(
 				kind: 'updating',
 				title: 'Updating environments',
 				subtitle:
-					results.length === 0 ? 'Preparing environments' : `${done} of ${results.length} complete`,
+					results.length === 0
+						? 'Preparing environments'
+						: `${done} of ${results.length} complete${activeStageSuffix(active)}`,
 				progress,
 				completedCount: done,
 				totalCount: results.length,

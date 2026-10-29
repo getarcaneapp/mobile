@@ -18,6 +18,7 @@ export function usePreviewFeatures() {
 	const refreshedDashboardPreview = useClientManager((s) => s.refreshedDashboardPreview);
 	const setRefreshedDashboardPreview = useClientManager((s) => s.setRefreshedDashboardPreview);
 	const allEnvironmentsPreview = useClientManager((s) => s.allEnvironmentsPreview);
+	const usesV3Defaults = useClientManager((s) => s.apiGeneration === 'v3');
 	const setAllEnvironmentsPreview = useClientManager((s) => s.setAllEnvironmentsPreview);
 
 	return {
@@ -27,6 +28,7 @@ export function usePreviewFeatures() {
 		setRefreshedDashboardPreview,
 		allEnvironmentsPreview,
 		setAllEnvironmentsPreview,
+		usesV3Defaults,
 		showDashboardIntroduction: () =>
 			navigation.push(AppSettingsRoutes.refreshedDashboardIntroduction),
 		showIntroduction: () => navigation.push(AppSettingsRoutes.allEnvironmentsIntroduction),

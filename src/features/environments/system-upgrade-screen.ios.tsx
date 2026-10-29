@@ -6,7 +6,9 @@ import {
 	HStack,
 	Label,
 	NavigationStack,
+	ProgressView,
 	ScrollView,
+	Spacer,
 	Text,
 	Toolbar,
 	ToolbarItem,
@@ -22,6 +24,8 @@ import {
 	font,
 	foregroundStyle,
 	frame,
+	lineLimit,
+	monospacedDigit,
 	multilineTextAlignment,
 	navigationBarTitleDisplayMode,
 	navigationTitle,
@@ -53,7 +57,8 @@ import {
 	systemUpgradeCopy,
 	useSystemUpgrade,
 	useSystemUpgradeRoute,
-	type SystemUpgradeModel
+	type SystemUpgradeModel,
+	type SystemUpgradeProgress
 } from './system-upgrade-model';
 
 const cardGlass = (cornerRadius: number) =>
@@ -195,6 +200,50 @@ function LoadingCard() {
 	);
 }
 
+function ProgressCard({ progress }: { progress: SystemUpgradeProgress }) {
+	const percent = Math.round(progress.fraction * 100);
+	return (
+		<VStack
+			alignment="leading"
+			spacing={10}
+			modifiers={[
+				padding({ all: 20 }),
+				frame({ maxWidth: Infinity, alignment: 'leading' }),
+				cardGlass(Radius.card)
+			]}
+		>
+			<HStack spacing={8}>
+				<Text modifiers={[font({ textStyle: 'headline' })]}>Progress</Text>
+				<Spacer />
+				<Text
+					modifiers={[
+						font({ textStyle: 'subheadline', weight: 'semibold' }),
+						monospacedDigit(),
+						foregroundStyle({ type: 'hierarchical', style: 'secondary' })
+					]}
+				>
+					{`${percent}%`}
+				</Text>
+			</HStack>
+			<ProgressView
+				value={progress.fraction}
+				modifiers={[tint(systemColors.blue), accessibilityLabel(`Upgrade ${percent}% complete`)]}
+			/>
+			{progress.detail ? (
+				<Text
+					modifiers={[
+						font({ textStyle: 'footnote' }),
+						foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+						lineLimit(2)
+					]}
+				>
+					{progress.detail}
+				</Text>
+			) : null}
+		</VStack>
+	);
+}
+
 function TriggeringCard() {
 	return (
 		<VStack
@@ -299,6 +348,29 @@ function PhaseContent({ model, onUpgrade }: { model: SystemUpgradeModel; onUpgra
 		case 'triggering':
 			return <TriggeringCard />;
 		case 'triggered':
+			if (phase.progress?.finished) {
+				return (
+					<HeroCard
+						tint={systemColors.green}
+						icon="checkmark.circle.fill"
+						title="Upgrade Complete"
+						subtitle={phase.message}
+					/>
+				);
+			}
+			if (phase.progress) {
+				return (
+					<VStack spacing={20}>
+						<HeroCard
+							tint={systemColors.blue}
+							icon="arrow.triangle.2.circlepath"
+							title="Upgrading Arcane"
+							subtitle={phase.message}
+						/>
+						<ProgressCard progress={phase.progress} />
+					</VStack>
+				);
+			}
 			return (
 				<VStack spacing={20}>
 					<HeroCard

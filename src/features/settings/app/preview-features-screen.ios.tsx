@@ -33,26 +33,35 @@ export function PreviewFeaturesScreen() {
 							onIsOnChange={model.setNativeComposeEditor}
 						/>
 					</Section>
-					<Section footer={<Text>{PreviewFeaturesCopy.dashboardFooter}</Text>}>
-						<Toggle
-							label="Refreshed Dashboard"
-							isOn={model.refreshedDashboardPreview}
-							onIsOnChange={model.setRefreshedDashboardPreview}
-						/>
-						<Button label="Replay Walkthrough" onPress={model.showDashboardIntroduction} />
-						{model.refreshedDashboardPreview ? (
+					{model.usesV3Defaults ? (
+						<Section>
 							<LinkRow title="Edit Tiles" onPress={model.openTilesEditor} />
-						) : null}
-					</Section>
-					<Section footer={<Text>{PreviewFeaturesCopy.allEnvironmentsFooter}</Text>}>
-						<Toggle
-							label="All Environments"
-							isOn={model.allEnvironmentsPreview}
-							onIsOnChange={model.setAllEnvironmentsPreview}
-						/>
-						<Button label="Replay Walkthrough" onPress={model.showIntroduction} />
-						<LinkRow title="Environment Colors" onPress={model.openEnvironmentColors} />
-					</Section>
+							<LinkRow title="Environment Colors" onPress={model.openEnvironmentColors} />
+						</Section>
+					) : (
+						<>
+							<Section footer={<Text>{PreviewFeaturesCopy.dashboardFooter}</Text>}>
+								<Toggle
+									label="Refreshed Dashboard"
+									isOn={model.refreshedDashboardPreview}
+									onIsOnChange={model.setRefreshedDashboardPreview}
+								/>
+								<Button label="Replay Walkthrough" onPress={model.showDashboardIntroduction} />
+								{model.refreshedDashboardPreview ? (
+									<LinkRow title="Edit Tiles" onPress={model.openTilesEditor} />
+								) : null}
+							</Section>
+							<Section footer={<Text>{PreviewFeaturesCopy.allEnvironmentsFooter}</Text>}>
+								<Toggle
+									label="All Environments"
+									isOn={model.allEnvironmentsPreview}
+									onIsOnChange={model.setAllEnvironmentsPreview}
+								/>
+								<Button label="Replay Walkthrough" onPress={model.showIntroduction} />
+								<LinkRow title="Environment Colors" onPress={model.openEnvironmentColors} />
+							</Section>
+						</>
+					)}
 				</List>
 			</Host>
 		</>

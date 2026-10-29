@@ -1,5 +1,7 @@
 export * from './client/ArcaneClient';
 export * from './client/ArcaneTransport';
+export * from './client/apiGeneration';
+export * from './client/v3Routes';
 export * from './client/environment';
 export * from './client/ServerCapabilities';
 export * from './client/url';

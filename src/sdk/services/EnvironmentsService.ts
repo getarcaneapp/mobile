@@ -87,6 +87,13 @@ export class EnvironmentsService {
 		});
 	}
 
+	createAgent(args: { name: string; enabled?: boolean }): Promise<CreateEnvironmentResult> {
+		return this.rest.post('environments', {
+			body: { name: args.name, enabled: args.enabled ?? true },
+			decode: CreateEnvironmentResult.decode
+		});
+	}
+
 	update(args: { id: EnvironmentID; request: UpdateEnvironment }): Promise<Environment> {
 		return this.rest.put(`environments/${args.id}`, { body: args.request });
 	}

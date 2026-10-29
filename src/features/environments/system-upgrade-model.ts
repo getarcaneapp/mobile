@@ -1,19 +1,86 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { friendlyErrorMessage } from '@/core/errors';
+import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { useClientManager } from '@/stores/client-manager';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
-import type { UpgradeCheckResult } from '@/sdk/models/system/Upgrade';
+import {
+	EnvironmentUpdateStage,
+	UpgradeProgressEvent,
+	type UpgradeCheckResult
+} from '@/sdk/models/system/Upgrade';
 import { User } from '@/sdk/models/user/User';
+
+export interface SystemUpgradeProgress {
+	fraction: number;
+	detail?: string;
+	finished: boolean;
+}
 
 export type SystemUpgradePhase =
 	| { kind: 'checking' }
 	| { kind: 'ready'; result: UpgradeCheckResult }
 	| { kind: 'checkFailed'; message: string }
 	| { kind: 'triggering' }
-	| { kind: 'triggered'; message: string }
+	| { kind: 'triggered'; message: string; progress?: SystemUpgradeProgress }
 	| { kind: 'triggerFailed'; message: string };
+
+type ProgressOutcome =
+	| { kind: 'completed'; version?: string }
+	| { kind: 'failed'; message: string };
+
+const progressRetryDelayMs = 2000;
+const progressMaxAttempts = 90;
+
+const wait = (ms: number, signal: AbortSignal) =>
+	new Promise<void>((resolve) => {
+		const timer = setTimeout(resolve, ms);
+		signal.addEventListener(
+			'abort',
+			() => {
+				clearTimeout(timer);
+				resolve();
+			},
+			{ once: true }
+		);
+	});
+
+function progressDetail(event: UpgradeProgressEvent, previous: string | undefined) {
+	if (event.type === 'stage' && event.message) return EnvironmentUpdateStage.label(event.message);
+	if (event.type === 'log' && event.message) return event.message.trim();
+	return previous;
+}
+
+async function readUpgradeProgress(
+	client: ArcaneClient,
+	environmentID: EnvironmentID,
+	signal: AbortSignal,
+	onProgress: (progress: SystemUpgradeProgress) => void
+): Promise<ProgressOutcome | undefined> {
+	let detail: string | undefined;
+	let fraction = 0;
+	for (let attempt = 0; attempt < progressMaxAttempts && !signal.aborted; attempt++) {
+		try {
+			for await (const event of client
+				.withSignal(signal)
+				.system.upgradeProgress({ envID: environmentID })) {
+				fraction = Math.max(fraction, Math.min(1, event.percent / 100));
+				detail = progressDetail(event, detail);
+				if (UpgradeProgressEvent.isDone(event)) {
+					if (event.message && event.percent < 100)
+						return { kind: 'failed', message: event.message };
+					return { kind: 'completed', version: event.toVersion };
+				}
+				onProgress({ fraction, detail, finished: false });
+			}
+		} catch (error) {
+			if (isCancellation(error) || signal.aborted) return undefined;
+		}
+		await wait(progressRetryDelayMs, signal);
+	}
+	return undefined;
+}
 
 export const systemUpgradeConfirmationHost = 'system-upgrade';
 
@@ -35,7 +102,37 @@ export function useSystemUpgrade(
 	const client = useClientManager((s) => s.client);
 	const currentUser = useClientManager((s) => s.currentUser);
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
+	const supportsProgress = useClientManager((s) => s.apiGeneration === 'v3');
 	const [phase, setPhase] = useState<SystemUpgradePhase>({ kind: 'checking' });
+	const progressTask = useRef<AbortController | undefined>(undefined);
+
+	useEffect(() => () => progressTask.current?.abort(), []);
+
+	const followProgress = async (activeClient: ArcaneClient, message: string) => {
+		progressTask.current?.abort();
+		const controller = new AbortController();
+		progressTask.current = controller;
+		const outcome = await readUpgradeProgress(
+			activeClient,
+			environmentID,
+			controller.signal,
+			(progress) => {
+				if (!controller.signal.aborted) setPhase({ kind: 'triggered', message, progress });
+			}
+		);
+		if (controller.signal.aborted || outcome === undefined) return;
+		if (outcome.kind === 'failed') {
+			setPhase({ kind: 'triggerFailed', message: outcome.message });
+			return;
+		}
+		setPhase({
+			kind: 'triggered',
+			message: outcome.version
+				? `Arcane restarted on ${outcome.version}.`
+				: 'Arcane restarted on the new version.',
+			progress: { fraction: 1, finished: true }
+		});
+	};
 
 	const checkUpgrade = useCallback(async () => {
 		if (!client) {
@@ -59,10 +156,17 @@ export function useSystemUpgrade(
 		setPhase({ kind: 'triggering' });
 		try {
 			await client.system.triggerUpgrade({ envID: environmentID });
-			setPhase({ kind: 'triggered', message: 'Upgrade initiated. Arcane will restart shortly.' });
 		} catch (error) {
 			setPhase({ kind: 'triggerFailed', message: friendlyErrorMessage(error) });
+			return;
 		}
+		const message = 'Upgrade initiated. Arcane will restart shortly.';
+		if (!supportsProgress) {
+			setPhase({ kind: 'triggered', message });
+			return;
+		}
+		setPhase({ kind: 'triggered', message, progress: { fraction: 0, finished: false } });
+		await followProgress(client, message);
 	};
 
 	useEffect(() => {

@@ -22,6 +22,7 @@ import { makeMultipartFormData, singleURIPartUpload, type MultipartFile } from '
 import { withStreamingUploads } from '../http/streaming-upload';
 import { ArcaneRequestOptions } from '../http/requestOptions';
 import type { ArcaneHTTPResponseInfo, ArcaneProxySession } from '../types/proxySession';
+import { APIGenerationState, type APIGeneration } from './apiGeneration';
 import { RetryPolicy } from './environment';
 import {
 	ProxyRequestSupport,
@@ -30,6 +31,8 @@ import {
 	type PreparedRequest
 } from './proxyRequestSupport';
 import { appendingAPIPath, webSocketURL, withQueryItems, type QueryItem } from './url';
+import { v3ResponseNormalizer, type ResponseNormalizer } from './v3Responses';
+import { translateRouteForV3, type APIRoute } from './v3Routes';
 import { NDJSONStream } from '../streaming/NDJSONStream';
 import type { WebSocketStreamConfig } from '../streaming/Streams';
 
@@ -50,6 +53,7 @@ export interface TransportConfig {
 	defaultRequestOptions?: ArcaneRequestOptions;
 	defaultSignal?: AbortSignal;
 	webSocket?: WebSocketStreamConfig;
+	apiGeneration?: APIGenerationState;
 }
 
 export interface TransportRequestOptions {
@@ -105,6 +109,26 @@ function linkAbort(signals: (AbortSignal | undefined)[]): {
 	};
 }
 
+function parseVersionProbe(
+	text: string
+): { currentVersion?: unknown; enabledFeatures?: unknown } | undefined {
+	try {
+		const raw = parseArcaneJSON(text);
+		return typeof raw === 'object' && raw !== null ? raw : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function normalizeV3ResponseText(text: string, normalize: ResponseNormalizer | undefined): string {
+	if (normalize === undefined || text.trim() === '') return text;
+	try {
+		return encodeArcaneJSON(normalize(parseArcaneJSON(text)));
+	} catch {
+		return text;
+	}
+}
+
 async function* readBody(response: FetchResponseLike): AsyncGenerator<Uint8Array, void, undefined> {
 	const body = response.body;
 	if (body && typeof body.getReader === 'function') {
@@ -137,9 +161,11 @@ export class ArcaneTransport {
 	private readonly fetchImpl: FetchLike;
 	private readonly streamingFetchImpl: FetchLike;
 	private readonly config: TransportConfig;
+	private readonly generationState: APIGenerationState;
 
 	constructor(config: TransportConfig) {
-		this.config = config;
+		this.generationState = config.apiGeneration ?? new APIGenerationState();
+		this.config = { ...config, apiGeneration: this.generationState };
 		this.baseURL = config.baseURL;
 		this.authManager = config.authManager;
 		this.fetchImpl = withStreamingUploads(config.fetch);
@@ -162,6 +188,54 @@ export class ArcaneTransport {
 
 	withSignal(signal: AbortSignal): ArcaneTransport {
 		return new ArcaneTransport({ ...this.config, defaultSignal: signal });
+	}
+
+	currentAPIGeneration(): APIGeneration | undefined {
+		return this.generationState.current;
+	}
+
+	apiGeneration(): Promise<APIGeneration> {
+		return this.generationState.resolve(() => this.probeAPIGeneration());
+	}
+
+	recordAPIGeneration(generation: APIGeneration): void {
+		this.generationState.record(generation);
+	}
+
+	async route(path: string, method: string, query: QueryItem[]): Promise<APIRoute> {
+		const generation = await this.apiGeneration();
+		if (generation !== 'v3') return { method, path, query };
+		return translateRouteForV3({ method, path, query });
+	}
+
+	private async probeAPIGeneration(): Promise<APIGeneration | undefined> {
+		const request = this.makeRequest('app/version', 'GET', [], 'application/json');
+		try {
+			const delegate = await this.proxySupport.prepare(request);
+			const { response, info, release } = await send(this.fetchImpl, request, {
+				signal: this.defaultSignal,
+				timeoutMs: this.timeoutMs
+			});
+			let text: string;
+			try {
+				text = await readText(response, this.defaultSignal);
+			} finally {
+				release();
+			}
+			await delegate.receive(info);
+			if (response.status === 404 || response.status === 405) return 'legacy';
+			if (response.status < 200 || response.status >= 300) return undefined;
+			const raw = parseVersionProbe(text);
+			if (raw === undefined || typeof raw.currentVersion !== 'string') return 'legacy';
+			if (Array.isArray(raw.enabledFeatures)) {
+				this.authManager.recordEnabledFeatures(
+					raw.enabledFeatures.filter((feature): feature is string => typeof feature === 'string')
+				);
+			}
+			return 'v3';
+		} catch {
+			return undefined;
+		}
 	}
 
 	decode<T>(text: string, decode?: Decoder<T>): T {
@@ -227,8 +301,9 @@ export class ArcaneTransport {
 		path: string,
 		init: TransportRequestOptions & { body?: unknown } = {}
 	): Promise<string> {
+		const method = init.method ?? 'GET';
 		const bytes = await this.rawDataRequest(path, {
-			method: init.method ?? 'GET',
+			method,
 			query: init.query,
 			body: init.body === undefined ? undefined : encodeArcaneJSON(init.body),
 			contentType: 'application/json',
@@ -237,7 +312,9 @@ export class ArcaneTransport {
 			signal: init.signal,
 			expectsJSONResponse: true
 		});
-		return decodeUTF8(bytes);
+		const text = decodeUTF8(bytes);
+		if (this.generationState.current !== 'v3') return text;
+		return normalizeV3ResponseText(text, v3ResponseNormalizer(method, path));
 	}
 
 	async rawDataRequest(
@@ -249,7 +326,8 @@ export class ArcaneTransport {
 			accept?: string;
 		} = {}
 	): Promise<Uint8Array> {
-		const method = init.method ?? 'PUT';
+		const route = await this.route(path, init.method ?? 'PUT', init.query ?? []);
+		const method = route.method;
 		const authorized = init.authorized ?? true;
 		const requestOptions = this.resolvedRequestOptions(init.options);
 		const linked = linkAbort([this.defaultSignal, init.signal]);
@@ -258,9 +336,9 @@ export class ArcaneTransport {
 		try {
 			while (true) {
 				const request = this.makeRequest(
-					path,
+					route.path,
 					method,
-					init.query ?? [],
+					route.query,
 					init.accept ?? 'application/json'
 				);
 				if (init.body !== undefined && !(init.body instanceof FormData)) {
@@ -362,7 +440,13 @@ export class ArcaneTransport {
 		path: string,
 		init: { query?: QueryItem[]; options?: ArcaneRequestOptions } = {}
 	): Promise<ArcaneAuthorizedRequest> {
-		const request = this.makeRequest(path, 'GET', init.query ?? [], 'application/octet-stream');
+		const route = await this.route(path, 'GET', init.query ?? []);
+		const request = this.makeRequest(
+			route.path,
+			route.method,
+			route.query,
+			'application/octet-stream'
+		);
 		this.applyRequestOptions(request, this.resolvedRequestOptions(init.options));
 		await this.applyAuthenticationHeaders(request, true);
 		await this.proxySupport.prepare(request);
@@ -373,8 +457,9 @@ export class ArcaneTransport {
 		path: string,
 		init: { query?: QueryItem[]; options?: ArcaneRequestOptions } = {}
 	): Promise<ArcaneAuthorizedRequest> {
+		const route = await this.route(path, 'GET', init.query ?? []);
 		const request: PreparedRequest = {
-			url: webSocketURL(withQueryItems(appendingAPIPath(this.baseURL, path), init.query ?? [])),
+			url: webSocketURL(withQueryItems(appendingAPIPath(this.baseURL, route.path), route.query)),
 			method: 'GET',
 			headers: {},
 			handleCookies: true
@@ -393,13 +478,13 @@ export class ArcaneTransport {
 			accept?: string;
 		} = {}
 	): Promise<ByteStreamResult> {
-		const method = init.method ?? 'GET';
+		const route = await this.route(path, init.method ?? 'GET', init.query ?? []);
 		const accept = init.accept ?? STREAM_ACCEPT;
 		const authorized = init.authorized ?? true;
 		const requestOptions = this.resolvedRequestOptions(init.options);
 		let didRefresh = false;
 		while (true) {
-			const request = this.makeRequest(path, method, init.query ?? [], accept);
+			const request = this.makeRequest(route.path, route.method, route.query, accept);
 			this.applyRequestOptions(request, requestOptions);
 			const generation = await this.applyAuthenticationHeaders(request, authorized);
 			if (
@@ -662,7 +747,8 @@ export class ArcaneTransport {
 		accept: string,
 		options: ArcaneRequestOptions
 	): Promise<AuthenticatedRequest> {
-		const request = this.makeRequest(path, method, query, accept);
+		const route = await this.route(path, method, query);
+		const request = this.makeRequest(route.path, route.method, route.query, accept);
 		this.applyRequestOptions(request, options);
 		const credentialGeneration = await this.applyAuthenticationHeaders(request, true);
 		return { request, credentialGeneration };
@@ -759,7 +845,12 @@ export function decodePaginatedResponse<T>(
 	if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
 		throw new Error('Expected PaginatedResponse object');
 	}
-	const o = raw as { success?: unknown; data?: unknown; pagination?: unknown };
+	const o = raw as {
+		success?: unknown;
+		data?: unknown;
+		pagination?: unknown;
+		failedEnvironments?: unknown;
+	};
 	if (typeof o.success !== 'boolean') throw new Error('Missing "success" in PaginatedResponse');
 	if (typeof o.pagination !== 'object' || o.pagination === null) {
 		throw new Error('Missing "pagination" in PaginatedResponse');
@@ -767,7 +858,10 @@ export function decodePaginatedResponse<T>(
 	return {
 		success: o.success,
 		data: decode ? decodeArray(decode)(o.data ?? []) : ((o.data ?? []) as T[]),
-		pagination: o.pagination as PaginatedResponse<T>['pagination']
+		pagination: o.pagination as PaginatedResponse<T>['pagination'],
+		failedEnvironments: Array.isArray(o.failedEnvironments)
+			? (o.failedEnvironments as PaginatedResponse<T>['failedEnvironments'])
+			: undefined
 	};
 }
 

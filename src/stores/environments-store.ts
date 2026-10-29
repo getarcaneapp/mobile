@@ -268,6 +268,14 @@ export const useEnvironmentsStore = create<EnvironmentsState>((set, get) => {
 			const generation = loadGeneration;
 			const session = manager.cacheSessionIdentity;
 			const activeEnvironmentID = manager.activeEnvironmentID;
+			const seeded =
+				get().hasLoaded || refresh ? undefined : manager.takeBootstrapEnvironments(session);
+			if (seeded) {
+				set({ hasLoaded: true, errorMessage: undefined });
+				apply(seeded, activeEnvironmentID, manager.serverURL, true);
+				if (loadsEnvironmentDetails) startEnvironmentDetails(client, refresh);
+				return;
+			}
 			set({ isLoading: true, ...(get().hasLoaded ? {} : { errorMessage: undefined }) });
 			try {
 				const loaded = await cached.getAllPagesGlobal<Environment>(
