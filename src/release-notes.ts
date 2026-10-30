@@ -13,24 +13,24 @@ export const releaseNotes: ReleaseNote[] = [
 		version: '0.12.0',
 		new: [
 			{
-				text: 'Support for Arcane 3 servers.'
+				text: 'Support for Arcane v3 servers.'
 			},
 			{
-				text: 'Live progress, stage, and percentage while Arcane upgrades on Arcane 3 servers.'
+				text: 'Live progress, stage, and percentage while Arcane upgrades on Arcane v3 servers.'
 			},
 			{
-				text: 'Settings set by environment variables are locked and marked on Arcane 3 servers.'
+				text: 'Settings set by environment variables are locked and marked on Arcane v3 servers.'
 			},
 			{
-				text: 'Lists refresh automatically when resources change on Arcane 3 servers.'
+				text: 'Lists refresh automatically when resources change on Arcane v3 servers.'
 			}
 		],
 		changed: [
 			{
-				text: 'All Environments and the refreshed dashboard are always on with Arcane 3 servers.'
+				text: 'All Environments and the refreshed dashboard are always on with Arcane v3 servers.'
 			},
 			{
-				text: 'Activity Center, resource lists, Updates, and the dashboard load every environment in one request on Arcane 3 servers.'
+				text: 'Activity Center, resource lists, Updates, and the dashboard load every environment in one request on Arcane v3 servers.'
 			}
 		],
 		fixed: [
