@@ -25,6 +25,7 @@ import type {
 } from '@/sdk/models/container/ContainerSummary';
 import { Permission } from '@/sdk/models/role/Permission';
 import { useAllEnvironmentsOperationStore } from '@/stores/all-environments-operation-store';
+import { resourcePage } from '@/core/networking/pagination-loader';
 import { useClientManager } from '@/stores/client-manager';
 import { ContainerResourceSampleStore } from '@/stores/container-resource-sample-store';
 import { useContainerDeploymentStore } from '@/stores/container-deployment-store';
@@ -236,7 +237,7 @@ export function useContainersList({
 				includeHidden: showHidden ? true : undefined,
 				label: trimmedLabel === '' ? undefined : trimmedLabel
 			});
-			return { items: response.data, pagination: response.pagination };
+			return resourcePage(response);
 		};
 	}, []);
 
@@ -247,7 +248,7 @@ export function useContainersList({
 			const environments = await useEnvironmentsStore
 				.getState()
 				.listEnvironments(environmentID, allEnvironments);
-			await list.reload(environments, fetch, { preservingLoadedRange });
+			await list.reload(environments, fetch, { preservingLoadedRange, aggregates: true });
 		},
 		[containersPage, list, environmentID, allEnvironments]
 	);

@@ -1,6 +1,7 @@
 import type { JSONValue } from '../../types/json';
 import { D } from '../base/decoding';
 import type { PaginationResponse } from '../base/pagination';
+import type { EnvironmentFailure } from '../../pagination/PaginatedResponse';
 import type { VulnerabilityScanSummary } from '../vulnerability/VulnerabilityScan';
 import type { ImageUpdateInfo } from './ImageUpdateInfo';
 
@@ -105,6 +106,7 @@ export interface ImageListResponse {
 	success: boolean;
 	data: ImageSummary[];
 	pagination: PaginationResponse;
+	failedEnvironments?: EnvironmentFailure[];
 }
 
 export const ImageListResponse = {

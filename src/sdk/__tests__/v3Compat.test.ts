@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vite-plus/test';
 
 import { AuthManager } from '../auth/AuthManager';
-import { ArcaneTransport } from '../client/ArcaneTransport';
+import { ArcaneTransport, decodePaginatedResponse } from '../client/ArcaneTransport';
 import { EnvironmentID, RetryPolicy } from '../client/environment';
 import { RESTService } from '../http/RESTService';
 import { ContainersService } from '../services/ContainersService';
+import { DashboardService } from '../services/DashboardService';
 import { SettingsService } from '../services/SettingsService';
+import { ItemEnvironment } from '../pagination/PaginatedResponse';
 import { normalizeV3Environment, v3ResponseNormalizer } from '../client/v3Responses';
 import { translateRouteForV3 } from '../client/v3Routes';
 import { InMemoryTokenStore } from '../auth/TokenStore';
@@ -131,6 +133,7 @@ function makeClient(handler: (request: RecordedRequest) => MockReply) {
 	return {
 		transport,
 		containers: new ContainersService(rest),
+		dashboard: new DashboardService(rest),
 		settings: new SettingsService(rest),
 		requests
 	};
@@ -229,5 +232,85 @@ describe('v3 change and bootstrap models', () => {
 		expect(bootstrap.user.id).toBe('u1');
 		expect(bootstrap.environments.data[0]).toMatchObject({ isEdge: true, edgeTransport: 'grpc' });
 		expect(bootstrap.version.currentVersion).toBe('3.0.0');
+	});
+});
+
+describe('multi-environment responses', () => {
+	it('remembers the environment of each decoded row', () => {
+		const response = decodePaginatedResponse(
+			{
+				success: true,
+				data: [
+					{ id: 'x', environmentId: 'a', environmentName: 'Alpha' },
+					{ id: 'y', environmentId: 'b' }
+				],
+				pagination: { totalItems: 2, totalPages: 1, currentPage: 1, itemsPerPage: 50 },
+				failedEnvironments: [
+					{ environment: { id: 'c', name: 'c' }, message: 'Agent is not connected' }
+				]
+			},
+			(raw) => ({ id: (raw as { id: string }).id })
+		);
+		expect(response.data).toEqual([{ id: 'x' }, { id: 'y' }]);
+		expect(ItemEnvironment.get(response.data[0])).toEqual({ id: 'a', name: 'Alpha' });
+		expect(ItemEnvironment.get(response.data[1])).toEqual({ id: 'b', name: undefined });
+		expect(ItemEnvironment.get(ItemEnvironment.carry(response.data[0], { id: 'z' }))?.id).toBe('a');
+		expect(response.failedEnvironments?.[0]?.environment.id).toBe('c');
+	});
+
+	it('builds dashboard snapshots for many environments from aggregated counts', async () => {
+		const { requests, ...client } = makeClient((request) => {
+			if (request.url.endsWith('/api/app/version'))
+				return { status: 200, body: { currentVersion: '3.0.0', enabledFeatures: [] } };
+			if (request.url.includes('/containers/counts'))
+				return {
+					status: 200,
+					body: {
+						success: true,
+						data: { runningContainers: 3, stoppedContainers: 1, totalContainers: 4 },
+						environments: [
+							{
+								environment: { id: 'a', name: 'Alpha' },
+								data: { runningContainers: 3, stoppedContainers: 1, totalContainers: 4 }
+							}
+						],
+						failedEnvironments: [
+							{ environment: { id: 'b', name: 'b' }, message: 'Agent is not connected' }
+						]
+					}
+				};
+			return { status: 200, body: { success: true, data: {} } };
+		});
+
+		const { snapshots, failures } = await client.dashboard.snapshots({ envIDs: ['a', 'b'] });
+
+		expect(snapshots.get('a')?.containers.counts.stoppedContainers).toBe(1);
+		expect(snapshots.get('a')?.actionItems.items.map((item) => item.kind)).toEqual([
+			'stopped_containers'
+		]);
+		expect(failures.get('b')).toBe('Agent is not connected');
+		expect(requests.slice(1).map((request) => request.url.replace(BASE, ''))).toEqual(
+			expect.arrayContaining([
+				'/api/environments/a,b/containers/counts',
+				'/api/environments/a,b/images/counts',
+				'/api/environments/a,b/version'
+			])
+		);
+		expect(requests).toHaveLength(6);
+	});
+});
+
+describe('offline environments', () => {
+	it('does not retry a remote environment the server reports as unavailable', async () => {
+		const { requests, ...client } = makeClient((request) => {
+			if (request.url.endsWith('/api/app/version')) return { status: 404, body: {} };
+			return { status: 503, body: { error: 'Agent is not connected' } };
+		});
+
+		await expect(client.containers.statusCounts({ envID: 'remote' })).rejects.toThrow();
+		expect(requests.filter((request) => request.url.includes('/remote/'))).toHaveLength(1);
+		expect(client.transport.shouldRetry('GET', 503, 'environments/0/containers')).toBe(true);
+		expect(client.transport.shouldRetry('GET', 503, 'environments/e1/containers')).toBe(false);
+		expect(client.transport.shouldRetry('GET', 502, 'environments/e1/containers')).toBe(true);
 	});
 });

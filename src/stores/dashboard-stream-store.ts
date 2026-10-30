@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { environmentSources } from '@/core/networking/environment-sources';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import {
@@ -96,6 +97,29 @@ export const useDashboardStreamStore = create<DashboardStreamState>((set, get) =
 					undefined
 				)
 			);
+		}
+	};
+
+	const refreshEnvironments = async (environmentIDs: string[], forGeneration: number) => {
+		if (!client) return;
+		try {
+			const { snapshots, failures } = await client.dashboard.snapshots({ envIDs: environmentIDs });
+			if (forGeneration !== generation) return;
+			let states = get().statesByEnvironmentID;
+			for (const environmentID of environmentIDs) {
+				const snapshot = snapshots.get(environmentID);
+				states = snapshot
+					? applySnapshot(states, environmentID, snapshot)
+					: applyError(states, environmentID, failures.get(environmentID), undefined);
+			}
+			commit(states);
+		} catch (error) {
+			if (forGeneration !== generation || isCancellation(error)) return;
+			const message = friendlyErrorMessage(error);
+			let states = get().statesByEnvironmentID;
+			for (const environmentID of environmentIDs)
+				states = applyError(states, environmentID, message, undefined);
+			commit(states);
 		}
 	};
 
@@ -243,7 +267,20 @@ export const useDashboardStreamStore = create<DashboardStreamState>((set, get) =
 			const forGeneration = generation;
 			const states = get().statesByEnvironmentID;
 			const ids = environmentIDs?.filter((id) => states[id] !== undefined) ?? Object.keys(states);
-			await Promise.all(ids.map((id) => refreshEnvironment(id, forGeneration)));
+			const sources = await environmentSources(
+				client,
+				ids.map((id) => ({ id }))
+			);
+			await Promise.all(
+				sources.map((source) =>
+					source.environments.length === 1
+						? refreshEnvironment(source.key, forGeneration)
+						: refreshEnvironments(
+								source.environments.map((environment) => environment.id),
+								forGeneration
+							)
+				)
+			);
 		}
 	};
 });

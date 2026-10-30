@@ -1,4 +1,5 @@
 import type { PaginationResponse } from '@/sdk/models/base/pagination';
+import type { EnvironmentFailure } from '@/sdk/pagination/PaginatedResponse';
 
 import { RemoteDataLimitError, RemoteDataLimits } from './remote-data-limits';
 
@@ -7,6 +8,19 @@ export type Identifiable = { id: string };
 export interface ResourcePage<Element> {
 	items: Element[];
 	pagination: PaginationResponse;
+	failedEnvironments?: EnvironmentFailure[];
+}
+
+export function resourcePage<Element>(response: {
+	data: Element[];
+	pagination: PaginationResponse;
+	failedEnvironments?: EnvironmentFailure[];
+}): ResourcePage<Element> {
+	return {
+		items: response.data,
+		pagination: response.pagination,
+		failedEnvironments: response.failedEnvironments
+	};
 }
 
 export type FetchPage<Element> = (start: number, limit: number) => Promise<ResourcePage<Element>>;

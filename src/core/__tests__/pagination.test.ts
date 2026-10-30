@@ -12,6 +12,8 @@ import {
 	utf8ByteLength
 } from '../networking/remote-data-limits';
 import { reusingUnchanged } from '@/stores/environment-item-identity';
+import { environmentSources } from '../networking/environment-sources';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 
 const items = (start: number, count: number) =>
 	Array.from({ length: count }, (_, i) => ({ id: String(start + i) }));
@@ -188,5 +190,33 @@ describe('boundedText fast paths', () => {
 			for (const limit of [0, 1, 10, 30, 64, 256, 2048])
 				assert.equal(boundedText(text, limit), reference(text, limit));
 		}
+	});
+});
+
+describe('environmentSources', () => {
+	const fakeClient = (generation: 'v3' | 'legacy', limit: string) =>
+		({
+			transport: {},
+			apiGeneration: async () => generation,
+			settings: {
+				getPublicSettings: async () => [{ key: 'allEnvironmentsLimit', value: limit }]
+			}
+		}) as unknown as ArcaneClient;
+	const environments = ['0', 'a', 'b', 'c', 'd'].map((id) => ({ id }));
+
+	it('groups environments into chunks bounded by the server limit on v3', async () => {
+		const sources = await environmentSources(fakeClient('v3', '2'), environments);
+		assert.deepEqual(
+			sources.map((source) => source.key),
+			['0,a', 'b,c', 'd']
+		);
+	});
+
+	it('keeps one source per environment on legacy servers', async () => {
+		const sources = await environmentSources(fakeClient('legacy', '2'), environments);
+		assert.deepEqual(
+			sources.map((source) => source.key),
+			['0', 'a', 'b', 'c', 'd']
+		);
 	});
 });

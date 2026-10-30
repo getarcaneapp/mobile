@@ -8,6 +8,7 @@ import {
 	progressiveFanOut,
 	type ResourcePage
 } from '@/core/networking/pagination-loader';
+import { environmentSources, type EnvironmentSource } from '@/core/networking/environment-sources';
 import { RemoteDataLimits } from '@/core/networking/remote-data-limits';
 import {
 	ActivityCenterItem,
@@ -20,7 +21,7 @@ import {
 } from '@/features/activities/activity-display';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { ArcaneTransport } from '@/sdk/client/ArcaneTransport';
-import { EnvironmentID } from '@/sdk/client/environment';
+import type { EnvironmentID } from '@/sdk/client/environment';
 import type {
 	Activity,
 	ActivityDetail,
@@ -45,39 +46,7 @@ type StreamWarning = 'loadPartial' | 'missed' | 'environmentFailure' | 'persiste
 
 type ActivityEnvironment = { id: EnvironmentID; name: string };
 
-type ActivitySource = { key: string; environments: ActivityEnvironment[] };
-
-const defaultAggregateLimit = 64;
-
-async function aggregateLimit(client: ArcaneClient): Promise<number> {
-	const settings = await client.settings
-		.getPublicSettings({ envID: EnvironmentID.localDocker })
-		.catch(() => []);
-	const value = Number(settings.find((setting) => setting.key === 'allEnvironmentsLimit')?.value);
-	return Number.isFinite(value) && value >= 2 ? Math.floor(value) : defaultAggregateLimit;
-}
-
-async function activitySources(
-	client: ArcaneClient,
-	environments: ActivityEnvironment[]
-): Promise<ActivitySource[]> {
-	if ((await client.apiGeneration()) !== 'v3' || environments.length < 2) {
-		return environments.map((environment) => ({
-			key: environment.id,
-			environments: [environment]
-		}));
-	}
-	const limit = await aggregateLimit(client);
-	const sources: ActivitySource[] = [];
-	for (let start = 0; start < environments.length; start += limit) {
-		const chunk = environments.slice(start, start + limit);
-		sources.push({
-			key: chunk.map((environment) => environment.id).join(','),
-			environments: chunk
-		});
-	}
-	return sources;
-}
+type ActivitySource = EnvironmentSource<ActivityEnvironment>;
 
 export type ActivityCenterState = {
 	activities: Activity[];
@@ -624,7 +593,7 @@ export function createActivityCenterStore(): ActivityCenterStore {
 						if (!environmentNames.has(environment.id))
 							environmentNames.set(environment.id, environment.name);
 					}
-					const sources = await activitySources(activeClient, environments);
+					const sources = await environmentSources(activeClient, environments);
 					if (loadGeneration !== generation) return;
 					const requests: [ActivitySource, number][] = [];
 					for (const source of sources) {

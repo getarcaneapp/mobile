@@ -12,6 +12,7 @@ import type { EnvironmentID } from '@/sdk/client/environment';
 import { Permission } from '@/sdk/models/role/Permission';
 import type { Volume, VolumeSizeInfo } from '@/sdk/models/volume/Volume';
 import { useAllEnvironmentsOperationStore } from '@/stores/all-environments-operation-store';
+import { resourcePage } from '@/core/networking/pagination-loader';
 import { useClientManager } from '@/stores/client-manager';
 import {
 	pinnedEnvironmentItemIDs,
@@ -118,7 +119,7 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 		if (!current) return undefined;
 		return async (envID, start, limit) => {
 			const response = await current.volumes.list({ envID, query: { start, limit } });
-			return { items: response.data, pagination: response.pagination };
+			return resourcePage(response);
 		};
 	}, []);
 
@@ -147,7 +148,7 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 				.getState()
 				.listEnvironments(environmentID, allEnvironments);
 			const sizesLoad = loadSizes(environments.map((e) => e.id));
-			await list.reload(environments, fetch, { preservingLoadedRange });
+			await list.reload(environments, fetch, { preservingLoadedRange, aggregates: true });
 			await sizesLoad;
 		},
 		[volumesPage, list, environmentID, allEnvironments, loadSizes]

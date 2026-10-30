@@ -1,9 +1,11 @@
 import { PaginationLoader } from '@/core/networking/pagination-loader';
+import { RemoteDataLimitError, RemoteDataLimits } from '@/core/networking/remote-data-limits';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ImageSummary } from '@/sdk/models/image/ImageSummary';
 import { ImageUpdateInfo } from '@/sdk/models/image/ImageUpdateInfo';
 import type { ImageUpdateResponse, ImageUpdateSummary } from '@/sdk/models/imageUpdate/ImageUpdate';
+import { ItemEnvironment } from '@/sdk/pagination/PaginatedResponse';
 
 import { outdatedImages } from './updates-logic';
 
@@ -16,19 +18,64 @@ export type EnvironmentUpdates = {
 	error?: string;
 };
 
+export type EnvironmentImages = {
+	images: Map<EnvironmentID, ImageSummary[]>;
+	failures: Map<EnvironmentID, string>;
+};
+
+const aggregatePageSize = 500;
+
+export async function collectEnvironmentImages(
+	sourceKey: string,
+	client: ArcaneClient
+): Promise<EnvironmentImages> {
+	const images = new Map<EnvironmentID, ImageSummary[]>();
+	const failures = new Map<EnvironmentID, string>();
+	let start = 0;
+	let collected = 0;
+	while (true) {
+		const response = await client.images.list({
+			envID: sourceKey,
+			query: { start, limit: aggregatePageSize }
+		});
+		for (const failure of response.failedEnvironments ?? [])
+			failures.set(failure.environment.id, failure.message || 'Environment unavailable');
+		for (const image of response.data) {
+			const environmentID = ItemEnvironment.get(image)?.id;
+			if (environmentID === undefined) continue;
+			images.set(environmentID, [...(images.get(environmentID) ?? []), image]);
+		}
+		collected += response.data.length;
+		if (collected > RemoteDataLimits.maximumCollectionItems)
+			throw RemoteDataLimitError.collectionTooLarge(RemoteDataLimits.maximumCollectionItems);
+		const { pagination } = response;
+		const stride = pagination.itemsPerPage > 0 ? pagination.itemsPerPage : aggregatePageSize;
+		const hasMore =
+			pagination.hasNextPage ??
+			(pagination.totalItems >= 0
+				? start + stride < pagination.totalItems
+				: response.data.length >= stride);
+		if (!hasMore || response.data.length === 0) return { images, failures };
+		start += stride;
+	}
+}
+
 export async function fetchEnvironmentUpdates(
 	envID: EnvironmentID,
-	client: ArcaneClient
+	client: ArcaneClient,
+	preloadedImages?: ImageSummary[]
 ): Promise<EnvironmentUpdates> {
 	const pendingSummary = client.images.updateSummary({ envID }).catch(() => undefined);
 
 	let images: ImageSummary[];
 	let listError: string | undefined;
 	try {
-		images = await PaginationLoader.collect(async (start, limit) => {
-			const response = await client.images.list({ envID, query: { start, limit } });
-			return { items: response.data, pagination: response.pagination };
-		});
+		images =
+			preloadedImages ??
+			(await PaginationLoader.collect(async (start, limit) => {
+				const response = await client.images.list({ envID, query: { start, limit } });
+				return { items: response.data, pagination: response.pagination };
+			}));
 	} catch (error) {
 		images = [];
 		listError = error instanceof Error ? error.message : String(error);

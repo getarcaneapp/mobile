@@ -1,5 +1,6 @@
 import { D } from '../base/decoding';
 import type { PaginationResponse } from '../base/pagination';
+import type { EnvironmentFailure } from '../../pagination/PaginatedResponse';
 import {
 	ContainerNetworkSettings,
 	type ContainerHostConfig,
@@ -90,6 +91,7 @@ export interface ContainerListResponse {
 	counts: ContainerStatusCounts;
 	pagination: PaginationResponse;
 	resourceSortSupported: boolean;
+	failedEnvironments?: EnvironmentFailure[];
 }
 
 export const ContainerListResponse = {
@@ -113,7 +115,10 @@ export const ContainerListResponse = {
 			groups: D.optArray(o, 'groups', ContainerSummaryGroup.decode),
 			counts: D.nested(o, 'counts', D.cast<ContainerStatusCounts>),
 			pagination: D.nested(o, 'pagination', D.cast<PaginationResponse>),
-			resourceSortSupported: D.optBoolean(o, 'resourceSortSupported') ?? false
+			resourceSortSupported: D.optBoolean(o, 'resourceSortSupported') ?? false,
+			failedEnvironments: Array.isArray(o.failedEnvironments)
+				? (o.failedEnvironments as EnvironmentFailure[])
+				: undefined
 		};
 	}
 } as const;

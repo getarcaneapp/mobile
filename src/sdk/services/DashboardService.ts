@@ -69,6 +69,69 @@ export class DashboardService {
 		});
 	}
 
+	async snapshots(args: { envIDs: EnvironmentID[] }): Promise<{
+		snapshots: Map<EnvironmentID, DashboardSnapshot>;
+		failures: Map<EnvironmentID, string>;
+	}> {
+		const snapshots = new Map<EnvironmentID, DashboardSnapshot>();
+		const failures = new Map<EnvironmentID, string>();
+		if (args.envIDs.length < 2 || (await this.rest.transport.apiGeneration()) !== 'v3') {
+			await Promise.all(
+				args.envIDs.map(async (envID) => {
+					try {
+						snapshots.set(envID, await this.snapshot({ envID }));
+					} catch (error) {
+						failures.set(envID, error instanceof Error ? error.message : String(error));
+					}
+				})
+			);
+			return { snapshots, failures };
+		}
+		const key = args.envIDs.join(',');
+		const optional = <T>(promise: Promise<EnvironmentResults<T>>) =>
+			promise.catch(() => emptyResults<T>());
+		const [containerCounts, imageCounts, projectCounts, vulnerabilities, versions, apiKeys] =
+			await Promise.all([
+				this.perEnvironment<ContainerStatusCounts>(key, 'containers/counts'),
+				optional(this.perEnvironment<ImageUsageCounts>(key, 'images/counts')),
+				optional(this.perEnvironment<ProjectStatusCounts>(key, 'projects/counts')),
+				optional(
+					this.perEnvironment<EnvironmentVulnerabilitySummary>(key, 'vulnerabilities/summary')
+				),
+				optional(this.perEnvironment<VersionInfo>(key, 'version')),
+				args.envIDs.includes(EnvironmentID.localDocker)
+					? this.rest.transport
+							.paginated<APIKey>('api-keys', { start: 0, limit: 100 })
+							.catch(() => undefined)
+					: Promise.resolve(undefined)
+			]);
+		for (const envID of args.envIDs) {
+			const counts = containerCounts.data.get(envID);
+			if (counts === undefined) {
+				failures.set(envID, containerCounts.failures.get(envID) ?? 'Environment unavailable');
+				continue;
+			}
+			snapshots.set(
+				envID,
+				composeSnapshot({
+					containerCounts: counts,
+					imageCounts: imageCounts.data.get(envID),
+					projectCounts: projectCounts.data.get(envID),
+					vulnerabilities: vulnerabilities.data.get(envID),
+					versionInfo: versions.data.get(envID),
+					apiKeys: envID === EnvironmentID.localDocker ? apiKeys : undefined,
+					debugAllGood: false
+				})
+			);
+		}
+		return { snapshots, failures };
+	}
+
+	private async perEnvironment<T>(key: string, suffix: string): Promise<EnvironmentResults<T>> {
+		const text = await this.rest.transport.rawRequest(this.rest.environmentPath(key, suffix));
+		return this.rest.transport.decode(text, (raw) => decodeEnvironmentResults<T>(raw));
+	}
+
 	private async composedSnapshot(args: {
 		envID?: EnvironmentID;
 		debugAllGood?: boolean;
@@ -94,53 +157,102 @@ export class DashboardService {
 					? optional(this.rest.transport.paginated<APIKey>('api-keys', { start: 0, limit: 100 }))
 					: Promise.resolve(undefined)
 			]);
-		const counts = ContainerStatusCounts.make(containerCounts);
-		const items: ActionItem[] = args.debugAllGood
-			? []
-			: [
-					{
-						kind: 'stopped_containers',
-						count: counts.stoppedContainers,
-						severity: 'warning'
-					},
-					{
-						kind: 'image_updates',
-						count: (counts.updatesAvailable ?? 0) + (projectCounts?.updatesAvailable ?? 0),
-						severity: 'warning'
-					},
-					{
-						kind: 'actionable_vulnerabilities',
-						count: vulnerabilities?.actionableCount ?? 0,
-						severity: 'critical'
-					},
-					{ kind: 'expiring_keys', count: expiringKeyCount(apiKeys), severity: 'warning' }
-				];
-		return {
-			containers: {
-				data: [],
-				counts,
-				pagination: {
-					totalPages: 0,
-					totalItems: counts.totalContainers,
-					currentPage: 1,
-					itemsPerPage: 0
-				}
-			},
-			images: {
-				data: [],
-				pagination: {
-					totalPages: 0,
-					totalItems: imageCounts?.totalImages ?? 0,
-					currentPage: 1,
-					itemsPerPage: 0
-				}
-			},
-			imageUsageCounts: ImageUsageCounts.make(imageCounts),
-			actionItems: ActionItems.make(items.filter((item) => item.count > 0)),
-			settings: DashboardSnapshotSettings.make(),
-			versionInfo
-		};
+		return composeSnapshot({
+			containerCounts,
+			imageCounts,
+			projectCounts,
+			vulnerabilities,
+			versionInfo,
+			apiKeys,
+			debugAllGood: args.debugAllGood ?? false
+		});
 	}
+}
+
+type EnvironmentResults<T> = { data: Map<string, T>; failures: Map<string, string> };
+
+function emptyResults<T>(): EnvironmentResults<T> {
+	return { data: new Map(), failures: new Map() };
+}
+
+function decodeEnvironmentResults<T>(raw: unknown): EnvironmentResults<T> {
+	const results = emptyResults<T>();
+	if (typeof raw !== 'object' || raw === null) return results;
+	const o = raw as { environments?: unknown; failedEnvironments?: unknown };
+	for (const entry of Array.isArray(o.environments) ? o.environments : []) {
+		const id = (entry as { environment?: { id?: unknown } } | null)?.environment?.id;
+		if (typeof id === 'string') results.data.set(id, (entry as { data: T }).data);
+	}
+	for (const entry of Array.isArray(o.failedEnvironments) ? o.failedEnvironments : []) {
+		const failure = entry as { environment?: { id?: unknown }; message?: unknown } | null;
+		const id = failure?.environment?.id;
+		if (typeof id === 'string')
+			results.failures.set(
+				id,
+				typeof failure?.message === 'string' && failure.message !== ''
+					? failure.message
+					: 'Environment unavailable'
+			);
+	}
+	return results;
+}
+
+function composeSnapshot(parts: {
+	containerCounts: ContainerStatusCounts;
+	imageCounts: ImageUsageCounts | undefined;
+	projectCounts: ProjectStatusCounts | undefined;
+	vulnerabilities: EnvironmentVulnerabilitySummary | undefined;
+	versionInfo: VersionInfo | undefined;
+	apiKeys: PaginatedResponse<APIKey> | undefined;
+	debugAllGood: boolean;
+}): DashboardSnapshot {
+	const { imageCounts, projectCounts, vulnerabilities, versionInfo, apiKeys } = parts;
+	const counts = ContainerStatusCounts.make(parts.containerCounts);
+	const items: ActionItem[] = parts.debugAllGood
+		? []
+		: [
+				{
+					kind: 'stopped_containers',
+					count: counts.stoppedContainers,
+					severity: 'warning'
+				},
+				{
+					kind: 'image_updates',
+					count: (counts.updatesAvailable ?? 0) + (projectCounts?.updatesAvailable ?? 0),
+					severity: 'warning'
+				},
+				{
+					kind: 'actionable_vulnerabilities',
+					count: vulnerabilities?.actionableCount ?? 0,
+					severity: 'critical'
+				},
+				{ kind: 'expiring_keys', count: expiringKeyCount(apiKeys), severity: 'warning' }
+			];
+	return {
+		containers: {
+			data: [],
+			counts,
+			pagination: {
+				totalPages: 0,
+				totalItems: counts.totalContainers,
+				currentPage: 1,
+				itemsPerPage: 0
+			}
+		},
+		images: {
+			data: [],
+			pagination: {
+				totalPages: 0,
+				totalItems: imageCounts?.totalImages ?? 0,
+				currentPage: 1,
+				itemsPerPage: 0
+			}
+		},
+		imageUsageCounts: ImageUsageCounts.make(imageCounts),
+		actionItems: ActionItems.make(items.filter((item) => item.count > 0)),
+		settings: DashboardSnapshotSettings.make(),
+		versionInfo
+	};
 }
 
 function expiringKeyCount(page: PaginatedResponse<APIKey> | undefined): number {

@@ -6,7 +6,7 @@ import {
 	normalizedTransportError
 } from '../errors/ArcaneError';
 import type { AuthManager } from '../auth/AuthManager';
-import type { PaginatedResponse } from '../pagination/PaginatedResponse';
+import { ItemEnvironment, type PaginatedResponse } from '../pagination/PaginatedResponse';
 import { decodeArray, type Decoder } from '../models/base/decoding';
 import {
 	DEFAULT_REQUEST_TIMEOUT_MS,
@@ -382,7 +382,10 @@ export class ArcaneTransport {
 						continue;
 					}
 
-					if (this.shouldRetry(method, response.status) && attempt < this.retryPolicy.maxAttempts) {
+					if (
+						this.shouldRetry(method, response.status, route.path) &&
+						attempt < this.retryPolicy.maxAttempts
+					) {
 						await this.sleepBeforeRetry(attempt, linked.signal);
 						attempt += 1;
 						continue;
@@ -798,8 +801,9 @@ export class ArcaneTransport {
 		return IDEMPOTENT_METHODS.has(method.toUpperCase());
 	}
 
-	shouldRetry(method: string, statusCode: number): boolean {
+	shouldRetry(method: string, statusCode: number, path?: string): boolean {
 		if (!this.isIdempotent(method)) return false;
+		if (statusCode === 503 && path !== undefined && isRemoteEnvironmentPath(path)) return false;
 		return [429, 502, 503, 504].includes(statusCode);
 	}
 
@@ -821,6 +825,11 @@ export class ArcaneTransport {
 }
 
 export { ArcaneTransport as ArcaneURLSessionTransport };
+
+function isRemoteEnvironmentPath(path: string): boolean {
+	const match = /^\/?(?:api\/)?environments\/([^/?]+)\//.exec(path);
+	return match !== null && match[1] !== '0';
+}
 
 function concatBytes(chunks: Uint8Array[]): Uint8Array {
 	const size = chunks.reduce((total, chunk) => total + chunk.byteLength, 0);
@@ -857,7 +866,9 @@ export function decodePaginatedResponse<T>(
 	}
 	return {
 		success: o.success,
-		data: decode ? decodeArray(decode)(o.data ?? []) : ((o.data ?? []) as T[]),
+		data: decode
+			? decodeArray(ItemEnvironment.tagging(decode))(o.data ?? [])
+			: ((o.data ?? []) as T[]),
 		pagination: o.pagination as PaginatedResponse<T>['pagination'],
 		failedEnvironments: Array.isArray(o.failedEnvironments)
 			? (o.failedEnvironments as PaginatedResponse<T>['failedEnvironments'])

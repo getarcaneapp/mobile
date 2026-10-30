@@ -111,19 +111,22 @@ export const useEnvironmentsStore = create<EnvironmentsState>((set, get) => {
 	};
 
 	const loadDockerInformation = async (client: ArcaneClient, identity: object, taskID: number) => {
-		const enabledIDs = get()
-			.environments.filter((e) => e.enabled)
-			.map((e) => e.id);
-		const enabledSet = new Set(enabledIDs);
+		const enabled = get().environments.filter((e) => e.enabled);
+		const enabledSet = new Set(enabled.map((e) => e.id));
+		const offlineIDs = enabled.filter((e) => e.status.toLowerCase() === 'offline').map((e) => e.id);
+		const offlineSet = new Set(offlineIDs);
 		const infos = get().dockerInfoByEnvironmentID;
-		const pruned = Object.fromEntries(Object.entries(infos).filter(([id]) => enabledSet.has(id)));
-		const unavailable = new Set(
-			[...get().unavailableEnvironmentIDs].filter((id) => enabledSet.has(id))
+		const pruned = Object.fromEntries(
+			Object.entries(infos).filter(([id]) => enabledSet.has(id) && !offlineSet.has(id))
 		);
+		const unavailable = new Set([
+			...[...get().unavailableEnvironmentIDs].filter((id) => enabledSet.has(id)),
+			...offlineIDs
+		]);
 		set({ dockerInfoByEnvironmentID: pruned, unavailableEnvironmentIDs: unavailable });
 
 		await progressiveFanOut(
-			enabledIDs,
+			enabled.filter((e) => !offlineSet.has(e.id)).map((e) => e.id),
 			async (environmentID) => {
 				const info = await boundedDirectResponse<DockerInfo>(
 					client,

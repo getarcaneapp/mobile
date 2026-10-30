@@ -12,6 +12,7 @@ import type { EnvironmentID } from '@/sdk/client/environment';
 import type { ProjectDetails } from '@/sdk/models/project/Project';
 import { Permission } from '@/sdk/models/role/Permission';
 import { useAllEnvironmentsOperationStore } from '@/stores/all-environments-operation-store';
+import { resourcePage } from '@/core/networking/pagination-loader';
 import { useClientManager } from '@/stores/client-manager';
 import {
 	pinnedEnvironmentItemIDs,
@@ -106,7 +107,7 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 		const tags = tagFilter.length === 0 ? undefined : [...tagFilter].sort().join(',');
 		return async (envID, start, limit) => {
 			const response = await current.projects.list({ envID, query: { start, limit }, tags });
-			return { items: response.data, pagination: response.pagination };
+			return resourcePage(response);
 		};
 	}, []);
 
@@ -117,7 +118,7 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 			const lists = await useEnvironmentsStore
 				.getState()
 				.listEnvironments(environmentID, allEnvironments);
-			await list.reload(lists, fetch, { preservingLoadedRange });
+			await list.reload(lists, fetch, { preservingLoadedRange, aggregates: true });
 		},
 		[projectsPage, list, environmentID, allEnvironments]
 	);

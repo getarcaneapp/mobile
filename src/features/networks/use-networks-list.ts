@@ -9,6 +9,7 @@ import { nextInstanceKey } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { NetworkSummary } from '@/sdk/models/network/Network';
 import { useAllEnvironmentsOperationStore } from '@/stores/all-environments-operation-store';
+import { resourcePage } from '@/core/networking/pagination-loader';
 import { useClientManager } from '@/stores/client-manager';
 import { useEnvironmentPagedList, type EnvironmentFetch } from '@/stores/environment-paged-list';
 import { useEnvironmentsStore, type ListEnvironment } from '@/stores/environments-store';
@@ -75,7 +76,7 @@ export function useNetworksList({ environmentID, allEnvironments = false }: Netw
 		if (!current) return undefined;
 		return async (envID, start, limit) => {
 			const response = await current.networks.list({ envID, query: { start, limit } });
-			return { items: response.data, pagination: response.pagination };
+			return resourcePage(response);
 		};
 	}, []);
 
@@ -86,7 +87,7 @@ export function useNetworksList({ environmentID, allEnvironments = false }: Netw
 			const environments = await useEnvironmentsStore
 				.getState()
 				.listEnvironments(environmentID, allEnvironments);
-			await list.reload(environments, fetch, { preservingLoadedRange });
+			await list.reload(environments, fetch, { preservingLoadedRange, aggregates: true });
 		},
 		[networksPage, list, environmentID, allEnvironments]
 	);

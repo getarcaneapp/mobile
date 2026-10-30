@@ -74,7 +74,12 @@ export class ImagesService {
 			query: items,
 			decode: ImageSummary.decode
 		});
-		return { success: response.success, data: response.data, pagination: response.pagination };
+		return {
+			success: response.success,
+			data: response.data,
+			pagination: response.pagination,
+			failedEnvironments: response.failedEnvironments
+		};
 	}
 
 	usageCounts(args: { envID?: EnvironmentID } = {}): Promise<ImageUsageCounts> {

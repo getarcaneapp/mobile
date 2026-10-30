@@ -182,7 +182,9 @@ export const useSystemStatsHistoryStore = create<SystemStatsHistoryState>((set, 
 		},
 
 		reconcile: (environments) => {
-			trackedIDs = environments.filter((e) => e.enabled).map((e) => e.id);
+			trackedIDs = environments
+				.filter((e) => e.enabled && e.status.toLowerCase() !== 'offline')
+				.map((e) => e.id);
 			const target = new Set(trackedIDs);
 			updates.drop((id) => target.has(id));
 			const current = get().seriesByEnvironmentID;

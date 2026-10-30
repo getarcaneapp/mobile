@@ -1,6 +1,7 @@
 import { parseArcaneDate, type ISODateString } from '../base/date';
 import { D, DecodingError, type RawObject } from '../base/decoding';
 import type { ImageUpdateInfo } from '../image/ImageUpdateInfo';
+import { ItemEnvironment } from '../../pagination/PaginatedResponse';
 import {
 	ContainerNetworkSettings,
 	type ContainerHostConfig,
@@ -152,7 +153,7 @@ export function decodeLossyContainerSummaryArray(raw: unknown): ContainerSummary
 	if (!Array.isArray(raw)) throw new DecodingError('Expected array for LossyContainerSummaryArray');
 	const elements: ContainerSummary[] = [];
 	for (const item of raw) {
-		const element = D.attempt(() => ContainerSummary.decode(item));
+		const element = D.attempt(() => ItemEnvironment.tagging(ContainerSummary.decode)(item));
 		if (element !== undefined) elements.push(element);
 	}
 	return elements;

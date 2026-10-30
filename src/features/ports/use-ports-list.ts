@@ -4,6 +4,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { localizedStandardCompare } from '@/core/list-sort-order';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { PortMapping } from '@/sdk/models/port/PortMapping';
+import { resourcePage } from '@/core/networking/pagination-loader';
 import { useClientManager } from '@/stores/client-manager';
 import {
 	useEnvironmentPagedList,
@@ -125,7 +126,7 @@ export function usePortsList({ environmentID, allEnvironments = false }: PortsLi
 		const search = searchRef.current === '' ? undefined : searchRef.current;
 		return async (envID, start, limit) => {
 			const response = await current.ports.list({ envID, query: { search, start, limit } });
-			return { items: response.data, pagination: response.pagination };
+			return resourcePage(response);
 		};
 	}, []);
 
@@ -136,7 +137,7 @@ export function usePortsList({ environmentID, allEnvironments = false }: PortsLi
 			const environments = await useEnvironmentsStore
 				.getState()
 				.listEnvironments(environmentID, allEnvironments);
-			await list.reload(environments, fetch, { preservingLoadedRange });
+			await list.reload(environments, fetch, { preservingLoadedRange, aggregates: true });
 		},
 		[portsPage, list, environmentID, allEnvironments]
 	);
