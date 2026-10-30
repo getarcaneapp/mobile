@@ -117,7 +117,6 @@ export default function TabStackLayout({ segment }: { segment?: string }) {
 				<Stack.Screen name="project/[id]/logs" options={fullScreenOptions} />
 				<Stack.Screen name="networks-filter" options={sheetOptions} />
 				<Stack.Screen name="network-create" options={sheetOptions} />
-				<Stack.Screen name="add-environment" options={sheetOptions} />
 				<Stack.Screen name="network/[id]/connect" options={largeSheetOptions} />
 				<Stack.Screen name="topology-node" options={sheetOptions} />
 				<Stack.Screen name="swarm-service-editor" options={largeSheetOptions} />

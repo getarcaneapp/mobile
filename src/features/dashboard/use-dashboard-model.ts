@@ -255,12 +255,6 @@ export function useDashboardModel() {
 		view.supplementalImageUpdatesTotal
 	);
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
-	const canAddEnvironment = useClientManager(
-		(s) =>
-			s.apiGeneration === 'v3' &&
-			s.currentUser !== undefined &&
-			User.hasPermission(s.currentUser, Permission.Environments.create)
-	);
 	const canPrune = useClientManager(() =>
 		allEnvironmentsPreview
 			? enabledEnvironments.some((e) => hasPermission(Permission.System.prune, e.id))
@@ -326,7 +320,6 @@ export function useDashboardModel() {
 	const openVolumes = () => push('volumes');
 	const openImageUpdates = () => push('image-updates-sheet');
 	const openActivityCenter = () => push('activity-center');
-	const openAddEnvironment = () => push('add-environment');
 	const openAPIKeys = () => push('apiKeys');
 	const openUpdateAll = () =>
 		push('update-all-environments', { count: String(view.rawEnvironmentCount) });
@@ -436,8 +429,6 @@ export function useDashboardModel() {
 		supportsActivities,
 		isAdmin,
 		canPrune,
-		canAddEnvironment,
-		openAddEnvironment,
 		enabledEnvironments,
 		dockerInfoByEnvironmentID,
 		imageUpdatesTotal,

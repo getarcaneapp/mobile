@@ -10,6 +10,36 @@ export type ReleaseNote = {
 
 export const releaseNotes: ReleaseNote[] = [
 	{
+		version: '0.12.0',
+		new: [
+			{
+				text: 'Support for Arcane 3 servers.'
+			},
+			{
+				text: 'Live progress, stage, and percentage while Arcane upgrades on Arcane 3 servers.'
+			},
+			{
+				text: 'Settings set by environment variables are locked and marked on Arcane 3 servers.'
+			},
+			{
+				text: 'Lists refresh automatically when resources change on Arcane 3 servers.'
+			}
+		],
+		changed: [
+			{
+				text: 'All Environments and the refreshed dashboard are always on with Arcane 3 servers.'
+			},
+			{
+				text: 'Activity Center, resource lists, Updates, and the dashboard load every environment in one request on Arcane 3 servers.'
+			}
+		],
+		fixed: [
+			{
+				text: 'An offline environment stalling the rest of the app.'
+			}
+		]
+	},
+	{
 		version: '0.11.0',
 		new: [
 			{
@@ -29,30 +59,9 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Live Activities on iOS for deploys, redeploys, image pulls, and container updates.'
-			},
-			{
-				text: 'Support for Arcane 3 servers.'
-			},
-			{
-				text: 'Live progress, stage, and percentage while Arcane upgrades on Arcane 3 servers.'
-			},
-			{
-				text: 'Settings set by environment variables are locked and marked on Arcane 3 servers.'
-			},
-			{
-				text: 'Add agent environments from the dashboard on Arcane 3 servers.'
-			},
-			{
-				text: 'Lists refresh automatically when resources change on Arcane 3 servers.'
 			}
 		],
 		changed: [
-			{
-				text: 'All Environments and the refreshed dashboard are always on with Arcane 3 servers.'
-			},
-			{
-				text: 'Activity Center, resource lists, Updates, and the dashboard load every environment in one request on Arcane 3 servers.'
-			},
 			{
 				text: 'Dashboard attention items and container tiles open filtered lists.'
 			},
@@ -168,9 +177,6 @@ export const releaseNotes: ReleaseNote[] = [
 			}
 		],
 		fixed: [
-			{
-				text: 'An offline environment stalling the rest of the app.'
-			},
 			{
 				text: 'Pull to refresh on the dashboard leaving the Updates count and Busiest Containers stale.'
 			},
