@@ -35,7 +35,7 @@ export function PreviewFeaturesScreen() {
 					</Section>
 					{model.usesV3Defaults ? (
 						<Section>
-							<LinkRow title="Edit Tiles" onPress={model.openTilesEditor} />
+							<LinkRow title="Edit Dashboard" onPress={model.openDashboardEditor} />
 							<LinkRow title="Environment Colors" onPress={model.openEnvironmentColors} />
 						</Section>
 					) : (
@@ -48,7 +48,7 @@ export function PreviewFeaturesScreen() {
 								/>
 								<Button label="Replay Walkthrough" onPress={model.showDashboardIntroduction} />
 								{model.refreshedDashboardPreview ? (
-									<LinkRow title="Edit Tiles" onPress={model.openTilesEditor} />
+									<LinkRow title="Edit Dashboard" onPress={model.openDashboardEditor} />
 								) : null}
 							</Section>
 							<Section footer={<Text>{PreviewFeaturesCopy.allEnvironmentsFooter}</Text>}>

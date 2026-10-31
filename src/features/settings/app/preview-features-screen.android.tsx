@@ -26,7 +26,7 @@ export function PreviewFeaturesScreen() {
 				</M3Section>
 				{model.usesV3Defaults ? (
 					<M3Section>
-						<MaterialListItem headline="Edit Tiles" onPress={model.openTilesEditor} />
+						<MaterialListItem headline="Edit Dashboard" onPress={model.openDashboardEditor} />
 						<MaterialListItem headline="Environment Colors" onPress={model.openEnvironmentColors} />
 					</M3Section>
 				) : (
@@ -39,7 +39,7 @@ export function PreviewFeaturesScreen() {
 							/>
 							<TextButtonRow title="Replay Walkthrough" onPress={model.showDashboardIntroduction} />
 							{model.refreshedDashboardPreview ? (
-								<MaterialListItem headline="Edit Tiles" onPress={model.openTilesEditor} />
+								<MaterialListItem headline="Edit Dashboard" onPress={model.openDashboardEditor} />
 							) : null}
 						</M3Section>
 						<M3Section footer={PreviewFeaturesCopy.allEnvironmentsFooter}>

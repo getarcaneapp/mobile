@@ -3,21 +3,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
-import { useStoredString } from '@/core/storage';
+import { EnvironmentID } from '@/sdk/client/environment';
 import type { ContainerResourceSort } from '@/sdk/models/container/ContainerSummary';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
-import type { SystemStats } from '@/sdk/models/system/SystemStats';
+import type { VersionInfo } from '@/sdk/models/version/VersionInfo';
 import {
 	busiestRefreshIntervalMs,
 	useBusiestContainersStore
 } from '@/stores/busiest-containers-store';
 import { useClientManager } from '@/stores/client-manager';
 import { topBusiest } from '@/stores/busiest-containers-logic';
-import {
-	environmentIsOnline,
-	SystemStatsDisplay,
-	type StatsSeries
-} from '@/stores/dashboard-stream-logic';
+import { environmentIsOnline, SystemStatsDisplay } from '@/stores/dashboard-stream-logic';
+import { useDashboardOverviewStore } from '@/stores/dashboard-overview-store';
+import { useDashboardStreamStore } from '@/stores/dashboard-stream-store';
 import { environmentColorHex, useEnvironmentColorStore } from '@/stores/environment-color-store';
 import {
 	useMaxStatsStreams,
@@ -26,41 +24,65 @@ import {
 import { parseHex, systemColors } from '@/theme/colors';
 
 import {
-	DashboardTotalsTile,
 	displayName,
 	fallbackEnvironmentColors,
 	smoothedSeries,
-	tileValue,
 	usageHeadline,
 	type AllEnvironmentsCounts,
 	type UsageMetric
 } from './dashboard-logic';
+import {
+	buildOverviewAttentionItems,
+	collapseActivities,
+	reclaimableByEnvironment,
+	reclaimableResources,
+	relativeTime,
+	totalReclaimable,
+	upcomingJobs,
+	type DiskStats
+} from './dashboard-overview-logic';
+import { groupVisibleWidgets } from './dashboard-widgets';
+import { useDashboardLayout } from './use-dashboard-layout';
 import type { UsageLine } from './components/usage-chart';
-import { relativeTimeFormat } from '@/core/relative-time';
 
 const busiestLimit = 5;
+const diskWarningPercent = 85;
 
 export function useAllEnvironmentsDashboard(
 	environments: Environment[],
-	counts: AllEnvironmentsCounts
+	counts: AllEnvironmentsCounts,
+	isAdmin: boolean
 ) {
+	const client = useClientManager((s) => s.client);
 	const serverURL = useClientManager((s) => s.serverURL);
 	const userID = useClientManager((s) => s.currentUser?.id);
+	const supportsV3 = useClientManager((s) => s.apiGeneration === 'v3');
+	const supportsActivities = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
 	const environmentColors = useEnvironmentColorStore((s) => s.colors);
 	const maxStreams = useMaxStatsStreams();
-	const [storedTiles, setStoredTiles] = useStoredString(
-		DashboardTotalsTile.preferenceKey,
-		DashboardTotalsTile.encode(DashboardTotalsTile.defaults)
-	);
+	const layout = useDashboardLayout();
 	const [usageMetric, setUsageMetric] = useState<UsageMetric>('CPU');
 	const [busiestSort, setBusiestSort] = useState<ContainerResourceSort>('cpuUsage');
-	const [showsTileEditor, setShowsTileEditor] = useState(false);
 
 	const environmentIDs = environments.map((e) => e.id);
 	const idsKey = environmentIDs.join(',');
+	const onlineIDsKey = environments
+		.filter(environmentIsOnline)
+		.map((e) => e.id)
+		.join(',');
 	const showsBusiest = useBusiestContainersStore((s) =>
 		environmentIDs.some((id) => !s.unsupported.has(id))
 	);
+
+	useEffect(() => {
+		if (!client || !onlineIDsKey) return;
+		void useDashboardOverviewStore.getState().load({
+			client,
+			environmentIDs: onlineIDsKey.split(','),
+			supportsV3,
+			supportsActivities
+		});
+	}, [client, onlineIDsKey, supportsV3, supportsActivities]);
 
 	const [isActive, setIsActive] = useState(AppState.currentState === 'active');
 	useEffect(() => {
@@ -77,9 +99,9 @@ export function useAllEnvironmentsDashboard(
 			const ids = idsKey ? idsKey.split(',') : [];
 			const poll = async () => {
 				while (!controller.signal.aborted) {
-					const client = useClientManager.getState().client;
-					if (client)
-						await useBusiestContainersStore.getState().refresh(client, ids, controller.signal);
+					const current = useClientManager.getState().client;
+					if (current)
+						await useBusiestContainersStore.getState().refresh(current, ids, controller.signal);
 					await new Promise((resolve) => setTimeout(resolve, busiestRefreshIntervalMs));
 				}
 			};
@@ -88,24 +110,26 @@ export function useAllEnvironmentsDashboard(
 		}, [serverURL, userID, isActive, idsKey])
 	);
 
-	const colorFor = (environment: Environment, index: number): string => {
+	const colorFor = (environment: Pick<Environment, 'id'>, index: number): string => {
 		const hex = environmentColorHex(environmentColors, serverURL, environment.id);
 		return (
 			(hex && parseHex(hex)) ||
 			systemColors[fallbackEnvironmentColors[index % fallbackEnvironmentColors.length]!]
 		);
 	};
-
+	const indexByID = new Map(environments.map((e, index) => [e.id, index]));
 	const names = new Map(environments.map((e) => [e.id, displayName(e)]));
+
+	const groups = groupVisibleWidgets(layout.visible).filter(
+		(group) => group.kind !== 'panel' || group.id !== 'busiest' || showsBusiest
+	);
 
 	return {
 		environments,
 		counts,
-		tiles: DashboardTotalsTile.decode(storedTiles),
-		storedTiles,
-		setStoredTiles,
-		showsTileEditor,
-		setShowsTileEditor,
+		isAdmin,
+		supportsV3,
+		groups,
 
 		usageMetric,
 		setUsageMetric,
@@ -117,6 +141,7 @@ export function useAllEnvironmentsDashboard(
 		busiestSort,
 		setBusiestSort,
 		environmentName: (id: string) => names.get(id),
+		environmentColor: (id: string) => colorFor({ id }, indexByID.get(id) ?? 0),
 
 		onlineCount: environments.filter(environmentIsOnline).length,
 		colorFor
@@ -125,24 +150,141 @@ export function useAllEnvironmentsDashboard(
 
 export type AllEnvironmentsDashboardModel = ReturnType<typeof useAllEnvironmentsDashboard>;
 
-function liveStats(
-	seriesByID: Readonly<Record<string, StatsSeries>>,
-	environments: readonly Environment[]
-): SystemStats[] {
-	return environments.flatMap((e) => {
-		const latest = seriesByID[e.id]?.latest;
-		return latest ? [latest] : [];
-	});
+export function useHealthyStat(model: AllEnvironmentsDashboardModel) {
+	const offline = model.environments.filter((e) => !environmentIsOnline(e));
+	return {
+		value: `${model.environments.length - offline.length}/${model.environments.length}`,
+		detail: offline.length > 0 ? offline.map(displayName).join(', ') : 'All online'
+	};
 }
 
-export function useTileValues(model: AllEnvironmentsDashboardModel): string[] {
-	const { tiles, counts, environments } = model;
-	return useSystemStatsHistoryStore(
-		useShallow((s) => {
-			const live = liveStats(s.seriesByEnvironmentID, environments);
-			return tiles.map((tile) => tileValue(tile, counts, environments, live));
+function useDiskAlerts(environments: readonly Environment[]): Record<string, DiskStats> {
+	const encoded = useSystemStatsHistoryStore((s) =>
+		environments
+			.flatMap((e) => {
+				const latest = s.seriesByEnvironmentID[e.id]?.latest;
+				const percent = SystemStatsDisplay.diskPercent(latest);
+				if (!latest || percent === undefined || percent < diskWarningPercent) return [];
+				return [
+					`${e.id}\u001f${Math.round(percent)}\u001f${latest.diskUsage}\u001f${latest.diskTotal}`
+				];
+			})
+			.join('\u001e')
+	);
+	return Object.fromEntries(
+		(encoded ? encoded.split('\u001e') : []).map((entry) => {
+			const [id = '', percent, used, total] = entry.split('\u001f');
+			return [id, { percent: Number(percent), used: Number(used), total: Number(total) }];
 		})
 	);
+}
+
+export function useOverviewAttention(model: AllEnvironmentsDashboardModel) {
+	const { environments } = model;
+	const unhealthy = useDashboardStreamStore(
+		useShallow((s) =>
+			Object.fromEntries(
+				environments.map((e) => [
+					e.id,
+					s.statesByEnvironmentID[e.id]?.snapshot?.containers.counts.unhealthyContainers ?? 0
+				])
+			)
+		)
+	);
+	const versions = useDashboardStreamStore(
+		useShallow((s) =>
+			Object.fromEntries(
+				environments.flatMap((e) => {
+					const info = s.statesByEnvironmentID[e.id]?.snapshot?.versionInfo;
+					return info ? [[e.id, info] as [string, VersionInfo]] : [];
+				})
+			)
+		)
+	);
+	const expiringKeys = useDashboardStreamStore((s) => s.attention.expiringKeys);
+	const disk = useDiskAlerts(environments);
+	const events = useDashboardOverviewStore((s) => s.events);
+	const findings = useDashboardOverviewStore((s) => s.findings);
+	const jobs = useDashboardOverviewStore((s) => s.jobs);
+	const activities = useDashboardOverviewStore((s) => s.activities);
+	const risk = useDashboardOverviewStore((s) => s.risk.status);
+	const now = useDashboardOverviewStore((s) => s.loadedAt);
+
+	const items = buildOverviewAttentionItems({
+		environments,
+		unhealthy,
+		events: events.value,
+		findings,
+		disk,
+		jobs: jobs.value,
+		activityGroups: collapseActivities(activities.value),
+		expiringKeys,
+		keysEnvironmentID: EnvironmentID.localDocker,
+		versions,
+		upgradable: new Set(model.isAdmin ? environments.map((e) => e.id) : []),
+		now
+	});
+	return {
+		items,
+		critical: items.filter((item) => item.severity === 'critical').length,
+		loading: items.length === 0 && (events.status === 'loading' || jobs.status === 'loading'),
+		failed: [events.status, jobs.status, risk].includes('failed')
+	};
+}
+
+export function useRiskStat() {
+	const risk = useDashboardOverviewStore((s) => s.risk);
+	const overview = risk.value;
+	const score = overview && overview.scoreStatus !== 'unavailable' ? overview.riskScore : undefined;
+	return {
+		score,
+		delta: overview?.delta7d,
+		knownExploited: overview?.drivers.knownExploited ?? 0,
+		loading: risk.status === 'loading' && !overview,
+		failed: risk.status === 'failed'
+	};
+}
+
+export function useReclaimable() {
+	const diskUsage = useDashboardOverviewStore((s) => s.diskUsage);
+	return {
+		total: totalReclaimable(diskUsage.value),
+		resources: reclaimableResources(diskUsage.value),
+		topEnvironments: reclaimableByEnvironment(diskUsage.value),
+		environmentCount: diskUsage.value.length,
+		loading: diskUsage.status === 'loading' && diskUsage.value.length === 0,
+		failed: diskUsage.status === 'failed'
+	};
+}
+
+export function useRecentActivity() {
+	const activities = useDashboardOverviewStore((s) => s.activities);
+	return {
+		groups: collapseActivities(activities.value),
+		loading: activities.status === 'loading' && activities.value.length === 0,
+		failed: activities.status === 'failed'
+	};
+}
+
+export function useUpcomingJobs() {
+	const jobs = useDashboardOverviewStore((s) => s.jobs);
+	const now = useDashboardOverviewStore((s) => s.loadedAt);
+	return {
+		jobs: upcomingJobs(jobs.value, now),
+		loading: jobs.status === 'loading' && jobs.value.length === 0,
+		failed: jobs.status === 'failed'
+	};
+}
+
+export function useTopMemory(model: AllEnvironmentsDashboardModel) {
+	const rankings = useBusiestContainersStore((s) => s.rankings);
+	const isLive = useBusiestContainersStore((s) => s.isLive);
+	return {
+		entries: topBusiest(rankings, 'memoryUsage', busiestLimit, model.environmentIDs).filter(
+			(entry) => entry.sample.memoryUsageBytes > 0
+		),
+		loading: !isLive
+	};
 }
 
 export function useUsageCard(model: AllEnvironmentsDashboardModel) {
@@ -191,12 +333,4 @@ export function useHostDiskPercent(environmentID: string): number | undefined {
 	});
 }
 
-export function relativeNamed(ms: number, now = Date.now()): string {
-	const seconds = Math.round((ms - now) / 1000);
-	const format = relativeTimeFormat();
-	const abs = Math.abs(seconds);
-	if (abs < 60) return format.format(seconds, 'second');
-	if (abs < 3600) return format.format(Math.round(seconds / 60), 'minute');
-	if (abs < 86400) return format.format(Math.round(seconds / 3600), 'hour');
-	return format.format(Math.round(seconds / 86400), 'day');
-}
+export const relativeNamed = relativeTime;

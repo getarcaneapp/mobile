@@ -228,7 +228,7 @@ function refreshedDashboardIllustration(index: number) {
 				/>
 			</View>
 			<Divider />
-			<IconLabel title="Edit Tiles" icon="square.grid.2x2" color={m3.primary as string} />
+			<IconLabel title="Edit Dashboard" icon="square.grid.2x2" color={m3.primary as string} />
 		</>
 	);
 }

@@ -163,6 +163,7 @@ export interface ContainerStatusCounts {
 	runningContainers: number;
 	stoppedContainers: number;
 	totalContainers: number;
+	unhealthyContainers?: number;
 	updatesAvailable?: number;
 }
 
@@ -172,6 +173,7 @@ export const ContainerStatusCounts = {
 			runningContainers: init.runningContainers ?? 0,
 			stoppedContainers: init.stoppedContainers ?? 0,
 			totalContainers: init.totalContainers ?? 0,
+			unhealthyContainers: init.unhealthyContainers,
 			updatesAvailable: init.updatesAvailable
 		};
 	}

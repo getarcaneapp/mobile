@@ -369,9 +369,17 @@ export function DashboardScreen() {
 								vulnerabilities: model.attention.vulnerabilities
 							}}
 							volumeCounts={view.volumeCounts}
+							isAdmin={model.isAdmin}
+							canPrune={model.canPrune}
 							onOpenEnvironment={model.openEnvironment}
 							onOpenContainer={model.openContainer}
-							onOpenTile={model.openTile}
+							onOpenUpdates={model.openImageUpdates}
+							onOpenSecurity={model.openSecurity}
+							onAttention={model.runOverviewAction}
+							onOpenActivity={model.openActivity}
+							onOpenJobs={model.openJobs}
+							onPrune={() => model.openPrune()}
+							onEditLayout={model.openDashboardLayout}
 							totalsFootnote={
 								<CountAvailabilityNote
 									issues={model.countIssues}

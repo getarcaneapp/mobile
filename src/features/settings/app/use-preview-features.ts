@@ -32,7 +32,7 @@ export function usePreviewFeatures() {
 		showDashboardIntroduction: () =>
 			navigation.push(AppSettingsRoutes.refreshedDashboardIntroduction),
 		showIntroduction: () => navigation.push(AppSettingsRoutes.allEnvironmentsIntroduction),
-		openTilesEditor: () => navigation.push(AppSettingsRoutes.dashboardTiles),
+		openDashboardEditor: () => navigation.push(AppSettingsRoutes.dashboardWidgets),
 		openEnvironmentColors: () => navigation.push(AppSettingsRoutes.environmentColors)
 	};
 }
@@ -40,7 +40,7 @@ export function usePreviewFeatures() {
 export const PreviewFeaturesCopy = {
 	composeFooter: 'Edit Compose files with native forms. YAML editing remains available.',
 	dashboardFooter:
-		"Replace the dashboard's environment cards with live usage graphs, the busiest containers, and an inventory row for every host. Touch and hold the top tiles to edit them.",
+		"Replace the dashboard's environment cards with configurable widgets: health, attention, updates, live usage, the busiest containers, and every environment.",
 	allEnvironmentsFooter:
 		'Show resources from all enabled environments together. Environment switching is unavailable while this preview is on.'
 } as const;

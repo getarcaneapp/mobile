@@ -1,20 +1,13 @@
 import {
-	BottomSheet,
 	Button,
 	Circle,
-	ContextMenu,
 	Divider,
 	Grid,
 	HStack,
-	List,
-	NavigationStack,
 	Picker,
 	RNHostView,
-	Section,
 	Spacer,
 	Text,
-	Toolbar,
-	ToolbarItem,
 	VStack,
 	ZStack
 } from '@expo/ui/swift-ui';
@@ -24,35 +17,34 @@ import {
 	accessibilityElement,
 	accessibilityHidden,
 	accessibilityLabel,
+	background,
 	buttonStyle,
 	contentShape,
 	contentTransition,
-	disabled,
-	environment,
 	fixedSize,
 	font,
 	foregroundStyle,
 	frame,
 	lineLimit,
+	minimumScaleFactor,
 	monospacedDigit,
-	navigationBarTitleDisplayMode,
-	navigationTitle,
 	opacity,
 	padding,
 	pickerStyle,
-	presentationDetents,
 	shapes,
 	tag
 } from '@expo/ui/swift-ui/modifiers';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { View } from 'react-native';
+import type { SFSymbol } from 'sf-symbols-typescript';
 
+import { pluralCount } from '@/core/plural';
+import { activityStatusTint } from '@/features/activities/activity-display';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { DockerInfo } from '@/sdk/models/system/DockerInfo';
-import { environmentIsOnline } from '@/stores/dashboard-stream-logic';
-import { useEnvironmentCounts } from '../use-environment-counts';
 import type { BusiestEntry } from '@/stores/busiest-containers-logic';
+import { environmentIsOnline } from '@/stores/dashboard-stream-logic';
 import { useAccentColor } from '@/theme/accent';
 import { systemColors, withOpacity } from '@/theme/colors';
 import { Motion } from '@/theme/tokens';
@@ -70,41 +62,49 @@ import {
 import { GlassCardBackground } from '@/ui/components/swiftui-surfaces';
 
 import {
+	byteString,
 	containerDisplayName,
 	containerIconURL,
 	containerIsRunning,
-	DashboardTotalsTile,
 	displayName,
 	percent0,
 	ResourceMetricsText,
-	type AllEnvironmentsCounts,
 	type UsageMetric
 } from '../dashboard-logic';
+import {
+	activityEnvironmentID,
+	activityTime,
+	activityTitle,
+	filterActivityGroups,
+	jobLabel,
+	overviewListLimit,
+	sortOverviewAttention,
+	type ActivityFilter,
+	type OverviewAttentionAction,
+	type OverviewAttentionSeverity,
+	type OverviewAttentionSort
+} from '../dashboard-overview-logic';
+import { DashboardWidget, type DashboardWidgetID } from '../dashboard-widgets';
 import {
 	relativeNamed,
 	useAllEnvironmentsDashboard,
 	useBusiestCard,
+	useHealthyStat,
 	useHostDiskPercent,
-	useTileValues,
+	useOverviewAttention,
+	useReclaimable,
+	useRecentActivity,
+	useRiskStat,
+	useTopMemory,
+	useUpcomingJobs,
 	useUsageCard,
 	type AllEnvironmentsDashboardModel
 } from '../use-all-environments-dashboard';
-import { DashboardRowChevron, DashboardSectionTitle, DashboardStatTile } from './dashboard-parts';
+import type { AllEnvironmentsDashboardProps } from './all-environments-dashboard.types';
+import { DashboardRowChevron, DashboardSectionTitle } from './dashboard-parts';
+import { useEnvironmentCounts } from '../use-environment-counts';
 import { MetricRing } from './metric-ring';
 import { UsageChart } from './usage-chart';
-import { pluralCount } from '@/core/plural';
-
-export type AllEnvironmentsDashboardProps = {
-	environments: Environment[];
-	dockerInfo: Readonly<Record<string, DockerInfo>>;
-	counts: AllEnvironmentsCounts;
-	volumeCounts: Readonly<Record<string, number>>;
-	onOpenEnvironment: (environment: Environment) => void;
-	onOpenContainer: (container: ContainerSummary, environmentID: string) => void;
-	onOpenTile: (tile: DashboardTotalsTile) => void;
-	totalsFootnote: ReactNode;
-	hostsAccessory: ReactNode;
-};
 
 function Meter({ fraction, fill }: { fraction: number; fill: string | undefined }) {
 	return (
@@ -272,161 +272,6 @@ function BusiestContainerRow({
 				)}
 			</VStack>
 		</HStack>
-	);
-}
-
-function DashboardTilesEditorSheet({
-	isPresented,
-	storedTiles,
-	setStoredTiles,
-	onDismiss
-}: {
-	isPresented: boolean;
-	storedTiles: string;
-	setStoredTiles: (value: string) => void;
-	onDismiss: () => void;
-}) {
-	const accent = useAccentColor();
-	const tiles = DashboardTotalsTile.decode(storedTiles);
-	const available = DashboardTotalsTile.allCases.filter((t) => !tiles.includes(t));
-	const full = tiles.length >= DashboardTotalsTile.maximum;
-	const row = (tile: DashboardTotalsTile) => {
-		const info = DashboardTotalsTile.info[tile];
-		return (
-			<HStack spacing={12}>
-				<RowIcon systemImage={info.systemImage} tint={systemColors[info.tint]} size={30} />
-				<VStack alignment="leading" spacing={2}>
-					<Text>{info.title}</Text>
-					<Text
-						modifiers={[
-							font({ textStyle: 'caption' }),
-							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
-						]}
-					>
-						{info.detail}
-					</Text>
-				</VStack>
-				<Spacer minLength={0} />
-			</HStack>
-		);
-	};
-	return (
-		<BottomSheet isPresented={isPresented} onIsPresentedChange={(value) => !value && onDismiss()}>
-			<NavigationStack modifiers={[presentationDetents(['medium', 'large'])]}>
-				<Toolbar
-					modifiers={[navigationTitle('Dashboard Tiles'), navigationBarTitleDisplayMode('inline')]}
-				>
-					<List modifiers={[environment('editMode', 'active')]}>
-						<Section
-							title="Shown"
-							footer={<Text>{`Up to ${DashboardTotalsTile.maximum} tiles. Drag to reorder.`}</Text>}
-						>
-							<List.ForEach
-								onMove={(sourceIndices, destination) => {
-									const moving = sourceIndices
-										.map((i) => tiles[i])
-										.filter((t): t is DashboardTotalsTile => t !== undefined);
-									const remaining = tiles.filter((_, i) => !sourceIndices.includes(i));
-									const insertAt =
-										destination - sourceIndices.filter((i) => i < destination).length;
-									remaining.splice(insertAt, 0, ...moving);
-									setStoredTiles(DashboardTotalsTile.encode(remaining));
-								}}
-								onDelete={(indices) => {
-									const remaining = tiles.filter((_, i) => !indices.includes(i));
-									if (remaining.length === 0) return;
-									setStoredTiles(DashboardTotalsTile.encode(remaining));
-								}}
-							>
-								{tiles.map((tile) => (
-									<HStack key={`shown.${tile}`}>{row(tile)}</HStack>
-								))}
-							</List.ForEach>
-						</Section>
-						{available.length > 0 ? (
-							<Section title="Available">
-								{available.map((tile) => (
-									<Button
-										key={`available.${tile}`}
-										onPress={() => setStoredTiles(DashboardTotalsTile.encode([...tiles, tile]))}
-										modifiers={[buttonStyle('plain'), disabled(full), opacity(full ? 0.4 : 1)]}
-									>
-										<HStack>
-											{row(tile)}
-											<Image
-												systemName="plus.circle.fill"
-												modifiers={[
-													foregroundStyle(systemColors.green),
-													font({ textStyle: 'title3' })
-												]}
-											/>
-										</HStack>
-									</Button>
-								))}
-							</Section>
-						) : null}
-						<Section>
-							<Button
-								label="Reset to Defaults"
-								systemImage="arrow.counterclockwise"
-								onPress={() =>
-									setStoredTiles(DashboardTotalsTile.encode(DashboardTotalsTile.defaults))
-								}
-							/>
-						</Section>
-					</List>
-					<Toolbar.Content>
-						<ToolbarItem placement="confirmationAction">
-							<Button label="Done" onPress={onDismiss} modifiers={[foregroundStyle(accent)]} />
-						</ToolbarItem>
-					</Toolbar.Content>
-				</Toolbar>
-			</NavigationStack>
-		</BottomSheet>
-	);
-}
-
-function TotalsCard({
-	model,
-	onOpenTile
-}: {
-	model: AllEnvironmentsDashboardModel;
-	onOpenTile: (tile: DashboardTotalsTile) => void;
-}) {
-	const values = useTileValues(model);
-	return (
-		<ContextMenu>
-			<ContextMenu.Trigger>
-				<GlassCardBackground>
-					<HStack
-						alignment="top"
-						spacing={8}
-						modifiers={[padding({ horizontal: 16, vertical: 14 })]}
-					>
-						{model.tiles.map((tile, index) => {
-							const info = DashboardTotalsTile.info[tile];
-							return (
-								<DashboardStatTile
-									key={tile}
-									title={info.title}
-									value={values[index] ?? '—'}
-									icon={info.systemImage}
-									tint={systemColors[info.tint]}
-									onPress={info.opensDestination ? () => onOpenTile(tile) : undefined}
-								/>
-							);
-						})}
-					</HStack>
-				</GlassCardBackground>
-			</ContextMenu.Trigger>
-			<ContextMenu.Items>
-				<Button
-					label="Edit Tiles"
-					systemImage="square.grid.2x2"
-					onPress={() => model.setShowsTileEditor(true)}
-				/>
-			</ContextMenu.Items>
-		</ContextMenu>
 	);
 }
 
@@ -729,35 +574,762 @@ function HostRow({
 	);
 }
 
-export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
-	const { environments, dockerInfo, counts, volumeCounts } = props;
-	const model = useAllEnvironmentsDashboard(environments, counts);
+function WidgetHeader({ title, children }: { title: string; children?: ReactNode }) {
+	return (
+		<HStack>
+			<DashboardSectionTitle title={title} />
+			<Spacer />
+			{children}
+		</HStack>
+	);
+}
 
-	const hostsSection = (
+function WidgetMessage({ text }: { text: string }) {
+	return (
+		<Text
+			modifiers={[
+				font({ textStyle: 'subheadline' }),
+				foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+				frame({ maxWidth: Infinity, alignment: 'leading' }),
+				padding({ horizontal: 16, vertical: 14 })
+			]}
+		>
+			{text}
+		</Text>
+	);
+}
+
+function WidgetLoading() {
+	return (
+		<VStack modifiers={[frame({ maxWidth: Infinity }), padding({ vertical: 20 })]}>
+			<ArcaneLoadingViewSwiftUI variant="inline" />
+		</VStack>
+	);
+}
+
+function WidgetRows<T>({
+	items,
+	keyFor,
+	onPress,
+	children
+}: {
+	items: readonly T[];
+	keyFor: (item: T) => string;
+	onPress?: (item: T) => void;
+	children: (item: T) => ReactNode;
+}) {
+	return (
+		<VStack spacing={0} modifiers={[padding({ vertical: 4 })]}>
+			{items.map((item, index) => (
+				<VStack key={keyFor(item)} spacing={0}>
+					{index > 0 ? <Divider modifiers={[padding({ leading: 16 })]} /> : null}
+					{onPress ? (
+						<Button onPress={() => onPress(item)} modifiers={[cardRowLinkStyle()]}>
+							<HStack
+								spacing={12}
+								modifiers={[
+									padding({ horizontal: 16, vertical: 10 }),
+									contentShape(shapes.rectangle())
+								]}
+							>
+								{children(item)}
+							</HStack>
+						</Button>
+					) : (
+						<HStack spacing={12} modifiers={[padding({ horizontal: 16, vertical: 10 })]}>
+							{children(item)}
+						</HStack>
+					)}
+				</VStack>
+			))}
+		</VStack>
+	);
+}
+
+function Dot({ color }: { color: string }) {
+	return (
+		<Circle
+			modifiers={[
+				foregroundStyle(color),
+				frame({ width: 8, height: 8 }),
+				accessibilityHidden(true)
+			]}
+		/>
+	);
+}
+
+function TrailingCaption({ text }: { text: string }) {
+	return (
+		<Text
+			modifiers={[
+				font({ textStyle: 'caption' }),
+				monospacedDigit(),
+				foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+				lineLimit(1),
+				fixedSize()
+			]}
+		>
+			{text}
+		</Text>
+	);
+}
+
+function StatCard({
+	id,
+	value,
+	detail,
+	loading = false,
+	onPress
+}: {
+	id: DashboardWidgetID;
+	value: string | undefined;
+	detail: string;
+	loading?: boolean;
+	onPress?: () => void;
+}) {
+	const reduceMotion = useReduceMotion();
+	const info = DashboardWidget.info[id];
+	const shown = loading ? '—' : (value ?? '—');
+	const content = (
+		<GlassCardBackground>
+			<VStack
+				alignment="leading"
+				spacing={6}
+				modifiers={[
+					padding({ horizontal: 14, vertical: 12 }),
+					frame({ maxWidth: Infinity, alignment: 'leading' }),
+					contentShape(shapes.rectangle()),
+					accessibilityElement('ignore'),
+					accessibilityLabel(`${info.title}: ${shown}, ${detail}`)
+				]}
+			>
+				<HStack spacing={5}>
+					<Image
+						systemName={info.systemImage as SFSymbol}
+						modifiers={[
+							font({ textStyle: 'caption', weight: 'semibold' }),
+							foregroundStyle(systemColors[info.tint])
+						]}
+					/>
+					<Text
+						modifiers={[
+							font({ textStyle: 'caption', weight: 'medium' }),
+							foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+							lineLimit(1)
+						]}
+					>
+						{info.title}
+					</Text>
+				</HStack>
+				<Text
+					modifiers={[
+						font({ textStyle: 'title2', design: 'rounded', weight: 'semibold' }),
+						monospacedDigit(),
+						lineLimit(1),
+						minimumScaleFactor(0.6),
+						contentTransition('numericText'),
+						...motionAwareAnimation(Motion.state, hashKey(shown), reduceMotion)
+					]}
+				>
+					{shown}
+				</Text>
+				<Text
+					modifiers={[
+						font({ textStyle: 'caption' }),
+						foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+						lineLimit(1)
+					]}
+				>
+					{detail}
+				</Text>
+			</VStack>
+		</GlassCardBackground>
+	);
+	if (!onPress) return content;
+	return (
+		<Button
+			onPress={onPress}
+			modifiers={[buttonStyle('plain'), accessibilityAddTraits(['isButton'])]}
+		>
+			{content}
+		</Button>
+	);
+}
+
+function HealthyStat({ model }: { model: AllEnvironmentsDashboardModel }) {
+	const stat = useHealthyStat(model);
+	return <StatCard id="healthy" value={stat.value} detail={stat.detail} />;
+}
+
+function AttentionCountStat({ model }: { model: AllEnvironmentsDashboardModel }) {
+	const attention = useOverviewAttention(model);
+	return (
+		<StatCard
+			id="attentionCount"
+			value={String(attention.items.length)}
+			detail={`${attention.critical} critical`}
+			loading={attention.loading}
+		/>
+	);
+}
+
+function UpdatesStat({
+	model,
+	onPress
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onPress: () => void;
+}) {
+	const pending = model.counts.updates;
+	return (
+		<StatCard
+			id="updates"
+			value={pending === undefined ? undefined : String(pending)}
+			detail={
+				pending === undefined ? 'Checking…' : pending === 0 ? 'Up to date' : 'Updates available'
+			}
+			onPress={onPress}
+		/>
+	);
+}
+
+function RiskStat({ onPress }: { onPress: () => void }) {
+	const risk = useRiskStat();
+	const delta =
+		risk.delta !== undefined && risk.delta !== 0
+			? `${risk.delta > 0 ? '↑' : '↓'}${Math.abs(risk.delta)} · `
+			: '';
+	return (
+		<StatCard
+			id="risk"
+			value={risk.score === undefined ? undefined : String(risk.score)}
+			detail={
+				risk.failed
+					? 'Unavailable'
+					: risk.score === undefined
+						? 'No scan'
+						: `${delta}${risk.knownExploited} known exploited`
+			}
+			loading={risk.loading}
+			onPress={onPress}
+		/>
+	);
+}
+
+function ReclaimableStat() {
+	const reclaimable = useReclaimable();
+	return (
+		<StatCard
+			id="reclaimableTotal"
+			value={reclaimable.failed ? undefined : byteString(reclaimable.total)}
+			detail={
+				reclaimable.environmentCount > 1
+					? `Across ${reclaimable.environmentCount} environments`
+					: 'Unused data'
+			}
+			loading={reclaimable.loading}
+		/>
+	);
+}
+
+function StatWidget({
+	id,
+	model,
+	props
+}: {
+	id: DashboardWidgetID;
+	model: AllEnvironmentsDashboardModel;
+	props: AllEnvironmentsDashboardProps;
+}) {
+	switch (id) {
+		case 'healthy':
+			return <HealthyStat model={model} />;
+		case 'attentionCount':
+			return <AttentionCountStat model={model} />;
+		case 'updates':
+			return <UpdatesStat model={model} onPress={props.onOpenUpdates} />;
+		case 'risk':
+			return <RiskStat onPress={props.onOpenSecurity} />;
+		case 'reclaimableTotal':
+			return <ReclaimableStat />;
+		default:
+			return null;
+	}
+}
+
+const severityColor = (severity: OverviewAttentionSeverity) =>
+	severity === 'critical'
+		? systemColors.red
+		: severity === 'warning'
+			? systemColors.orange
+			: systemColors.blue;
+
+function CountBadge({ count }: { count: number | undefined }) {
+	if (!count || count < 2) return null;
+	return (
+		<Text
+			modifiers={[
+				font({ textStyle: 'caption2', weight: 'semibold' }),
+				monospacedDigit(),
+				foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+				padding({ horizontal: 6, vertical: 2 }),
+				background(withOpacity('#8E8E93', 0.16), shapes.capsule()),
+				fixedSize()
+			]}
+		>
+			{`×${count}`}
+		</Text>
+	);
+}
+
+function AttentionWidget({
+	model,
+	onAction
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onAction: (action: OverviewAttentionAction) => void;
+}) {
+	const accent = useAccentColor();
+	const attention = useOverviewAttention(model);
+	const [sort, setSort] = useState<OverviewAttentionSort>('impact');
+	const items = sortOverviewAttention(attention.items, sort).slice(0, overviewListLimit);
+	return (
+		<VStack alignment="leading" spacing={14}>
+			<WidgetHeader title="Needs Attention">
+				<Picker<OverviewAttentionSort>
+					label="Sort"
+					selection={sort}
+					onSelectionChange={setSort}
+					modifiers={[pickerStyle('segmented'), fixedSize()]}
+				>
+					<Text modifiers={[tag('impact')]}>Impact</Text>
+					<Text modifiers={[tag('newest')]}>Newest</Text>
+				</Picker>
+			</WidgetHeader>
+			<GlassCardBackground>
+				{attention.loading ? (
+					<WidgetLoading />
+				) : items.length === 0 ? (
+					<WidgetMessage text={attention.failed ? 'Unavailable' : 'No issues'} />
+				) : (
+					<WidgetRows
+						items={items}
+						keyFor={(item) => item.key}
+						onPress={(item) => onAction(item.action)}
+					>
+						{(item) => (
+							<>
+								<Dot color={severityColor(item.severity)} />
+								<VStack alignment="leading" spacing={3}>
+									<HStack spacing={6}>
+										<Text
+											modifiers={[
+												font({ textStyle: 'subheadline', weight: 'medium' }),
+												lineLimit(1)
+											]}
+										>
+											{item.title}
+										</Text>
+										<CountBadge count={item.count} />
+									</HStack>
+									<EnvironmentLabel
+										name={model.environmentName(item.environmentID)}
+										color={model.environmentColor(item.environmentID)}
+									/>
+									{item.detail ? (
+										<Text
+											modifiers={[
+												font({ textStyle: 'caption' }),
+												foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+												lineLimit(1)
+											]}
+										>
+											{item.detail}
+										</Text>
+									) : null}
+								</VStack>
+								<Spacer minLength={8} />
+								<Text
+									modifiers={[
+										font({ textStyle: 'subheadline', weight: 'medium' }),
+										foregroundStyle(accent),
+										fixedSize()
+									]}
+								>
+									{item.actionLabel}
+								</Text>
+							</>
+						)}
+					</WidgetRows>
+				)}
+			</GlassCardBackground>
+		</VStack>
+	);
+}
+
+function ActivityWidget({
+	model,
+	onOpenActivity
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenActivity: (status?: 'failed') => void;
+}) {
+	const accent = useAccentColor();
+	const recent = useRecentActivity();
+	const [filter, setFilter] = useState<ActivityFilter>('all');
+	const groups = filterActivityGroups(recent.groups, filter);
+	return (
+		<VStack alignment="leading" spacing={14}>
+			<DashboardSectionTitle title="Recent Activity" />
+			<Picker<ActivityFilter>
+				label="Filter"
+				selection={filter}
+				onSelectionChange={setFilter}
+				modifiers={[pickerStyle('segmented')]}
+			>
+				<Text modifiers={[tag('all')]}>All</Text>
+				<Text modifiers={[tag('deploys')]}>Deploys</Text>
+				<Text modifiers={[tag('failures')]}>Failures</Text>
+			</Picker>
+			<GlassCardBackground>
+				<VStack alignment="leading" spacing={0}>
+					{recent.loading ? (
+						<WidgetLoading />
+					) : groups.length === 0 ? (
+						<WidgetMessage text={recent.failed ? 'Unavailable' : 'No recent activity'} />
+					) : (
+						<WidgetRows
+							items={groups}
+							keyFor={(group) => group.key}
+							onPress={(group) =>
+								onOpenActivity(group.activity.status === 'failed' ? 'failed' : undefined)
+							}
+						>
+							{({ activity, ids }) => {
+								const title = activityTitle(activity);
+								const at = activityTime(activity);
+								return (
+									<>
+										<Dot color={activityStatusTint(activity.status)} />
+										<VStack alignment="leading" spacing={3}>
+											<HStack spacing={6}>
+												<Text
+													modifiers={[
+														font({ textStyle: 'subheadline', weight: 'medium' }),
+														lineLimit(1)
+													]}
+												>
+													{[
+														activity.status === 'failed' ? `${title} failed` : title,
+														activity.resourceName
+													]
+														.filter(Boolean)
+														.join(' · ')}
+												</Text>
+												<CountBadge count={ids.length} />
+											</HStack>
+											<EnvironmentLabel
+												name={model.environmentName(activityEnvironmentID(activity))}
+												color={model.environmentColor(activityEnvironmentID(activity))}
+											/>
+										</VStack>
+										<Spacer minLength={8} />
+										{at !== undefined ? <TrailingCaption text={relativeNamed(at)} /> : null}
+									</>
+								);
+							}}
+						</WidgetRows>
+					)}
+					<Divider modifiers={[padding({ leading: 16 })]} />
+					<Button onPress={() => onOpenActivity()} modifiers={[cardRowLinkStyle()]}>
+						<HStack
+							modifiers={[
+								padding({ horizontal: 16, vertical: 12 }),
+								contentShape(shapes.rectangle())
+							]}
+						>
+							<Text modifiers={[font({ textStyle: 'subheadline' }), foregroundStyle(accent)]}>
+								View All
+							</Text>
+							<Spacer />
+						</HStack>
+					</Button>
+				</VStack>
+			</GlassCardBackground>
+		</VStack>
+	);
+}
+
+function JobsWidget({
+	model,
+	onOpenJobs
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenJobs: (environmentID: string) => void;
+}) {
+	const upcoming = useUpcomingJobs();
+	return (
+		<VStack alignment="leading" spacing={14}>
+			<WidgetHeader title="Upcoming Jobs" />
+			<GlassCardBackground>
+				{upcoming.loading ? (
+					<WidgetLoading />
+				) : upcoming.jobs.length === 0 ? (
+					<WidgetMessage text={upcoming.failed ? 'Unavailable' : 'No upcoming jobs'} />
+				) : (
+					<WidgetRows
+						items={upcoming.jobs}
+						keyFor={(entry) => `${entry.environmentID}:${entry.job.id}`}
+						onPress={(entry) => onOpenJobs(entry.environmentID)}
+					>
+						{(entry) => (
+							<>
+								<VStack alignment="leading" spacing={3}>
+									<Text
+										modifiers={[font({ textStyle: 'subheadline', weight: 'medium' }), lineLimit(1)]}
+									>
+										{jobLabel(entry.job)}
+									</Text>
+									<EnvironmentLabel
+										name={model.environmentName(entry.environmentID)}
+										color={model.environmentColor(entry.environmentID)}
+									/>
+								</VStack>
+								<Spacer minLength={8} />
+								<TrailingCaption text={relativeNamed(entry.nextRun)} />
+							</>
+						)}
+					</WidgetRows>
+				)}
+			</GlassCardBackground>
+		</VStack>
+	);
+}
+
+function SegmentBar({ segments }: { segments: { key: string; weight: number; color: string }[] }) {
+	return (
+		<HStack
+			modifiers={[
+				frame({ maxWidth: Infinity, minHeight: 8, maxHeight: 8 }),
+				accessibilityHidden(true)
+			]}
+		>
+			<RNHostView>
+				<View style={{ flex: 1, height: 8, flexDirection: 'row', gap: 2 }}>
+					{segments.map((segment) => (
+						<View
+							key={segment.key}
+							style={{
+								flexGrow: segment.weight,
+								flexBasis: 0,
+								height: 8,
+								borderRadius: 4,
+								backgroundColor: segment.color
+							}}
+						/>
+					))}
+				</View>
+			</RNHostView>
+		</HStack>
+	);
+}
+
+function ReclaimableWidget({
+	model,
+	onPrune
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onPrune: (() => void) | undefined;
+}) {
+	const reduceMotion = useReduceMotion();
+	const reclaimable = useReclaimable();
+	const total = byteString(reclaimable.total);
+	return (
+		<VStack alignment="leading" spacing={14}>
+			<WidgetHeader title="Reclaimable Space">
+				{onPrune && reclaimable.total > 0 ? (
+					<Button
+						label="Prune"
+						systemImage="trash"
+						onPress={onPrune}
+						modifiers={[buttonStyle('bordered'), font({ textStyle: 'subheadline' })]}
+					/>
+				) : null}
+			</WidgetHeader>
+			<GlassCardBackground>
+				{reclaimable.loading ? (
+					<WidgetLoading />
+				) : reclaimable.total === 0 ? (
+					<WidgetMessage text={reclaimable.failed ? 'Unavailable' : 'Nothing to reclaim'} />
+				) : (
+					<VStack alignment="leading" spacing={14} modifiers={[padding({ all: 16 })]}>
+						<Text
+							modifiers={[
+								font({ textStyle: 'title', design: 'rounded', weight: 'semibold' }),
+								monospacedDigit(),
+								contentTransition('numericText'),
+								...motionAwareAnimation(Motion.state, hashKey(total), reduceMotion)
+							]}
+						>
+							{total}
+						</Text>
+						{reclaimable.resources.map((resource) => (
+							<VStack
+								key={resource.key}
+								alignment="leading"
+								spacing={6}
+								modifiers={[
+									accessibilityElement('ignore'),
+									accessibilityLabel(`${resource.title}: ${byteString(resource.total)}`)
+								]}
+							>
+								<HStack modifiers={[font({ textStyle: 'subheadline' })]}>
+									<Text
+										modifiers={[
+											foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+											lineLimit(1)
+										]}
+									>
+										{resource.title}
+									</Text>
+									<Spacer minLength={8} />
+									<Text modifiers={[font({ weight: 'medium' }), monospacedDigit()]}>
+										{byteString(resource.total)}
+									</Text>
+								</HStack>
+								<SegmentBar
+									segments={resource.segments.map((segment) => ({
+										key: segment.environmentID,
+										weight: segment.bytes,
+										color: model.environmentColor(segment.environmentID)
+									}))}
+								/>
+							</VStack>
+						))}
+						{reclaimable.environmentCount > 1 ? (
+							<VStack spacing={0}>
+								{reclaimable.topEnvironments.map((entry, index) => (
+									<VStack key={entry.environmentID} spacing={0}>
+										{index > 0 ? <Divider /> : null}
+										<HStack
+											spacing={8}
+											modifiers={[font({ textStyle: 'subheadline' }), padding({ vertical: 8 })]}
+										>
+											<Dot color={model.environmentColor(entry.environmentID)} />
+											<Text modifiers={[font({ weight: 'medium' }), lineLimit(1)]}>
+												{model.environmentName(entry.environmentID) ?? entry.environmentID}
+											</Text>
+											<Spacer minLength={8} />
+											<Text
+												modifiers={[
+													monospacedDigit(),
+													foregroundStyle({ type: 'hierarchical', style: 'secondary' })
+												]}
+											>
+												{byteString(entry.bytes)}
+											</Text>
+										</HStack>
+									</VStack>
+								))}
+							</VStack>
+						) : null}
+					</VStack>
+				)}
+			</GlassCardBackground>
+		</VStack>
+	);
+}
+
+function TopMemoryWidget({
+	model,
+	onOpenContainer
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenContainer: (container: ContainerSummary, environmentID: string) => void;
+}) {
+	const top = useTopMemory(model);
+	return (
+		<VStack alignment="leading" spacing={14}>
+			<WidgetHeader title="Top Memory" />
+			<GlassCardBackground>
+				{top.entries.length === 0 ? (
+					top.loading ? (
+						<WidgetLoading />
+					) : (
+						<WidgetMessage text="No running containers" />
+					)
+				) : (
+					<WidgetRows
+						items={top.entries}
+						keyFor={(entry) => entry.id}
+						onPress={(entry) => onOpenContainer(entry.container, entry.environmentID)}
+					>
+						{(entry) => (
+							<>
+								<VStack alignment="leading" spacing={3}>
+									<Text
+										modifiers={[font({ textStyle: 'subheadline', weight: 'medium' }), lineLimit(1)]}
+									>
+										{containerDisplayName(entry.container)}
+									</Text>
+									<EnvironmentLabel
+										name={model.environmentName(entry.environmentID)}
+										color={model.environmentColor(entry.environmentID)}
+									/>
+								</VStack>
+								<Spacer minLength={8} />
+								<Text
+									modifiers={[
+										font({ textStyle: 'subheadline' }),
+										monospacedDigit(),
+										foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+										contentTransition('numericText'),
+										fixedSize()
+									]}
+								>
+									{ResourceMetricsText.memoryUsed(entry.sample)}
+								</Text>
+							</>
+						)}
+					</WidgetRows>
+				)}
+			</GlassCardBackground>
+		</VStack>
+	);
+}
+
+function EnvironmentsWidget({
+	model,
+	props
+}: {
+	model: AllEnvironmentsDashboardModel;
+	props: AllEnvironmentsDashboardProps;
+}) {
+	return (
 		<VStack alignment="leading" spacing={14}>
 			<HStack>
 				<VStack alignment="leading" spacing={2}>
-					<DashboardSectionTitle title="Hosts" />
+					<DashboardSectionTitle title="Environments" />
 					<Text
 						modifiers={[
 							font({ textStyle: 'caption' }),
 							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 						]}
-					>{`${model.onlineCount} of ${environments.length} online`}</Text>
+					>{`${model.onlineCount} of ${model.environments.length} online`}</Text>
 				</VStack>
 				<Spacer />
 				{props.hostsAccessory}
 			</HStack>
 			<GlassCardBackground>
 				<VStack spacing={0} modifiers={[padding({ vertical: 4 })]}>
-					{environments.map((environment, index) => (
+					{model.environments.map((environment, index) => (
 						<HostRow
 							key={environment.id}
 							model={model}
 							environment={environment}
 							index={index}
-							info={dockerInfo[environment.id]}
-							volumes={volumeCounts[environment.id]}
+							info={props.dockerInfo[environment.id]}
+							volumes={props.volumeCounts[environment.id]}
 							onOpenEnvironment={props.onOpenEnvironment}
 						/>
 					))}
@@ -765,31 +1337,83 @@ export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
 			</GlassCardBackground>
 		</VStack>
 	);
+}
 
+function PanelWidget({
+	id,
+	model,
+	props
+}: {
+	id: DashboardWidgetID;
+	model: AllEnvironmentsDashboardModel;
+	props: AllEnvironmentsDashboardProps;
+}) {
+	switch (id) {
+		case 'environments':
+			return <EnvironmentsWidget model={model} props={props} />;
+		case 'usage':
+			return (
+				<VStack alignment="leading" spacing={14}>
+					<WidgetHeader title="Usage" />
+					<UsageCard model={model} />
+				</VStack>
+			);
+		case 'busiest':
+			return <BusiestSection model={model} onOpenContainer={props.onOpenContainer} />;
+		case 'attention':
+			return <AttentionWidget model={model} onAction={props.onAttention} />;
+		case 'activity':
+			return <ActivityWidget model={model} onOpenActivity={props.onOpenActivity} />;
+		case 'jobs':
+			return <JobsWidget model={model} onOpenJobs={props.onOpenJobs} />;
+		case 'reclaimable':
+			return (
+				<ReclaimableWidget model={model} onPrune={props.canPrune ? props.onPrune : undefined} />
+			);
+		case 'memory':
+			return <TopMemoryWidget model={model} onOpenContainer={props.onOpenContainer} />;
+		default:
+			return null;
+	}
+}
+
+export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
+	const model = useAllEnvironmentsDashboard(props.environments, props.counts, props.isAdmin);
+	const firstStats = model.groups.findIndex((group) => group.kind === 'stats');
 	return (
 		<VStack alignment="leading" spacing={36}>
-			<CardEntrance id="dashboard.all.totals" index={0}>
-				<VStack alignment="leading" spacing={10}>
-					<TotalsCard model={model} onOpenTile={props.onOpenTile} />
-					{props.totalsFootnote}
-				</VStack>
-			</CardEntrance>
-			<CardEntrance id="dashboard.all.usage" index={1}>
-				<UsageCard model={model} />
-			</CardEntrance>
-			{model.showsBusiest ? (
-				<CardEntrance id="dashboard.all.busiest" index={2}>
-					<BusiestSection model={model} onOpenContainer={props.onOpenContainer} />
+			{model.groups.map((group, index) => (
+				<CardEntrance
+					key={group.key}
+					id={`dashboard.widget.${group.key}`}
+					index={Math.min(index, 5)}
+				>
+					{group.kind === 'stats' ? (
+						<VStack alignment="leading" spacing={10}>
+							<Grid horizontalSpacing={12} verticalSpacing={12} alignment="topLeading">
+								{chunk(group.ids, 2).map((pair) => (
+									<Grid.Row key={pair.join('|')}>
+										{pair.map((id) => (
+											<StatWidget key={id} id={id} model={model} props={props} />
+										))}
+										{pair.length === 1 ? (
+											<Spacer modifiers={[frame({ maxWidth: Infinity })]} />
+										) : null}
+									</Grid.Row>
+								))}
+							</Grid>
+							{index === firstStats ? props.totalsFootnote : null}
+						</VStack>
+					) : (
+						<PanelWidget id={group.id} model={model} props={props} />
+					)}
 				</CardEntrance>
-			) : null}
-			<CardEntrance id="dashboard.all.hosts" index={3}>
-				{hostsSection}
-			</CardEntrance>
-			<DashboardTilesEditorSheet
-				isPresented={model.showsTileEditor}
-				storedTiles={model.storedTiles}
-				setStoredTiles={model.setStoredTiles}
-				onDismiss={() => model.setShowsTileEditor(false)}
+			))}
+			<Button
+				label="Edit Dashboard"
+				systemImage="square.grid.2x2"
+				onPress={props.onEditLayout}
+				modifiers={[buttonStyle('bordered'), frame({ maxWidth: Infinity })]}
 			/>
 		</VStack>
 	);

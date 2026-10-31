@@ -4,6 +4,7 @@ import { DockerInfo } from '../models/system/DockerInfo';
 import type { ConvertDockerRunRequest, ConvertDockerRunResponse } from '../models/system/DockerRun';
 import type { HealthResponse } from '../models/system/HealthResponse';
 import { PruneAllResult, type PruneAllRequest } from '../models/system/Prune';
+import { SystemDiskUsage } from '../models/system/SystemDiskUsage';
 import type { SystemStats } from '../models/system/SystemStats';
 import {
 	EnvironmentUpdateJob,
@@ -42,6 +43,12 @@ export class SystemService {
 			{ authorized: true }
 		);
 		return this.rest.transport.decode(text, DockerInfo.decode);
+	}
+
+	diskUsage(args: { envID?: EnvironmentID } = {}): Promise<SystemDiskUsage> {
+		return this.rest.get(this.rest.environmentPath(args.envID, 'system/df'), {
+			decode: SystemDiskUsage.decode
+		});
 	}
 
 	prune(args: { options: PruneAllRequest; envID?: EnvironmentID }): Promise<PruneAllResult> {

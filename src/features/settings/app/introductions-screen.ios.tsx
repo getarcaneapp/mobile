@@ -253,7 +253,7 @@ function RefreshedDashboardIllustration({ index }: { index: number }) {
 			</HStack>
 			<Divider />
 			<Label
-				title="Edit Tiles"
+				title="Edit Dashboard"
 				systemImage="square.grid.2x2"
 				modifiers={[font({ textStyle: 'subheadline', weight: 'medium' }), foregroundStyle(accent)]}
 			/>

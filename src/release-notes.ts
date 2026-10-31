@@ -23,6 +23,12 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Lists refresh automatically when resources change on Arcane v3 servers.'
+			},
+			{
+				text: 'Dashboard widgets from Arcane v3: Healthy, Needs Attention, Updates, Risk Score, Reclaimable Space, Recent Activity, Upcoming Jobs and Top Memory.'
+			},
+			{
+				text: 'Edit Dashboard reorders and hides widgets, starting from your Arcane web layout.'
 			}
 		],
 		changed: [
@@ -31,6 +37,11 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Activity Center, resource lists, Updates, and the dashboard load every environment in one request on Arcane v3 servers.'
+			}
+		],
+		removed: [
+			{
+				text: 'Dashboard totals tiles and the Dashboard Tiles editor.'
 			}
 		],
 		fixed: [
