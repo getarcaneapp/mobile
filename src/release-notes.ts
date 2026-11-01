@@ -47,6 +47,9 @@ export const releaseNotes: ReleaseNote[] = [
 		fixed: [
 			{
 				text: 'An offline environment stalling the rest of the app.'
+			},
+			{
+				text: 'The Dashboard tab missing on Arcane v3 servers.'
 			}
 		]
 	},
