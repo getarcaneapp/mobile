@@ -79,6 +79,7 @@ export interface EnvironmentUpdateResult {
 	environmentName: string;
 	status: EnvironmentUpdateResultStatus;
 	fromVersion?: string;
+	fromDigest?: string;
 	toVersion?: string;
 	error?: string;
 	stage?: EnvironmentUpdateStage;
@@ -129,6 +130,7 @@ export const EnvironmentUpdateResult = {
 			environmentName: D.string(o, 'environmentName'),
 			status: D.nested(o, 'status', EnvironmentUpdateResultStatus.decode),
 			fromVersion: D.optString(o, 'fromVersion'),
+			fromDigest: D.optString(o, 'fromDigest'),
 			toVersion: D.optString(o, 'toVersion'),
 			error: D.optString(o, 'error'),
 			stage: D.optString(o, 'stage'),
@@ -163,6 +165,14 @@ export const EnvironmentUpdateJob = {
 		return value.status === 'completed' || value.status === 'failed';
 	},
 
+	result(
+		this: void,
+		value: EnvironmentUpdateJob,
+		environmentID: string
+	): EnvironmentUpdateResult | undefined {
+		return value.results?.find((result) => result.environmentId === environmentID);
+	},
+
 	decode(this: void, raw: unknown): EnvironmentUpdateJob {
 		const o = D.object(raw, 'EnvironmentUpdateJob');
 		return {
@@ -179,6 +189,26 @@ export const EnvironmentUpdateJob = {
 			error: D.optString(o, 'error'),
 			completedAt: D.optString(o, 'completedAt')
 		};
+	}
+} as const;
+
+export interface UpgradeJobStreamEvent {
+	job?: EnvironmentUpdateJob;
+}
+
+export const UpgradeJobStreamEvent = {
+	channel: 'arcane-upgrade',
+
+	decode(this: void, raw: unknown): UpgradeJobStreamEvent {
+		const envelope = D.object(raw, 'UpgradeJobStreamEvent');
+		const payload =
+			envelope.channel === UpgradeJobStreamEvent.channel ? envelope.upgrade : undefined;
+		if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return {};
+		try {
+			return { job: EnvironmentUpdateJob.decode(payload) };
+		} catch {
+			return {};
+		}
 	}
 } as const;
 

@@ -20,6 +20,7 @@ import {
 	type UpdateAllEnvironmentsModel
 } from './update-all-environments-model';
 import type { UpdateAllEnvironmentsScreenProps } from './update-all-environments-screen.types';
+import { UpdateTargetPicker, UpgradeJobResultList } from './upgrade-job-results';
 
 export function UpdateAllEnvironmentsScreen({
 	environmentCount,
@@ -119,10 +120,22 @@ function PhaseContent({ model }: { model: UpdateAllEnvironmentsModel }) {
 		return (
 			<View style={{ gap: 24 }}>
 				<EnvironmentUpdateScene model={sceneModel} />
-				{phase.kind === 'ready' ? (
-					<ReadyDetails lastJob={phase.lastJob} onTrigger={model.trigger} />
-				) : null}
+				{phase.kind === 'ready' ? <ReadyDetails model={model} lastJob={phase.lastJob} /> : null}
 				{phase.kind === 'finished' ? <FinishedDetails job={phase.job} /> : null}
+				{model.supportsJobs && model.jobResults.length > 0 ? (
+					<UpgradeJobResultList results={model.jobResults} />
+				) : null}
+				{model.supportsJobs && model.failedIDs.length > 0 ? (
+					<OutlinedButton
+						icon="arrow.clockwise"
+						title={
+							model.failedIDs.length === 1
+								? 'Retry Failed'
+								: `Retry ${model.failedIDs.length} Failed`
+						}
+						onPress={model.retryFailed}
+					/>
+				) : null}
 			</View>
 		);
 	}
@@ -137,25 +150,7 @@ function PhaseContent({ model }: { model: UpdateAllEnvironmentsModel }) {
 					title="Update All Failed"
 					message={phase.message}
 				/>
-				<Pressable
-					onPress={model.retry}
-					accessibilityRole="button"
-					android_ripple={{ color: colors.separator as string }}
-					style={{
-						flexDirection: 'row',
-						alignItems: 'center',
-						justifyContent: 'center',
-						gap: 8,
-						height: 48,
-						borderRadius: 24,
-						borderWidth: 1,
-						borderColor: m3.outline,
-						overflow: 'hidden'
-					}}
-				>
-					<Icon name="arrow.clockwise" size={18} color={m3.primary} />
-					<Text style={[m3Type.labelLarge, { color: m3.primary }]}>Try Again</Text>
-				</Pressable>
+				<OutlinedButton icon="arrow.clockwise" title="Try Again" onPress={model.retry} />
 			</View>
 		);
 	}
@@ -166,28 +161,73 @@ function Divider() {
 	return <View style={{ height: 1, backgroundColor: colors.separator }} />;
 }
 
-function ReadyDetails({
-	lastJob,
-	onTrigger
+function OutlinedButton({
+	icon,
+	title,
+	onPress
 }: {
-	lastJob: EnvironmentUpdateJob | undefined;
-	onTrigger: () => void;
+	icon: string;
+	title: string;
+	onPress: () => void;
 }) {
+	return (
+		<Pressable
+			onPress={onPress}
+			accessibilityRole="button"
+			android_ripple={{ color: colors.separator as string }}
+			style={{
+				flexDirection: 'row',
+				alignItems: 'center',
+				justifyContent: 'center',
+				gap: 8,
+				height: 48,
+				borderRadius: 24,
+				borderWidth: 1,
+				borderColor: m3.outline,
+				overflow: 'hidden'
+			}}
+		>
+			<Icon name={icon} size={18} color={m3.primary} />
+			<Text style={[m3Type.labelLarge, { color: m3.primary }]}>{title}</Text>
+		</Pressable>
+	);
+}
+
+function ReadyDetails({
+	model,
+	lastJob
+}: {
+	model: UpdateAllEnvironmentsModel;
+	lastJob: EnvironmentUpdateJob | undefined;
+}) {
+	const enabled = model.canTrigger;
 	return (
 		<View style={{ gap: 18 }}>
 			{lastJob ? <LastRunRow job={lastJob} /> : null}
+			{model.supportsJobs && model.candidates.length > 0 ? (
+				<UpdateTargetPicker
+					candidates={model.candidates}
+					selected={model.selected}
+					onToggle={model.toggle}
+					onSelectAll={model.selectAll}
+					onSelectNone={model.selectNone}
+				/>
+			) : null}
 			<Text
 				style={[
 					m3Type.bodySmall,
 					{ color: colors.secondaryLabel, textAlign: 'center', paddingHorizontal: 12 }
 				]}
 			>
-				Remote agents update first. The manager restarts last and can briefly interrupt the
-				connection.
+				{model.supportsJobs
+					? 'Remote agents update together. The manager restarts last and can briefly interrupt the connection.'
+					: 'Remote agents update first. The manager restarts last and can briefly interrupt the connection.'}
 			</Text>
 			<Pressable
-				onPress={onTrigger}
+				onPress={model.trigger}
+				disabled={!enabled}
 				accessibilityRole="button"
+				accessibilityState={{ disabled: !enabled }}
 				android_ripple={{ color: '#FFFFFF33' }}
 				style={{
 					flexDirection: 'row',
@@ -197,11 +237,12 @@ function ReadyDetails({
 					height: 52,
 					borderRadius: 26,
 					backgroundColor: m3.error,
+					opacity: enabled ? 1 : 0.38,
 					overflow: 'hidden'
 				}}
 			>
 				<Icon name="arrow.up.circle.fill" size={20} color="#FFFFFF" />
-				<Text style={[m3Type.labelLarge, { color: '#FFFFFF' }]}>Update All</Text>
+				<Text style={[m3Type.labelLarge, { color: '#FFFFFF' }]}>{model.triggerTitle}</Text>
 			</Pressable>
 		</View>
 	);

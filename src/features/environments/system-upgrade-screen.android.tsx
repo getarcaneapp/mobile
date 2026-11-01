@@ -24,6 +24,7 @@ import {
 	type SystemUpgradeModel,
 	type SystemUpgradeProgress
 } from './system-upgrade-model';
+import { UpgradeLogs } from './upgrade-job-results';
 
 const cardStyle = (radius: number) => ({
 	backgroundColor: colors.secondarySystemGroupedBackground,
@@ -119,6 +120,15 @@ function InfoCard({
 				<Text style={[m3Type.titleMedium, { color: colors.label, flex: 1 }]}>{title}</Text>
 			</View>
 			<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>{body}</Text>
+		</View>
+	);
+}
+
+function LogsCard({ logs }: { logs: readonly string[] }) {
+	return (
+		<View style={[cardStyle(Radius.card), { gap: 12, padding: 20 }]}>
+			<Text style={[m3Type.titleMedium, { color: colors.label }]}>Logs</Text>
+			<UpgradeLogs logs={logs} maxHeight={280} />
 		</View>
 	);
 }
@@ -306,12 +316,17 @@ function PhaseContent({ model, onUpgrade }: { model: SystemUpgradeModel; onUpgra
 		case 'triggered':
 			if (phase.progress?.finished) {
 				return (
-					<HeroCard
-						tint={systemColors.green}
-						icon="checkmark.circle.fill"
-						title="Upgrade Complete"
-						subtitle={phase.message}
-					/>
+					<View style={{ gap: 20 }}>
+						<HeroCard
+							tint={systemColors.green}
+							icon="checkmark.circle.fill"
+							title="Upgrade Complete"
+							subtitle={phase.message}
+						/>
+						{phase.progress.logs && phase.progress.logs.length > 0 ? (
+							<LogsCard logs={phase.progress.logs} />
+						) : null}
+					</View>
 				);
 			}
 			if (phase.progress) {
@@ -324,6 +339,7 @@ function PhaseContent({ model, onUpgrade }: { model: SystemUpgradeModel; onUpgra
 							subtitle={phase.message}
 						/>
 						<ProgressCard progress={phase.progress} />
+						{phase.progress.logs !== undefined ? <LogsCard logs={phase.progress.logs} /> : null}
 					</View>
 				);
 			}
@@ -354,6 +370,7 @@ function PhaseContent({ model, onUpgrade }: { model: SystemUpgradeModel; onUpgra
 						title="Upgrade Failed"
 						message={phase.message}
 					/>
+					{phase.logs && phase.logs.length > 0 ? <LogsCard logs={phase.logs} /> : null}
 					<M3Button
 						title="Check Again"
 						icon="arrow.clockwise"

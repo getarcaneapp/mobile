@@ -60,6 +60,7 @@ import {
 	type SystemUpgradeModel,
 	type SystemUpgradeProgress
 } from './system-upgrade-model';
+import { UpgradeLogs } from './upgrade-job-results';
 
 const cardGlass = (cornerRadius: number) =>
 	glassEffectCompat({ shape: 'roundedRectangle', cornerRadius });
@@ -244,6 +245,23 @@ function ProgressCard({ progress }: { progress: SystemUpgradeProgress }) {
 	);
 }
 
+function LogsCard({ logs }: { logs: readonly string[] }) {
+	return (
+		<VStack
+			alignment="leading"
+			spacing={10}
+			modifiers={[
+				padding({ all: 20 }),
+				frame({ maxWidth: Infinity, alignment: 'leading' }),
+				cardGlass(Radius.card)
+			]}
+		>
+			<Text modifiers={[font({ textStyle: 'headline' })]}>Logs</Text>
+			<UpgradeLogs logs={logs} maxHeight={280} />
+		</VStack>
+	);
+}
+
 function TriggeringCard() {
 	return (
 		<VStack
@@ -350,12 +368,17 @@ function PhaseContent({ model, onUpgrade }: { model: SystemUpgradeModel; onUpgra
 		case 'triggered':
 			if (phase.progress?.finished) {
 				return (
-					<HeroCard
-						tint={systemColors.green}
-						icon="checkmark.circle.fill"
-						title="Upgrade Complete"
-						subtitle={phase.message}
-					/>
+					<VStack spacing={20}>
+						<HeroCard
+							tint={systemColors.green}
+							icon="checkmark.circle.fill"
+							title="Upgrade Complete"
+							subtitle={phase.message}
+						/>
+						{phase.progress.logs && phase.progress.logs.length > 0 ? (
+							<LogsCard logs={phase.progress.logs} />
+						) : null}
+					</VStack>
 				);
 			}
 			if (phase.progress) {
@@ -368,6 +391,7 @@ function PhaseContent({ model, onUpgrade }: { model: SystemUpgradeModel; onUpgra
 							subtitle={phase.message}
 						/>
 						<ProgressCard progress={phase.progress} />
+						{phase.progress.logs !== undefined ? <LogsCard logs={phase.progress.logs} /> : null}
 					</VStack>
 				);
 			}
@@ -396,6 +420,7 @@ function PhaseContent({ model, onUpgrade }: { model: SystemUpgradeModel; onUpgra
 						systemImage="exclamationmark.triangle"
 						description={phase.message}
 					/>
+					{phase.logs && phase.logs.length > 0 ? <LogsCard logs={phase.logs} /> : null}
 					<Button onPress={model.checkUpgrade} modifiers={[buttonStyle('bordered')]}>
 						<Label
 							title="Check Again"

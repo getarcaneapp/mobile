@@ -1,6 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { friendlyErrorMessage } from '@/core/errors';
 import { cachedClient } from '@/core/networking/use-cached-client';
@@ -14,6 +15,9 @@ import {
 } from '@/sdk/models/system/Upgrade';
 import { User } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
+import { useDashboardStreamStore } from '@/stores/dashboard-stream-store';
+import { environmentIsOnline } from '@/stores/dashboard-stream-logic';
+import { useEnvironmentsStore } from '@/stores/environments-store';
 import { useResourceMutationStore } from '@/stores/resource-mutation-store';
 import { showToast, Toasts } from '@/ui/toast';
 
@@ -23,6 +27,17 @@ import {
 	type EnvironmentUpdateSceneKind,
 	type EnvironmentUpdateSceneModel
 } from './environment-update-scene.types';
+import {
+	defaultSelection,
+	failedEnvironmentIDs,
+	followUpgradeJob,
+	managerEnvironmentID,
+	managerRestarting,
+	selectionRequest,
+	type UpdateCandidate
+} from './upgrade-job-follow';
+
+export type { UpdateCandidate } from './upgrade-job-follow';
 
 export type UpdateAllPhase =
 	| { kind: 'loading' }
@@ -34,8 +49,6 @@ export type UpdateAllPhase =
 	| { kind: 'unsupported'; message: string }
 	| { kind: 'failed'; message: string };
 
-const managerEnvID = '0';
-
 export interface ResultCounts {
 	updated: number;
 	failed: number;
@@ -45,8 +58,8 @@ export interface ResultCounts {
 export function resultsInProcessingOrder(
 	results: EnvironmentUpdateResult[]
 ): EnvironmentUpdateResult[] {
-	const remote = results.filter((r) => r.environmentId !== managerEnvID);
-	const manager = results.filter((r) => r.environmentId === managerEnvID);
+	const remote = results.filter((r) => r.environmentId !== managerEnvironmentID);
+	const manager = results.filter((r) => r.environmentId === managerEnvironmentID);
 	return [...remote, ...manager];
 }
 
@@ -132,7 +145,12 @@ function progressModel(job: EnvironmentUpdateJob) {
 	};
 }
 
-function activeStageSuffix(active: EnvironmentUpdateResult | undefined): string {
+function activeStageSuffix(
+	results: EnvironmentUpdateResult[],
+	active: EnvironmentUpdateResult | undefined
+): string {
+	const updating = results.filter((r) => r.status === 'updating').length;
+	if (updating > 1) return ` · ${updating} updating`;
 	if (!active?.stage) return '';
 	return ` · ${EnvironmentUpdateStage.label(active.stage)}`;
 }
@@ -151,7 +169,7 @@ export function sceneModel(
 		case 'ready':
 			return makeEnvironmentUpdateSceneModel({
 				kind: 'ready',
-				title: 'Update every environment',
+				title: environmentCount === 1 ? 'Update 1 environment' : 'Update every environment',
 				subtitle:
 					environmentCount === 1
 						? '1 environment · latest release'
@@ -183,7 +201,7 @@ export function sceneModel(
 				subtitle:
 					results.length === 0
 						? 'Preparing environments'
-						: `${done} of ${results.length} complete${activeStageSuffix(active)}`,
+						: `${done} of ${results.length} complete${activeStageSuffix(results, active)}`,
 				progress,
 				completedCount: done,
 				totalCount: results.length,
@@ -241,12 +259,48 @@ export function sceneModel(
 	}
 }
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
 export function useUpdateAllEnvironmentsRoute(): { environmentCount: number } {
 	const params = useLocalSearchParams<{ count?: string }>();
 	const parsed = Number.parseInt(params.count ?? '', 10);
 	return { environmentCount: Number.isFinite(parsed) ? parsed : 0 };
+}
+
+function useUpdateCandidates(): UpdateCandidate[] {
+	const environments = useEnvironmentsStore(
+		useShallow((s) => s.environments.filter((e) => e.enabled))
+	);
+	const versions = useDashboardStreamStore(
+		useShallow((s) =>
+			Object.fromEntries(
+				environments.map((e) => {
+					const info = s.statesByEnvironmentID[e.id]?.snapshot?.versionInfo;
+					return [
+						e.id,
+						info
+							? `${info.updateAvailable ? '1' : '0'}${info.displayVersion || info.currentVersion}`
+							: ''
+					];
+				})
+			)
+		)
+	);
+	return [...environments]
+		.sort(
+			(a, b) =>
+				Number(b.id === managerEnvironmentID) - Number(a.id === managerEnvironmentID) ||
+				(a.name ?? a.id).localeCompare(b.name ?? b.id)
+		)
+		.map((environment) => {
+			const encoded = versions[environment.id] ?? '';
+			return {
+				id: environment.id,
+				name: environment.name || environment.id,
+				isManager: environment.id === managerEnvironmentID,
+				online: environmentIsOnline(environment),
+				updateAvailable: encoded ? encoded.startsWith('1') : undefined,
+				version: encoded.slice(1) || undefined
+			};
+		});
 }
 
 export function useUpdateAllEnvironments({
@@ -258,16 +312,20 @@ export function useUpdateAllEnvironments({
 }) {
 	const currentUser = useClientManager((s) => s.currentUser);
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
+	const supportsJobs = useClientManager((s) => s.apiGeneration === 'v3');
+	const candidates = useUpdateCandidates();
 	const [phase, setPhase] = useState<UpdateAllPhase>({ kind: 'loading' });
+	const [picked, setPicked] = useState<string[] | undefined>(undefined);
+	const selected = picked ?? defaultSelection(candidates);
 
 	const mounted = useRef(true);
-	const pollGeneration = useRef(0);
 	const started = useRef(false);
+	const stopFollowing = useRef<(() => void) | undefined>(undefined);
 
 	const finish = (job: EnvironmentUpdateJob, note: string | undefined) => {
 		setPhase({ kind: 'finished', job, note });
 		if (note == null) {
-			const failedCount = (job.results ?? []).filter((r) => r.status === 'failed').length;
+			const failedCount = failedEnvironmentIDs(job).length;
 			if (job.status === 'completed' && failedCount === 0) {
 				showToast(Toasts.success('All environments updated'));
 			} else if (job.status === 'failed') {
@@ -278,49 +336,37 @@ export function useUpdateAllEnvironments({
 		useResourceMutationStore.getState().markChanged('environments');
 	};
 
-	const startPolling = (client: ArcaneClient, initialJob: EnvironmentUpdateJob) => {
-		const generation = ++pollGeneration.current;
-		const isCancelled = () => !mounted.current || pollGeneration.current !== generation;
-		void (async () => {
-			let lastKnown = initialJob;
-			let consecutiveFailures = 0;
-			const maxFailures = 60;
-			while (!isCancelled()) {
-				await sleep(3000);
-				if (isCancelled()) return;
-				try {
-					const job = await client.system.updateAllStatus({ envID: managerEnvID });
-					if (isCancelled()) return;
-					consecutiveFailures = 0;
-					lastKnown = job;
-					if (EnvironmentUpdateJob.isTerminal(job)) {
-						finish(job, undefined);
-						return;
-					}
-					setPhase({ kind: 'polling', job });
-				} catch {
-					if (isCancelled()) return;
-					consecutiveFailures += 1;
-					if (consecutiveFailures === 2) setPhase({ kind: 'reconnecting', job: lastKnown });
-					if (consecutiveFailures >= maxFailures) {
-						const managerStatus = EnvironmentUpdateJob.managerResult(lastKnown)?.status;
-						const managerDone =
-							lastKnown.status === 'pending_restart' &&
-							(managerStatus === 'updated' ||
-								managerStatus === 'triggered' ||
-								managerStatus === 'updating');
-						const note = managerDone
+	const follow = (client: ArcaneClient, initialJob: EnvironmentUpdateJob) => {
+		stopFollowing.current?.();
+		const live = () => mounted.current;
+		stopFollowing.current = followUpgradeJob({
+			client,
+			job: initialJob,
+			streams: supportsJobs,
+			handlers: {
+				onJob: (job) => {
+					if (live()) setPhase({ kind: 'polling', job });
+				},
+				onFinish: (job) => {
+					if (live()) finish(job, undefined);
+				},
+				onReconnecting: (job) => {
+					if (live()) setPhase({ kind: 'reconnecting', job });
+				},
+				onLost: (job) => {
+					if (!live()) return;
+					finish(
+						job,
+						managerRestarting(job)
 							? 'The Arcane manager is restarting — check back in a minute.'
-							: "Lost connection before the update finished. Check the server once it's reachable again.";
-						finish(lastKnown, note);
-						return;
-					}
+							: "Lost connection before the update finished. Check the server once it's reachable again."
+					);
 				}
 			}
-		})();
+		});
 	};
 
-	const trigger = async (): Promise<void> => {
+	const trigger = async (environmentIDs?: string[]): Promise<void> => {
 		const client = useClientManager.getState().client;
 		if (!client) {
 			setPhase({ kind: 'failed', message: 'Not connected' });
@@ -330,9 +376,12 @@ export function useUpdateAllEnvironments({
 		try {
 			const job = await client
 				.withRequestOptions(ArcaneRequestOptions.withActivityBatchID(randomUUID().toLowerCase()))
-				.system.triggerUpdateAll({ envID: managerEnvID });
+				.system.triggerUpdateAll({
+					envID: managerEnvironmentID,
+					environmentIDs: supportsJobs ? environmentIDs : undefined
+				});
 			setPhase({ kind: 'polling', job });
-			startPolling(client, job);
+			follow(client, job);
 		} catch (error) {
 			if (error instanceof ArcaneError) {
 				if (error.kind === 'conflict') {
@@ -357,7 +406,7 @@ export function useUpdateAllEnvironments({
 	};
 
 	const readyOrStart = async () => {
-		if (startsImmediately) await trigger();
+		if (startsImmediately && !supportsJobs) await trigger();
 		else setPhase({ kind: 'ready' });
 	};
 
@@ -369,13 +418,13 @@ export function useUpdateAllEnvironments({
 		}
 		setPhase({ kind: 'loading' });
 		try {
-			const job = await client.system.updateAllStatus({ envID: managerEnvID });
+			const job = await client.system.updateAllStatus({ envID: managerEnvironmentID });
 			if (EnvironmentUpdateJob.isTerminal(job)) {
-				if (startsImmediately) await trigger();
+				if (startsImmediately && !supportsJobs) await trigger();
 				else setPhase({ kind: 'ready', lastJob: job });
 			} else {
 				setPhase({ kind: 'polling', job });
-				startPolling(client, job);
+				follow(client, job);
 			}
 		} catch (error) {
 			if (
@@ -401,17 +450,45 @@ export function useUpdateAllEnvironments({
 		}
 		return () => {
 			mounted.current = false;
+			stopFollowing.current?.();
 		};
 	}, [isAdmin]);
 
+	const toggle = (id: string) =>
+		setPicked(selected.includes(id) ? selected.filter((other) => other !== id) : [...selected, id]);
+	const failedIDs = phase.kind === 'finished' ? failedEnvironmentIDs(phase.job) : [];
+	const jobResults =
+		phase.kind === 'polling' || phase.kind === 'reconnecting' || phase.kind === 'finished'
+			? resultsInProcessingOrder(phase.job.results ?? [])
+			: [];
+
 	return {
 		isAdmin,
+		supportsJobs,
 		phase,
 		phaseKey: phaseKey(phase),
-		sceneModel: sceneModel(phase, environmentCount),
+		sceneModel: sceneModel(
+			phase,
+			supportsJobs && phase.kind === 'ready' ? selected.length : environmentCount
+		),
 		doneTitle: phase.kind === 'finished' ? 'Done' : 'Close',
 		interactiveDismissDisabled: phase.kind === 'triggering',
-		trigger: () => void trigger(),
+		candidates,
+		selected,
+		toggle,
+		selectAll: () => setPicked(candidates.map((c) => c.id)),
+		selectNone: () => setPicked([]),
+		triggerTitle:
+			!supportsJobs || selected.length === candidates.length
+				? 'Update All'
+				: selected.length === 1
+					? 'Update 1 Environment'
+					: `Update ${selected.length} Environments`,
+		canTrigger: !supportsJobs || selected.length > 0,
+		jobResults,
+		failedIDs,
+		trigger: () => void trigger(supportsJobs ? selectionRequest(candidates, selected) : undefined),
+		retryFailed: () => void trigger(failedIDs),
 		retry: () => void preflight()
 	};
 }

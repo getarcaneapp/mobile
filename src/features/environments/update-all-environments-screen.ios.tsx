@@ -20,6 +20,7 @@ import {
 	buttonStyle,
 	contentTransition,
 	controlSize,
+	disabled,
 	fixedSize,
 	font,
 	foregroundStyle,
@@ -53,6 +54,7 @@ import {
 	type UpdateAllEnvironmentsModel
 } from './update-all-environments-model';
 import type { UpdateAllEnvironmentsScreenProps } from './update-all-environments-screen.types';
+import { UpdateTargetPicker, UpgradeJobResultList } from './upgrade-job-results';
 
 export function UpdateAllEnvironmentsScreen({
 	environmentCount,
@@ -131,11 +133,28 @@ function PhaseContent({ model }: { model: UpdateAllEnvironmentsModel }) {
 						reduceMotion ? [] : [animation(Animation.smooth({ duration: 0.25 }), model.phaseKey)]
 					}
 				>
-					{phase.kind === 'ready' ? (
-						<ReadyDetails lastJob={phase.lastJob} onTrigger={model.trigger} />
-					) : null}
+					{phase.kind === 'ready' ? <ReadyDetails model={model} lastJob={phase.lastJob} /> : null}
 					{phase.kind === 'finished' ? <FinishedDetails job={phase.job} /> : null}
 				</VStack>
+				{model.supportsJobs && model.jobResults.length > 0 ? (
+					<UpgradeJobResultList results={model.jobResults} />
+				) : null}
+				{model.supportsJobs && model.failedIDs.length > 0 ? (
+					<Button
+						onPress={model.retryFailed}
+						modifiers={[buttonStyle('bordered'), controlSize('large')]}
+					>
+						<Label
+							title={
+								model.failedIDs.length === 1
+									? 'Retry Failed'
+									: `Retry ${model.failedIDs.length} Failed`
+							}
+							systemImage="arrow.clockwise"
+							modifiers={[frame({ maxWidth: Infinity }), padding({ vertical: 6 })]}
+						/>
+					</Button>
+				) : null}
 			</VStack>
 		);
 	}
@@ -175,15 +194,25 @@ function PhaseContent({ model }: { model: UpdateAllEnvironmentsModel }) {
 }
 
 function ReadyDetails({
-	lastJob,
-	onTrigger
+	model,
+	lastJob
 }: {
+	model: UpdateAllEnvironmentsModel;
 	lastJob: EnvironmentUpdateJob | undefined;
-	onTrigger: () => void;
 }) {
 	return (
 		<VStack spacing={18}>
 			{lastJob ? <LastRunRow job={lastJob} /> : null}
+
+			{model.supportsJobs && model.candidates.length > 0 ? (
+				<UpdateTargetPicker
+					candidates={model.candidates}
+					selected={model.selected}
+					onToggle={model.toggle}
+					onSelectAll={model.selectAll}
+					onSelectNone={model.selectNone}
+				/>
+			) : null}
 
 			<Text
 				modifiers={[
@@ -194,17 +223,23 @@ function ReadyDetails({
 					padding({ horizontal: 12 })
 				]}
 			>
-				Remote agents update first. The manager restarts last and can briefly interrupt the
-				connection.
+				{model.supportsJobs
+					? 'Remote agents update together. The manager restarts last and can briefly interrupt the connection.'
+					: 'Remote agents update first. The manager restarts last and can briefly interrupt the connection.'}
 			</Text>
 
 			<Button
 				role="destructive"
-				onPress={onTrigger}
-				modifiers={[buttonStyle('borderedProminent'), controlSize('large'), tint(systemColors.red)]}
+				onPress={model.trigger}
+				modifiers={[
+					buttonStyle('borderedProminent'),
+					controlSize('large'),
+					tint(systemColors.red),
+					disabled(!model.canTrigger)
+				]}
 			>
 				<Label
-					title="Update All"
+					title={model.triggerTitle}
 					systemImage="arrow.up.circle.fill"
 					modifiers={[frame({ maxWidth: Infinity }), padding({ vertical: 8 })]}
 				/>

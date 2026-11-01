@@ -1,21 +1,26 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { friendlyErrorMessage } from '@/core/errors';
+import { ArcaneError } from '@/sdk/errors/ArcaneError';
 import { useClientManager } from '@/stores/client-manager';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import {
+	EnvironmentUpdateJob,
 	EnvironmentUpdateStage,
-	UpgradeProgressEvent,
+	type EnvironmentUpdateResult,
 	type UpgradeCheckResult
 } from '@/sdk/models/system/Upgrade';
 import { User } from '@/sdk/models/user/User';
+
+import { followUpgradeJob, managerEnvironmentID, managerRestarting } from './upgrade-job-follow';
 
 export interface SystemUpgradeProgress {
 	fraction: number;
 	detail?: string;
 	finished: boolean;
+	logs?: string[];
 }
 
 export type SystemUpgradePhase =
@@ -24,62 +29,47 @@ export type SystemUpgradePhase =
 	| { kind: 'checkFailed'; message: string }
 	| { kind: 'triggering' }
 	| { kind: 'triggered'; message: string; progress?: SystemUpgradeProgress }
-	| { kind: 'triggerFailed'; message: string };
+	| { kind: 'triggerFailed'; message: string; logs?: string[] };
 
-type ProgressOutcome =
-	| { kind: 'completed'; version?: string }
-	| { kind: 'failed'; message: string };
-
-const progressRetryDelayMs = 2000;
-const progressMaxAttempts = 90;
-
-const wait = (ms: number, signal: AbortSignal) =>
-	new Promise<void>((resolve) => {
-		const timer = setTimeout(resolve, ms);
-		signal.addEventListener(
-			'abort',
-			() => {
-				clearTimeout(timer);
-				resolve();
-			},
-			{ once: true }
-		);
-	});
-
-function progressDetail(event: UpgradeProgressEvent, previous: string | undefined) {
-	if (event.type === 'stage' && event.message) return EnvironmentUpdateStage.label(event.message);
-	if (event.type === 'log' && event.message) return event.message.trim();
-	return previous;
+export function jobResultProgress(
+	result: EnvironmentUpdateResult | undefined,
+	previous: SystemUpgradeProgress | undefined
+): SystemUpgradeProgress {
+	const percent = result?.percent ?? 0;
+	return {
+		fraction: Math.max(previous?.fraction ?? 0, Math.min(1, percent / 100)),
+		detail:
+			result?.status === 'updating' && result.stage
+				? EnvironmentUpdateStage.label(result.stage)
+				: result?.status === 'pending'
+					? 'Waiting to start'
+					: previous?.detail,
+		finished: false,
+		logs: result?.logs ?? previous?.logs ?? []
+	};
 }
 
-async function readUpgradeProgress(
+async function startEnvironmentJob(
 	client: ArcaneClient,
-	environmentID: EnvironmentID,
-	signal: AbortSignal,
-	onProgress: (progress: SystemUpgradeProgress) => void
-): Promise<ProgressOutcome | undefined> {
-	let detail: string | undefined;
-	let fraction = 0;
-	for (let attempt = 0; attempt < progressMaxAttempts && !signal.aborted; attempt++) {
-		try {
-			for await (const event of client
-				.withSignal(signal)
-				.system.upgradeProgress({ envID: environmentID })) {
-				fraction = Math.max(fraction, Math.min(1, event.percent / 100));
-				detail = progressDetail(event, detail);
-				if (UpgradeProgressEvent.isDone(event)) {
-					if (event.message && event.percent < 100)
-						return { kind: 'failed', message: event.message };
-					return { kind: 'completed', version: event.toVersion };
-				}
-				onProgress({ fraction, detail, finished: false });
-			}
-		} catch (error) {
-			if (isCancellation(error) || signal.aborted) return undefined;
-		}
-		await wait(progressRetryDelayMs, signal);
+	environmentID: EnvironmentID
+): Promise<EnvironmentUpdateJob> {
+	try {
+		return await client.system.triggerUpdateAll({
+			envID: managerEnvironmentID,
+			environmentIDs: [environmentID]
+		});
+	} catch (error) {
+		if (!(error instanceof ArcaneError) || error.kind !== 'conflict') throw error;
+		const active = await client.system.updateAllStatus({ envID: managerEnvironmentID });
+		if (
+			!EnvironmentUpdateJob.isTerminal(active) &&
+			EnvironmentUpdateJob.result(active, environmentID)
+		)
+			return active;
+		throw new Error('Another upgrade is already running. Try again once it finishes.', {
+			cause: error
+		});
 	}
-	return undefined;
 }
 
 export const systemUpgradeConfirmationHost = 'system-upgrade';
@@ -104,33 +94,65 @@ export function useSystemUpgrade(
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
 	const supportsProgress = useClientManager((s) => s.apiGeneration === 'v3');
 	const [phase, setPhase] = useState<SystemUpgradePhase>({ kind: 'checking' });
-	const progressTask = useRef<AbortController | undefined>(undefined);
+	const stopFollowing = useRef<(() => void) | undefined>(undefined);
 
-	useEffect(() => () => progressTask.current?.abort(), []);
+	useEffect(() => () => stopFollowing.current?.(), []);
 
-	const followProgress = async (activeClient: ArcaneClient, message: string) => {
-		progressTask.current?.abort();
-		const controller = new AbortController();
-		progressTask.current = controller;
-		const outcome = await readUpgradeProgress(
-			activeClient,
-			environmentID,
-			controller.signal,
-			(progress) => {
-				if (!controller.signal.aborted) setPhase({ kind: 'triggered', message, progress });
+	const followJob = (activeClient: ArcaneClient, job: EnvironmentUpdateJob, message: string) => {
+		stopFollowing.current?.();
+		let progress = jobResultProgress(EnvironmentUpdateJob.result(job, environmentID), undefined);
+		setPhase({ kind: 'triggered', message, progress });
+		const update = (next: EnvironmentUpdateJob) => {
+			progress = jobResultProgress(EnvironmentUpdateJob.result(next, environmentID), progress);
+			setPhase({ kind: 'triggered', message, progress });
+		};
+		stopFollowing.current = followUpgradeJob({
+			client: activeClient,
+			job,
+			streams: true,
+			handlers: {
+				onJob: update,
+				onReconnecting: update,
+				onFinish: (next) => {
+					const result = EnvironmentUpdateJob.result(next, environmentID);
+					const logs = result?.logs ?? progress.logs;
+					if (result?.status === 'failed' || (next.status === 'failed' && !result)) {
+						setPhase({
+							kind: 'triggerFailed',
+							message: result?.error || next.error || 'The upgrade failed.',
+							logs
+						});
+						return;
+					}
+					if (result?.status === 'skipped_offline') {
+						setPhase({
+							kind: 'triggerFailed',
+							message: 'The environment was offline, so it was skipped.',
+							logs
+						});
+						return;
+					}
+					const version = result?.toVersion;
+					setPhase({
+						kind: 'triggered',
+						message:
+							result?.status === 'up_to_date'
+								? 'Arcane is already on the newest image.'
+								: version
+									? `Arcane updated to ${version}.`
+									: 'Arcane updated to the new version.',
+						progress: { fraction: 1, finished: true, logs }
+					});
+				},
+				onLost: (next) => {
+					setPhase({
+						kind: 'triggered',
+						message: managerRestarting(next)
+							? systemUpgradeCopy.reconnecting
+							: "Lost connection before the upgrade finished. Check the server once it's reachable again."
+					});
+				}
 			}
-		);
-		if (controller.signal.aborted || outcome === undefined) return;
-		if (outcome.kind === 'failed') {
-			setPhase({ kind: 'triggerFailed', message: outcome.message });
-			return;
-		}
-		setPhase({
-			kind: 'triggered',
-			message: outcome.version
-				? `Arcane restarted on ${outcome.version}.`
-				: 'Arcane restarted on the new version.',
-			progress: { fraction: 1, finished: true }
 		});
 	};
 
@@ -154,19 +176,22 @@ export function useSystemUpgrade(
 			return;
 		}
 		setPhase({ kind: 'triggering' });
+		if (supportsProgress) {
+			try {
+				const job = await startEnvironmentJob(client, environmentID);
+				followJob(client, job, 'Upgrade started. Arcane will restart shortly.');
+			} catch (error) {
+				setPhase({ kind: 'triggerFailed', message: friendlyErrorMessage(error) });
+			}
+			return;
+		}
 		try {
 			await client.system.triggerUpgrade({ envID: environmentID });
 		} catch (error) {
 			setPhase({ kind: 'triggerFailed', message: friendlyErrorMessage(error) });
 			return;
 		}
-		const message = 'Upgrade initiated. Arcane will restart shortly.';
-		if (!supportsProgress) {
-			setPhase({ kind: 'triggered', message });
-			return;
-		}
-		setPhase({ kind: 'triggered', message, progress: { fraction: 0, finished: false } });
-		await followProgress(client, message);
+		setPhase({ kind: 'triggered', message: 'Upgrade initiated. Arcane will restart shortly.' });
 	};
 
 	useEffect(() => {
