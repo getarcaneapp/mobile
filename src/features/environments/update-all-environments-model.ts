@@ -1,7 +1,5 @@
 import { randomUUID } from 'expo-crypto';
-import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 
 import { friendlyErrorMessage } from '@/core/errors';
 import { cachedClient } from '@/core/networking/use-cached-client';
@@ -15,9 +13,6 @@ import {
 } from '@/sdk/models/system/Upgrade';
 import { User } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
-import { useDashboardStreamStore } from '@/stores/dashboard-stream-store';
-import { environmentIsOnline } from '@/stores/dashboard-stream-logic';
-import { useEnvironmentsStore } from '@/stores/environments-store';
 import { useResourceMutationStore } from '@/stores/resource-mutation-store';
 import { showToast, Toasts } from '@/ui/toast';
 
@@ -28,20 +23,14 @@ import {
 	type EnvironmentUpdateSceneModel
 } from './environment-update-scene.types';
 import {
-	defaultSelection,
 	failedEnvironmentIDs,
 	followUpgradeJob,
 	managerEnvironmentID,
-	managerRestarting,
-	selectionRequest,
-	type UpdateCandidate
+	managerRestarting
 } from './upgrade-job-follow';
-
-export type { UpdateCandidate } from './upgrade-job-follow';
 
 export type UpdateAllPhase =
 	| { kind: 'loading' }
-	| { kind: 'ready'; lastJob?: EnvironmentUpdateJob }
 	| { kind: 'triggering' }
 	| { kind: 'polling'; job: EnvironmentUpdateJob }
 	| { kind: 'reconnecting'; job: EnvironmentUpdateJob }
@@ -75,6 +64,24 @@ function ringModels(results: EnvironmentUpdateResult[]): EnvironmentUpdateRingEn
 	return results.map((result, index) => ({ result, slotIndex: index, totalCount: results.length }));
 }
 
+export interface RunCounts {
+	updating: number;
+	pending: number;
+	done: number;
+	failed: number;
+}
+
+export function runCounts(results: readonly EnvironmentUpdateResult[]): RunCounts {
+	const counts: RunCounts = { updating: 0, pending: 0, done: 0, failed: 0 };
+	for (const result of results) {
+		if (result.status === 'updating') counts.updating += 1;
+		else if (result.status === 'pending') counts.pending += 1;
+		else if (result.status === 'failed') counts.failed += 1;
+		else counts.done += 1;
+	}
+	return counts;
+}
+
 export function resultCounts(results: EnvironmentUpdateResult[]): ResultCounts {
 	return {
 		updated: results.filter(
@@ -99,27 +106,6 @@ export function lastRunSummary(job: EnvironmentUpdateJob): string {
 	const version = displayVersion(job.managerTargetVersion);
 	if (version) parts.push(version);
 	return parts.join(' · ');
-}
-
-export function phaseKey(phase: UpdateAllPhase): number {
-	switch (phase.kind) {
-		case 'loading':
-			return 0;
-		case 'ready':
-			return 1;
-		case 'triggering':
-			return 2;
-		case 'polling':
-			return phase.job.status === 'pending_restart' ? 4 : 3;
-		case 'reconnecting':
-			return 5;
-		case 'finished':
-			return 6;
-		case 'unsupported':
-			return 7;
-		case 'failed':
-			return 8;
-	}
 }
 
 function resultProgress(result: EnvironmentUpdateResult): number {
@@ -155,25 +141,13 @@ function activeStageSuffix(
 	return ` · ${EnvironmentUpdateStage.label(active.stage)}`;
 }
 
-export function sceneModel(
-	phase: UpdateAllPhase,
-	environmentCount: number
-): EnvironmentUpdateSceneModel | undefined {
+export function sceneModel(phase: UpdateAllPhase): EnvironmentUpdateSceneModel | undefined {
 	switch (phase.kind) {
 		case 'loading':
 			return makeEnvironmentUpdateSceneModel({
 				kind: 'loading',
 				title: 'Checking readiness',
 				subtitle: "Reading the manager's update status"
-			});
-		case 'ready':
-			return makeEnvironmentUpdateSceneModel({
-				kind: 'ready',
-				title: environmentCount === 1 ? 'Update 1 environment' : 'Update every environment',
-				subtitle:
-					environmentCount === 1
-						? '1 environment · latest release'
-						: `${environmentCount} environments · latest release`
 			});
 		case 'triggering':
 			return makeEnvironmentUpdateSceneModel({
@@ -259,64 +233,11 @@ export function sceneModel(
 	}
 }
 
-export function useUpdateAllEnvironmentsRoute(): { environmentCount: number } {
-	const params = useLocalSearchParams<{ count?: string }>();
-	const parsed = Number.parseInt(params.count ?? '', 10);
-	return { environmentCount: Number.isFinite(parsed) ? parsed : 0 };
-}
-
-function useUpdateCandidates(): UpdateCandidate[] {
-	const environments = useEnvironmentsStore(
-		useShallow((s) => s.environments.filter((e) => e.enabled))
-	);
-	const versions = useDashboardStreamStore(
-		useShallow((s) =>
-			Object.fromEntries(
-				environments.map((e) => {
-					const info = s.statesByEnvironmentID[e.id]?.snapshot?.versionInfo;
-					return [
-						e.id,
-						info
-							? `${info.updateAvailable ? '1' : '0'}${info.displayVersion || info.currentVersion}`
-							: ''
-					];
-				})
-			)
-		)
-	);
-	return [...environments]
-		.sort(
-			(a, b) =>
-				Number(b.id === managerEnvironmentID) - Number(a.id === managerEnvironmentID) ||
-				(a.name ?? a.id).localeCompare(b.name ?? b.id)
-		)
-		.map((environment) => {
-			const encoded = versions[environment.id] ?? '';
-			return {
-				id: environment.id,
-				name: environment.name || environment.id,
-				isManager: environment.id === managerEnvironmentID,
-				online: environmentIsOnline(environment),
-				updateAvailable: encoded ? encoded.startsWith('1') : undefined,
-				version: encoded.slice(1) || undefined
-			};
-		});
-}
-
-export function useUpdateAllEnvironments({
-	environmentCount,
-	startsImmediately = false
-}: {
-	environmentCount: number;
-	startsImmediately?: boolean;
-}) {
+export function useUpdateAllEnvironments() {
 	const currentUser = useClientManager((s) => s.currentUser);
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
 	const supportsJobs = useClientManager((s) => s.apiGeneration === 'v3');
-	const candidates = useUpdateCandidates();
 	const [phase, setPhase] = useState<UpdateAllPhase>({ kind: 'loading' });
-	const [picked, setPicked] = useState<string[] | undefined>(undefined);
-	const selected = picked ?? defaultSelection(candidates);
 
 	const mounted = useRef(true);
 	const started = useRef(false);
@@ -405,11 +326,6 @@ export function useUpdateAllEnvironments({
 		}
 	};
 
-	const readyOrStart = async () => {
-		if (startsImmediately && !supportsJobs) await trigger();
-		else setPhase({ kind: 'ready' });
-	};
-
 	const preflight = async (): Promise<void> => {
 		const client = useClientManager.getState().client;
 		if (!client) {
@@ -420,8 +336,7 @@ export function useUpdateAllEnvironments({
 		try {
 			const job = await client.system.updateAllStatus({ envID: managerEnvironmentID });
 			if (EnvironmentUpdateJob.isTerminal(job)) {
-				if (startsImmediately && !supportsJobs) await trigger();
-				else setPhase({ kind: 'ready', lastJob: job });
+				await trigger();
 			} else {
 				setPhase({ kind: 'polling', job });
 				follow(client, job);
@@ -431,7 +346,7 @@ export function useUpdateAllEnvironments({
 				error instanceof ArcaneError &&
 				(error.kind === 'notFound' || error.kind === 'decoding')
 			) {
-				await readyOrStart();
+				await trigger();
 				return;
 			}
 			setPhase({ kind: 'failed', message: friendlyErrorMessage(error) });
@@ -454,8 +369,6 @@ export function useUpdateAllEnvironments({
 		};
 	}, [isAdmin]);
 
-	const toggle = (id: string) =>
-		setPicked(selected.includes(id) ? selected.filter((other) => other !== id) : [...selected, id]);
 	const failedIDs = phase.kind === 'finished' ? failedEnvironmentIDs(phase.job) : [];
 	const jobResults =
 		phase.kind === 'polling' || phase.kind === 'reconnecting' || phase.kind === 'finished'
@@ -466,28 +379,12 @@ export function useUpdateAllEnvironments({
 		isAdmin,
 		supportsJobs,
 		phase,
-		phaseKey: phaseKey(phase),
-		sceneModel: sceneModel(
-			phase,
-			supportsJobs && phase.kind === 'ready' ? selected.length : environmentCount
-		),
+		sceneModel: sceneModel(phase),
 		doneTitle: phase.kind === 'finished' ? 'Done' : 'Close',
 		interactiveDismissDisabled: phase.kind === 'triggering',
-		candidates,
-		selected,
-		toggle,
-		selectAll: () => setPicked(candidates.map((c) => c.id)),
-		selectNone: () => setPicked([]),
-		triggerTitle:
-			!supportsJobs || selected.length === candidates.length
-				? 'Update All'
-				: selected.length === 1
-					? 'Update 1 Environment'
-					: `Update ${selected.length} Environments`,
-		canTrigger: !supportsJobs || selected.length > 0,
 		jobResults,
+		runCounts: runCounts(jobResults),
 		failedIDs,
-		trigger: () => void trigger(supportsJobs ? selectionRequest(candidates, selected) : undefined),
 		retryFailed: () => void trigger(failedIDs),
 		retry: () => void preflight()
 	};

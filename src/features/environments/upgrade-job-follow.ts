@@ -137,26 +137,3 @@ export function resultLogs(lines: readonly string[] | undefined, limit = 200): s
 	const all = lines ?? [];
 	return all.slice(Math.max(0, all.length - limit)).join('\n');
 }
-
-export type UpdateCandidate = {
-	id: string;
-	name: string;
-	isManager: boolean;
-	online: boolean;
-	updateAvailable: boolean | undefined;
-	version: string | undefined;
-};
-
-export function defaultSelection(candidates: readonly UpdateCandidate[]): string[] {
-	const online = candidates.filter((c) => c.online);
-	const outdated = online.filter((c) => c.updateAvailable);
-	return (outdated.length > 0 ? outdated : online).map((c) => c.id);
-}
-
-export function selectionRequest(
-	candidates: readonly UpdateCandidate[],
-	selected: readonly string[]
-): string[] | undefined {
-	const ids = candidates.filter((c) => selected.includes(c.id)).map((c) => c.id);
-	return ids.length === candidates.length ? undefined : ids;
-}

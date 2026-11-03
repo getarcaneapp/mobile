@@ -1,12 +1,15 @@
 import { Host } from '@/ui/host';
 import {
 	Button,
-	ContentUnavailableView,
-	Divider,
+	Gauge,
 	HStack,
-	Label,
+	LabeledContent,
+	List,
+	NavigationDestination,
+	NavigationLink,
 	NavigationStack,
-	ScrollView,
+	ProgressView,
+	Section,
 	Spacer,
 	Text,
 	Toolbar,
@@ -15,104 +18,100 @@ import {
 } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
-	Animation,
-	animation,
-	buttonStyle,
+	accessibilityLabel,
+	background,
 	contentTransition,
-	controlSize,
-	disabled,
-	fixedSize,
 	font,
 	foregroundStyle,
 	frame,
+	gaugeStyle,
 	lineLimit,
-	multilineTextAlignment,
+	listRowSeparator,
+	listStyle,
+	monospacedDigit,
 	navigationBarTitleDisplayMode,
 	navigationTitle,
-	onGeometryChange,
 	padding,
+	shapes,
+	textSelection,
 	tint
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { relativeNamed } from '@/features/dashboard/use-all-environments-dashboard';
-import type { EnvironmentUpdateJob } from '@/sdk/models/system/Upgrade';
+import type { EnvironmentUpdateResult } from '@/sdk/models/system/Upgrade';
 import { useAccentColor } from '@/theme/accent';
-import { systemColors } from '@/theme/colors';
-import { useReduceMotion } from '@/ui/components/accessibility';
+import { systemColors, withOpacity } from '@/theme/colors';
+import { UnavailableView } from '@/ui/components/unavailable-view';
 import { ToastHost } from '@/ui/toast';
 
-import { EnvironmentUpdateScene } from './environment-update-scene';
 import {
-	lastRunSummary,
-	resultCounts,
-	resultsInProcessingOrder,
+	EnvironmentUpdateSceneKind,
+	type EnvironmentUpdateSceneModel,
+	type EnvironmentUpdateTint
+} from './environment-update-scene.types';
+import {
 	useUpdateAllEnvironments,
-	useUpdateAllEnvironmentsRoute,
+	type RunCounts,
 	type UpdateAllEnvironmentsModel
 } from './update-all-environments-model';
-import type { UpdateAllEnvironmentsScreenProps } from './update-all-environments-screen.types';
-import { UpdateTargetPicker, UpgradeJobResultList } from './upgrade-job-results';
+import {
+	upgradeResultDetail,
+	upgradeResultIsManager,
+	upgradeResultLabel,
+	upgradeResultSymbol,
+	upgradeResultTint
+} from './upgrade-job-display';
+import { resultLogs } from './upgrade-job-follow';
 
-export function UpdateAllEnvironmentsScreen({
-	environmentCount,
-	startsImmediately = true
-}: UpdateAllEnvironmentsScreenProps) {
+const secondary = { type: 'hierarchical', style: 'secondary' } as const;
+
+function useTintColor(): (value: EnvironmentUpdateTint) => string {
+	const accent = useAccentColor();
+	return (value) => {
+		switch (value) {
+			case 'accent':
+				return accent;
+			case 'green':
+				return systemColors.green;
+			case 'orange':
+				return systemColors.orange;
+			case 'red':
+				return systemColors.red;
+			case 'gray':
+				return systemColors.gray;
+		}
+	};
+}
+
+export function UpdateAllEnvironmentsScreen() {
 	const router = useRouter();
 	const accent = useAccentColor();
-	const route = useUpdateAllEnvironmentsRoute();
-	const model = useUpdateAllEnvironments({
-		environmentCount: environmentCount ?? route.environmentCount,
-		startsImmediately
-	});
-	const [viewportHeight, setViewportHeight] = useState(0);
+	const model = useUpdateAllEnvironments();
+	const [path, setPath] = useState<string[]>([]);
 
 	return (
 		<View style={{ flex: 1 }}>
 			<Stack.Screen options={{ gestureEnabled: !model.interactiveDismissDisabled }} />
 			<Host style={{ flex: 1 }}>
-				<NavigationStack>
+				<NavigationStack path={path} onPathChange={setPath} modifiers={[tint(accent)]}>
 					<Toolbar>
-						<ScrollView
-							modifiers={[
-								navigationTitle('Update All'),
-								navigationBarTitleDisplayMode('inline'),
-								onGeometryChange((f) => setViewportHeight(f.height))
-							]}
-						>
-							<VStack
-								spacing={32}
-								modifiers={[
-									frame({ maxWidth: 680 }),
-									padding({ horizontal: 20, vertical: 20 }),
-									frame({ maxWidth: Infinity }),
-									frame({ minHeight: viewportHeight, alignment: 'center' })
-								]}
-							>
-								{!model.isAdmin ? (
-									<ContentUnavailableView
-										title="Admins Only"
-										systemImage="lock.shield"
-										description="Updating all environments requires an administrator account."
-										modifiers={[frame({ maxWidth: Infinity, minHeight: 240 })]}
-									/>
-								) : (
-									<PhaseContent model={model} />
-								)}
-							</VStack>
-						</ScrollView>
+						<RootContent model={model} />
 						<Toolbar.Content>
 							<ToolbarItem placement="cancellationAction">
-								<Button
-									label={model.doneTitle}
-									onPress={() => router.back()}
-									modifiers={[foregroundStyle(accent)]}
-								/>
+								<Button label={model.doneTitle} onPress={() => router.back()} />
 							</ToolbarItem>
 						</Toolbar.Content>
 					</Toolbar>
+					{path.map((id) => {
+						const result = model.jobResults.find((r) => r.environmentId === id);
+						return result ? (
+							<NavigationDestination key={id} value={id}>
+								<EnvironmentDetail result={result} />
+							</NavigationDestination>
+						) : null;
+					})}
 				</NavigationStack>
 			</Host>
 			<ToastHost reservesTabBarSpace={false} />
@@ -120,223 +119,309 @@ export function UpdateAllEnvironmentsScreen({
 	);
 }
 
-function PhaseContent({ model }: { model: UpdateAllEnvironmentsModel }) {
-	const reduceMotion = useReduceMotion();
-	const { phase, sceneModel } = model;
+const rootTitle = [navigationTitle('Update All'), navigationBarTitleDisplayMode('inline')];
 
-	if (sceneModel) {
+function RootContent({ model }: { model: UpdateAllEnvironmentsModel }) {
+	const { phase, sceneModel } = model;
+	if (!model.isAdmin) {
 		return (
-			<VStack spacing={24}>
-				<EnvironmentUpdateScene model={sceneModel} />
-				<VStack
-					modifiers={
-						reduceMotion ? [] : [animation(Animation.smooth({ duration: 0.25 }), model.phaseKey)]
-					}
-				>
-					{phase.kind === 'ready' ? <ReadyDetails model={model} lastJob={phase.lastJob} /> : null}
-					{phase.kind === 'finished' ? <FinishedDetails job={phase.job} /> : null}
-				</VStack>
-				{model.supportsJobs && model.jobResults.length > 0 ? (
-					<UpgradeJobResultList results={model.jobResults} />
-				) : null}
-				{model.supportsJobs && model.failedIDs.length > 0 ? (
-					<Button
-						onPress={model.retryFailed}
-						modifiers={[buttonStyle('bordered'), controlSize('large')]}
-					>
-						<Label
-							title={
-								model.failedIDs.length === 1
-									? 'Retry Failed'
-									: `Retry ${model.failedIDs.length} Failed`
-							}
-							systemImage="arrow.clockwise"
-							modifiers={[frame({ maxWidth: Infinity }), padding({ vertical: 6 })]}
-						/>
-					</Button>
-				) : null}
+			<VStack modifiers={rootTitle}>
+				<UnavailableView
+					title="Admins Only"
+					systemImage="lock.shield"
+					description="Updating all environments requires an administrator account."
+				/>
 			</VStack>
 		);
 	}
 	if (phase.kind === 'unsupported') {
 		return (
-			<ContentUnavailableView
-				title="Not Available"
-				systemImage="lock.shield"
-				description={phase.message}
-				modifiers={[frame({ maxWidth: Infinity, minHeight: 240 })]}
-			/>
-		);
-	}
-	if (phase.kind === 'failed') {
-		return (
-			<VStack spacing={20}>
-				<ContentUnavailableView
-					title="Update All Failed"
-					systemImage="exclamationmark.triangle"
+			<VStack modifiers={rootTitle}>
+				<UnavailableView
+					title="Not Available"
+					systemImage="lock.shield"
 					description={phase.message}
-					modifiers={[
-						fixedSize({ horizontal: false, vertical: true }),
-						frame({ maxWidth: Infinity, minHeight: 240 })
-					]}
 				/>
-				<Button onPress={model.retry} modifiers={[buttonStyle('bordered'), controlSize('large')]}>
-					<Label
-						title="Try Again"
-						systemImage="arrow.clockwise"
-						modifiers={[frame({ maxWidth: Infinity }), padding({ vertical: 6 })]}
-					/>
-				</Button>
 			</VStack>
 		);
 	}
-	return null;
-}
-
-function ReadyDetails({
-	model,
-	lastJob
-}: {
-	model: UpdateAllEnvironmentsModel;
-	lastJob: EnvironmentUpdateJob | undefined;
-}) {
-	return (
-		<VStack spacing={18}>
-			{lastJob ? <LastRunRow job={lastJob} /> : null}
-
-			{model.supportsJobs && model.candidates.length > 0 ? (
-				<UpdateTargetPicker
-					candidates={model.candidates}
-					selected={model.selected}
-					onToggle={model.toggle}
-					onSelectAll={model.selectAll}
-					onSelectNone={model.selectNone}
+	if (phase.kind === 'failed' || !sceneModel) {
+		return (
+			<VStack modifiers={rootTitle}>
+				<UnavailableView
+					title="Update All Failed"
+					systemImage="exclamationmark.triangle"
+					description={phase.kind === 'failed' ? phase.message : undefined}
+					actions={[{ title: 'Try Again', onPress: model.retry }]}
 				/>
+			</VStack>
+		);
+	}
+
+	const results = model.jobResults;
+	return (
+		<List modifiers={[listStyle('plain'), ...rootTitle]}>
+			<Section>
+				<SummaryRow scene={sceneModel} />
+				{results.length > 0 ? <CountsRow counts={model.runCounts} /> : null}
+			</Section>
+			{results.length > 0 ? (
+				<Section title={`Environments (${results.length})`}>
+					<List.ForEach
+						data={results}
+						keyExtractor={(result) => result.environmentId}
+						estimatedItemSize={64}
+					>
+						{({ item }) => (
+							<NavigationLink value={item.environmentId}>
+								<EnvironmentRow result={item} />
+							</NavigationLink>
+						)}
+					</List.ForEach>
+				</Section>
 			) : null}
-
-			<Text
-				modifiers={[
-					font({ textStyle: 'footnote' }),
-					foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
-					multilineTextAlignment('center'),
-					fixedSize({ horizontal: false, vertical: true }),
-					padding({ horizontal: 12 })
-				]}
-			>
-				{model.supportsJobs
-					? 'Remote agents update together. The manager restarts last and can briefly interrupt the connection.'
-					: 'Remote agents update first. The manager restarts last and can briefly interrupt the connection.'}
-			</Text>
-
-			<Button
-				role="destructive"
-				onPress={model.trigger}
-				modifiers={[
-					buttonStyle('borderedProminent'),
-					controlSize('large'),
-					tint(systemColors.red),
-					disabled(!model.canTrigger)
-				]}
-			>
-				<Label
-					title={model.triggerTitle}
-					systemImage="arrow.up.circle.fill"
-					modifiers={[frame({ maxWidth: Infinity }), padding({ vertical: 8 })]}
-				/>
-			</Button>
-		</VStack>
+			{model.supportsJobs && model.failedIDs.length > 0 ? (
+				<Section>
+					<Button
+						onPress={model.retryFailed}
+						label={
+							model.failedIDs.length === 1
+								? 'Retry Failed'
+								: `Retry ${model.failedIDs.length} Failed`
+						}
+						systemImage="arrow.clockwise"
+					/>
+				</Section>
+			) : null}
+		</List>
 	);
 }
 
-function LastRunRow({ job }: { job: EnvironmentUpdateJob }) {
-	const completed = job.status === 'completed';
-	const completedAt = job.completedAt ? Date.parse(job.completedAt) : Number.NaN;
+function SummaryRow({ scene }: { scene: EnvironmentUpdateSceneModel }) {
+	const color = useTintColor()(EnvironmentUpdateSceneKind.tint(scene.kind));
+	const busy = scene.kind === 'loading' || scene.kind === 'starting';
+	const terminal = EnvironmentUpdateSceneKind.isTerminal(scene.kind);
+	const percent = scene.progress === undefined ? undefined : Math.round(scene.progress * 100);
 	return (
-		<VStack spacing={0}>
-			<Divider />
-			<HStack spacing={12} modifiers={[padding({ vertical: 16 })]}>
-				<Image
-					systemName={completed ? 'checkmark.circle.fill' : 'exclamationmark.triangle.fill'}
+		<HStack spacing={16} modifiers={[padding({ vertical: 6 }), listRowSeparator('hidden')]}>
+			<VStack modifiers={[frame({ width: 56, height: 56 })]}>
+				{busy ? (
+					<ProgressView />
+				) : terminal || percent === undefined ? (
+					<Image
+						systemName={
+							(scene.kind === 'completed'
+								? 'checkmark.circle.fill'
+								: scene.kind === 'failed'
+									? 'xmark.circle.fill'
+									: scene.kind === 'warning'
+										? 'exclamationmark.triangle.fill'
+										: EnvironmentUpdateSceneKind.symbol(scene.kind)) as never
+						}
+						modifiers={[font({ size: 40 }), foregroundStyle(color)]}
+					/>
+				) : (
+					<Gauge
+						value={percent / 100}
+						currentValueLabel={
+							<Text
+								modifiers={[font({ textStyle: 'caption', weight: 'semibold' }), monospacedDigit()]}
+							>
+								{`${percent}%`}
+							</Text>
+						}
+						modifiers={[
+							gaugeStyle('circularCapacity'),
+							tint(color),
+							accessibilityLabel(`${percent}% complete`)
+						]}
+					/>
+				)}
+			</VStack>
+			<VStack alignment="leading" spacing={3}>
+				<Text modifiers={[font({ textStyle: 'headline' }), lineLimit(1)]}>{scene.title}</Text>
+				<Text
 					modifiers={[
-						font({ textStyle: 'title3' }),
-						foregroundStyle(completed ? systemColors.green : systemColors.orange)
+						font({ textStyle: 'subheadline' }),
+						foregroundStyle(secondary),
+						monospacedDigit(),
+						lineLimit(3)
 					]}
-				/>
-				<VStack alignment="leading" spacing={2}>
-					<Text modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' })]}>Last run</Text>
-					<Text
-						modifiers={[
-							font({ textStyle: 'caption' }),
-							foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
-							lineLimit(1)
-						]}
-					>
-						{lastRunSummary(job)}
-					</Text>
-				</VStack>
-				<Spacer minLength={8} />
-				{Number.isFinite(completedAt) ? (
-					<Text
-						modifiers={[
-							font({ textStyle: 'caption' }),
-							foregroundStyle({ type: 'hierarchical', style: 'tertiary' })
-						]}
-					>
-						{relativeNamed(completedAt)}
-					</Text>
-				) : null}
-			</HStack>
-			<Divider />
-		</VStack>
+				>
+					{scene.subtitle}
+				</Text>
+			</VStack>
+			<Spacer minLength={0} />
+		</HStack>
 	);
 }
 
-function FinishedDetails({ job }: { job: EnvironmentUpdateJob }) {
-	const counts = resultCounts(resultsInProcessingOrder(job.results ?? []));
+function CountsRow({ counts }: { counts: RunCounts }) {
+	const accent = useAccentColor();
 	return (
-		<VStack spacing={0}>
-			<Divider />
-			<HStack spacing={0} modifiers={[padding({ vertical: 16 })]}>
-				<CounterMetric label="Updated" value={counts.updated} tint={systemColors.green} />
-				<Divider modifiers={[frame({ height: 56 })]} />
-				<CounterMetric label="Failed" value={counts.failed} tint={systemColors.red} />
-				<Divider modifiers={[frame({ height: 56 })]} />
-				<CounterMetric label="Skipped" value={counts.skipped} tint={systemColors.gray} />
-			</HStack>
-			<Divider />
-		</VStack>
+		<HStack spacing={0} modifiers={[padding({ vertical: 4 }), listRowSeparator('hidden')]}>
+			<Count label="Updating" value={counts.updating} color={accent} />
+			<Count label="Pending" value={counts.pending} color={systemColors.gray} />
+			<Count label="Done" value={counts.done} color={systemColors.green} />
+			<Count label="Failed" value={counts.failed} color={systemColors.red} />
+		</HStack>
 	);
 }
 
-function CounterMetric({
-	label,
-	value,
-	tint: color
-}: {
-	label: string;
-	value: number;
-	tint: string;
-}) {
+function Count({ label, value, color }: { label: string; value: number; color: string }) {
 	return (
-		<VStack spacing={4} modifiers={[frame({ maxWidth: Infinity })]}>
+		<VStack spacing={2} modifiers={[frame({ maxWidth: Infinity })]}>
 			<Text
 				modifiers={[
-					font({ textStyle: 'title', design: 'rounded', weight: 'semibold' }),
-					foregroundStyle(color),
+					font({ textStyle: 'title3', design: 'rounded', weight: 'semibold' }),
+					foregroundStyle(value > 0 ? color : systemColors.gray),
 					contentTransition('numericText')
 				]}
 			>
 				{String(value)}
 			</Text>
-			<Text
-				modifiers={[
-					font({ textStyle: 'caption' }),
-					foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
-					lineLimit(1)
-				]}
-			>
+			<Text modifiers={[font({ textStyle: 'caption2' }), foregroundStyle(secondary), lineLimit(1)]}>
 				{label}
 			</Text>
 		</VStack>
+	);
+}
+
+function ManagerBadge() {
+	return (
+		<Text
+			modifiers={[
+				font({ textStyle: 'caption2', weight: 'medium' }),
+				foregroundStyle(secondary),
+				padding({ horizontal: 6, vertical: 1 }),
+				background(withOpacity(systemColors.gray, 0.16), shapes.capsule())
+			]}
+		>
+			Manager
+		</Text>
+	);
+}
+
+function EnvironmentRow({ result }: { result: EnvironmentUpdateResult }) {
+	const color = useTintColor()(upgradeResultTint(result));
+	const detail = upgradeResultDetail(result);
+	const updating = result.status === 'updating';
+	const percent = Math.max(0, Math.min(100, result.percent ?? 0));
+	return (
+		<VStack alignment="leading" spacing={8} modifiers={[padding({ vertical: 2 })]}>
+			<HStack spacing={12}>
+				<Image
+					systemName={upgradeResultSymbol(result) as never}
+					modifiers={[font({ textStyle: 'title3' }), foregroundStyle(color), frame({ width: 28 })]}
+				/>
+				<VStack alignment="leading" spacing={2}>
+					<HStack spacing={6}>
+						<Text modifiers={[font({ textStyle: 'body' }), lineLimit(1)]}>
+							{result.environmentName || result.environmentId}
+						</Text>
+						{upgradeResultIsManager(result) ? <ManagerBadge /> : null}
+					</HStack>
+					{detail ? (
+						<Text
+							modifiers={[
+								font({ textStyle: 'caption' }),
+								foregroundStyle(secondary),
+								monospacedDigit(),
+								lineLimit(1)
+							]}
+						>
+							{detail}
+						</Text>
+					) : null}
+				</VStack>
+				<Spacer minLength={8} />
+				<Text
+					modifiers={[
+						font({ textStyle: 'footnote', weight: 'medium' }),
+						foregroundStyle(color),
+						monospacedDigit(),
+						lineLimit(1)
+					]}
+				>
+					{updating && result.percent !== undefined
+						? `${upgradeResultLabel(result)} · ${percent}%`
+						: upgradeResultLabel(result)}
+				</Text>
+			</HStack>
+			{updating ? (
+				<ProgressView
+					value={percent / 100}
+					modifiers={[
+						tint(color),
+						padding({ leading: 40 }),
+						accessibilityLabel(`${result.environmentName} ${percent}% complete`)
+					]}
+				/>
+			) : null}
+		</VStack>
+	);
+}
+
+function EnvironmentDetail({ result }: { result: EnvironmentUpdateResult }) {
+	const color = useTintColor()(upgradeResultTint(result));
+	const logs = resultLogs(result.logs);
+	const from = result.fromVersion?.trim();
+	const to = result.toVersion?.trim();
+	return (
+		<List
+			modifiers={[
+				listStyle('plain'),
+				navigationTitle(result.environmentName || result.environmentId),
+				navigationBarTitleDisplayMode('inline')
+			]}
+		>
+			<Section>
+				<LabeledContent label="Status">
+					<Text modifiers={[foregroundStyle(color)]}>{upgradeResultLabel(result)}</Text>
+				</LabeledContent>
+				{result.status === 'updating' && result.percent !== undefined ? (
+					<LabeledContent label="Progress">
+						<Text modifiers={[monospacedDigit()]}>{`${Math.round(result.percent)}%`}</Text>
+					</LabeledContent>
+				) : null}
+				{from ? (
+					<LabeledContent label="Current Version">
+						<Text modifiers={[textSelection(true)]}>{from}</Text>
+					</LabeledContent>
+				) : null}
+				{to && to !== from ? (
+					<LabeledContent label="Target Version">
+						<Text modifiers={[textSelection(true)]}>{to}</Text>
+					</LabeledContent>
+				) : null}
+				{upgradeResultIsManager(result) ? (
+					<LabeledContent label="Role">
+						<Text>Manager</Text>
+					</LabeledContent>
+				) : null}
+			</Section>
+			{result.status === 'failed' && result.error ? (
+				<Section title="Error">
+					<Text modifiers={[foregroundStyle(systemColors.red), textSelection(true)]}>
+						{result.error}
+					</Text>
+				</Section>
+			) : null}
+			<Section title="Logs">
+				{logs ? (
+					<Text
+						modifiers={[
+							font({ textStyle: 'caption2', design: 'monospaced' }),
+							textSelection(true),
+							frame({ maxWidth: Infinity, alignment: 'leading' })
+						]}
+					>
+						{logs}
+					</Text>
+				) : (
+					<Text modifiers={[foregroundStyle(secondary)]}>No logs yet</Text>
+				)}
+			</Section>
+		</List>
 	);
 }

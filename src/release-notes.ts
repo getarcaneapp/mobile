@@ -19,7 +19,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Live progress, stage, and percentage while Arcane upgrades on Arcane v3 servers.'
 			},
 			{
-				text: 'Update All upgrades the environments you pick, together, on Arcane v3 servers.'
+				text: 'Update All upgrades every environment together on Arcane v3 servers.'
 			},
 			{
 				text: 'Live upgrade logs for each environment on Arcane v3 servers.'

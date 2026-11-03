@@ -2,12 +2,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'vite-plus/test';
 
 import {
-	defaultSelection,
 	failedEnvironmentIDs,
 	isNewerUpgradeJob,
-	resultLogs,
-	selectionRequest,
-	type UpdateCandidate
+	resultLogs
 } from '../../features/environments/upgrade-job-follow';
 import {
 	upgradeResultDetail,
@@ -18,15 +15,6 @@ import {
 	UpgradeJobStreamEvent,
 	type EnvironmentUpdateResult
 } from '../../sdk/models/system/Upgrade';
-
-const candidate = (overrides: Partial<UpdateCandidate> & { id: string }): UpdateCandidate => ({
-	name: overrides.id,
-	isManager: overrides.id === '0',
-	online: true,
-	updateAvailable: undefined,
-	version: undefined,
-	...overrides
-});
 
 const job = (overrides: Partial<EnvironmentUpdateJob> = {}): EnvironmentUpdateJob => ({
 	id: 'job',
@@ -42,24 +30,7 @@ const result = (overrides: Partial<EnvironmentUpdateResult>): EnvironmentUpdateR
 	...overrides
 });
 
-describe('upgrade job selection', () => {
-	it('defaults to online environments with updates, else every online environment', () => {
-		const candidates = [
-			candidate({ id: '0', updateAvailable: true }),
-			candidate({ id: '1', updateAvailable: false }),
-			candidate({ id: '2', updateAvailable: true, online: false })
-		];
-		assert.deepEqual(defaultSelection(candidates), ['0']);
-		assert.deepEqual(
-			defaultSelection(candidates.map((c) => ({ ...c, updateAvailable: undefined }))),
-			['0', '1']
-		);
-	});
-	it('omits the environment list when everything is selected', () => {
-		const candidates = [candidate({ id: '0' }), candidate({ id: '1' })];
-		assert.equal(selectionRequest(candidates, ['1', '0']), undefined);
-		assert.deepEqual(selectionRequest(candidates, ['1', 'gone']), ['1']);
-	});
+describe('upgrade job retries', () => {
 	it('collects failed environments for a retry', () => {
 		const failed = job({
 			status: 'completed',

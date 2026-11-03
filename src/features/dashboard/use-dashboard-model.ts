@@ -322,8 +322,7 @@ export function useDashboardModel() {
 	const openImageUpdates = () => push('image-updates-sheet');
 	const openActivityCenter = () => push('activity-center');
 	const openAPIKeys = () => push('apiKeys');
-	const openUpdateAll = () =>
-		push('update-all-environments', { count: String(view.rawEnvironmentCount) });
+	const openUpdateAll = () => push('update-all-environments');
 
 	const openTile = (tile: DashboardTotalsTile) => {
 		switch (tile) {
