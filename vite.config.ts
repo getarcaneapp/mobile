@@ -9,6 +9,7 @@ const generated = [
 	'assets/**',
 	'modules/*/ios/**',
 	'modules/*/android/**',
+	'targets/*/Assets.xcassets/**',
 	'pnpm-lock.yaml'
 ];
 
