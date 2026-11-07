@@ -22,10 +22,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Dashboard widgets and Edit Dashboard on Arcane v3.'
 			},
 			{
-				text: 'Lists refresh live on Arcane v3.'
-			},
-			{
-				text: 'Settings set by environment variables are locked on Arcane v3.'
+				text: 'Live list refresh and environment variable setting locks on Arcane v3.'
 			}
 		],
 		changed: [
@@ -47,6 +44,9 @@ export const releaseNotes: ReleaseNote[] = [
 		fixed: [
 			{
 				text: 'Clear History confirmation hidden behind the Activities sheet.'
+			},
+			{
+				text: 'Environment cards cut off at larger text sizes.'
 			},
 			{
 				text: 'Unreadable certificate errors on sign-in.'

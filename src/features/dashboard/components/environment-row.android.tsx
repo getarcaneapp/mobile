@@ -70,11 +70,19 @@ function RingGauge({
 			accessibilityValue={{
 				text: percent === undefined ? 'Unavailable' : `${Math.round(percent)} percent`
 			}}
-			style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}
+			style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }}
 		>
 			<MetricRing progress={(revealed ? value : 0) / 100} tint={tint} size={18} lineWidth={3} />
-			<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>{title}</Text>
-			<Text style={[m3Type.titleSmall, { color: colors.label, fontVariant: ['tabular-nums'] }]}>
+			<Text
+				numberOfLines={1}
+				style={[m3Type.bodySmall, { flexShrink: 1, color: colors.secondaryLabel }]}
+			>
+				{title}
+			</Text>
+			<Text
+				numberOfLines={1}
+				style={[m3Type.titleSmall, { color: colors.label, fontVariant: ['tabular-nums'] }]}
+			>
 				{ringValueText(percent)}
 			</Text>
 		</View>
