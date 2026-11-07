@@ -49,6 +49,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Environment cards cut off at larger text sizes.'
 			},
 			{
+				text: 'Push notifications failing to enable on Android.'
+			},
+			{
 				text: 'Unreadable certificate errors on sign-in.'
 			},
 			{

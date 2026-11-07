@@ -15,6 +15,9 @@ const arcaneBuildNumber = env?.ARCANE_BUILD_NUMBER;
 const googleServicesFile =
 	env?.GOOGLE_SERVICES_JSON ??
 	(fs.existsSync('./google-services.json') ? './google-services.json' : undefined);
+if (env?.EAS_BUILD === 'true' && env.EAS_BUILD_PLATFORM === 'android' && !googleServicesFile) {
+	throw new Error('GOOGLE_SERVICES_JSON is missing; Android push notifications need it.');
+}
 const BUILD_NUMBER = Number(arcaneBuildNumber) || Math.floor((Date.now() - buildEpochMs) / 60_000);
 
 const config: ExpoConfig = {
