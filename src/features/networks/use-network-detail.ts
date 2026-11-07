@@ -115,7 +115,7 @@ export function useNetworkDetail() {
 			await membershipChanged();
 			showToast(Toasts.success('Container disconnected'));
 		} catch (error) {
-			showActionFailed(friendlyErrorMessage(error), 'Error');
+			showActionFailed(friendlyErrorMessage(error));
 		}
 	};
 
@@ -126,7 +126,7 @@ export function useNetworkDetail() {
 			showToast(Toasts.success('Network deleted'));
 			nav.back();
 		} catch (error) {
-			showActionFailed(friendlyErrorMessage(error), 'Error');
+			showActionFailed(friendlyErrorMessage(error));
 		}
 	};
 

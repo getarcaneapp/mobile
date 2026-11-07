@@ -8,7 +8,6 @@ export interface JobScheduleConfig {
 	dockerClientRefreshInterval: string;
 	pollingInterval: string;
 	scheduledPruneInterval: string;
-	gitopsSyncInterval: string;
 	vulnerabilityScanInterval: string;
 	autoHealInterval: string;
 }
@@ -21,7 +20,6 @@ export interface UpdateJobScheduleConfig {
 	dockerClientRefreshInterval?: string;
 	pollingInterval?: string;
 	scheduledPruneInterval?: string;
-	gitopsSyncInterval?: string;
 	vulnerabilityScanInterval?: string;
 	autoHealInterval?: string;
 }

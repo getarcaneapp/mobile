@@ -10,6 +10,7 @@ import { CancellationError } from '@/sdk/errors/ArcaneError';
 import type { UpdateBackupPolicy } from '@/sdk/models/backup/UpdateBackupPolicy';
 import type { VolumeBackupPolicy } from '@/sdk/models/backup/VolumeBackupPolicy';
 import { useClientManager } from '@/stores/client-manager';
+import { showToast, Toasts } from '@/ui/toast';
 
 import { uuidString } from './volume-model';
 
@@ -181,8 +182,8 @@ export function confirmationDialog({
 	]);
 }
 
-export function showErrorAlert(title: string, message: string) {
-	Alert.alert(title, message, [{ text: 'OK', style: 'cancel' }]);
+export function showErrorAlert(message: string) {
+	showToast(Toasts.error(message));
 }
 
 export function makeTemporaryDirectory(): Directory {

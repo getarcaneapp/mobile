@@ -47,11 +47,12 @@ import type { EnvironmentRowProps } from './environment-row.types';
 import { MetricRing } from './metric-ring';
 import { revealedEnvironmentIDs, ringValueText, useEnvironmentRow } from '../use-environment-row';
 
-const statusColors = {
-	orange: systemColors.orange,
-	secondary: 'secondary',
-	green: systemColors.green
-} as const;
+const statusColors = () =>
+	({
+		orange: systemColors.orange,
+		secondary: 'secondary',
+		green: systemColors.green
+	}) as const;
 
 function Count({
 	value,
@@ -196,7 +197,7 @@ export function EnvironmentRow(props: EnvironmentRowProps) {
 								systemName="circle.fill"
 								modifiers={[
 									font({ size: 8 }),
-									foregroundStyle(statusColors[row.statusTint]),
+									foregroundStyle(statusColors()[row.statusTint]),
 									accessibilityHidden(true)
 								]}
 							/>

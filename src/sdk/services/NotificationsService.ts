@@ -5,12 +5,10 @@ import { decodeArray } from '../models/base/decoding';
 import {
 	NotificationSettings,
 	UpdateNotificationSettings,
-	type AppriseSettings,
 	type NotificationDispatchRequest,
 	type NotificationProvider,
 	type NotificationTestResponse,
-	type NotificationTestType,
-	type UpdateAppriseSettings
+	type NotificationTestType
 } from '../models/notification/Notification';
 
 export class NotificationsService {
@@ -66,25 +64,6 @@ export class NotificationsService {
 				query: [{ name: 'type', value: args.type ?? 'simple' }]
 			}
 		);
-	}
-
-	getAppriseSettings(args: { envID?: EnvironmentID } = {}): Promise<AppriseSettings> {
-		return this.rest.get(this.rest.environmentPath(args.envID, 'notifications/apprise'));
-	}
-
-	upsertAppriseSettings(args: {
-		body: UpdateAppriseSettings;
-		envID?: EnvironmentID;
-	}): Promise<AppriseSettings> {
-		return this.rest.post(this.rest.environmentPath(args.envID, 'notifications/apprise'), {
-			body: args.body
-		});
-	}
-
-	testApprise(args: { type?: NotificationTestType; envID?: EnvironmentID } = {}): Promise<void> {
-		return this.rest.postVoid(this.rest.environmentPath(args.envID, 'notifications/apprise/test'), {
-			query: [{ name: 'type', value: args.type ?? 'simple' }]
-		});
 	}
 
 	dispatch(args: { body: NotificationDispatchRequest }): Promise<void> {

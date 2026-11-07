@@ -1,4 +1,4 @@
-import { systemColors } from '@/theme/colors';
+import type { SystemColorName } from '@/theme/colors';
 import {
 	EmailAuthMode,
 	EmailTLSMode,
@@ -37,18 +37,18 @@ export const providerSystemImage: Record<NotificationProvider, string> = {
 	generic: 'link'
 };
 
-export const providerIconColor: Record<NotificationProvider, string> = {
-	discord: systemColors.indigo,
-	email: systemColors.blue,
-	telegram: systemColors.cyan,
-	signal: systemColors.blue,
-	slack: systemColors.purple,
-	ntfy: systemColors.green,
-	pushover: systemColors.teal,
-	gotify: systemColors.orange,
-	matrix: systemColors.green,
-	googlechat: systemColors.blue,
-	generic: systemColors.gray
+export const providerIconColor: Record<NotificationProvider, SystemColorName> = {
+	discord: 'indigo',
+	email: 'blue',
+	telegram: 'cyan',
+	signal: 'blue',
+	slack: 'purple',
+	ntfy: 'green',
+	pushover: 'teal',
+	gotify: 'orange',
+	matrix: 'green',
+	googlechat: 'blue',
+	generic: 'gray'
 };
 
 export function notificationProviders(supportsPost26Features: boolean): NotificationProvider[] {

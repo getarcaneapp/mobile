@@ -27,6 +27,7 @@ import {
 	useUnmounted
 } from './volume-support';
 import { pickedFileName } from '@/core/picked-file-name';
+import { useAppIsActive, useIsScreenFocused } from '@/features/containers/hooks';
 
 export type BackupCreateState = {
 	destination: string;
@@ -137,6 +138,8 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 	useBackupSessionScope();
 	const unmounted = useUnmounted();
 	const generation = useClientManager((s) => s.clientGeneration);
+	const isFocused = useIsScreenFocused();
+	const isActive = useAppIsActive();
 
 	const [backups, setBackups] = useState<BackupEntry[]>([]);
 	const backupsRef = useRef(backups);
@@ -236,8 +239,12 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 	);
 
 	useEffect(() => {
-		let cancelled = false;
 		void load();
+	}, [load, generation]);
+
+	useEffect(() => {
+		if (!isFocused || !isActive) return;
+		let cancelled = false;
 		const timer = setInterval(() => {
 			if (cancelled) return;
 			if (backupsRef.current.some((b) => b.status === 'running')) void load();
@@ -246,7 +253,7 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 			cancelled = true;
 			clearInterval(timer);
 		};
-	}, [load, generation]);
+	}, [load, generation, isFocused, isActive]);
 
 	useEffect(() => () => removeItem(downloadRef.current), []);
 

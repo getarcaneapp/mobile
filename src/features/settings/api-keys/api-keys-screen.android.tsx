@@ -7,9 +7,9 @@ import { withCleanup } from '@/core/with-cleanup';
 import { SortOrder } from '@/sdk/models/base/pagination';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { CenteredMessage } from '../shared/android-material';
 import { AndroidToolbar, type AndroidToolbarItem } from '../shared/android-toolbar';
@@ -79,6 +79,14 @@ export function APIKeysDestination() {
 		);
 	};
 
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
+
 	let content;
 	if (model.isLoading && apiKeys.length === 0) {
 		content = (
@@ -119,45 +127,59 @@ export function APIKeysDestination() {
 		);
 	} else {
 		content = (
-			<View>
-				<View style={{ paddingHorizontal: 16 }}>
-					<ResourceCountSectionHeader
-						title="API Keys"
-						loadedCount={apiKeys.length}
-						totalCount={model.pagination.totalItems}
+			<GroupedFlashList
+				data={apiKeys.map((apiKey, index) => ({
+					key: apiKey.id,
+					type: 'apiKey',
+					apiKey,
+					grouped: groupPosition(index, apiKeys.length)
+				}))}
+				renderEntry={({ apiKey, grouped }) => (
+					<>
+						{grouped.isFirst ? null : (
+							<View style={{ height: 0.5, marginLeft: 64, backgroundColor: colors.separator }} />
+						)}
+						<LongPressMenu
+							title={apiKey.name}
+							onPress={() => model.openDetail(apiKey)}
+							items={[
+								{
+									id: 'copy',
+									title: 'Copy Key Prefix',
+									onPress: () => model.copyPrefix(apiKey)
+								}
+							]}
+							style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+						>
+							<APIKeyRow apiKey={apiKey} assignedUser={model.assignedUser(apiKey)} />
+						</LongPressMenu>
+					</>
+				)}
+				header={
+					<View style={{ paddingHorizontal: 16 }}>
+						<ResourceCountSectionHeader
+							title="API Keys"
+							loadedCount={apiKeys.length}
+							totalCount={model.pagination.totalItems}
+							hasMore={model.pagination.hasMore}
+						/>
+					</View>
+				}
+				footer={
+					<PaginatedListFooter
 						hasMore={model.pagination.hasMore}
+						loadMoreError={model.loadMoreError}
+						onRetry={() => void model.loadMore()}
+						onLoadMore={() => void model.loadMore()}
 					/>
-				</View>
-				<MaterialListGroup>
-					{apiKeys.map((apiKey, index) => (
-						<View key={apiKey.id}>
-							{index > 0 ? (
-								<View style={{ height: 0.5, marginLeft: 64, backgroundColor: colors.separator }} />
-							) : null}
-							<LongPressMenu
-								title={apiKey.name}
-								onPress={() => model.openDetail(apiKey)}
-								items={[
-									{
-										id: 'copy',
-										title: 'Copy Key Prefix',
-										onPress: () => model.copyPrefix(apiKey)
-									}
-								]}
-								style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-							>
-								<APIKeyRow apiKey={apiKey} assignedUser={model.assignedUser(apiKey)} />
-							</LongPressMenu>
-						</View>
-					))}
-				</MaterialListGroup>
-				<PaginatedListFooter
-					hasMore={model.pagination.hasMore}
-					loadMoreError={model.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</View>
+				}
+				onEndReached={
+					model.pagination.hasMore && model.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				refreshControl={refreshControl}
+			/>
 		);
 	}
 
@@ -175,21 +197,19 @@ export function APIKeysDestination() {
 				}}
 			/>
 			<APIKeysToolbar model={model} />
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{apiKeys.length > 0 ? (
+				content
+			) : (
+				<ScrollView
+					contentInsetAdjustmentBehavior="automatic"
+					style={{ backgroundColor: colors.systemGroupedBackground }}
+					contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+					keyboardShouldPersistTaps="handled"
+					refreshControl={refreshControl}
+				>
+					{content}
+				</ScrollView>
+			)}
 		</>
 	);
 }

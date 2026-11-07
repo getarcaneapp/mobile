@@ -239,11 +239,19 @@ export const containerIDMatches = (containerID: string, serviceID: string) =>
 	containerID.startsWith(serviceID) ||
 	serviceID.startsWith(containerID);
 
+const archivedDateFormatter = new Intl.DateTimeFormat(undefined, {
+	month: 'short',
+	day: 'numeric',
+	year: 'numeric',
+	hour: 'numeric',
+	minute: '2-digit'
+});
+
 export function archivedDateText(iso: string | undefined): string {
 	if (!iso) return 'Archived';
 	const date = new Date(iso);
 	if (Number.isNaN(date.getTime())) return 'Archived';
-	return `Archived ${date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+	return `Archived ${archivedDateFormatter.format(date)}`;
 }
 
 export const defaultComposeStarter =

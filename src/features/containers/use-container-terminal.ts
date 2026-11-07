@@ -9,6 +9,7 @@ import {
 	type TerminalOutputLine
 } from '@/core/terminal-output-processor';
 import type { EnvironmentID } from '@/sdk/client/environment';
+import type { TerminalSize } from '@/sdk/streaming/TerminalSession';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
@@ -59,6 +60,7 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 	const [processor] = useState(() => new TerminalOutputProcessor());
 	const [follow] = useState(() => new TerminalOutputFollowBehavior());
 	const session = useRef<BoundedTerminalSession | undefined>(undefined);
+	const size = useRef<TerminalSize | undefined>(undefined);
 	const generation = useRef(0);
 	const state = useRef({ isConnected, isConnecting });
 	useLayoutEffect(() => {
@@ -109,7 +111,8 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 				const terminal = await boundedExec(client, {
 					envID: environmentID,
 					id: containerID,
-					shell: requestedShell ?? shell
+					shell: requestedShell ?? shell,
+					size: size.current
 				});
 				if (run !== generation.current) {
 					await terminal.close();
@@ -119,6 +122,7 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 				setOutputLines([]);
 				follow.resume();
 				session.current = terminal;
+				if (size.current) void terminal.resize(size.current).catch(() => {});
 				setIsConnected(true);
 				setIsConnecting(false);
 				void consumeOutput(terminal, run);
@@ -142,6 +146,13 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 		void session.current?.send(text).catch(() => {});
 	};
 
+	const resize = (cols: number, rows: number) => {
+		if (cols < 1 || rows < 1) return;
+		if (size.current?.cols === cols && size.current.rows === rows) return;
+		size.current = { cols, rows };
+		void session.current?.resize({ cols, rows }).catch(() => {});
+	};
+
 	return {
 		outputLines,
 		outputRevision,
@@ -158,6 +169,7 @@ export function useContainerTerminal(environmentID: EnvironmentID, containerID: 
 		connect: () => void connect(),
 		teardown,
 		send,
+		resize,
 		copyAllOutput: async () => {
 			const text = processor.snapshot().fullText;
 			if (text === '') return;

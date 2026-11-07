@@ -511,7 +511,11 @@ function AddFieldsContent({
 				<Text modifiers={[foregroundStyle('primary')]}>{ComposeDisplayText.title(field.name)}</Text>
 				{field.description !== '' ? (
 					<Text
-						modifiers={[font({ textStyle: 'caption' }), foregroundStyle('secondary'), lineLimit(2)]}
+						modifiers={[
+							font({ textStyle: 'caption' }),
+							foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+							lineLimit(2)
+						]}
 					>
 						{field.description}
 					</Text>
@@ -748,7 +752,12 @@ function ComposeSettingFields({
 	const contents = (
 		<>
 			{root && (descriptionFor(draft) ?? '') !== '' ? (
-				<Text modifiers={[font({ textStyle: 'subheadline' }), foregroundStyle('secondary')]}>
+				<Text
+					modifiers={[
+						font({ textStyle: 'subheadline' }),
+						foregroundStyle({ type: 'hierarchical', style: 'secondary' })
+					]}
+				>
 					{descriptionFor(draft)!}
 				</Text>
 			) : null}
@@ -844,10 +853,14 @@ function ComposeSettingFields({
 				)
 			) : null}
 			{draft.kind === 'null' ? (
-				<Text modifiers={[foregroundStyle('secondary')]}>Leave this setting empty.</Text>
+				<Text modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>
+					Leave this setting empty.
+				</Text>
 			) : null}
 			{draft.kind === 'unsupported' ? (
-				<Text modifiers={[foregroundStyle('secondary')]}>{"This value can't be edited here."}</Text>
+				<Text modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>
+					{"This value can't be edited here."}
+				</Text>
 			) : null}
 		</>
 	);

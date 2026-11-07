@@ -6,7 +6,6 @@ import { parseArcaneDate } from '../models/base/date';
 import { ContainerStatusCounts } from '../models/container/ContainerSummary';
 import {
 	ActionItems,
-	DashboardEnvironmentsOverview,
 	DashboardSnapshot,
 	DashboardSnapshotSettings,
 	type ActionItem
@@ -43,28 +42,16 @@ export class DashboardService {
 		});
 	}
 
-	actionItems(args: { envID?: EnvironmentID; debugAllGood?: boolean } = {}): Promise<ActionItems> {
-		return this.rest.get(this.rest.environmentPath(args.envID, 'dashboard/action-items'), {
-			query: debugQuery(args.debugAllGood ?? false),
-			decode: ActionItems.decode
-		});
-	}
-
-	environmentsOverview(
-		args: { debugAllGood?: boolean } = {}
-	): Promise<DashboardEnvironmentsOverview> {
-		return this.rest.get('dashboard/environments', {
-			query: debugQuery(args.debugAllGood ?? false),
-			decode: DashboardEnvironmentsOverview.decode
-		});
-	}
-
 	stream(args: { debugAllGood?: boolean } = {}): NDJSONStream<DashboardStreamEvent> {
 		return new NDJSONStream<DashboardStreamEvent>(this.rest.transport, {
-			path: 'dashboard/stream',
+			path: 'stream',
 			method: 'GET',
 			contentType: null,
-			query: debugQuery(args.debugAllGood ?? false),
+			query: [{ name: 'channels', value: 'dashboard' }, ...debugQuery(args.debugAllGood ?? false)],
+			notFoundFallback: {
+				path: 'dashboard/stream',
+				query: debugQuery(args.debugAllGood ?? false)
+			},
 			decode: DashboardStreamEvent.decode
 		});
 	}

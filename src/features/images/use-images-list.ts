@@ -1,6 +1,5 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
 import {
 	performAllEnvironmentsMaintenance,
@@ -116,10 +115,7 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 	const currentUser = useClientManager((s) => s.currentUser);
 	const isAdmin = currentUser !== undefined && User.isAdmin(currentUser);
 
-	const showActionError = (error: unknown) =>
-		Alert.alert('Something Went Wrong', friendlyErrorMessage(error), [
-			{ text: 'OK', style: 'cancel' }
-		]);
+	const showActionError = (error: unknown) => showToast(Toasts.error(friendlyErrorMessage(error)));
 
 	const imagesPage = useCallback((): EnvironmentFetch<ImageSummary> | undefined => {
 		const current = useClientManager.getState().client;

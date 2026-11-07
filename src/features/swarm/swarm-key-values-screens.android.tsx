@@ -7,7 +7,7 @@ import { FormSecureField, FormTextField } from '@/ui/components/form-fields';
 import { m3 } from '@/ui/components/material-colors';
 import { m3Type, monoFamily } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 
 import { M3Section, ValueRow } from '@/features/containers/android-material';
 import {
@@ -25,6 +25,8 @@ import {
 	useSwarmKeyValueDetail,
 	useSwarmKeyValues
 } from './use-swarm-key-values';
+
+const listContentStyle = { paddingBottom: 32 };
 
 export function SwarmKeyValuesScreen() {
 	const model = useSwarmKeyValues();
@@ -62,10 +64,38 @@ export function SwarmKeyValuesScreen() {
 				emptySystemImage={KeyValueKind.systemImage(model.kind)}
 				retry={() => void model.load()}
 			>
-				<ScrollView
-					contentInsetAdjustmentBehavior="automatic"
-					style={{ backgroundColor: colors.systemGroupedBackground }}
-					contentContainerStyle={{ paddingBottom: 32 }}
+				<GroupedFlashList
+					data={model.displayedItems.map((item, index, all) => ({
+						key: item.id,
+						type: 'item',
+						item,
+						grouped: groupPosition(index, all.length)
+					}))}
+					renderEntry={({ item }) => (
+						<LongPressMenu
+							title={itemName(item)}
+							items={
+								model.canManage
+									? [
+											{
+												id: 'delete',
+												title: 'Delete',
+												destructive: true,
+												onPress: () => model.requestDelete(item)
+											}
+										]
+									: []
+							}
+							onPress={() => model.openDetail(item)}
+							style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 3 }}
+						>
+							<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{itemName(item)}</Text>
+							<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
+								{model.updatedText(item)}
+							</Text>
+						</LongPressMenu>
+					)}
+					header={<SectionTitle title={model.headerText} />}
 					refreshControl={
 						<RefreshControl
 							refreshing={refreshing}
@@ -75,36 +105,8 @@ export function SwarmKeyValuesScreen() {
 							}}
 						/>
 					}
-				>
-					<SectionTitle title={model.headerText} />
-					<MaterialListGroup>
-						{model.displayedItems.map((item) => (
-							<LongPressMenu
-								key={item.id}
-								title={itemName(item)}
-								items={
-									model.canManage
-										? [
-												{
-													id: 'delete',
-													title: 'Delete',
-													destructive: true,
-													onPress: () => model.requestDelete(item)
-												}
-											]
-										: []
-								}
-								onPress={() => model.openDetail(item)}
-								style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 3 }}
-							>
-								<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{itemName(item)}</Text>
-								<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
-									{model.updatedText(item)}
-								</Text>
-							</LongPressMenu>
-						))}
-					</MaterialListGroup>
-				</ScrollView>
+					contentContainerStyle={listContentStyle}
+				/>
 			</SwarmListState>
 		</>
 	);

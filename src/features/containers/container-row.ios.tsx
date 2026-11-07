@@ -46,12 +46,6 @@ import {
 import { MetricRing } from './metric-ring';
 import type { ContainerRowMetrics } from './use-containers-list';
 
-const healthColor = {
-	red: systemColors.red,
-	yellow: systemColors.yellow,
-	green: systemColors.green
-} as const;
-
 export const ContainerResourceText = {
 	cpu: (sample: ContainerResourceSample) => percentText(sample.cpuPercent),
 	memoryUsed: (sample: ContainerResourceSample) => formatFileBytes(sample.memoryUsageBytes),
@@ -250,7 +244,7 @@ export function ContainerRow({
 									systemName={health.icon as never}
 									modifiers={[
 										font({ textStyle: 'subheadline' }),
-										foregroundStyle(healthColor[health.color]),
+										foregroundStyle(systemColors[health.color]),
 										accessibilityLabel(health.label)
 									]}
 								/>

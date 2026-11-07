@@ -1,7 +1,32 @@
 import { encodeUTF8 } from '../http/json';
 import type { ArcaneTransport } from '../client/ArcaneTransport';
+import type { QueryItem } from '../client/url';
 import { WebSocketChannel } from './WebSocketChannel';
 import type { WebSocketStreamConfig } from './Streams';
+
+export interface TerminalSize {
+	cols: number;
+	rows: number;
+}
+
+const clampDimension = (value: number) => Math.min(65_535, Math.max(1, Math.floor(value)));
+
+export function terminalQuery(shell: string, size?: TerminalSize): QueryItem[] {
+	const query: QueryItem[] = [{ name: 'shell', value: shell }];
+	if (size) {
+		query.push({ name: 'cols', value: String(clampDimension(size.cols)) });
+		query.push({ name: 'rows', value: String(clampDimension(size.rows)) });
+	}
+	return query;
+}
+
+export function terminalResizeFrame(size: TerminalSize): string {
+	return JSON.stringify({
+		type: 'resize',
+		cols: clampDimension(size.cols),
+		rows: clampDimension(size.rows)
+	});
+}
 
 export class TerminalSession {
 	private readonly channel: WebSocketChannel<string, Uint8Array>;
@@ -20,10 +45,11 @@ export class TerminalSession {
 		transport: ArcaneTransport,
 		path: string,
 		shell: string,
-		config: WebSocketStreamConfig = transport.webSocketConfig
+		config: WebSocketStreamConfig = transport.webSocketConfig,
+		size?: TerminalSize
 	): Promise<TerminalSession> {
 		const request = await transport.websocketRequest(path, {
-			query: [{ name: 'shell', value: shell }]
+			query: terminalQuery(shell, size)
 		});
 		const channel = new WebSocketChannel<string, Uint8Array>({
 			request,
@@ -39,6 +65,10 @@ export class TerminalSession {
 
 	send(text: string): Promise<void> {
 		return this.channel.send(text);
+	}
+
+	resize(size: TerminalSize): Promise<void> {
+		return this.channel.send(terminalResizeFrame(size));
 	}
 
 	close(): Promise<void> {

@@ -1,4 +1,5 @@
 import { Host } from '@/ui/host';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import {
 	Button,
 	Form,
@@ -95,44 +96,50 @@ export function SwarmKeyValuesScreen() {
 						]}
 					>
 						<Section header={<Text>{model.headerText}</Text>}>
-							{model.displayedItems.map((item) => {
-								const link = (
-									<Button
-										onPress={() => model.openDetail(item)}
-										modifiers={[buttonStyle('plain'), contentShape(shapes.rectangle())]}
-									>
-										<HStack>
-											<VStack alignment="leading" spacing={3}>
-												<Text>{itemName(item)}</Text>
-												<Text
-													modifiers={[
-														font({ textStyle: 'caption' }),
-														foregroundStyle({ type: 'hierarchical', style: 'secondary' })
-													]}
-												>
-													{model.updatedText(item)}
-												</Text>
-											</VStack>
-											<Spacer />
-											<DisclosureChevron />
-										</HStack>
-									</Button>
-								);
-								if (!model.canManage) return <VStack key={item.id}>{link}</VStack>;
-								return (
-									<SwipeActions key={item.id}>
-										{link}
-										<SwipeActions.Actions edge="trailing" allowsFullSwipe={false}>
-											<Button
-												label="Delete"
-												systemImage="trash"
-												onPress={() => model.requestDelete(item)}
-												modifiers={[tint(systemColors.red)]}
-											/>
-										</SwipeActions.Actions>
-									</SwipeActions>
-								);
-							})}
+							<List.ForEach
+								data={model.displayedItems}
+								keyExtractor={stableItemKey}
+								estimatedItemSize={56}
+							>
+								{({ item }) => {
+									const link = (
+										<Button
+											onPress={() => model.openDetail(item)}
+											modifiers={[buttonStyle('plain'), contentShape(shapes.rectangle())]}
+										>
+											<HStack>
+												<VStack alignment="leading" spacing={3}>
+													<Text>{itemName(item)}</Text>
+													<Text
+														modifiers={[
+															font({ textStyle: 'caption' }),
+															foregroundStyle({ type: 'hierarchical', style: 'secondary' })
+														]}
+													>
+														{model.updatedText(item)}
+													</Text>
+												</VStack>
+												<Spacer />
+												<DisclosureChevron />
+											</HStack>
+										</Button>
+									);
+									if (!model.canManage) return <VStack>{link}</VStack>;
+									return (
+										<SwipeActions>
+											{link}
+											<SwipeActions.Actions edge="trailing" allowsFullSwipe={false}>
+												<Button
+													label="Delete"
+													systemImage="trash"
+													onPress={() => model.requestDelete(item)}
+													modifiers={[tint(systemColors.red)]}
+												/>
+											</SwipeActions.Actions>
+										</SwipeActions>
+									);
+								}}
+							</List.ForEach>
 						</Section>
 					</List>
 				</SwarmListState>

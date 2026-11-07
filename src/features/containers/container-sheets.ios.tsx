@@ -21,85 +21,20 @@ import {
 	foregroundStyle,
 	frame,
 	lineLimit,
-	navigationBarTitleDisplayMode,
 	navigationTitle,
 	padding,
-	submitLabel,
 	textInputAutocapitalization
 } from '@expo/ui/swift-ui/modifiers';
 import { useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 
-import { systemColors } from '@/theme/colors';
 import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-swiftui';
-import { FormTextField } from '@/ui/components/form-fields';
 import { ToastHost } from '@/ui/toast';
 
 import { BoundTextField } from './swiftui-text-field';
-import {
-	useContainerCommit,
-	useContainerCompose,
-	useRenameContainer
-} from './use-container-sheets';
+import { useContainerCommit, useContainerCompose } from './use-container-sheets';
 
 type Params = { id?: string; envID?: string; name?: string };
-
-export function RenameContainerScreen() {
-	const toolbarAccent = useAppAccentToolbarSymbol();
-	const { id = '', envID = '0', name = '' } = useLocalSearchParams<Params>();
-	const model = useRenameContainer(envID, id, name);
-	return (
-		<Host style={{ flex: 1 }}>
-			<NavigationStack>
-				<Toolbar>
-					<Form
-						modifiers={[
-							navigationTitle('Rename Container'),
-							navigationBarTitleDisplayMode('inline')
-						]}
-					>
-						<Section header={<Text>New name</Text>}>
-							<FormTextField
-								title="Container Name"
-								placeholder={name}
-								text={model.newName}
-								onChangeText={model.setNewName}
-								autocapitalization="never"
-								autocorrectionDisabled
-								helper="Must start with a letter or digit, and contain only letters, digits, underscores, dots, or hyphens."
-							/>
-						</Section>
-						{model.errorMessage ? (
-							<Section>
-								<Label
-									title={model.errorMessage}
-									systemImage="exclamationmark.triangle.fill"
-									modifiers={[foregroundStyle(systemColors.red), font({ textStyle: 'callout' })]}
-								/>
-							</Section>
-						) : null}
-					</Form>
-					<Toolbar.Content>
-						<ToolbarItem placement="topBarLeading">
-							<Button
-								label="Cancel"
-								onPress={model.cancel}
-								modifiers={[...toolbarAccent, disabled(model.isSubmitting)]}
-							/>
-						</ToolbarItem>
-						<ToolbarItem placement="topBarTrailing">
-							<Button
-								label="Save"
-								onPress={model.submit}
-								modifiers={[...toolbarAccent, disabled(!model.canSave), submitLabel('done')]}
-							/>
-						</ToolbarItem>
-					</Toolbar.Content>
-				</Toolbar>
-			</NavigationStack>
-		</Host>
-	);
-}
 
 export function ContainerCommitScreen() {
 	const toolbarAccent = useAppAccentToolbarSymbol();

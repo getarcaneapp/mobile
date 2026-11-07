@@ -22,6 +22,7 @@ import {
 	padding,
 	refreshable
 } from '@expo/ui/swift-ui/modifiers';
+import { AlertAnchor } from '@/ui/components/alert-anchor';
 import { Stack } from 'expo-router';
 
 import type { PasskeySummary } from '@/sdk/models/auth/Passkey';
@@ -188,6 +189,7 @@ export function PasskeysMFAScreen() {
 				/>
 			</AppToolbar>
 			<Host style={{ flex: 1 }}>
+				{form}
 				<Alert
 					title="Add Passkey"
 					isPresented={model.showsAddPrompt}
@@ -195,30 +197,7 @@ export function PasskeysMFAScreen() {
 						if (!presented) model.dismissAddPrompt();
 					}}
 				>
-					<Alert.Trigger>
-						<Alert
-							title="Rename Passkey"
-							isPresented={model.renamingPasskey !== undefined}
-							onIsPresentedChange={(presented) => {
-								if (!presented) model.cancelRename();
-							}}
-						>
-							<Alert.Trigger>{form}</Alert.Trigger>
-							<Alert.Actions>
-								<BoundTextField
-									placeholder="Passkey name"
-									value={model.renamedPasskeyName}
-									onChangeText={model.setRenamedPasskeyName}
-								/>
-								<Button label="Cancel" role="cancel" onPress={model.cancelRename} />
-								<Button
-									label="Save"
-									onPress={model.confirmRename}
-									modifiers={[disabled(model.renameDisabled)]}
-								/>
-							</Alert.Actions>
-						</Alert>
-					</Alert.Trigger>
+					<AlertAnchor />
 					<Alert.Actions>
 						<BoundTextField
 							placeholder="Passkey name (optional)"
@@ -231,6 +210,28 @@ export function PasskeysMFAScreen() {
 					<Alert.Message>
 						<Text>Give this passkey a name you will recognize on this device.</Text>
 					</Alert.Message>
+				</Alert>
+				<Alert
+					title="Rename Passkey"
+					isPresented={model.renamingPasskey !== undefined}
+					onIsPresentedChange={(presented) => {
+						if (!presented) model.cancelRename();
+					}}
+				>
+					<AlertAnchor />
+					<Alert.Actions>
+						<BoundTextField
+							placeholder="Passkey name"
+							value={model.renamedPasskeyName}
+							onChangeText={model.setRenamedPasskeyName}
+						/>
+						<Button label="Cancel" role="cancel" onPress={model.cancelRename} />
+						<Button
+							label="Save"
+							onPress={model.confirmRename}
+							modifiers={[disabled(model.renameDisabled)]}
+						/>
+					</Alert.Actions>
 				</Alert>
 				<StepUpSheet
 					isPresented={model.showsStepUp}

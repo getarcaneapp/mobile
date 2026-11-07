@@ -1,4 +1,5 @@
 import { Host } from '@/ui/host';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { Button, ContextMenu, HStack, List, Section, VStack } from '@expo/ui/swift-ui';
 import {
 	buttonStyle,
@@ -192,9 +193,9 @@ export function APIKeysDestination() {
 						/>
 					}
 				>
-					{apiKeys.map((apiKey) => (
-						<KeyLink key={apiKey.id} model={model} apiKey={apiKey} />
-					))}
+					<List.ForEach data={apiKeys} keyExtractor={stableItemKey} estimatedItemSize={64}>
+						{({ item }) => <KeyLink model={model} apiKey={item} />}
+					</List.ForEach>
 					<PaginatedListFooter
 						hasMore={model.pagination.hasMore}
 						loadMoreError={model.loadMoreError}

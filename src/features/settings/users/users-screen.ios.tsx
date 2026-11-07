@@ -31,6 +31,7 @@ import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-sw
 import { DestructiveLabel, ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import { DisclosureChevron } from '@/ui/settings-row';
 
 import { ActionErrorAlert } from '../shared/action-error-alert';
@@ -135,9 +136,9 @@ export function UsersDestination() {
 						/>
 					}
 				>
-					{users.map((user) => (
-						<UserLink key={user.id} model={model} user={user} />
-					))}
+					<List.ForEach data={users} keyExtractor={stableItemKey} estimatedItemSize={60}>
+						{({ item }) => <UserLink model={model} user={item} />}
+					</List.ForEach>
 				</Section>
 				<PaginatedListFooter
 					hasMore={model.hasMore}

@@ -120,11 +120,12 @@ export function useContainerRowMetrics(
 	}, [item.value, supported, sample, pending]);
 }
 
-const bulkTint = {
-	green: systemColors.green,
-	red: systemColors.red,
-	orange: systemColors.orange
-} as const;
+const bulkTint = () =>
+	({
+		green: systemColors.green,
+		red: systemColors.red,
+		orange: systemColors.orange
+	}) as const;
 
 async function runPowerAll(action: PowerAllAction, environmentID: EnvironmentID) {
 	const current = useClientManager.getState().client;
@@ -558,7 +559,7 @@ export function useContainersList({
 			id: info.id,
 			title: info.title,
 			systemImage: info.systemImage,
-			tint: bulkTint[info.tint],
+			tint: bulkTint()[info.tint],
 			action: () => void runBulkAction(action)
 		};
 	};

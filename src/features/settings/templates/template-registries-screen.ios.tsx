@@ -14,6 +14,7 @@ import {
 } from '@expo/ui/swift-ui';
 import {
 	buttonStyle,
+	contentShape,
 	disabled,
 	fixedSize,
 	font,
@@ -23,6 +24,7 @@ import {
 	multilineTextAlignment,
 	padding,
 	refreshable,
+	shapes,
 	tint
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
@@ -46,7 +48,7 @@ import {
 
 export function TemplateRegistryRow({ registry }: { registry: TemplateRegistry }) {
 	return (
-		<HStack spacing={12} modifiers={[padding({ vertical: 2 })]}>
+		<HStack spacing={12} modifiers={[padding({ vertical: 2 }), contentShape(shapes.rectangle())]}>
 			<RowIcon systemImage="doc.text.fill" tint={systemColors.indigo} />
 			<VStack alignment="leading" spacing={3}>
 				<Text modifiers={[font({ textStyle: 'headline' })]}>{registry.name}</Text>

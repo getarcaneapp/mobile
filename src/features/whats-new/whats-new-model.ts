@@ -9,7 +9,7 @@ import {
 	type ReleaseNoteBadge,
 	type ReleaseNoteBullet
 } from '@/release-notes';
-import { systemColors } from '@/theme/colors';
+import { systemColors, type SystemColorName } from '@/theme/colors';
 
 type Version = { major: number; minor: number; patch: number };
 
@@ -56,9 +56,9 @@ export const badgeLabel: Record<ReleaseNoteBadge, string> = {
 	premium: 'Premium',
 	preview: 'Preview'
 };
-export const badgeColor: Record<ReleaseNoteBadge, string> = {
-	premium: systemColors.purple,
-	preview: systemColors.blue
+export const badgeColor: Record<ReleaseNoteBadge, SystemColorName> = {
+	premium: 'purple',
+	preview: 'blue'
 };
 
 export function presentationSections(note: ReleaseNote): PresentationSection[] {

@@ -306,7 +306,7 @@ export function useUpdateAllEnvironments() {
 		} catch (error) {
 			if (error instanceof ArcaneError) {
 				if (error.kind === 'conflict') {
-					await preflight();
+					await preflight({ afterConflict: true });
 					return;
 				}
 				if (error.kind === 'notFound') {
@@ -326,7 +326,7 @@ export function useUpdateAllEnvironments() {
 		}
 	};
 
-	const preflight = async (): Promise<void> => {
+	const preflight = async ({ afterConflict = false } = {}): Promise<void> => {
 		const client = useClientManager.getState().client;
 		if (!client) {
 			setPhase({ kind: 'failed', message: 'Not connected' });
@@ -336,6 +336,10 @@ export function useUpdateAllEnvironments() {
 		try {
 			const job = await client.system.updateAllStatus({ envID: managerEnvironmentID });
 			if (EnvironmentUpdateJob.isTerminal(job)) {
+				if (afterConflict) {
+					setPhase({ kind: 'failed', message: 'Another update is already running. Try again.' });
+					return;
+				}
 				await trigger();
 			} else {
 				setPhase({ kind: 'polling', job });
@@ -344,7 +348,8 @@ export function useUpdateAllEnvironments() {
 		} catch (error) {
 			if (
 				error instanceof ArcaneError &&
-				(error.kind === 'notFound' || error.kind === 'decoding')
+				(error.kind === 'notFound' || error.kind === 'decoding') &&
+				!afterConflict
 			) {
 				await trigger();
 				return;

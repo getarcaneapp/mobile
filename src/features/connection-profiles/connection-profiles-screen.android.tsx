@@ -1,7 +1,6 @@
 import { Stack } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
 import {
-	Alert,
 	Pressable,
 	ScrollView,
 	Text,
@@ -21,6 +20,7 @@ import { Icon } from '@/ui/Icon';
 import { MaterialListGroup, MaterialSectionHeader } from '@/ui/material/list';
 
 import { AndroidToolbar } from '@/features/settings/shared/android-toolbar';
+import { LongPressMenu } from '@/features/settings/shared/long-press-menu';
 
 import {
 	useConnectionProfileEditor,
@@ -277,6 +277,8 @@ function Row({
 	);
 }
 
+function noop() {}
+
 function ProfileRow({
 	model,
 	profile
@@ -285,35 +287,44 @@ function ProfileRow({
 	profile: ConnectionProfile;
 }) {
 	const current = model.isCurrent(profile);
-	const showMenu = () =>
-		Alert.alert(profile.name, profile.serverURL, [
-			{ text: 'Edit Profile', onPress: () => model.editProfile(profile) },
-			{ text: 'Delete Profile', style: 'destructive', onPress: () => model.confirmDelete(profile) },
-			{ text: 'Cancel', style: 'cancel' }
-		]);
 	return (
-		<Row
-			icon={current ? 'checkmark.circle.fill' : 'server.rack'}
-			iconColor={current ? systemColors.green : systemColors.teal}
+		<LongPressMenu
 			title={profile.name}
-			subtitle={profile.serverURL}
-			onPress={() => model.select(profile)}
-			onLongPress={showMenu}
-			accessibilityLabel={`${profile.name}, ${profile.serverURL}${model.accessibilityValue(profile) ? `, ${model.accessibilityValue(profile)}` : ''}`}
-			accessibilityHint={model.isSelecting ? 'Connects to this server' : 'Switches to this server'}
-			trailing={
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-					{model.hasCredential(profile) ? (
-						<Icon name="key.fill" size={16} color={systemColors.blue} />
-					) : null}
-					{current ? (
-						<Text style={[m3Type.labelMedium, { color: systemColors.green }]}>Current</Text>
-					) : (
-						<Icon name="chevron.right" size={18} color={m3.onSurfaceVariant} />
-					)}
-				</View>
-			}
-		/>
+			items={[
+				{ id: 'edit', title: 'Edit Profile', onPress: () => model.editProfile(profile) },
+				{
+					id: 'delete',
+					title: 'Delete Profile',
+					destructive: true,
+					onPress: () => model.confirmDelete(profile)
+				}
+			]}
+		>
+			<Row
+				icon={current ? 'checkmark.circle.fill' : 'server.rack'}
+				iconColor={current ? systemColors.green : systemColors.teal}
+				title={profile.name}
+				subtitle={profile.serverURL}
+				onPress={() => model.select(profile)}
+				onLongPress={noop}
+				accessibilityLabel={`${profile.name}, ${profile.serverURL}${model.accessibilityValue(profile) ? `, ${model.accessibilityValue(profile)}` : ''}`}
+				accessibilityHint={
+					model.isSelecting ? 'Connects to this server' : 'Switches to this server'
+				}
+				trailing={
+					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+						{model.hasCredential(profile) ? (
+							<Icon name="key.fill" size={16} color={systemColors.blue} />
+						) : null}
+						{current ? (
+							<Text style={[m3Type.labelMedium, { color: systemColors.green }]}>Current</Text>
+						) : (
+							<Icon name="chevron.right" size={18} color={m3.onSurfaceVariant} />
+						)}
+					</View>
+				}
+			/>
+		</LongPressMenu>
 	);
 }
 

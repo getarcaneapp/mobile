@@ -141,7 +141,7 @@ function Header({ model }: { model: LoginModel }) {
 	const reduceMotion = useReduceMotion();
 	const appeared = useSharedValue(reduceMotion ? 1 : 0);
 	useEffect(() => {
-		if (!reduceMotion) appeared.value = withDelay(80, withSpring(1, logoSpring));
+		if (!reduceMotion) appeared.set(withDelay(80, withSpring(1, logoSpring)));
 	}, [appeared, reduceMotion]);
 	const logoStyle = useAnimatedStyle(() => ({
 		opacity: appeared.value,

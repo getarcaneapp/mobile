@@ -45,7 +45,7 @@ import type { SFSymbol } from 'sf-symbols-typescript';
 
 import type { ReleaseNoteBadge, ReleaseNoteBullet } from '@/release-notes';
 import { useAccentColor } from '@/theme/accent';
-import { withOpacity } from '@/theme/colors';
+import { systemColors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
 import { Image } from '@/ui/components/swiftui-image';
 
@@ -227,7 +227,7 @@ function BulletRow({ bullet }: { bullet: ReleaseNoteBullet }) {
 }
 
 function BadgedReleaseNote({ text, badge }: { text: string; badge: ReleaseNoteBadge }) {
-	const color = badgeColor[badge];
+	const color = systemColors[badgeColor[badge]];
 	const label = badgeLabel[badge];
 	const [legendSize, setLegendSize] = useState({ width: 0, height: 13 });
 	const legend = (

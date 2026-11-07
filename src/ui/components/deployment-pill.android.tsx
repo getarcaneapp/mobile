@@ -41,10 +41,10 @@ export function DeploymentPill({ operation, onTap, onDismiss }: DeploymentPillPr
 
 	useEffect(() => {
 		if (running && !reduceMotion)
-			pulse.value = withRepeat(withTiming(0.35, { duration: 800 }), -1, true);
+			pulse.set(withRepeat(withTiming(0.35, { duration: 800 }), -1, true));
 		else {
 			cancelAnimation(pulse);
-			pulse.value = 1;
+			pulse.set(1);
 		}
 	}, [running, reduceMotion, pulse]);
 	const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));

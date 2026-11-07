@@ -29,6 +29,7 @@ import {
 	textSelection,
 	tint
 } from '@expo/ui/swift-ui/modifiers';
+import { AlertAnchor } from '@/ui/components/alert-anchor';
 import { Stack } from 'expo-router';
 
 import { systemColors } from '@/theme/colors';
@@ -175,29 +176,9 @@ export function SwarmClusterScreen() {
 										<Label title="Show Unlock Key" systemImage="key" />
 									</Button>
 								)}
-								<Alert
-									title="Unlock Swarm"
-									isPresented={model.showUnlock}
-									onIsPresentedChange={model.setShowUnlock}
-								>
-									<Alert.Trigger>
-										<Button onPress={model.beginUnlock}>
-											<Label title="Unlock Swarm" systemImage="lock.open" />
-										</Button>
-									</Alert.Trigger>
-									<Alert.Actions>
-										<UnlockKeyField value={model.unlockInput} onChangeText={model.setUnlockInput} />
-										<Button label="Unlock" onPress={model.commitUnlock} />
-										<Button
-											label="Cancel"
-											role="cancel"
-											onPress={() => model.setShowUnlock(false)}
-										/>
-									</Alert.Actions>
-									<Alert.Message>
-										<Text>Enter the key shown when autolock was enabled.</Text>
-									</Alert.Message>
-								</Alert>
+								<Button onPress={model.beginUnlock}>
+									<Label title="Unlock Swarm" systemImage="lock.open" />
+								</Button>
 							</Section>
 						</>
 					) : null}
@@ -225,6 +206,21 @@ export function SwarmClusterScreen() {
 						</Section>
 					) : null}
 				</List>
+				<Alert
+					title="Unlock Swarm"
+					isPresented={model.showUnlock}
+					onIsPresentedChange={model.setShowUnlock}
+				>
+					<AlertAnchor />
+					<Alert.Actions>
+						<UnlockKeyField value={model.unlockInput} onChangeText={model.setUnlockInput} />
+						<Button label="Unlock" onPress={model.commitUnlock} />
+						<Button label="Cancel" role="cancel" onPress={() => model.setShowUnlock(false)} />
+					</Alert.Actions>
+					<Alert.Message>
+						<Text>Enter the key shown when autolock was enabled.</Text>
+					</Alert.Message>
+				</Alert>
 			</Host>
 		</>
 	);

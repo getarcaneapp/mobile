@@ -74,6 +74,7 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 	const entriesRef = useRef(entries);
 	const capabilities = useClientManager((s) => s.serverCapabilities);
 	const canReadVolumes = usePermission(Permission.Volumes.read, environmentID);
+	const usesWorkspace = useClientManager((s) => s.apiGeneration === 'v3') && canReadVolumes;
 
 	const currentPath = segments.length === 0 ? '/' : `/${segments.join('/')}`;
 	const currentPathRef = useRef(currentPath);
@@ -123,8 +124,8 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 	}, [environmentID, volumeName]);
 
 	useEffect(() => {
-		void loadEntries();
-	}, [currentPath, loadEntries]);
+		if (!usesWorkspace) void loadEntries();
+	}, [currentPath, loadEntries, usesWorkspace]);
 
 	useEffect(
 		() => () => {
@@ -143,8 +144,8 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 	);
 
 	useEffect(() => {
-		if (browseUnsupported && canManageFiles) redirectToWorkspace();
-	}, [browseUnsupported, canManageFiles]);
+		if (usesWorkspace || (browseUnsupported && canReadVolumes)) redirectToWorkspace();
+	}, [usesWorkspace, browseUnsupported, canReadVolumes]);
 
 	return {
 		environmentID,

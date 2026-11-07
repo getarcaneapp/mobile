@@ -125,6 +125,11 @@ export class AuthManager {
 		return `Bearer ${accessToken}`;
 	}
 
+	async currentRefreshToken(): Promise<string | undefined> {
+		if (!(await this.hasRefreshCredential())) return undefined;
+		return this.cachedTokens?.refreshToken;
+	}
+
 	async hasRefreshCredential(): Promise<boolean> {
 		if (this.apiKey !== undefined) return false;
 		if (this.cachedTokens === undefined) {

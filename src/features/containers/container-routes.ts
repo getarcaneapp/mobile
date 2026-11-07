@@ -82,7 +82,7 @@ export function useContainerNavigation() {
 				router.push(href(containerPath(id, '/terminal'), { envID: environmentID, title }));
 			},
 			openSubpage: (
-				page: 'inspect' | 'rename' | 'commit' | 'env' | 'labels' | 'mounts' | 'health',
+				page: 'inspect' | 'commit' | 'env' | 'labels' | 'mounts' | 'health',
 				environmentID: EnvironmentID,
 				id: string,
 				params: Params = {}

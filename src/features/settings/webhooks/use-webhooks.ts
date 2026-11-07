@@ -1,6 +1,5 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
@@ -62,7 +61,7 @@ export function relativeStyle(value: string): string | undefined {
 }
 
 function presentError(message: string) {
-	Alert.alert('Error', message, [{ text: 'OK' }]);
+	showToast(Toasts.error(message));
 }
 
 export function useWebhooks() {

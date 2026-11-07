@@ -37,7 +37,8 @@ import { NDJSONStream } from '../streaming/NDJSONStream';
 import type { WebSocketStreamConfig } from '../streaming/Streams';
 
 const STREAM_ACCEPT = 'application/x-ndjson, application/x-json-stream, application/json';
-const IDEMPOTENT_METHODS = new Set(['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE']);
+const IDEMPOTENT_METHODS = new Set(['GET', 'HEAD', 'OPTIONS', 'PUT']);
+const MAXIMUM_RETRY_AFTER_MS = 10_000;
 
 export type RequestBody = string | ArrayBuffer | Uint8Array | Blob | FormData;
 
@@ -386,7 +387,10 @@ export class ArcaneTransport {
 						this.shouldRetry(method, response.status, route.path) &&
 						attempt < this.retryPolicy.maxAttempts
 					) {
-						await this.sleepBeforeRetry(attempt, linked.signal);
+						await sleep(
+							this.retryDelayForResponse(attempt, response.status, response.headers),
+							linked.signal
+						);
 						attempt += 1;
 						continue;
 					}
@@ -811,6 +815,18 @@ export class ArcaneTransport {
 		return sleep(this.retryDelay(attempt), signal);
 	}
 
+	retryDelayForResponse(
+		attempt: number,
+		statusCode: number,
+		headers: { get(name: string): string | null }
+	): number {
+		if (statusCode === 429 || statusCode === 503) {
+			const retryAfter = retryAfterMs(headers.get('Retry-After'));
+			if (retryAfter !== undefined) return Math.min(retryAfter, MAXIMUM_RETRY_AFTER_MS);
+		}
+		return this.retryDelay(attempt);
+	}
+
 	retryDelay(attempt: number): number {
 		const cap = Math.max(0, this.retryPolicy.maxBackoffMs);
 		let delay = Math.min(Math.max(0, this.retryPolicy.baseBackoffMs), cap);
@@ -825,6 +841,16 @@ export class ArcaneTransport {
 }
 
 export { ArcaneTransport as ArcaneURLSessionTransport };
+
+export function retryAfterMs(value: string | null, now = Date.now()): number | undefined {
+	if (value === null) return undefined;
+	const trimmed = value.trim();
+	if (trimmed === '') return undefined;
+	if (/^\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed) * 1000;
+	const date = Date.parse(trimmed);
+	if (Number.isNaN(date)) return undefined;
+	return Math.max(0, date - now);
+}
 
 function isRemoteEnvironmentPath(path: string): boolean {
 	const match = /^\/?(?:api\/)?environments\/([^/?]+)\//.exec(path);

@@ -1,4 +1,5 @@
 import { Host } from '@/ui/host';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import {
 	Button,
 	ContextMenu,
@@ -197,9 +198,9 @@ export function WebhooksDestination() {
 				<Section
 					header={<ResourceCountSectionHeader title="Webhooks" loadedCount={webhooks.length} />}
 				>
-					{webhooks.map((webhook) => (
-						<WebhookItem key={webhook.id} model={model} webhook={webhook} />
-					))}
+					<List.ForEach data={webhooks} keyExtractor={stableItemKey} estimatedItemSize={96}>
+						{({ item }) => <WebhookItem model={model} webhook={item} />}
+					</List.ForEach>
 				</Section>
 			</List>
 		);

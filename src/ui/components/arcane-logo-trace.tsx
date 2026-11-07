@@ -67,8 +67,9 @@ export function useTraceClock(
 ): SharedValue<number> {
 	const time = useSharedValue(-delay);
 	const callback = useFrameCallback((frame) => {
-		time.value =
-			mode === 'shared' ? frame.timestamp / 1000 : (frame.timeSinceFirstFrame ?? 0) / 1000 - delay;
+		time.set(
+			mode === 'shared' ? frame.timestamp / 1000 : (frame.timeSinceFirstFrame ?? 0) / 1000 - delay
+		);
 	}, false);
 	useEffect(() => {
 		callback.setActive(isActive);

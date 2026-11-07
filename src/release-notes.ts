@@ -50,10 +50,67 @@ export const releaseNotes: ReleaseNote[] = [
 		],
 		removed: [
 			{
+				text: 'Container rename.'
+			},
+			{
+				text: 'GitOps Sync job schedule.'
+			},
+			{
 				text: 'Dashboard totals tiles and the Dashboard Tiles editor.'
 			}
 		],
 		fixed: [
+			{
+				text: 'Event Cleanup schedule changes not saving.'
+			},
+			{
+				text: 'Dashboard not updating live on current servers.'
+			},
+			{
+				text: 'Volume file browsing for users without manage permission.'
+			},
+			{
+				text: 'Server error messages hidden on permission and not-found errors.'
+			},
+			{
+				text: 'Terminal size not matching the screen.'
+			},
+			{
+				text: 'Signing out not revoking the session.'
+			},
+			{
+				text: 'Container stats showing zeros when the stats stream fails.'
+			},
+			{
+				text: 'Changes made while the app was in the background not appearing.'
+			},
+			{
+				text: 'Image update counts from a previous server after switching.'
+			},
+			{
+				text: 'Vulnerability list mixing results after changing filters.'
+			},
+			{
+				text: 'Update All looping when another update is running.'
+			},
+			{
+				text: 'Failed demo sign-in leaving the demo server saved.'
+			},
+			{
+				text: 'Interrupted deployments leaving their toast and Live Activity open.'
+			},
+			{
+				text: 'Colors not updating after switching between light and dark mode.'
+			},
+			{
+				text: 'Template registry rows only partly tappable.'
+			},
+			{
+				text: 'Delete Profile not shown as destructive on Android.'
+			},
+			{
+				text: 'Long lists scrolling slowly.'
+			},
 			{
 				text: 'An offline environment stalling the rest of the app.'
 			},

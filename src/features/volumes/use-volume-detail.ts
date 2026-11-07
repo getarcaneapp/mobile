@@ -136,7 +136,7 @@ export function useVolumeDetail(environmentID: EnvironmentID, name: string) {
 			volumesChanged(environmentID);
 			showToast(Toasts.success('Volume deleted'));
 		} catch (error) {
-			showErrorAlert('Error', friendlyErrorMessage(error));
+			showErrorAlert(friendlyErrorMessage(error));
 		}
 	};
 

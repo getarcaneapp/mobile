@@ -36,10 +36,10 @@ export function ResourceStatusBadge({
 
 	useEffect(() => {
 		if (pulses) {
-			pulse.value = withRepeat(withTiming(0.4, { duration: 700 }), -1, true);
+			pulse.set(withRepeat(withTiming(0.4, { duration: 700 }), -1, true));
 		} else {
 			cancelAnimation(pulse);
-			pulse.value = 1;
+			pulse.set(1);
 		}
 	}, [pulses, pulse]);
 	const iconStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));

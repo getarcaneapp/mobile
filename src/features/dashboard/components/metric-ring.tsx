@@ -40,13 +40,12 @@ export function MetricRing({
 		const previous = shown.current;
 		shown.current = { identity, progress: clamped };
 		if (previous.identity === identity && previous.progress === clamped) return;
-		if (reduceMotion || previous.identity !== identity) value.value = clamped;
+		if (reduceMotion || previous.identity !== identity) value.set(clamped);
 		else if (motion === 'gauge')
-			value.value = withSpring(
-				clamped,
-				springConfig(Motion.gauge.response, Motion.gauge.dampingFraction)
+			value.set(
+				withSpring(clamped, springConfig(Motion.gauge.response, Motion.gauge.dampingFraction))
 			);
-		else value.value = withTiming(clamped, timingConfig(Motion.follow));
+		else value.set(withTiming(clamped, timingConfig(Motion.follow)));
 	}, [clamped, identity, motion, reduceMotion, value]);
 
 	const animatedProps = useAnimatedProps(() => ({

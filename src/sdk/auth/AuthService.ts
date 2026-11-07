@@ -45,8 +45,10 @@ export class AuthService {
 		const generation = this.authManager.currentCredentialGeneration();
 		let remoteError: unknown;
 		try {
+			const refreshToken = await this.authManager.currentRefreshToken().catch(() => undefined);
 			await this.transport.request('auth/logout', {
 				method: 'POST',
+				...(refreshToken ? { body: { refreshToken } } : {}),
 				decode: MessageResponse.decode
 			});
 		} catch (error) {

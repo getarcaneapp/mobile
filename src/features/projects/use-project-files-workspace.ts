@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import { withCleanup } from '@/core/with-cleanup';
@@ -106,8 +106,8 @@ export function useProjectFilesWorkspace() {
 	const [requestedDeployOptions, setRequestedDeployOptions] = useState<DeployOptions>();
 
 	const acceptsEnvironmentContext = useClientManager((s) => s.acceptsEnvironmentContext(envID));
-	const canUpdateProject = useClientManager(() => hasPermission(Permission.Projects.update, envID));
-	const canDeployProject = useClientManager(() => hasPermission(Permission.Projects.deploy, envID));
+	const canUpdateProject = usePermission(Permission.Projects.update, envID);
+	const canDeployProject = usePermission(Permission.Projects.deploy, envID);
 	const sessionIsCurrent = () => isSessionCurrent(sessionIdentity, envID);
 	const sessionCurrent = sessionIdentity === currentSession && acceptsEnvironmentContext;
 	const canEdit = readOnlyReason === undefined && sessionCurrent && canUpdateProject;

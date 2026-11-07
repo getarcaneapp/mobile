@@ -72,17 +72,17 @@ export function RiskScoreRing({
 	useEffect(() => {
 		const state = revealState(memoryKey);
 		if (state.hasAnimated && state.displayed === target) {
-			value.value = target;
+			value.set(target);
 			return;
 		}
 		state.hasAnimated = true;
 		if (reduceMotion) {
 			state.displayed = target;
-			value.value = target;
+			value.set(target);
 			return;
 		}
 		state.displayed = target;
-		value.value = withTiming(target, { duration: riskScoreReveal.duration, easing });
+		value.set(withTiming(target, { duration: riskScoreReveal.duration, easing }));
 		return () => {
 			state.displayed = value.value;
 			cancelAnimation(value);

@@ -1,5 +1,7 @@
 import {
 	ArcaneConflictError,
+	ArcaneForbiddenError,
+	ArcaneNotFoundError,
 	ArcaneError,
 	ArcaneRateLimitedError,
 	ArcaneServerError,
@@ -40,9 +42,12 @@ export function friendlyErrorMessage(error: unknown): string {
 			case 'unauthorized':
 				return 'Not signed in';
 			case 'forbidden':
-				return "You don't have permission to do that";
+				return (
+					cleanErrorText((error as ArcaneForbiddenError).detail) ??
+					"You don't have permission to do that"
+				);
 			case 'notFound':
-				return 'Not found';
+				return cleanErrorText((error as ArcaneNotFoundError).detail) ?? 'Not found';
 			case 'conflict':
 				return cleanErrorText((error as ArcaneConflictError).conflictMessage) ?? 'Conflict';
 			case 'validation': {

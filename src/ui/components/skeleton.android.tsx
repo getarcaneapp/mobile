@@ -46,10 +46,12 @@ function SkeletonFill({
 
 	useEffect(() => {
 		if (!shimmerActive) return;
-		progress.value = withRepeat(
-			withTiming(1, { duration: shimmerPeriod * 1000, easing: Easing.linear }),
-			-1,
-			false
+		progress.set(
+			withRepeat(
+				withTiming(1, { duration: shimmerPeriod * 1000, easing: Easing.linear }),
+				-1,
+				false
+			)
 		);
 	}, [shimmerActive, progress]);
 

@@ -261,7 +261,7 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 			useResourceMutationStore.getState().markChanged('volumes', volume.environmentID);
 			showToast(Toasts.success('Volume deleted'));
 		} catch (error) {
-			showErrorAlert('Action Failed', friendlyErrorMessage(error));
+			showErrorAlert(friendlyErrorMessage(error));
 		}
 	};
 
@@ -278,7 +278,7 @@ export function useVolumesList({ environmentID, allEnvironments = false }: Volum
 			useResourceMutationStore.getState().markChanged('volumes', environmentID);
 			showToast(Toasts.success('Volumes pruned'));
 		} catch (error) {
-			showErrorAlert('Action Failed', friendlyErrorMessage(error));
+			showErrorAlert(friendlyErrorMessage(error));
 		}
 	};
 

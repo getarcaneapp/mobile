@@ -1,6 +1,5 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { performAllEnvironmentsPrune } from '@/core/all-environments-actions';
 import { friendlyErrorMessage } from '@/core/errors';
@@ -44,8 +43,8 @@ export type NetworksListProps = {
 export const networkCacheKey = (environmentID: EnvironmentID, id: string) =>
 	`network:${environmentID}/${id}`;
 
-export function showActionFailed(message: string, title = 'Action Failed') {
-	Alert.alert(title, message, [{ text: 'OK', style: 'cancel' }]);
+export function showActionFailed(message: string) {
+	showToast(Toasts.error(message));
 }
 
 export function useNetworksList({ environmentID, allEnvironments = false }: NetworksListProps) {

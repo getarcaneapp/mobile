@@ -109,7 +109,7 @@ function SeveritySummary({ model }: { model: EventsModel }) {
 					title={EventSeverityFilter.title[severity]}
 					count={severityCount(counts, severity)}
 					icon={EventSeverityFilter.icon[severity]}
-					tint={severityFilterTint[severity]}
+					tint={severityFilterTint(severity)}
 					isSelected={selected.has(severity)}
 					onPress={() => model.store.toggle(severity)}
 				/>

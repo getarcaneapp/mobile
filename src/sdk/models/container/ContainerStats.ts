@@ -1,5 +1,6 @@
 import type { JSONObject, JSONValue } from '../../types/json';
 import { D } from '../base/decoding';
+import { ArcaneError } from '../../errors/ArcaneError';
 
 export interface ContainerStatsHistorySample {
 	cpuTenths: number;
@@ -47,6 +48,13 @@ export const ContainerStatsPayload = {
 
 	decode(this: void, raw: unknown): ContainerStatsPayload {
 		const object = D.object(raw, 'ContainerStatsPayload') as JSONObject;
+		const streamError = object['error'];
+		if (
+			typeof streamError === 'string' &&
+			Object.keys(object).every((key) => key === 'error' || key === 'timestamp')
+		) {
+			throw ArcaneError.server('CONTAINER_STATS_STREAM_FAILED', streamError);
+		}
 		const history = object['statsHistory'];
 		const statsHistory = Array.isArray(history)
 			? history.map((item) => ContainerStatsHistorySample.decode(item))

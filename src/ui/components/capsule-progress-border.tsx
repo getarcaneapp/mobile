@@ -58,20 +58,18 @@ export function CapsuleProgressBorder({
 
 	useEffect(() => {
 		if (fraction !== undefined)
-			progress.value = animateTo(animation, Math.min(Math.max(fraction, 0), 1));
+			progress.set(animateTo(animation, Math.min(Math.max(fraction, 0), 1)));
 	}, [fraction, progress, animation]);
 
 	useEffect(() => {
 		if (!traveling || reduceMotion) {
 			cancelAnimation(phase);
-			phase.value = 0;
+			phase.set(0);
 			return;
 		}
-		phase.value = 0;
-		phase.value = withRepeat(
-			withTiming(1, { duration: lapDuration * 1000, easing: Easing.linear }),
-			-1,
-			false
+		phase.set(0);
+		phase.set(
+			withRepeat(withTiming(1, { duration: lapDuration * 1000, easing: Easing.linear }), -1, false)
 		);
 	}, [traveling, reduceMotion, phase]);
 

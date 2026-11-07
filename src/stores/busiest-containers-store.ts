@@ -143,6 +143,8 @@ export const useBusiestContainersStore = create<BusiestContainersState>((set, ge
 		refresh: async (client, environments, signal) => {
 			const targets = environments.filter((id) => !get().unsupported.has(id));
 			if (targets.length === 0) return;
+			const key = cacheKey;
+			const isStale = () => signal?.aborted === true || cacheKey !== key;
 			const scoped = signal ? client.withSignal(signal) : client;
 			const sorts: ContainerResourceSort[] = ['cpuUsage', 'memoryUsage'];
 			await Promise.all(
@@ -155,12 +157,12 @@ export const useBusiestContainersStore = create<BusiestContainersState>((set, ge
 								includeHidden: true
 							})
 							.catch(() => undefined);
-						if (signal?.aborted || !response) return;
+						if (isStale() || !response) return;
 						apply(response, sort, environmentID);
 					})
 				)
 			);
-			if (signal?.aborted) return;
+			if (isStale()) return;
 			const pruned = pruneRankings(get().rankings, new Set(environments));
 			if (pruned !== get().rankings) set({ rankings: pruned });
 			const updatedAt = get().updatedAt;

@@ -157,25 +157,39 @@ export function startEnvironmentChangeWatcher(): () => void {
 	const invalidator = createInvalidator();
 	let controller: AbortController | undefined;
 	let watchedTransport: object | undefined;
+	let seededTransport: object | undefined;
 	let foreground = AppState.currentState === 'active';
 
 	const stop = () => {
 		controller?.abort();
 		controller = undefined;
 		watchedTransport = undefined;
+	};
+
+	const resetRevisions = () => {
+		seededTransport = undefined;
 		invalidator.reset();
 	};
 
 	const update = () => {
 		const { authState, apiGeneration, client } = useClientManager.getState();
-		const shouldWatch =
-			foreground && authState === 'authenticated' && apiGeneration === 'v3' && client;
-		if (!shouldWatch) {
+		const canWatch = authState === 'authenticated' && apiGeneration === 'v3' && client;
+		if (!canWatch) {
+			stop();
+			resetRevisions();
+			return;
+		}
+		if (seededTransport !== client.transport) {
+			stop();
+			resetRevisions();
+		}
+		if (!foreground) {
 			stop();
 			return;
 		}
 		if (watchedTransport === client.transport && controller) return;
 		stop();
+		seededTransport = client.transport;
 		const next = new AbortController();
 		controller = next;
 		watchedTransport = client.transport;
@@ -201,5 +215,6 @@ export function startEnvironmentChangeWatcher(): () => void {
 		unsubscribe();
 		appState.remove();
 		stop();
+		resetRevisions();
 	};
 }

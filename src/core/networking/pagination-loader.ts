@@ -27,6 +27,26 @@ export type FetchPage<Element> = (start: number, limit: number) => Promise<Resou
 
 const maxSafeOffset = Number.MAX_SAFE_INTEGER;
 
+const maximumConcurrentPages = 4;
+
+async function mapWithConcurrency<Input, Output>(
+	inputs: readonly Input[],
+	concurrency: number,
+	run: (input: Input) => Promise<Output>
+): Promise<Output[]> {
+	const results: Output[] = Array.from({ length: inputs.length });
+	let nextIndex = 0;
+	const worker = async () => {
+		while (nextIndex < inputs.length) {
+			const index = nextIndex;
+			nextIndex += 1;
+			results[index] = await run(inputs[index] as Input);
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(concurrency, inputs.length) }, worker));
+	return results;
+}
+
 export const PaginationLoader = {
 	defaultPageSize: 50,
 
@@ -93,7 +113,9 @@ export const PaginationLoader = {
 				start = following.start;
 				continue;
 			}
-			const pages = await Promise.all(starts.map((pageStart) => fetchPage(pageStart, limit)));
+			const pages = await mapWithConcurrency(starts, maximumConcurrentPages, (pageStart) =>
+				fetchPage(pageStart, limit)
+			);
 			for (const loaded of pages) append(loaded);
 			const lastStart = starts[starts.length - 1];
 			const lastPage = pages[pages.length - 1];

@@ -34,6 +34,7 @@ import {
 	contentShape,
 	shapes
 } from '@expo/ui/swift-ui/modifiers';
+import { AlertAnchor } from '@/ui/components/alert-anchor';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
 import type { SwarmNode } from '@/sdk/models/swarm/SwarmNode';
@@ -363,37 +364,9 @@ export function SwarmNodeDetailScreen() {
 							)
 						)}
 						{model.canManage ? (
-							<Alert
-								title="Add Label"
-								isPresented={model.showAddLabel}
-								onIsPresentedChange={model.setShowAddLabel}
-							>
-								<Alert.Trigger>
-									<Button onPress={model.beginAddLabel}>
-										<Label title="Add Label" systemImage="plus" />
-									</Button>
-								</Alert.Trigger>
-								<Alert.Actions>
-									<BoundTextField
-										placeholder="Key"
-										value={model.newLabelKey}
-										onChangeText={model.setNewLabelKey}
-										modifiers={plainField}
-									/>
-									<BoundTextField
-										placeholder="Value"
-										value={model.newLabelValue}
-										onChangeText={model.setNewLabelValue}
-										modifiers={plainField}
-									/>
-									<Button label="Add" onPress={model.commitAddLabel} />
-									<Button
-										label="Cancel"
-										role="cancel"
-										onPress={() => model.setShowAddLabel(false)}
-									/>
-								</Alert.Actions>
-							</Alert>
+							<Button onPress={model.beginAddLabel}>
+								<Label title="Add Label" systemImage="plus" />
+							</Button>
 						) : null}
 					</Section>
 					<Section
@@ -414,6 +387,29 @@ export function SwarmNodeDetailScreen() {
 						) : null}
 					</Section>
 				</List>
+				<Alert
+					title="Add Label"
+					isPresented={model.showAddLabel}
+					onIsPresentedChange={model.setShowAddLabel}
+				>
+					<AlertAnchor />
+					<Alert.Actions>
+						<BoundTextField
+							placeholder="Key"
+							value={model.newLabelKey}
+							onChangeText={model.setNewLabelKey}
+							modifiers={plainField}
+						/>
+						<BoundTextField
+							placeholder="Value"
+							value={model.newLabelValue}
+							onChangeText={model.setNewLabelValue}
+							modifiers={plainField}
+						/>
+						<Button label="Add" onPress={model.commitAddLabel} />
+						<Button label="Cancel" role="cancel" onPress={() => model.setShowAddLabel(false)} />
+					</Alert.Actions>
+				</Alert>
 			</Host>
 		</>
 	);

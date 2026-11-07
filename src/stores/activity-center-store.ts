@@ -28,6 +28,7 @@ import type {
 	ActivityMessage,
 	ActivityStreamEvent
 } from '@/sdk/models/activity/Activity';
+import { addDetail, capMessages } from '@/stores/activity-detail-cache';
 
 const pageSize = 50;
 const streamRebuildIntervalMs = 200;
@@ -187,7 +188,7 @@ function insertMessage(
 		if (candidate && dateMs(candidate.createdAt) <= createdAt) low = mid + 1;
 		else high = mid;
 	}
-	return [...messages.slice(0, low), message, ...messages.slice(low)];
+	return capMessages([...messages.slice(0, low), message, ...messages.slice(low)]);
 }
 
 const sleep = (seconds: number, signal: AbortSignal) =>
@@ -724,7 +725,7 @@ export function createActivityCenterStore(): ActivityCenterStore {
 				try {
 					await get().load({ reset: false });
 				} finally {
-					if (loadGeneration === generation) set({ isLoadingMore: false });
+					if (loadGeneration <= generation) set({ isLoadingMore: false });
 				}
 			},
 
@@ -735,7 +736,9 @@ export function createActivityCenterStore(): ActivityCenterStore {
 				if (!activeClient) return;
 				const key = activityItemKey(activity);
 				if (!get().activityDetails[key]) {
-					set({ activityDetails: { ...get().activityDetails, [key]: { activity, messages: [] } } });
+					set({
+						activityDetails: addDetail(get().activityDetails, key, { activity, messages: [] })
+					});
 				}
 				const previousActivity = get().activityDetails[key]?.activity;
 				const identity = clientTransportIdentity;
@@ -757,10 +760,12 @@ export function createActivityCenterStore(): ActivityCenterStore {
 					upsert(current.activity);
 					current = get().activityDetails[key] ?? current;
 				}
-				const messages = PaginationLoader.merge(current.messages, response.messages, false).sort(
-					(a, b) => dateMs(a.createdAt) - dateMs(b.createdAt)
+				const messages = capMessages(
+					PaginationLoader.merge(current.messages, response.messages, false).sort(
+						(a, b) => dateMs(a.createdAt) - dateMs(b.createdAt)
+					)
 				);
-				set({ activityDetails: { ...get().activityDetails, [key]: { ...current, messages } } });
+				set({ activityDetails: addDetail(get().activityDetails, key, { ...current, messages }) });
 			},
 
 			startStream: () => {

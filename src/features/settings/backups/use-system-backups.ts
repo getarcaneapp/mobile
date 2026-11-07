@@ -7,6 +7,7 @@ import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import type { BackupHistoryEntry } from '@/sdk/models/backup/BackupHistoryEntry';
 import { parseArcaneDate } from '@/sdk/models/base/date';
 import { useClientManager } from '@/stores/client-manager';
+import { useAppIsActive, useIsScreenFocused } from '@/features/containers/hooks';
 
 import { backupDestinationTitle, backupStatusTitle } from './backup-labels';
 import {
@@ -17,9 +18,11 @@ import {
 	useSheetDismissListener
 } from './backup-scope';
 
+const backupDateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'long' });
+
 export function backupEntryDate(entry: BackupHistoryEntry): string {
 	const date = parseArcaneDate(entry.createdAt);
-	return date ? date.toLocaleDateString(undefined, { dateStyle: 'long' }) : entry.createdAt;
+	return date ? backupDateFormatter.format(date) : entry.createdAt;
 }
 
 export function backupEntrySummary(entry: BackupHistoryEntry): string {
@@ -37,6 +40,8 @@ export function useSystemBackups() {
 	const canRead = permissions.isAdmin && permissions.has('system-backups:read');
 	const canManage = permissions.isAdmin && permissions.has('system-backups:manage');
 	const alive = useAliveRef();
+	const isFocused = useIsScreenFocused();
+	const isActive = useAppIsActive();
 	useBackupSessionScope();
 
 	const [entries, setEntries] = useState<BackupHistoryEntry[]>([]);
@@ -124,11 +129,15 @@ export function useSystemBackups() {
 
 	useEffect(() => {
 		void load();
+	}, [listIdentity, load]);
+
+	useEffect(() => {
+		if (!isFocused || !isActive) return;
 		const timer = setInterval(() => {
 			if (entriesRef.current.some((entry) => entry.status === 'running')) void load();
 		}, 5_000);
 		return () => clearInterval(timer);
-	}, [listIdentity, load]);
+	}, [listIdentity, load, isFocused, isActive]);
 
 	useSheetDismissListener('history', () => void load());
 

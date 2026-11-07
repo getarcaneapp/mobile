@@ -48,9 +48,11 @@ export function CardEntranceView({ id, index = 0, children, style }: EntrancePro
 	useEffect(() => {
 		if (seenEntranceIdentities.has(id) && alreadyPlayed) return;
 		seenEntranceIdentities.add(id);
-		progress.value = reduceMotion
-			? animateTo(Motion.reducedFallback, 1)
-			: animateTo(Motion.entrance, 1, index * Motion.stagger);
+		progress.set(
+			reduceMotion
+				? animateTo(Motion.reducedFallback, 1)
+				: animateTo(Motion.entrance, 1, index * Motion.stagger)
+		);
 	}, [id, index, reduceMotion, alreadyPlayed, progress]);
 
 	const animated = useAnimatedStyle(() => ({
@@ -69,9 +71,11 @@ export function StaggeredRevealView({
 	const progress = useSharedValue(0);
 
 	useEffect(() => {
-		progress.value = reduceMotion
-			? animateTo(Motion.reducedFallback, 1)
-			: animateTo(Motion.entrance, 1, index * Motion.stagger);
+		progress.set(
+			reduceMotion
+				? animateTo(Motion.reducedFallback, 1)
+				: animateTo(Motion.entrance, 1, index * Motion.stagger)
+		);
 	}, [index, reduceMotion, progress]);
 
 	const animated = useAnimatedStyle(() => ({
@@ -92,7 +96,7 @@ export function ScrollEdgeFadeScrollView({
 	const scrollY = useSharedValue(0);
 	const viewportHeight = useSharedValue(0);
 	const onScroll = useAnimatedScrollHandler((event) => {
-		scrollY.value = event.contentOffset.y;
+		scrollY.set(event.contentOffset.y);
 	});
 	return (
 		<ScrollEdgeFadeContext value={{ scrollY, viewportHeight }}>
@@ -101,7 +105,7 @@ export function ScrollEdgeFadeScrollView({
 				onScroll={onScroll}
 				scrollEventThrottle={16}
 				onLayout={(event: LayoutChangeEvent) => {
-					viewportHeight.value = event.nativeEvent.layout.height;
+					viewportHeight.set(event.nativeEvent.layout.height);
 					if (typeof onLayout === 'function') onLayout(event);
 				}}
 			>
@@ -147,8 +151,8 @@ export function ScrollEdgeFade({
 		<Animated.View
 			style={[style, animated]}
 			onLayout={(event) => {
-				top.value = event.nativeEvent.layout.y;
-				height.value = event.nativeEvent.layout.height;
+				top.set(event.nativeEvent.layout.y);
+				height.set(event.nativeEvent.layout.height);
 			}}
 		>
 			{children}
@@ -182,11 +186,11 @@ export function LoadingCrossfadeView({
 		const target = showSkeleton ? 0 : 1;
 		setRendered({ skeleton: true, content: true });
 		if (!animatesTransition || reduceMotion) {
-			progress.value = target;
+			progress.set(target);
 			setRendered({ skeleton: showSkeleton, content: !showSkeleton });
 			return;
 		}
-		progress.value = animateTo(Motion.state, target);
+		progress.set(animateTo(Motion.state, target));
 		const timer = setTimeout(
 			() => setRendered({ skeleton: showSkeleton, content: !showSkeleton }),
 			Motion.state.duration

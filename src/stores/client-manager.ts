@@ -867,6 +867,22 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		},
 
 		startDemo: async () => {
+			const abandonDemoServer = () => {
+				const parsed = get().parsedServerURL;
+				const origin = parsed ? canonicalServerOrigin(parsed) : undefined;
+				clearSessionState();
+				storage.set(Keys.serverURL, '');
+				configuredClientURL = undefined;
+				set((s) => ({
+					serverURL: '',
+					parsedServerURL: undefined,
+					client: undefined,
+					clientGeneration: s.clientGeneration + 1,
+					authState: 'setup'
+				}));
+				if (origin !== undefined) CredentialBinding.unbind(origin);
+				mirrorToAppGroup();
+			};
 			let generation = beginAuthentication();
 			set({
 				isLoading: true,
@@ -900,7 +916,9 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 					scheduleDemoExpiry(session.endsAt);
 				} catch (error) {
 					if (!isCurrentAuthentication(generation)) return;
-					set({ errorMessage: loginErrorMessage(error) });
+					const message = loginErrorMessage(error);
+					abandonDemoServer();
+					set({ errorMessage: message });
 					await DemoService.endSession();
 				}
 			} catch (error) {

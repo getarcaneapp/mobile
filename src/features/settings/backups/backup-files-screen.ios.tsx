@@ -24,6 +24,8 @@ import { useFilesParam } from './backup-routes';
 import { ErrorRetryRows } from './backup-rows';
 import { useBackupFiles } from './use-backup-files';
 
+const backupEntryKey = (entry: { path: string }) => entry.path;
+
 export function BackupFilesScreen() {
 	const model = useBackupFiles(useFilesParam());
 	const accent = useAccentColor();
@@ -79,32 +81,36 @@ export function BackupFilesScreen() {
 									/>
 								) : null}
 							</Section>
-							{entries.map((entry) => (
-								<HStack key={entry.path}>
-									{showsSelection ? (
-										<Button
-											onPress={() => model.toggleSelected(entry.path)}
-											modifiers={[
-												buttonStyle('borderless'),
-												accessibilityLabel(`Select ${entry.name}`)
-											]}
-										>
-											<Image
-												systemName={
-													model.selected.has(entry.path) ? 'checkmark.circle.fill' : 'circle'
-												}
-											/>
-										</Button>
-									) : null}
-									{entry.isDirectory ? (
-										<Button onPress={() => model.openFolder(entry.path)}>
-											<Label title={entry.name} systemImage="folder" />
-										</Button>
-									) : (
-										<Label title={entry.name} systemImage="doc" />
+							<Section>
+								<List.ForEach data={entries} keyExtractor={backupEntryKey} estimatedItemSize={44}>
+									{({ item: entry }) => (
+										<HStack>
+											{showsSelection ? (
+												<Button
+													onPress={() => model.toggleSelected(entry.path)}
+													modifiers={[
+														buttonStyle('borderless'),
+														accessibilityLabel(`Select ${entry.name}`)
+													]}
+												>
+													<Image
+														systemName={
+															model.selected.has(entry.path) ? 'checkmark.circle.fill' : 'circle'
+														}
+													/>
+												</Button>
+											) : null}
+											{entry.isDirectory ? (
+												<Button onPress={() => model.openFolder(entry.path)}>
+													<Label title={entry.name} systemImage="folder" />
+												</Button>
+											) : (
+												<Label title={entry.name} systemImage="doc" />
+											)}
+										</HStack>
 									)}
-								</HStack>
-							))}
+								</List.ForEach>
+							</Section>
 							{entries.length === 0 && !busy && errorMessage === undefined ? (
 								<ContentUnavailableView
 									title={model.search === '' ? 'No Files' : `No Results for “${model.search}”`}

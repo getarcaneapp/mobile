@@ -8,12 +8,12 @@ export type HapticKind = 'none' | 'light' | 'success' | 'error';
 
 export type ToastActivityState = 'running' | 'success' | 'failure' | 'cancelled';
 
-const activityTint: Record<ToastActivityState, string | undefined> = {
+const activityTint = (): Record<ToastActivityState, string | undefined> => ({
 	running: systemColors.blue,
 	success: systemColors.green,
 	failure: systemColors.red,
 	cancelled: undefined
-};
+});
 
 export type Toast = {
 	id: string;
@@ -256,7 +256,7 @@ export function finishActivityToast(
 		...base,
 		title: terminalTitle(title, state),
 		symbol: terminalSymbol[state],
-		symbolTint: activityTint[state],
+		symbolTint: activityTint()[state],
 		activityProgress:
 			state === 'success' ? 1 : progress === undefined ? undefined : clamp(progress),
 		activityState: state,

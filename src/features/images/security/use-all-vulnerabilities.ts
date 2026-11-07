@@ -1,10 +1,8 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
-import { useShallow } from 'zustand/react/shallow';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermissionCheck } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { nextInstanceKey, withCleanup } from '@/core/with-cleanup';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
@@ -117,6 +115,7 @@ export function useAllVulnerabilities({
 	const accent = useAccentColor();
 	const supportsActivities = useClientManager((s) => s.supportsActivities());
 	useClientManager((s) => s.accessGeneration);
+	const can = usePermissionCheck();
 	const storeEnvironments = useEnvironmentsStore((s) => s.environments);
 	const enabledEnvironments = enabledEnvironmentsOf(storeEnvironments);
 
@@ -178,7 +177,7 @@ export function useAllVulnerabilities({
 		updateFilter(listKey, { environments: snapshot.environments });
 	}, [listKey, snapshot.environments, updateFilter]);
 
-	const showError = (message: string) => Alert.alert('Error', message, [{ text: 'OK' }]);
+	const showError = (message: string) => showToast(Toasts.error(message));
 
 	const findingsPage = (): EnvironmentFetch<VulnerabilityFinding> | undefined => {
 		const client = useClientManager.getState().client;
@@ -368,16 +367,10 @@ export function useAllVulnerabilities({
 		{ value: 'findings', title: 'Findings', systemImage: 'list.bullet', tint: systemColors.orange }
 	];
 
-	const patchEnvironments = useClientManager(
-		useShallow(() =>
-			listEnvironments.filter((environment) =>
-				hasPermission('vulnerabilities:read', environment.id)
-			)
-		)
+	const patchEnvironments = listEnvironments.filter((environment) =>
+		can('vulnerabilities:read', environment.id)
 	);
-	const canReadVulnerabilities = useClientManager(() =>
-		hasPermission('vulnerabilities:read', environmentID)
-	);
+	const canReadVulnerabilities = can('vulnerabilities:read', environmentID);
 	const exportEnvironments = listEnvironments.filter((environment) =>
 		items.some((item) => item.environmentID === environment.id)
 	);

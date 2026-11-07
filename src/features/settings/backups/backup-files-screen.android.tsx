@@ -1,14 +1,14 @@
 import { Stack } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { useDeleteConfirmation } from '@/ui/components/delete-confirmation';
 import { m3 } from '@/ui/components/material-colors';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { AndroidToolbar } from '../shared/android-toolbar';
 import {
@@ -21,6 +21,8 @@ import {
 import { AndroidErrorRetry } from './backup-android';
 import { useFilesParam } from './backup-routes';
 import { useBackupFiles } from './use-backup-files';
+
+const listContentStyle = { paddingBottom: 48 };
 
 export function BackupFilesScreen() {
 	const model = useBackupFiles(useFilesParam());
@@ -58,116 +60,129 @@ export function BackupFilesScreen() {
 					]}
 				/>
 			) : null}
-			<ScrollView
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ paddingBottom: 48 }}
-			>
-				{busy && entries.length === 0 ? (
-					<View style={{ padding: 24, alignItems: 'center' }}>
-						<ArcaneLoadingView label="Loading…" />
-					</View>
-				) : null}
-				<AndroidErrorRetry message={errorMessage} onRetry={() => void model.load()} />
-				<M3Section>
-					<ValueRow title="Folder" value={model.folderTitle} />
-					{model.path !== '' ? (
-						<TextButtonRow title="Parent folder" onPress={model.openParent} />
-					) : null}
-					{model.canRestore && !model.legacyBrowser ? (
-						<SwitchRow
-							title="Restore all matching files"
-							value={model.selectAll}
-							onValueChange={model.setSelectAll}
-						/>
-					) : null}
-				</M3Section>
-				<View style={{ height: 12 }} />
-				<MaterialListGroup>
-					{entries.map((entry) => {
-						const isSelected = model.selected.has(entry.path);
-						return (
-							<View
-								key={entry.path}
+			<GroupedFlashList
+				data={entries.map((entry, index) => ({
+					key: entry.path,
+					type: 'entry',
+					entry,
+					grouped: groupPosition(index, entries.length)
+				}))}
+				extraData={{ selected: model.selected, showsSelection }}
+				renderEntry={({ entry }) => {
+					const isSelected = model.selected.has(entry.path);
+					return (
+						<View
+							style={{
+								flexDirection: 'row',
+								alignItems: 'center',
+								minHeight: 56,
+								paddingHorizontal: 8
+							}}
+						>
+							{showsSelection ? (
+								<Pressable
+									onPress={() => model.toggleSelected(entry.path)}
+									accessibilityRole="checkbox"
+									accessibilityState={{ checked: isSelected }}
+									accessibilityLabel={`Select ${entry.name}`}
+									android_ripple={{
+										color: colors.separator as string,
+										borderless: true,
+										radius: 20
+									}}
+									style={{
+										width: 48,
+										height: 48,
+										alignItems: 'center',
+										justifyContent: 'center'
+									}}
+								>
+									<Icon
+										name={isSelected ? 'checkmark.circle.fill' : 'circle'}
+										size={24}
+										color={isSelected ? m3.primary : colors.secondaryLabel}
+									/>
+								</Pressable>
+							) : null}
+							<Pressable
+								onPress={entry.isDirectory ? () => model.openFolder(entry.path) : undefined}
+								disabled={!entry.isDirectory}
+								accessibilityRole={entry.isDirectory ? 'button' : undefined}
+								android_ripple={{ color: colors.separator as string }}
 								style={{
+									flex: 1,
 									flexDirection: 'row',
 									alignItems: 'center',
+									gap: 16,
 									minHeight: 56,
 									paddingHorizontal: 8
 								}}
 							>
-								{showsSelection ? (
-									<Pressable
-										onPress={() => model.toggleSelected(entry.path)}
-										accessibilityRole="checkbox"
-										accessibilityState={{ checked: isSelected }}
-										accessibilityLabel={`Select ${entry.name}`}
-										android_ripple={{
-											color: colors.separator as string,
-											borderless: true,
-											radius: 20
-										}}
-										style={{
-											width: 48,
-											height: 48,
-											alignItems: 'center',
-											justifyContent: 'center'
-										}}
-									>
-										<Icon
-											name={isSelected ? 'checkmark.circle.fill' : 'circle'}
-											size={24}
-											color={isSelected ? m3.primary : colors.secondaryLabel}
-										/>
-									</Pressable>
-								) : null}
-								<Pressable
-									onPress={entry.isDirectory ? () => model.openFolder(entry.path) : undefined}
-									disabled={!entry.isDirectory}
-									accessibilityRole={entry.isDirectory ? 'button' : undefined}
-									android_ripple={{ color: colors.separator as string }}
-									style={{
-										flex: 1,
-										flexDirection: 'row',
-										alignItems: 'center',
-										gap: 16,
-										minHeight: 56,
-										paddingHorizontal: 8
-									}}
+								<Icon
+									name={entry.isDirectory ? 'folder' : 'doc'}
+									size={24}
+									color={entry.isDirectory ? m3.primary : colors.secondaryLabel}
+								/>
+								<Text
+									style={[
+										m3Type.bodyLarge,
+										{ color: entry.isDirectory ? m3.primary : colors.label, flex: 1 }
+									]}
+									numberOfLines={1}
 								>
-									<Icon
-										name={entry.isDirectory ? 'folder' : 'doc'}
-										size={24}
-										color={entry.isDirectory ? m3.primary : colors.secondaryLabel}
-									/>
-									<Text
-										style={[
-											m3Type.bodyLarge,
-											{ color: entry.isDirectory ? m3.primary : colors.label, flex: 1 }
-										]}
-										numberOfLines={1}
-									>
-										{entry.name}
-									</Text>
-								</Pressable>
+									{entry.name}
+								</Text>
+							</Pressable>
+						</View>
+					);
+				}}
+				header={
+					<View>
+						{busy && entries.length === 0 ? (
+							<View style={{ padding: 24, alignItems: 'center' }}>
+								<ArcaneLoadingView label="Loading…" />
 							</View>
-						);
-					})}
-					<PaginatedListFooter
-						key={entries.length}
-						hasMore={model.hasMore}
-						loadMoreError={model.loadMoreError}
-						onRetry={model.loadMore}
-						onLoadMore={model.loadMore}
-					/>
-				</MaterialListGroup>
-				{entries.length === 0 && !busy && errorMessage === undefined ? (
-					<CenteredMessage
-						icon={model.search === '' ? 'folder' : 'magnifyingglass'}
-						title={model.search === '' ? 'No Files' : `No Results for “${model.search}”`}
-						message={model.search === '' ? '' : 'Check the spelling or try a new search.'}
-					/>
-				) : null}
-			</ScrollView>
+						) : null}
+						<AndroidErrorRetry message={errorMessage} onRetry={() => void model.load()} />
+						<M3Section>
+							<ValueRow title="Folder" value={model.folderTitle} />
+							{model.path !== '' ? (
+								<TextButtonRow title="Parent folder" onPress={model.openParent} />
+							) : null}
+							{model.canRestore && !model.legacyBrowser ? (
+								<SwitchRow
+									title="Restore all matching files"
+									value={model.selectAll}
+									onValueChange={model.setSelectAll}
+								/>
+							) : null}
+						</M3Section>
+						<View style={{ height: 12 }} />
+					</View>
+				}
+				footer={
+					<View>
+						<PaginatedListFooter
+							key={entries.length}
+							hasMore={model.hasMore}
+							loadMoreError={model.loadMoreError}
+							onRetry={model.loadMore}
+							onLoadMore={model.loadMore}
+						/>
+						{entries.length === 0 && !busy && errorMessage === undefined ? (
+							<CenteredMessage
+								icon={model.search === '' ? 'folder' : 'magnifyingglass'}
+								title={model.search === '' ? 'No Files' : `No Results for “${model.search}”`}
+								message={model.search === '' ? '' : 'Check the spelling or try a new search.'}
+							/>
+						) : null}
+					</View>
+				}
+				onEndReached={
+					model.hasMore && model.loadMoreError === undefined ? model.loadMore : undefined
+				}
+				contentContainerStyle={listContentStyle}
+			/>
 		</>
 	);
 }

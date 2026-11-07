@@ -34,7 +34,7 @@ import { draftFromSpec, type SwarmServiceMode } from './swarm-spec-draft';
 
 export type ServiceDetailTab = 'overview' | 'tasks' | 'logs';
 
-const allTabs: ScrollableTabOption<ServiceDetailTab>[] = [
+const allTabs = (): ScrollableTabOption<ServiceDetailTab>[] => [
 	{
 		value: 'overview',
 		title: 'Overview',
@@ -139,7 +139,7 @@ export function useSwarmServiceDetail() {
 	useOnChange(swarmVersion, () => void load());
 
 	const isReplicated = (draft?.mode ?? 'replicated') === 'replicated' && summary !== undefined;
-	const tabs = allTabs.filter((tab) => tab.value !== 'logs' || canReadLogs);
+	const tabs = allTabs().filter((tab) => tab.value !== 'logs' || canReadLogs);
 
 	const rollback = async () => {
 		const current = useClientManager.getState().client;

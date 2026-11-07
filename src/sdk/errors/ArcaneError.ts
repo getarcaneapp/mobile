@@ -35,11 +35,11 @@ export abstract class ArcaneError extends Error {
 	static unauthorized(): ArcaneUnauthorizedError {
 		return new ArcaneUnauthorizedError();
 	}
-	static forbidden(): ArcaneForbiddenError {
-		return new ArcaneForbiddenError();
+	static forbidden(detail?: string): ArcaneForbiddenError {
+		return new ArcaneForbiddenError(detail);
 	}
-	static notFound(): ArcaneNotFoundError {
-		return new ArcaneNotFoundError();
+	static notFound(detail?: string): ArcaneNotFoundError {
+		return new ArcaneNotFoundError(detail);
 	}
 	static conflict(message?: string): ArcaneConflictError {
 		return new ArcaneConflictError(message);
@@ -90,17 +90,21 @@ export class ArcaneUnauthorizedError extends ArcaneError {
 
 export class ArcaneForbiddenError extends ArcaneError {
 	readonly kind = 'forbidden' as const;
-	constructor() {
-		super('Forbidden');
+	readonly detail: string | undefined;
+	constructor(detail?: string) {
+		super(detail ?? 'Forbidden');
 		this.name = 'ArcaneError.forbidden';
+		this.detail = detail;
 	}
 }
 
 export class ArcaneNotFoundError extends ArcaneError {
 	readonly kind = 'notFound' as const;
-	constructor() {
-		super('Not found');
+	readonly detail: string | undefined;
+	constructor(detail?: string) {
+		super(detail ?? 'Not found');
 		this.name = 'ArcaneError.notFound';
+		this.detail = detail;
 	}
 }
 
@@ -387,8 +391,10 @@ export function arcaneErrorFrom(
 	const code = arcaneError?.code ?? httpCode(statusCode);
 
 	if (statusCode === 401) return ArcaneError.unauthorized();
-	if (statusCode === 403) return ArcaneError.forbidden();
-	if (statusCode === 404) return ArcaneError.notFound();
+	const detail = arcaneError?.error ?? arcaneError?.message ?? humaMessage;
+	const serverDetail = detail === undefined || detail.trim() === '' ? undefined : detail;
+	if (statusCode === 403) return ArcaneError.forbidden(serverDetail);
+	if (statusCode === 404) return ArcaneError.notFound(serverDetail);
 	if (statusCode === 409) return ArcaneError.conflict(message === '' ? undefined : message);
 	if (statusCode === 400 && code === 'VALIDATION_ERROR') {
 		return ArcaneError.validation(validationFields(arcaneError?.details));

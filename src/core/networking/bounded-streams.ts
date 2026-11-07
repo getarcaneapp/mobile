@@ -5,6 +5,11 @@ import { ArcaneError, CancellationError } from '@/sdk/errors/ArcaneError';
 import { encodeUTF8 } from '@/sdk/http/json';
 import { BufferingPolicy } from '@/sdk/streaming/AsyncQueue';
 import { decodeLogFrame } from '@/sdk/streaming/Streams';
+import {
+	terminalQuery,
+	terminalResizeFrame,
+	type TerminalSize
+} from '@/sdk/streaming/TerminalSession';
 import { WebSocketChannel, type WebSocketMessage } from '@/sdk/streaming/WebSocketChannel';
 import type { LogLine } from '@/sdk/types/streaming/LogLine';
 
@@ -47,10 +52,10 @@ export function boundedLogStream(
 		async *[Symbol.asyncIterator]() {
 			if (signal.aborted) throw new CancellationError();
 			const request = await transport.websocketRequest(path, {
-				query: [...query, { name: 'format', value: 'json' }]
+				query: [...query, { name: 'format', value: 'json' }, { name: 'batched', value: 'true' }]
 			});
 			if (signal.aborted) throw new CancellationError();
-			const channel = new WebSocketChannel<never, LogLine>({
+			const channel = new WebSocketChannel<never, LogLine[]>({
 				request,
 				factory: transport.webSocketConfig.factory,
 				idleTimeoutMs: transport.webSocketConfig.idleTimeoutMs,
@@ -59,12 +64,13 @@ export function boundedLogStream(
 					throw new Error('Log streams are receive-only');
 				},
 				decodeInbound: (message) => {
-					checkFrame(message, RemoteDataLimits.maximumStreamLineBytes);
-					return boundedLogLine(decodeLogFrame(message));
+					checkFrame(message, RemoteDataLimits.maximumLogBatchFrameBytes);
+					return decodeLogFrame(message).map(boundedLogLine);
 				}
 			});
 			try {
-				for await (const line of channel.messages(BufferingPolicy.bufferingNewest(100))) yield line;
+				for await (const lines of channel.messages(BufferingPolicy.bufferingNewest(100)))
+					yield* lines;
 			} finally {
 				channel.closeImmediately();
 			}
@@ -142,11 +148,12 @@ export class BoundedTerminalSession {
 	static async connect(
 		client: ArcaneClient,
 		path: string,
-		shell: string
+		shell: string,
+		size?: TerminalSize
 	): Promise<BoundedTerminalSession> {
 		const transport = client.transport;
 		const request = await transport.websocketRequest(path, {
-			query: [{ name: 'shell', value: shell }]
+			query: terminalQuery(shell, size)
 		});
 		const channel = new WebSocketChannel<string, Uint8Array>({
 			request,
@@ -167,6 +174,10 @@ export class BoundedTerminalSession {
 		return this.channel.send(boundedText(text, 16 * 1_024));
 	}
 
+	resize(size: TerminalSize): Promise<void> {
+		return this.channel.send(terminalResizeFrame(size));
+	}
+
 	close(): Promise<void> {
 		return this.channel.close();
 	}
@@ -174,11 +185,11 @@ export class BoundedTerminalSession {
 
 export function boundedExec(
 	client: ArcaneClient,
-	args: { envID: EnvironmentID; id: string; shell?: string }
+	args: { envID: EnvironmentID; id: string; shell?: string; size?: TerminalSize }
 ) {
 	const path = client.rest.environmentPath(
 		args.envID,
 		`ws/containers/${encodeURIComponent(args.id)}/terminal`
 	);
-	return BoundedTerminalSession.connect(client, path, args.shell ?? '/bin/sh');
+	return BoundedTerminalSession.connect(client, path, args.shell ?? '/bin/sh', args.size);
 }

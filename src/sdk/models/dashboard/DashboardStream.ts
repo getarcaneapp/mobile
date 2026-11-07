@@ -66,6 +66,9 @@ export const DashboardStreamEvent = {
 
 	decode(this: void, raw: unknown): DashboardStreamEvent {
 		const o = D.object(raw, 'DashboardStreamEvent');
+		if (D.optString(o, 'channel') === 'dashboard') {
+			return D.nested(o, 'dashboard', DashboardStreamEvent.decode);
+		}
 		return {
 			type: D.nested(o, 'type', DashboardStreamEventType.decode),
 			environmentID: D.optString(o, 'environmentId'),

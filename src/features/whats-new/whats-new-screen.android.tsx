@@ -4,7 +4,7 @@ import { BackHandler, Pressable, ScrollView, Text, View, useWindowDimensions } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ReleaseNoteBadge, ReleaseNoteBullet } from '@/release-notes';
-import { colors, withOpacity } from '@/theme/colors';
+import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
 import { m3 } from '@/ui/components/material-colors';
 import { m3Type } from '@/ui/components/type-scale';
@@ -285,7 +285,7 @@ function BulletRow({ bullet }: { bullet: ReleaseNoteBullet }) {
 const legendHeight = 16;
 
 function BadgedReleaseNote({ text, badge }: { text: string; badge: ReleaseNoteBadge }) {
-	const color = badgeColor[badge];
+	const color = systemColors[badgeColor[badge]];
 	const label = badgeLabel[badge];
 	return (
 		<View accessible accessibilityLabel={`${label}: ${text}`} style={{ paddingTop: 6 }}>

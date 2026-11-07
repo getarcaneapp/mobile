@@ -32,6 +32,11 @@ import { terminalShells, useContainerTerminal } from './use-container-terminal';
 
 const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
+const terminalFontSize = 12;
+const terminalCharWidth = terminalFontSize * 0.6;
+const terminalLineHeight = terminalFontSize * 1.2;
+const terminalPadding = 12;
+
 const shortcuts: { label: string; sequence: string }[] = [
 	{ label: 'Tab', sequence: '\t' },
 	{ label: 'Esc', sequence: '\u001b' },
@@ -206,6 +211,13 @@ export function ContainerTerminalScreen() {
 						paddingBottom: 12 + Math.max(0, keyboardHeight - bottomGap - homeIndicatorPadding)
 					}}
 					style={{ flex: 1 }}
+					onLayout={(event) => {
+						const { width, height } = event.nativeEvent.layout;
+						terminal.resize(
+							Math.floor((width - terminalPadding * 2) / terminalCharWidth),
+							Math.floor((height - terminalPadding * 2) / terminalLineHeight)
+						);
+					}}
 					onScrollBeginDrag={() => {
 						userIsScrolling.current = true;
 					}}

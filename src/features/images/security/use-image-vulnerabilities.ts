@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
@@ -57,6 +56,7 @@ const withoutKey = (current: Record<string, IgnoredVulnerability>, key: string) 
 };
 
 type VulnerabilitiesLive = {
+	generation: number;
 	page: number;
 	isLoading: boolean;
 	hasMore: boolean;
@@ -73,7 +73,8 @@ async function loadVulnerabilityPage({
 	setCleared,
 	setHasMore,
 	setLoadMoreError,
-	setIsLoading
+	setIsLoading,
+	onError
 }: {
 	client: ArcaneClient;
 	live: VulnerabilitiesLive;
@@ -84,8 +85,11 @@ async function loadVulnerabilityPage({
 	setHasMore: (hasMore: boolean) => void;
 	setLoadMoreError: (error: string | undefined) => void;
 	setIsLoading: (isLoading: boolean) => void;
+	onError: (message: string) => void;
 }) {
 	const page = live.page;
+	const generation = live.generation;
+	const isCurrent = () => live.generation === generation;
 	let failed = false;
 	try {
 		const response = await client.vulnerabilities.listForImage({
@@ -94,6 +98,7 @@ async function loadVulnerabilityPage({
 			query: { start: (page - 1) * pageSize, limit: pageSize },
 			severity: severityQuery(live.selectedSeverities)
 		});
+		if (!isCurrent()) return false;
 		const items = response.data.map(vulnerabilityRecord);
 		const next = page === 1 ? items : [...live.vulnerabilities, ...items];
 		live.vulnerabilities = next;
@@ -103,13 +108,16 @@ async function loadVulnerabilityPage({
 		live.hasMore = more;
 		setHasMore(more);
 	} catch (error) {
-		if (page > 1) {
-			setLoadMoreError(friendlyErrorMessage(error));
+		if (isCurrent()) {
 			failed = true;
+			if (page > 1) setLoadMoreError(friendlyErrorMessage(error));
+			else onError(friendlyErrorMessage(error));
 		}
 	} finally {
-		live.isLoading = false;
-		setIsLoading(false);
+		if (isCurrent()) {
+			live.isLoading = false;
+			setIsLoading(false);
+		}
 	}
 	return failed;
 }
@@ -138,6 +146,7 @@ export function useImageVulnerabilities({
 	const [cleared, setCleared] = useState(false);
 
 	const live = useRef({
+		generation: 0,
 		page: 1,
 		isLoading: false,
 		hasMore: false,
@@ -153,7 +162,7 @@ export function useImageVulnerabilities({
 		[cleared, vulnerabilities, ignoredById, showIgnored]
 	);
 
-	const showError = (message: string) => Alert.alert('Error', message, [{ text: 'OK' }]);
+	const showError = (message: string) => showToast(Toasts.error(message));
 
 	const loadStatus = async () => {
 		const client = useClientManager.getState().client;
@@ -172,15 +181,11 @@ export function useImageVulnerabilities({
 	const loadSummary = async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
-		try {
-			setSummary(
-				scanSummary(
-					await client.vulnerabilities.scanSummary({ envID: environmentID, imageId: imageID })
-				)
-			);
-		} catch {
-			setSummary(undefined);
-		}
+		const generation = live.current.generation;
+		const next = await client.vulnerabilities
+			.scanSummary({ envID: environmentID, imageId: imageID })
+			.then(scanSummary, () => undefined);
+		if (live.current.generation === generation) setSummary(next);
 	};
 
 	const loadVulnerabilities = async () => {
@@ -198,11 +203,14 @@ export function useImageVulnerabilities({
 			setCleared,
 			setHasMore,
 			setLoadMoreError,
-			setIsLoading
+			setIsLoading,
+			onError: showError
 		});
 	};
 
 	const reload = async () => {
+		live.current.generation += 1;
+		live.current.isLoading = false;
 		live.current.page = 1;
 		setCleared(true);
 		await loadSummary();
@@ -217,8 +225,9 @@ export function useImageVulnerabilities({
 	const loadMore = async () => {
 		if (!live.current.hasMore || live.current.isLoading) return;
 		live.current.page += 1;
+		const generation = live.current.generation;
 		const failed = await loadVulnerabilities();
-		if (failed) live.current.page -= 1;
+		if (failed && live.current.generation === generation) live.current.page -= 1;
 	};
 
 	const startInitialLoad = useEffectEvent(() => {

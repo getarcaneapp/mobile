@@ -1,6 +1,5 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 
 import { performAllEnvironmentsMaintenance } from '@/core/all-environments-actions';
@@ -228,12 +227,8 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 
 	useEffect(() => {
 		if (actionErrorMessage === undefined) return;
-		Alert.alert(
-			"Couldn't Delete Project",
-			actionErrorMessage,
-			[{ text: 'OK', style: 'cancel', onPress: () => setActionErrorMessage(undefined) }],
-			{ onDismiss: () => setActionErrorMessage(undefined) }
-		);
+		showToast(Toasts.error(actionErrorMessage));
+		setActionErrorMessage(undefined);
 	}, [actionErrorMessage]);
 
 	useAllEnvironmentsMaintenanceConfirmation(pendingMaintenance, setPendingMaintenance, (action) => {

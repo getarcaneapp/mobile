@@ -3,67 +3,61 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
-import type { UpdateSettings } from '@/sdk/models/settings/Settings';
+import type { UpdateJobScheduleConfig } from '@/sdk/models/jobSchedule/JobSchedule';
 import { useClientManager } from '@/stores/client-manager';
-import { systemColors } from '@/theme/colors';
+import type { SystemColorName } from '@/theme/colors';
 import { showToast, Toasts } from '@/ui/toast';
 
-export type JobScheduleField = { key: string; label: string; icon: string; tint: string };
+export type JobScheduleField = { key: string; label: string; icon: string; tint: SystemColorName };
 
 export const jobScheduleFields: readonly JobScheduleField[] = [
 	{
 		key: 'autoHealInterval',
 		label: 'Auto Heal',
 		icon: 'heart.text.square.fill',
-		tint: systemColors.pink
+		tint: 'pink'
 	},
 	{
 		key: 'autoUpdateInterval',
 		label: 'Auto Update',
 		icon: 'arrow.triangle.2.circlepath',
-		tint: systemColors.blue
+		tint: 'blue'
 	},
 	{
 		key: 'dockerClientRefreshInterval',
 		label: 'Docker Client Refresh',
 		icon: 'shippingbox.fill',
-		tint: systemColors.blue
+		tint: 'blue'
 	},
 	{
 		key: 'environmentHealthInterval',
 		label: 'Environment Health',
 		icon: 'waveform.path.ecg',
-		tint: systemColors.green
+		tint: 'green'
 	},
 	{
 		key: 'eventCleanupInterval',
 		label: 'Event Cleanup',
 		icon: 'trash.fill',
-		tint: systemColors.red
-	},
-	{
-		key: 'gitopsSyncInterval',
-		label: 'GitOps Sync',
-		icon: 'arrow.triangle.merge',
-		tint: systemColors.indigo
+		tint: 'red'
 	},
 	{
 		key: 'pollingInterval',
 		label: 'Polling',
 		icon: 'dot.radiowaves.left.and.right',
-		tint: systemColors.teal
+		tint: 'teal'
 	},
 	{
 		key: 'scheduledPruneInterval',
 		label: 'Scheduled Prune',
 		icon: 'scissors',
-		tint: systemColors.orange
+		tint: 'orange'
 	},
 	{
 		key: 'vulnerabilityScanInterval',
 		label: 'Vulnerability Scan',
 		icon: 'shield.lefthalf.filled',
-		tint: systemColors.purple
+		tint: 'purple'
 	}
 ];
 
@@ -72,10 +66,11 @@ const updatableKeys = {
 	autoUpdateInterval: true,
 	dockerClientRefreshInterval: true,
 	environmentHealthInterval: true,
+	eventCleanupInterval: true,
 	pollingInterval: true,
 	scheduledPruneInterval: true,
 	vulnerabilityScanInterval: true
-} satisfies Partial<Record<keyof UpdateSettings, true>>;
+} satisfies Partial<Record<keyof UpdateJobScheduleConfig, true>>;
 
 const isUpdatable = (key: string): key is keyof typeof updatableKeys => key in updatableKeys;
 
@@ -146,12 +141,12 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 				}
 				if (Object.keys(changed).length === 0) return;
 
-				const update: UpdateSettings = {};
+				const update: UpdateJobScheduleConfig = {};
 				for (const [key, value] of Object.entries(changed)) {
 					if (isUpdatable(key)) update[key] = value;
 				}
 				try {
-					await client.settings.updateSettings({ body: update, envID: environmentID });
+					await client.jobs.updateSchedules({ body: update, envID: environmentID });
 					setOriginal((current) => ({ ...current, ...changed }));
 					showToast(Toasts.success('Schedules saved'));
 				} catch (error) {
