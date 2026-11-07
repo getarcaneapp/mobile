@@ -419,9 +419,14 @@ function toolbarItems(model: ActivitiesScreenModel): ActivityToolbarItem[] {
 }
 
 export function ActivitiesScreen({
-	initialStatusFilter
-}: { onDone?: () => void; initialStatusFilter?: ActivityStatusFilter } = {}) {
-	const model = useActivitiesScreen(initialStatusFilter);
+	initialStatusFilter,
+	confirmationHostID
+}: {
+	onDone?: () => void;
+	initialStatusFilter?: ActivityStatusFilter;
+	confirmationHostID?: string;
+} = {}) {
+	const model = useActivitiesScreen(initialStatusFilter, confirmationHostID);
 	const { state } = model;
 	const [refreshing, setRefreshing] = useState(false);
 

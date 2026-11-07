@@ -91,7 +91,11 @@ export function friendlyErrorMessage(error: unknown): string {
 				}
 				if (lower.includes('timed out'))
 					return 'Connection timed out — check the address and your network.';
-				if (lower.includes('secure connection') || lower.includes('ssl')) {
+				if (
+					lower.includes('secure connection') ||
+					lower.includes('ssl') ||
+					lower.includes('certificate')
+				) {
 					return "Secure connection failed — for a local server use http://, or check the server's certificate.";
 				}
 				if (lower.includes('app transport security') || lower.includes('cleartext')) {

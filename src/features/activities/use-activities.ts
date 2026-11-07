@@ -80,7 +80,12 @@ function createFilteredActivityCenterStore(statusFilter: ActivityStatusFilter | 
 	return store;
 }
 
-export function useActivitiesScreen(initialStatusFilter?: ActivityStatusFilter) {
+export const activityCenterConfirmationHost = 'activity-center';
+
+export function useActivitiesScreen(
+	initialStatusFilter?: ActivityStatusFilter,
+	confirmationHostID?: string
+) {
 	const [store] = useState(() => createFilteredActivityCenterStore(initialStatusFilter));
 	const { client, supportsActivities, currentUser, notBackground, taskID } = useActivitySession();
 	const recordClear = useActivityHistoryMutationStore((s) => s.recordClear);
@@ -134,6 +139,7 @@ export function useActivitiesScreen(initialStatusFilter?: ActivityStatusFilter) 
 			message: 'Running and queued activities are preserved.',
 			icon: 'trash',
 			confirmTitle: 'Clear History',
+			dismissOnConfirm: false,
 			onConfirm: () => {
 				void (async () => {
 					const result = await store.getState().clearHistory(clearableEnvironmentIDs);
@@ -147,7 +153,8 @@ export function useActivitiesScreen(initialStatusFilter?: ActivityStatusFilter) 
 					await store.getState().load({ refresh: true });
 				})();
 			}
-		})
+		}),
+		confirmationHostID
 	);
 
 	const activeFilterCount =

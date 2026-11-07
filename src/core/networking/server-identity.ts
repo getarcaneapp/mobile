@@ -72,12 +72,28 @@ export function escapedPathComponent(value: string): string {
 	return out;
 }
 
+const localHostSuffixes = ['.local', '.lan', '.home', '.home.arpa', '.internal', '.localdomain'];
+
+export function isLocalNetworkHost(host: string): boolean {
+	let lower = host.toLowerCase();
+	if (lower.startsWith('[') && lower.endsWith(']')) lower = lower.slice(1, -1);
+	if (lower.endsWith('.')) lower = lower.slice(0, -1);
+	if (!lower) return false;
+	if (isIPAddress(lower)) return !isPublicIPAddress(lower);
+	if (lower === 'localhost' || lower.endsWith('.localhost')) return true;
+	if (!lower.includes('.')) return true;
+	return localHostSuffixes.some((suffix) => lower.endsWith(suffix));
+}
+
 export function normalizeServerURLInput(input: string): string | undefined {
 	const trimmed = input.trim();
 	const lowered = trimmed.toLowerCase();
-	const normalized =
-		lowered.startsWith('http://') || lowered.startsWith('https://')
-			? trimmed
+	const hasScheme = lowered.startsWith('http://') || lowered.startsWith('https://');
+	const host = hasScheme ? undefined : parseURL(`https://${trimmed}`)?.host;
+	const normalized = hasScheme
+		? trimmed
+		: host && isLocalNetworkHost(host)
+			? `http://${trimmed}`
 			: `https://${trimmed}`;
 	if (/[\s<>"{}|\\^`]/.test(normalized)) return undefined;
 	const parsed = parseURL(normalized);

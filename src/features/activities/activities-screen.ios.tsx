@@ -419,9 +419,14 @@ function ActivitiesToolbar({ model }: { model: ActivitiesScreenModel }) {
 
 export function ActivitiesScreen({
 	onDone,
-	initialStatusFilter
-}: { onDone?: () => void; initialStatusFilter?: ActivityStatusFilter } = {}) {
-	const model = useActivitiesScreen(initialStatusFilter);
+	initialStatusFilter,
+	confirmationHostID
+}: {
+	onDone?: () => void;
+	initialStatusFilter?: ActivityStatusFilter;
+	confirmationHostID?: string;
+} = {}) {
+	const model = useActivitiesScreen(initialStatusFilter, confirmationHostID);
 	const { state } = model;
 
 	let content;

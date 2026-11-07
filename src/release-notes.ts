@@ -13,112 +13,67 @@ export const releaseNotes: ReleaseNote[] = [
 		version: '0.12.0',
 		new: [
 			{
-				text: 'Support for Arcane v3 servers.'
+				text: 'Arcane v3 server support.'
 			},
 			{
-				text: 'Live progress, stage, and percentage while Arcane upgrades on Arcane v3 servers.'
+				text: 'Live upgrade progress and per-environment logs, with Update All and Retry Failed.'
 			},
 			{
-				text: 'Update All upgrades every environment together on Arcane v3 servers.'
+				text: 'Dashboard widgets and Edit Dashboard on Arcane v3.'
 			},
 			{
-				text: 'Live upgrade logs for each environment on Arcane v3 servers.'
+				text: 'Lists refresh live on Arcane v3.'
 			},
 			{
-				text: 'Retry Failed reruns only the environments whose upgrade failed on Arcane v3 servers.'
-			},
-			{
-				text: 'Settings set by environment variables are locked and marked on Arcane v3 servers.'
-			},
-			{
-				text: 'Lists refresh automatically when resources change on Arcane v3 servers.'
-			},
-			{
-				text: 'Dashboard widgets from Arcane v3: Healthy, Needs Attention, Updates, Risk Score, Reclaimable Space, Recent Activity, Upcoming Jobs and Top Memory.'
-			},
-			{
-				text: 'Edit Dashboard reorders and hides widgets, starting from your Arcane web layout.'
+				text: 'Settings set by environment variables are locked on Arcane v3.'
 			}
 		],
 		changed: [
 			{
-				text: 'Updated Expo SDK 58 and React Native dependencies.'
+				text: 'Local server addresses without a scheme use http://.'
 			},
 			{
-				text: 'All Environments and the refreshed dashboard are always on with Arcane v3 servers.'
+				text: 'All Environments and the refreshed dashboard are always on with Arcane v3.'
 			},
 			{
-				text: 'Activity Center, resource lists, Updates, and the dashboard load every environment in one request on Arcane v3 servers.'
+				text: 'Faster loading and scrolling.'
 			}
 		],
 		removed: [
 			{
-				text: 'Container rename.'
-			},
-			{
-				text: 'GitOps Sync job schedule.'
-			},
-			{
-				text: 'Dashboard totals tiles and the Dashboard Tiles editor.'
+				text: 'Container rename, GitOps Sync job schedule and Dashboard totals tiles.'
 			}
 		],
 		fixed: [
 			{
-				text: 'Event Cleanup schedule changes not saving.'
+				text: 'Clear History confirmation hidden behind the Activities sheet.'
 			},
 			{
-				text: 'Dashboard not updating live on current servers.'
-			},
-			{
-				text: 'Volume file browsing for users without manage permission.'
-			},
-			{
-				text: 'Server error messages hidden on permission and not-found errors.'
-			},
-			{
-				text: 'Terminal size not matching the screen.'
+				text: 'Unreadable certificate errors on sign-in.'
 			},
 			{
 				text: 'Signing out not revoking the session.'
 			},
 			{
-				text: 'Container stats showing zeros when the stats stream fails.'
+				text: 'Stale dashboard, image update counts and background changes.'
 			},
 			{
-				text: 'Changes made while the app was in the background not appearing.'
+				text: 'Container stats showing zeros and terminal size mismatches.'
 			},
 			{
-				text: 'Image update counts from a previous server after switching.'
-			},
-			{
-				text: 'Vulnerability list mixing results after changing filters.'
-			},
-			{
-				text: 'Update All looping when another update is running.'
-			},
-			{
-				text: 'Failed demo sign-in leaving the demo server saved.'
+				text: 'Event Cleanup schedule not saving and Update All looping.'
 			},
 			{
 				text: 'Interrupted deployments leaving their toast and Live Activity open.'
 			},
 			{
-				text: 'Colors not updating after switching between light and dark mode.'
+				text: 'An offline environment stalling the app.'
 			},
 			{
-				text: 'Template registry rows only partly tappable.'
+				text: 'Volume browsing without manage permission and hidden server error messages.'
 			},
 			{
-				text: 'Delete Profile not shown as destructive on Android.'
-			},
-			{
-				text: 'Long lists scrolling slowly.'
-			},
-			{
-				text: 'An offline environment stalling the rest of the app.'
-			},
-			{
-				text: 'The Dashboard tab missing on Arcane v3 servers.'
+				text: 'Assorted visual and tap target issues.'
 			}
 		]
 	},
