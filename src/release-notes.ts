@@ -42,6 +42,9 @@ export const releaseNotes: ReleaseNote[] = [
 		],
 		changed: [
 			{
+				text: 'Updated Expo SDK 58 and React Native dependencies.'
+			},
+			{
 				text: 'All Environments and the refreshed dashboard are always on with Arcane v3 servers.'
 			},
 			{
