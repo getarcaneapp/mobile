@@ -344,6 +344,30 @@ function remapEntries(
 	for (const [key, value] of remapped) entries.set(key, value);
 }
 
+export const projectWorkspaceLoadTimeoutMs = 45_000;
+
+export function childrenByParent(
+	entries: readonly ManagedProjectFileEntry[]
+): Map<string, ManagedProjectFileEntry[]> {
+	const index = new Map<string, ManagedProjectFileEntry[]>();
+	for (const entry of entries) {
+		const parent = ProjectFileWorkspaceHelpers.parentPath(entry.relativePath);
+		const siblings = index.get(parent);
+		if (siblings) siblings.push(entry);
+		else index.set(parent, [entry]);
+	}
+	return index;
+}
+
+export function limitWorkspaceFiles<T>(
+	files: readonly T[],
+	maximum: number,
+	truncated: boolean
+): { files: T[]; truncated: boolean } {
+	if (files.length <= maximum) return { files: [...files], truncated };
+	return { files: files.slice(0, Math.max(0, maximum)), truncated: true };
+}
+
 export type ProjectFileDialog =
 	| { kind: 'createFile'; parentPath: string }
 	| { kind: 'createFolder'; parentPath: string }

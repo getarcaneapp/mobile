@@ -317,7 +317,7 @@ function WorkspaceToolbar({
 						<Button label="Done" onPress={model.done} modifiers={toolbarSymbol} />
 					</ToolbarItem>
 				) : null}
-				{(model.canEdit && model.hasChanges) || model.isSaving ? (
+				{(model.canEditEnv && model.hasChanges) || model.isSaving ? (
 					<ToolbarItem placement="topBarTrailing">
 						<Button
 							onPress={model.save}
@@ -359,8 +359,8 @@ export function managedFilePreviewKind(model: Model, path: string): 'compose' | 
 	return undefined;
 }
 
-function EditorNotice({ model }: { model: Model }) {
-	const message = model.errorMessage ?? model.readOnlyReason;
+function EditorNotice({ model, readOnlyReason }: { model: Model; readOnlyReason?: string }) {
+	const message = model.errorMessage ?? readOnlyReason;
 	return (
 		<>
 			{message !== undefined ? (
@@ -491,6 +491,100 @@ function EntryContextMenu({ model, entry }: { model: Model; entry: ManagedProjec
 	);
 }
 
+const entryKey = (entry: ManagedProjectFileEntry) => entry.id;
+
+function FileEntryRow({ model, entry }: { model: Model; entry: ManagedProjectFileEntry }) {
+	const destination: ProjectFilesDestination = entry.isDirectory
+		? { kind: 'folder', path: entry.relativePath }
+		: { kind: 'managedFile', path: entry.relativePath };
+	return (
+		<SwipeActions>
+			<ContextMenu>
+				<ContextMenu.Trigger>
+					<NavigationLink value={encodeDestination(destination)}>
+						<ProjectFileBrowserRow
+							name={entry.name}
+							detail={model.browserRowDetail(entry)}
+							systemImage={entry.isDirectory ? 'folder.fill' : 'doc.text'}
+							isDirectory={entry.isDirectory}
+							isProtected={isProtectedEntry(entry)}
+							hasChanges={entry.pending || model.fileHasUnsavedContent(entry.relativePath)}
+							isLoading={model.managedFileIsLoading(entry.relativePath)}
+							showsDisclosure={false}
+						/>
+					</NavigationLink>
+				</ContextMenu.Trigger>
+				<ContextMenu.Items>
+					<EntryContextMenu model={model} entry={entry} />
+				</ContextMenu.Items>
+			</ContextMenu>
+			{model.canEdit && !isProtectedEntry(entry) ? (
+				<SwipeActions.Actions edge="trailing" allowsFullSwipe={false}>
+					<Button
+						role="destructive"
+						label="Delete"
+						systemImage="trash"
+						onPress={() => model.requestDelete(entry)}
+						modifiers={[tint(systemColors.red)]}
+					/>
+				</SwipeActions.Actions>
+			) : null}
+		</SwipeActions>
+	);
+}
+
+function FilesStatusSection({ model, isEmpty }: { model: Model; isEmpty: boolean }) {
+	if (model.filesError !== undefined) {
+		return (
+			<Section>
+				<Label
+					title={model.filesError}
+					systemImage="exclamationmark.triangle"
+					modifiers={[font({ textStyle: 'caption' }), foregroundStyle(systemColors.red)]}
+				/>
+				<Button
+					label="Retry"
+					systemImage="arrow.clockwise"
+					onPress={model.retryFiles}
+					modifiers={[disabled(model.filesLoading)]}
+				/>
+			</Section>
+		);
+	}
+	if (model.filesLoading && isEmpty) {
+		return (
+			<Section>
+				<HStack spacing={8}>
+					<ProgressView modifiers={[scaleEffect(0.8)]} />
+					<Text
+						modifiers={[
+							font({ textStyle: 'subheadline' }),
+							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
+						]}
+					>
+						Loading files...
+					</Text>
+				</HStack>
+			</Section>
+		);
+	}
+	if (model.filesTruncated) {
+		return (
+			<Section>
+				<Label
+					title="Some files aren't shown."
+					systemImage="info.circle"
+					modifiers={[
+						font({ textStyle: 'caption' }),
+						foregroundStyle({ type: 'hierarchical', style: 'secondary' })
+					]}
+				/>
+			</Section>
+		);
+	}
+	return null;
+}
+
 function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string }) {
 	const children = model.childEntries(folderPath);
 	return (
@@ -532,7 +626,10 @@ function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string 
 					</>
 				) : null}
 
-				{children.length === 0 && folderPath !== '' ? (
+				{children.length === 0 &&
+				folderPath !== '' &&
+				!model.filesLoading &&
+				model.filesError === undefined ? (
 					<VStack
 						spacing={12}
 						modifiers={[
@@ -560,49 +657,13 @@ function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string 
 						</Text>
 					</VStack>
 				) : (
-					children.map((entry) => {
-						const destination: ProjectFilesDestination = entry.isDirectory
-							? { kind: 'folder', path: entry.relativePath }
-							: { kind: 'managedFile', path: entry.relativePath };
-						return (
-							<SwipeActions key={entry.id}>
-								<ContextMenu>
-									<ContextMenu.Trigger>
-										<NavigationLink value={encodeDestination(destination)}>
-											<ProjectFileBrowserRow
-												name={entry.name}
-												detail={model.browserRowDetail(entry)}
-												systemImage={entry.isDirectory ? 'folder.fill' : 'doc.text'}
-												isDirectory={entry.isDirectory}
-												isProtected={isProtectedEntry(entry)}
-												hasChanges={
-													entry.pending || model.fileHasUnsavedContent(entry.relativePath)
-												}
-												isLoading={model.managedFileIsLoading(entry.relativePath)}
-												showsDisclosure={false}
-											/>
-										</NavigationLink>
-									</ContextMenu.Trigger>
-									<ContextMenu.Items>
-										<EntryContextMenu model={model} entry={entry} />
-									</ContextMenu.Items>
-								</ContextMenu>
-								{model.canEdit && !isProtectedEntry(entry) ? (
-									<SwipeActions.Actions edge="trailing" allowsFullSwipe={false}>
-										<Button
-											role="destructive"
-											label="Delete"
-											systemImage="trash"
-											onPress={() => model.requestDelete(entry)}
-											modifiers={[tint(systemColors.red)]}
-										/>
-									</SwipeActions.Actions>
-								) : null}
-							</SwipeActions>
-						);
-					})
+					<List.ForEach data={children} keyExtractor={entryKey} estimatedItemSize={52}>
+						{({ item }) => <FileEntryRow model={model} entry={item} />}
+					</List.ForEach>
 				)}
 			</Section>
+
+			<FilesStatusSection model={model} isEmpty={children.length === 0} />
 
 			{model.hasChanges ? (
 				<Section>
@@ -652,7 +713,7 @@ function WorkspaceContent({
 					setText={model.setComposeContent}
 					readOnly={!model.canEdit}
 					menuActions={rootMenuActions}
-					notice={<EditorNotice model={model} />}
+					notice={<EditorNotice model={model} readOnlyReason={model.readOnlyReason} />}
 				/>
 			) : (
 				<TextFileEditor
@@ -673,17 +734,17 @@ function WorkspaceContent({
 					kind="env"
 					text={model.envContent}
 					setText={model.setEnvContent}
-					readOnly={!model.canEdit}
+					readOnly={!model.canEditEnv}
 					menuActions={rootMenuActions}
-					notice={<EditorNotice model={model} />}
+					notice={<EditorNotice model={model} readOnlyReason={model.envReadOnlyReason} />}
 				/>
 			) : (
 				<TextFileEditor
 					text={model.envContent}
 					onChangeText={model.setEnvContent}
 					language="env"
-					readOnly={!model.canEdit}
-					readOnlyMessage={model.readOnlyReason}
+					readOnly={!model.canEditEnv}
+					readOnlyMessage={model.envReadOnlyReason}
 					isLoading={false}
 					errorMessage={model.errorMessage}
 				/>

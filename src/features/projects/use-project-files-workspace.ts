@@ -3,11 +3,14 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
+import { RemoteDataLimits } from '@/core/networking/remote-data-limits';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import { withCleanup } from '@/core/with-cleanup';
 import { storage } from '@/core/storage';
 import { makeComposePreviewSession } from '@/features/compose/model/compose-preview-session';
 import { ProjectDraftReview } from '@/features/compose/model/project-draft-snapshot';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
+import { ArcaneTimeoutError } from '@/sdk/errors/ArcaneError';
 import type { DeployOptions, ProjectDetails } from '@/sdk/models/project/Project';
 import type { ProjectFile, ProjectFileChange } from '@/sdk/models/project/ProjectFiles';
 import { Permission } from '@/sdk/models/role/Permission';
@@ -22,9 +25,12 @@ import {
 import { showToast, Toasts } from '@/ui/toast';
 
 import {
+	childrenByParent,
 	decodeDestination,
 	formatFileBytes,
 	isProtectedEntry,
+	limitWorkspaceFiles,
+	projectWorkspaceLoadTimeoutMs,
 	ProjectFileWorkspaceHelpers,
 	sameDestination,
 	type ManagedProjectFileEntry,
@@ -51,13 +57,49 @@ function isSessionCurrent(sessionIdentity: string | undefined, envID: string) {
 	);
 }
 
+async function fetchWorkspace(client: ArcaneClient, envID: string, projectID: string) {
+	const controller = new AbortController();
+	const deadline = { expired: false };
+	const timer = setTimeout(() => {
+		deadline.expired = true;
+		controller.abort();
+	}, projectWorkspaceLoadTimeoutMs);
+	try {
+		const workspace = await client
+			.withSignal(controller.signal)
+			.projects.workspace({ envID, projectID });
+		return {
+			...limitWorkspaceFiles(
+				workspace.files,
+				RemoteDataLimits.maximumCollectionItems,
+				workspace.fileTreeTruncated
+			),
+			fileTreeRevision: workspace.fileTreeRevision
+		};
+	} catch (error) {
+		if (deadline.expired) throw new ArcaneTimeoutError('Project files took too long to load.');
+		throw error;
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
 const workspaceFileText = (file: { content?: string }) => file.content ?? '';
 
-function readOnlyReasonFor(project: { isArchived: boolean; gitOpsManagedBy?: string } | undefined) {
-	if (project?.isArchived) return 'Archived projects are read-only.';
-	if (project?.gitOpsManagedBy !== undefined) return 'GitOps-managed project files are read-only.';
+type ProjectLock = 'archived' | 'gitOps';
+
+function projectLockFor(
+	project: { isArchived: boolean; gitOpsManagedBy?: string } | undefined
+): ProjectLock | undefined {
+	if (project?.isArchived) return 'archived';
+	if (project?.gitOpsManagedBy !== undefined) return 'gitOps';
 	return undefined;
 }
+
+const lockReasons: Record<ProjectLock, string> = {
+	archived: 'Archived projects are read-only.',
+	gitOps: 'GitOps-managed files are read-only, except .env.'
+};
 
 export function useProjectFilesWorkspace() {
 	const router = useRouter();
@@ -93,9 +135,12 @@ export function useProjectFilesWorkspace() {
 	>({});
 	const [managedFileLoadErrors, setManagedFileLoadErrors] = useState<Record<string, string>>({});
 	const [managedFileLoading, setManagedFileLoading] = useState<Set<string>>(new Set());
-	const [readOnlyReason, setReadOnlyReason] = useState(() => readOnlyReasonFor(initialProject));
+	const [projectLock, setProjectLock] = useState(() => projectLockFor(initialProject));
 	const [hasLoaded, setHasLoaded] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
+	const [filesLoading, setFilesLoading] = useState(false);
+	const [filesError, setFilesError] = useState<string>();
+	const [filesTruncated, setFilesTruncated] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>();
 	const [showDiscard, setShowDiscard] = useState(false);
@@ -110,7 +155,9 @@ export function useProjectFilesWorkspace() {
 	const canDeployProject = usePermission(Permission.Projects.deploy, envID);
 	const sessionIsCurrent = () => isSessionCurrent(sessionIdentity, envID);
 	const sessionCurrent = sessionIdentity === currentSession && acceptsEnvironmentContext;
-	const canEdit = readOnlyReason === undefined && sessionCurrent && canUpdateProject;
+	const readOnlyReason = projectLock === undefined ? undefined : lockReasons[projectLock];
+	const canEdit = projectLock === undefined && sessionCurrent && canUpdateProject;
+	const canEditEnv = projectLock !== 'archived' && sessionCurrent && canUpdateProject;
 
 	const hasCoreChanges =
 		composeContent !== originalComposeContent || envContent !== originalEnvContent;
@@ -132,6 +179,11 @@ export function useProjectFilesWorkspace() {
 		() => new Set(displayedFiles.map((entry) => entry.relativePath)),
 		[displayedFiles]
 	);
+	const childrenIndex = useMemo(() => childrenByParent(displayedFiles), [displayedFiles]);
+	const entriesByPath = useMemo(
+		() => new Map(displayedFiles.map((entry) => [entry.relativePath, entry])),
+		[displayedFiles]
+	);
 
 	const latest = useRef({ managedFileContents, displayedFiles });
 	useLayoutEffect(() => {
@@ -141,6 +193,33 @@ export function useProjectFilesWorkspace() {
 	const dismiss = () => {
 		if (router.canGoBack()) router.back();
 	};
+
+	const loadWorkspace = useCallback(async () => {
+		const client = useClientManager.getState().client;
+		const current = () => isSessionCurrent(sessionIdentity, envID);
+		if (!current() || !client) return;
+		setFilesLoading(true);
+		setFilesError(undefined);
+		await withCleanup(
+			async () => {
+				try {
+					const workspace = await fetchWorkspace(client, envID, projectID);
+					if (!current()) return;
+					setProjectFiles(workspace.files);
+					setFilesTruncated(workspace.truncated);
+					setFileTreeRevision(workspace.fileTreeRevision);
+					setStagedChanges([]);
+					setManagedFileContents({});
+					setOriginalManagedFileContents({});
+					setManagedFileLoadErrors({});
+					setManagedFileLoading(new Set());
+				} catch (error) {
+					if (current()) setFilesError(friendlyErrorMessage(error));
+				}
+			},
+			() => setFilesLoading(false)
+		);
+	}, [envID, projectID, sessionIdentity]);
 
 	const loadFiles = useCallback(async () => {
 		const client = useClientManager.getState().client;
@@ -161,28 +240,14 @@ export function useProjectFilesWorkspace() {
 			setEnvContent(compose.envContent ?? '');
 			setOriginalComposeContent(compose.composeContent ?? '');
 			setOriginalEnvContent(compose.envContent ?? '');
-			setReadOnlyReason(readOnlyReasonFor(compose));
+			setProjectLock(projectLockFor(compose));
 		};
-		await withCleanup(
+		const composeTask = withCleanup(
 			async () => {
 				try {
 					const compose = await client.projects.compose({ envID, projectID });
 					if (!current()) return;
 					applyCompose(compose);
-				} catch (error) {
-					setErrorMessage(friendlyErrorMessage(error));
-				}
-
-				try {
-					const workspace = await client.projects.workspace({ envID, projectID });
-					if (!current()) return;
-					setProjectFiles(workspace.files);
-					setFileTreeRevision(workspace.fileTreeRevision);
-					setStagedChanges([]);
-					setManagedFileContents({});
-					setOriginalManagedFileContents({});
-					setManagedFileLoadErrors({});
-					setManagedFileLoading(new Set());
 				} catch (error) {
 					setErrorMessage(friendlyErrorMessage(error));
 				}
@@ -192,7 +257,8 @@ export function useProjectFilesWorkspace() {
 				setHasLoaded(true);
 			}
 		);
-	}, [envID, projectID, sessionIdentity]);
+		await Promise.all([composeTask, loadWorkspace()]);
+	}, [envID, projectID, sessionIdentity, loadWorkspace]);
 
 	useEffect(() => {
 		void loadFiles();
@@ -287,7 +353,7 @@ export function useProjectFilesWorkspace() {
 
 	const saveChanges = async (deploy = false, deployOptions?: DeployOptions) => {
 		const client = useClientManager.getState().client;
-		if (!canEdit || !hasChanges || !client) return;
+		if (!canEditEnv || !hasChanges || !client) return;
 		setIsSaving(true);
 		setErrorMessage(undefined);
 		const fileChanges = buildProjectFileSaveChanges();
@@ -304,12 +370,18 @@ export function useProjectFilesWorkspace() {
 			}
 			const latestCompose = await client.projects.compose({ envID, projectID });
 			if (!sessionIsCurrent()) return;
-			if (latestCompose.isArchived || latestCompose.gitOpsManagedBy !== undefined) {
-				setReadOnlyReason('This project is read-only.');
+			const latestLock = projectLockFor(latestCompose);
+			setProjectLock(latestLock);
+			if (
+				latestLock === 'archived' ||
+				(latestLock === 'gitOps' &&
+					(composeContent !== originalComposeContent || fileChanges.length > 0))
+			) {
 				return;
 			}
 			if (
-				(latestCompose.composeContent ?? '') !== originalComposeContent ||
+				(latestLock !== 'gitOps' &&
+					(latestCompose.composeContent ?? '') !== originalComposeContent) ||
 				(latestCompose.envContent ?? '') !== originalEnvContent
 			) {
 				setErrorMessage(
@@ -509,7 +581,11 @@ export function useProjectFilesWorkspace() {
 		}
 	};
 
-	const openFileDialog = (dialog: ProjectFileDialog) =>
+	const openFileDialog = (dialog: ProjectFileDialog) => {
+		if (fileTreeRevision === undefined) {
+			showToast(Toasts.error("Project files haven't loaded yet."));
+			return;
+		}
 		nav.openFileDialog({
 			dialog,
 			folders: displayedFiles.filter((entry) => entry.isDirectory),
@@ -517,6 +593,7 @@ export function useProjectFilesWorkspace() {
 			composeFileName,
 			onSubmit: submitFileDialog
 		});
+	};
 
 	useDeleteConfirmation(
 		showDiscard,
@@ -553,10 +630,8 @@ export function useProjectFilesWorkspace() {
 		projectFilesConfirmationHost
 	);
 
-	const childEntries = (folderPath: string) =>
-		displayedFiles.filter(
-			(entry) => ProjectFileWorkspaceHelpers.parentPath(entry.relativePath) === folderPath
-		);
+	const childEntries = (folderPath: string): readonly ManagedProjectFileEntry[] =>
+		childrenIndex.get(folderPath) ?? [];
 
 	const fileHasUnsavedContent = (path: string) =>
 		managedFileContents[path] !== undefined &&
@@ -572,7 +647,7 @@ export function useProjectFilesWorkspace() {
 		return formatFileBytes(entry.size);
 	};
 
-	const entryFor = (path: string) => displayedFiles.find((entry) => entry.relativePath === path);
+	const entryFor = (path: string) => entriesByPath.get(path);
 
 	return {
 		environmentID: envID,
@@ -582,8 +657,14 @@ export function useProjectFilesWorkspace() {
 		isLoading,
 		isSaving,
 		errorMessage,
+		filesLoading,
+		filesError,
+		filesTruncated,
+		retryFiles: () => (hasManagedChanges ? setShowReloadConfirmation(true) : void loadWorkspace()),
 		readOnlyReason,
+		envReadOnlyReason: projectLock === 'archived' ? lockReasons.archived : undefined,
 		canEdit,
+		canEditEnv,
 		sessionIsCurrent: sessionCurrent,
 		hasChanges,
 		projectName,

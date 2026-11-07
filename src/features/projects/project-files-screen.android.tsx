@@ -13,7 +13,6 @@ import {
 	BackHandler,
 	Pressable,
 	RefreshControl,
-	ScrollView,
 	Text,
 	View
 } from 'react-native';
@@ -22,6 +21,11 @@ import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import { CodeEditor, type CodeEditorLanguage } from '@/ui/components/code-editor';
 import { DeleteConfirmationHost } from '@/ui/components/delete-confirmation';
+import {
+	GroupedFlashList,
+	groupPosition,
+	type GroupedListEntry
+} from '@/ui/components/grouped-flash-list';
 import { m3 } from '@/ui/components/material-colors';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
@@ -208,8 +212,8 @@ function projectFileActions(model: Model, folderPath: string): ComposeMenuAction
 	return actions;
 }
 
-function EditorNotice({ model }: { model: Model }) {
-	const message = model.errorMessage ?? model.readOnlyReason;
+function EditorNotice({ model, readOnlyReason }: { model: Model; readOnlyReason?: string }) {
+	const message = model.errorMessage ?? readOnlyReason;
 	return (
 		<>
 			{message !== undefined ? (
@@ -241,6 +245,7 @@ function NativeEditor({
 	text,
 	setText,
 	readOnly,
+	readOnlyReason,
 	folderPath,
 	navigation
 }: {
@@ -251,6 +256,7 @@ function NativeEditor({
 	text: string;
 	setText: (text: string) => void;
 	readOnly: boolean;
+	readOnlyReason?: string;
 	folderPath: string;
 	navigation: ComposeNavigation;
 }) {
@@ -276,7 +282,7 @@ function NativeEditor({
 	const destination: ComposeDestination = { screen, binding: { session }, readOnly, title };
 	return (
 		<View style={{ flex: 1 }}>
-			<EditorNotice model={model} />
+			<EditorNotice model={model} readOnlyReason={readOnlyReason} />
 			<ComposeNavigationContext.Provider value={navigation}>
 				<ComposeDestinationScreen destination={destination} />
 			</ComposeNavigationContext.Provider>
@@ -320,6 +326,7 @@ function ManagedFileEditor({
 				text={content}
 				setText={(text) => model.setManagedFileContent(path, text)}
 				readOnly={model.isEntryReadOnly(path)}
+				readOnlyReason={model.readOnlyReason}
 				folderPath={ProjectFileWorkspaceHelpers.parentPath(path)}
 				navigation={navigation}
 			/>
@@ -357,6 +364,175 @@ function entryMenu(model: Model, entry: ManagedProjectFileEntry): RowMenuItem[] 
 	return items;
 }
 
+type BrowserEntry = GroupedListEntry &
+	(
+		| { type: 'compose' }
+		| { type: 'env' }
+		| { type: 'empty' }
+		| { type: 'file'; entry: ManagedProjectFileEntry }
+	);
+
+const browserRowStyle = {
+	paddingHorizontal: 16,
+	paddingVertical: 12,
+	minHeight: 56,
+	justifyContent: 'center' as const
+};
+
+function browserEntries(model: Model, folderPath: string): BrowserEntry[] {
+	const children = model.childEntries(folderPath);
+	const rows: (
+		| { key: string; type: 'compose' }
+		| { key: string; type: 'env' }
+		| { key: string; type: 'empty' }
+		| { key: string; type: 'file'; entry: ManagedProjectFileEntry }
+	)[] = [];
+	if (folderPath === '') {
+		rows.push({ key: 'compose', type: 'compose' }, { key: 'env', type: 'env' });
+	} else if (children.length === 0 && !model.filesLoading && model.filesError === undefined) {
+		rows.push({ key: 'empty', type: 'empty' });
+	}
+	for (const entry of children) rows.push({ key: `file:${entry.id}`, type: 'file', entry });
+	return rows.map((row, index) => ({ ...row, grouped: groupPosition(index, rows.length) }));
+}
+
+function BrowserEntryRow({
+	model,
+	row,
+	push
+}: {
+	model: Model;
+	row: BrowserEntry;
+	push: (d: ProjectFilesDestination) => void;
+}) {
+	switch (row.type) {
+		case 'compose':
+			return (
+				<LongPressMenu items={[]} onPress={() => push({ kind: 'compose' })} style={browserRowStyle}>
+					<ProjectFileBrowserRow
+						name={model.composeFileName}
+						systemImage="doc.text"
+						isDirectory={false}
+						hasChanges={model.composeChanged}
+					/>
+				</LongPressMenu>
+			);
+		case 'env':
+			return (
+				<LongPressMenu items={[]} onPress={() => push({ kind: 'env' })} style={browserRowStyle}>
+					<ProjectFileBrowserRow
+						name=".env"
+						systemImage="key.horizontal"
+						isDirectory={false}
+						hasChanges={model.envChanged}
+					/>
+				</LongPressMenu>
+			);
+		case 'empty':
+			return (
+				<View style={{ alignItems: 'center', gap: 12, paddingVertical: 36, paddingHorizontal: 16 }}>
+					<Icon name="folder" size={40} color={colors.secondaryLabel} />
+					<Text style={[m3Type.titleMedium, { color: colors.label }]}>Empty Folder</Text>
+					<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel, textAlign: 'center' }]}>
+						{model.emptyStateMessage}
+					</Text>
+				</View>
+			);
+		case 'file': {
+			const entry = row.entry;
+			return (
+				<LongPressMenu
+					items={entryMenu(model, entry)}
+					title={entry.name}
+					onPress={() =>
+						push(
+							entry.isDirectory
+								? { kind: 'folder', path: entry.relativePath }
+								: { kind: 'managedFile', path: entry.relativePath }
+						)
+					}
+					style={browserRowStyle}
+				>
+					<ProjectFileBrowserRow
+						name={entry.name}
+						detail={model.browserRowDetail(entry)}
+						systemImage={entry.isDirectory ? 'folder.fill' : 'doc.text'}
+						isDirectory={entry.isDirectory}
+						isProtected={isProtectedEntry(entry)}
+						hasChanges={entry.pending || model.fileHasUnsavedContent(entry.relativePath)}
+						isLoading={model.managedFileIsLoading(entry.relativePath)}
+					/>
+				</LongPressMenu>
+			);
+		}
+	}
+}
+
+function FilesStatus({ model, isEmpty }: { model: Model; isEmpty: boolean }) {
+	if (model.filesError !== undefined) {
+		return (
+			<View
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					gap: 8,
+					paddingHorizontal: 32,
+					paddingTop: 12
+				}}
+			>
+				<Icon name="exclamationmark.triangle" size={14} color={systemColors.red} />
+				<Text style={[m3Type.bodySmall, { color: systemColors.red, flex: 1 }]}>
+					{model.filesError}
+				</Text>
+				<Pressable
+					onPress={model.retryFiles}
+					disabled={model.filesLoading}
+					accessibilityRole="button"
+					android_ripple={{ color: m3.primaryContainer, borderless: true }}
+					style={{ paddingHorizontal: 8, paddingVertical: 4 }}
+				>
+					<Text style={[m3Type.labelLarge, { color: m3.primary }]}>Retry</Text>
+				</Pressable>
+			</View>
+		);
+	}
+	if (model.filesLoading && isEmpty) {
+		return (
+			<View
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					gap: 12,
+					paddingHorizontal: 32,
+					paddingTop: 16
+				}}
+			>
+				<ActivityIndicator size="small" color={m3.primary} />
+				<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>Loading files...</Text>
+			</View>
+		);
+	}
+	if (model.filesTruncated) {
+		return (
+			<View
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					gap: 8,
+					paddingHorizontal: 32,
+					paddingTop: 12
+				}}
+			>
+				<Icon name="info.circle" size={14} color={colors.secondaryLabel} />
+				<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel, flex: 1 }]}>
+					Some files aren't shown.
+				</Text>
+			</View>
+		);
+	}
+	return null;
+}
+
 function FilesBrowser({
 	model,
 	folderPath,
@@ -367,17 +543,12 @@ function FilesBrowser({
 	push: (d: ProjectFilesDestination) => void;
 }) {
 	const [refreshing, setRefreshing] = useState(false);
-	const children = model.childEntries(folderPath);
-	const rowStyle = {
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		minHeight: 56,
-		justifyContent: 'center' as const
-	};
+	const entries = browserEntries(model, folderPath);
 	return (
-		<ScrollView
-			style={{ flex: 1, backgroundColor: colors.systemGroupedBackground }}
-			contentContainerStyle={{ paddingBottom: 32 }}
+		<GroupedFlashList
+			data={entries}
+			extraData={model}
+			renderEntry={(row) => <BrowserEntryRow model={model} row={row} push={push} />}
 			refreshControl={
 				<RefreshControl
 					refreshing={refreshing}
@@ -388,113 +559,67 @@ function FilesBrowser({
 					colors={[systemColors.blue]}
 				/>
 			}
-		>
-			{model.readOnlyReason !== undefined ? (
-				<M3Section>
-					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16 }}>
-						<Icon name="lock" size={14} color={colors.secondaryLabel} />
-						<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel, flex: 1 }]}>
-							{model.readOnlyReason}
-						</Text>
-					</View>
-				</M3Section>
-			) : null}
-
-			<M3Section>
-				{folderPath === '' ? (
-					<>
-						<LongPressMenu items={[]} onPress={() => push({ kind: 'compose' })} style={rowStyle}>
-							<ProjectFileBrowserRow
-								name={model.composeFileName}
-								systemImage="doc.text"
-								isDirectory={false}
-								hasChanges={model.composeChanged}
-							/>
-						</LongPressMenu>
-						<LongPressMenu items={[]} onPress={() => push({ kind: 'env' })} style={rowStyle}>
-							<ProjectFileBrowserRow
-								name=".env"
-								systemImage="key.horizontal"
-								isDirectory={false}
-								hasChanges={model.envChanged}
-							/>
-						</LongPressMenu>
-					</>
-				) : null}
-				{children.length === 0 && folderPath !== '' ? (
-					<View
-						style={{ alignItems: 'center', gap: 12, paddingVertical: 36, paddingHorizontal: 16 }}
-					>
-						<Icon name="folder" size={40} color={colors.secondaryLabel} />
-						<Text style={[m3Type.titleMedium, { color: colors.label }]}>Empty Folder</Text>
-						<Text
-							style={[m3Type.bodyMedium, { color: colors.secondaryLabel, textAlign: 'center' }]}
+			contentContainerStyle={{ paddingBottom: 32 }}
+			header={
+				<>
+					{model.readOnlyReason !== undefined ? (
+						<M3Section>
+							<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16 }}>
+								<Icon name="lock" size={14} color={colors.secondaryLabel} />
+								<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel, flex: 1 }]}>
+									{model.readOnlyReason}
+								</Text>
+							</View>
+						</M3Section>
+					) : null}
+					<View style={{ height: 12 }} />
+				</>
+			}
+			footer={
+				<>
+					<FilesStatus model={model} isEmpty={model.childEntries(folderPath).length === 0} />
+					{model.hasChanges ? (
+						<View
+							style={{
+								flexDirection: 'row',
+								alignItems: 'center',
+								gap: 8,
+								paddingHorizontal: 32,
+								paddingTop: 16
+							}}
 						>
-							{model.emptyStateMessage}
-						</Text>
-					</View>
-				) : (
-					children.map((entry) => (
-						<LongPressMenu
-							key={entry.id}
-							items={entryMenu(model, entry)}
-							title={entry.name}
-							onPress={() =>
-								push(
-									entry.isDirectory
-										? { kind: 'folder', path: entry.relativePath }
-										: { kind: 'managedFile', path: entry.relativePath }
-								)
-							}
-							style={rowStyle}
-						>
-							<ProjectFileBrowserRow
-								name={entry.name}
-								detail={model.browserRowDetail(entry)}
-								systemImage={entry.isDirectory ? 'folder.fill' : 'doc.text'}
-								isDirectory={entry.isDirectory}
-								isProtected={isProtectedEntry(entry)}
-								hasChanges={entry.pending || model.fileHasUnsavedContent(entry.relativePath)}
-								isLoading={model.managedFileIsLoading(entry.relativePath)}
+							<View
+								style={{
+									width: 8,
+									height: 8,
+									borderRadius: 4,
+									backgroundColor: systemColors.orange
+								}}
 							/>
-						</LongPressMenu>
-					))
-				)}
-			</M3Section>
-
-			{model.hasChanges ? (
-				<View
-					style={{
-						flexDirection: 'row',
-						alignItems: 'center',
-						gap: 8,
-						paddingHorizontal: 32,
-						paddingTop: 16
-					}}
-				>
-					<View
-						style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: systemColors.orange }}
-					/>
-					<Text style={[m3Type.bodySmall, { color: systemColors.orange }]}>Unsaved changes</Text>
-				</View>
-			) : null}
-			{model.errorMessage !== undefined ? (
-				<View
-					style={{
-						flexDirection: 'row',
-						alignItems: 'center',
-						gap: 8,
-						paddingHorizontal: 32,
-						paddingTop: 12
-					}}
-				>
-					<Icon name="exclamationmark.triangle" size={14} color={systemColors.red} />
-					<Text style={[m3Type.bodySmall, { color: systemColors.red, flex: 1 }]}>
-						{model.errorMessage}
-					</Text>
-				</View>
-			) : null}
-		</ScrollView>
+							<Text style={[m3Type.bodySmall, { color: systemColors.orange }]}>
+								Unsaved changes
+							</Text>
+						</View>
+					) : null}
+					{model.errorMessage !== undefined ? (
+						<View
+							style={{
+								flexDirection: 'row',
+								alignItems: 'center',
+								gap: 8,
+								paddingHorizontal: 32,
+								paddingTop: 12
+							}}
+						>
+							<Icon name="exclamationmark.triangle" size={14} color={systemColors.red} />
+							<Text style={[m3Type.bodySmall, { color: systemColors.red, flex: 1 }]}>
+								{model.errorMessage}
+							</Text>
+						</View>
+					) : null}
+				</>
+			}
+		/>
 	);
 }
 
@@ -521,6 +646,7 @@ function WorkspaceContent({
 						text={model.composeContent}
 						setText={model.setComposeContent}
 						readOnly={!model.canEdit}
+						readOnlyReason={model.readOnlyReason}
 						folderPath=""
 						navigation={navigation}
 					/>
@@ -548,7 +674,8 @@ function WorkspaceContent({
 						title=".env"
 						text={model.envContent}
 						setText={model.setEnvContent}
-						readOnly={!model.canEdit}
+						readOnly={!model.canEditEnv}
+						readOnlyReason={model.envReadOnlyReason}
 						folderPath=""
 						navigation={navigation}
 					/>
@@ -559,8 +686,8 @@ function WorkspaceContent({
 					text={model.envContent}
 					onChangeText={model.setEnvContent}
 					language="env"
-					readOnly={!model.canEdit}
-					readOnlyMessage={model.readOnlyReason}
+					readOnly={!model.canEditEnv}
+					readOnlyMessage={model.envReadOnlyReason}
 					isLoading={false}
 					errorMessage={model.errorMessage}
 				/>
@@ -676,7 +803,7 @@ export function ProjectFilesScreen() {
 								]),
 					...(model.isSaving
 						? [{ kind: 'spinner', id: 'save', label: 'Save' } as const]
-						: model.canEdit && model.hasChanges
+						: model.canEditEnv && model.hasChanges
 							? [
 									{
 										kind: 'button',

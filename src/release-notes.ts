@@ -46,6 +46,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Clear History confirmation hidden behind the Activities sheet.'
 			},
 			{
+				text: 'Project files hanging on large folders and .env locked in GitOps projects.'
+			},
+			{
 				text: 'Environment cards cut off at larger text sizes.'
 			},
 			{
@@ -76,7 +79,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Volume browsing without manage permission and hidden server error messages.'
 			},
 			{
-				text: 'Assorted visual and tap target issues.'
+				text: 'Assorted visual, scrolling and tap target issues.'
 			}
 		]
 	},
