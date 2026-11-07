@@ -52,7 +52,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Push notifications failing to enable on Android.'
 			},
 			{
-				text: 'Unreadable certificate errors on sign-in.'
+				text: 'Sign-in dropping proxy tokens in the URL and unreadable certificate errors.'
 			},
 			{
 				text: 'Signing out not revoking the session.'
