@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -90,6 +91,7 @@ export function useAPIKeyDetail() {
 	const navigation = useSettingsNavigation();
 	const stack = useNavigation();
 	const access = useAPIKeyAccess();
+	const [advanced] = useAdvancedFeatures();
 	const currentUserID = useClientManager((s) => s.currentUser?.id);
 	const [apiKey, setApiKey] = useState<APIKey | undefined>(payload?.apiKey);
 	const [metadata, setMetadata] = useState<APIKeyServerMetadata>();
@@ -235,7 +237,7 @@ export function useAPIKeyDetail() {
 	};
 
 	const actionItems: ActionButtonItem[] = [];
-	if (access.canUpdate && !isProtected) {
+	if (advanced && access.canUpdate && !isProtected) {
 		actionItems.push({
 			id: 'edit',
 			title: 'Edit',

@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
@@ -104,7 +105,7 @@ export function SwarmStacksScreen() {
 					}
 				}}
 			/>
-			{model.canManage ? (
+			{model.canCreate ? (
 				<AndroidToolbar
 					items={[
 						{
@@ -261,7 +262,7 @@ export function SwarmStackDetailScreen() {
 	);
 }
 
-export function SwarmStackEditorScreen() {
+function SwarmStackEditorScreenContent() {
 	const model = useSwarmStackEditor();
 	const [editingFile, setEditingFile] = useState<'compose' | 'env'>();
 	const validation = model.validation;
@@ -460,5 +461,13 @@ export function SwarmStackEditorScreen() {
 			</ScrollView>
 			<DeleteConfirmationHost hostID={stackEditorConfirmationHost} />
 		</>
+	);
+}
+
+export function SwarmStackEditorScreen() {
+	return (
+		<AdvancedGate>
+			<SwarmStackEditorScreenContent />
+		</AdvancedGate>
 	);
 }

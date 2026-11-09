@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
@@ -43,7 +44,7 @@ export function SwarmKeyValuesScreen() {
 					}
 				}}
 			/>
-			{model.canManage ? (
+			{model.canCreate ? (
 				<AndroidToolbar
 					items={[
 						{
@@ -167,7 +168,7 @@ export function SwarmKeyValueDetailScreen() {
 	);
 }
 
-export function SwarmKeyValueCreateScreen() {
+function SwarmKeyValueCreateScreenContent() {
 	const model = useSwarmKeyValueCreate();
 	return (
 		<>
@@ -246,5 +247,13 @@ export function SwarmKeyValueCreateScreen() {
 				<SheetError message={model.errorMessage} />
 			</ScrollView>
 		</>
+	);
+}
+
+export function SwarmKeyValueCreateScreen() {
+	return (
+		<AdvancedGate>
+			<SwarmKeyValueCreateScreenContent />
+		</AdvancedGate>
 	);
 }

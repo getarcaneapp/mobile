@@ -206,7 +206,7 @@ export function SwarmServicesScreen() {
 					}
 				}}
 			/>
-			{model.canManage ? (
+			{model.canCreate ? (
 				<AndroidToolbar
 					items={[
 						{

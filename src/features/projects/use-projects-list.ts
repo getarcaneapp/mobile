@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { performAllEnvironmentsMaintenance } from '@/core/all-environments-actions';
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
@@ -178,6 +179,7 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 			hasPermission(Permission.Templates.list, null) &&
 			hasPermission(Permission.Templates.read, null)
 	);
+	const [canCreateProject] = useAdvancedFeatures();
 	const createEnvironments = useClientManager(
 		useShallow(() =>
 			listEnvironments.filter((e) => hasPermission(Permission.Projects.create, e.id))
@@ -259,6 +261,7 @@ export function useProjectsList({ environmentID, allEnvironments = false }: Proj
 		openTemplates: nav.openTemplates,
 		listEnvironments,
 		createEnvironments,
+		canCreateProject,
 		presentCreateProject: (envID: EnvironmentID) => nav.openCreate(envID),
 		openArchived: nav.openArchived,
 		isOperationRunning,

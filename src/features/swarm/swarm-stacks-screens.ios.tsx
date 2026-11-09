@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Host } from '@/ui/host';
 import { UnavailableView } from '@/ui/components/unavailable-view';
 import {
@@ -164,7 +165,7 @@ export function SwarmStacksScreen() {
 					}
 				}}
 			/>
-			{model.canManage ? (
+			{model.canCreate ? (
 				<AppToolbar placement="right" tintColor={accent}>
 					<Stack.Toolbar.Button
 						icon={icon('plus')}
@@ -345,7 +346,7 @@ function FileEditor({
 	);
 }
 
-export function SwarmStackEditorScreen() {
+function SwarmStackEditorScreenContent() {
 	const model = useSwarmStackEditor();
 	const validation = model.validation;
 	return (
@@ -494,5 +495,13 @@ export function SwarmStackEditorScreen() {
 			</Host>
 			<DeleteConfirmationHost hostID={stackEditorConfirmationHost} />
 		</>
+	);
+}
+
+export function SwarmStackEditorScreen() {
+	return (
+		<AdvancedGate>
+			<SwarmStackEditorScreenContent />
+		</AdvancedGate>
 	);
 }

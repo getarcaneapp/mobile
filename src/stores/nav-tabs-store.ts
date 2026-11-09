@@ -1,16 +1,16 @@
 import { create } from 'zustand';
 
 import {
-	AppTabIDs,
 	canPinToBottomBar,
 	isAppTab,
 	mainDefaults,
 	type AppTab,
 	type PinnableTab
 } from '@/core/app-tab';
+import { resolveTabs, slotCount } from '@/core/resolve-tabs';
 import { Keys, storage } from '@/core/storage';
 
-const slotCount = 4;
+export { resolveTabs };
 
 function isValidConfiguration(tabs: AppTab[]): tabs is PinnableTab[] {
 	return (
@@ -23,26 +23,6 @@ function loadPinnedTabs(): PinnableTab[] {
 	if (!Array.isArray(ids) || ids.length !== slotCount) return mainDefaults;
 	const resolved = ids.filter((id): id is AppTab => typeof id === 'string' && isAppTab(id));
 	return isValidConfiguration(resolved) ? resolved : mainDefaults;
-}
-
-export function resolveTabs(
-	pinned: readonly AppTab[],
-	availableTabs: ReadonlySet<AppTab>
-): PinnableTab[] {
-	const visible: PinnableTab[] = pinned.filter(
-		(tab): tab is PinnableTab => canPinToBottomBar(tab) && availableTabs.has(tab)
-	);
-	for (const fallback of mainDefaults) {
-		if (visible.length === slotCount) break;
-		if (availableTabs.has(fallback) && !visible.includes(fallback)) visible.push(fallback);
-	}
-	for (const fallback of AppTabIDs) {
-		if (visible.length === slotCount) break;
-		if (canPinToBottomBar(fallback) && availableTabs.has(fallback) && !visible.includes(fallback)) {
-			visible.push(fallback);
-		}
-	}
-	return visible.slice(0, slotCount);
 }
 
 type NavTabsState = {

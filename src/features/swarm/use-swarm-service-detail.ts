@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -103,6 +104,7 @@ export function useSwarmServiceDetail() {
 	const draft = useMemo(() => (inspect ? draftFromSpec(inspect.spec) : undefined), [inspect]);
 	const name = draft?.name ?? summary?.name ?? shortID(serviceID);
 	const canManage = can(Permission.Swarm.services);
+	const [advanced] = useAdvancedFeatures();
 	const canReadLogs = can(Permission.Swarm.servicesLogs);
 
 	const latestName = useRef<string | undefined>(undefined);
@@ -203,11 +205,13 @@ export function useSwarmServiceDetail() {
 						if (summary) swarm.openScale(environmentID, summary);
 					}
 				}
-			: editAction;
+			: advanced
+				? editAction
+				: undefined;
 	const secondary: ActionButtonItem[] = !canManage
 		? []
 		: [
-				...(isReplicated && inspect ? [editAction] : []),
+				...(isReplicated && inspect && advanced ? [editAction] : []),
 				{
 					id: 'rollback',
 					title: 'Rollback',

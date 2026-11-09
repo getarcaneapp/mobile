@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
@@ -83,7 +84,9 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 	const canAutoUpdate = useClientManager(() =>
 		hasPermission(Permission.Containers.autoUpdate, environmentID)
 	);
-	const canEdit = useClientManager(() => hasPermission('containers:edit', environmentID));
+	const [advanced] = useAdvancedFeatures();
+	const canEditPermission = useClientManager(() => hasPermission('containers:edit', environmentID));
+	const canEdit = advanced && canEditPermission;
 	const canCommit = useClientManager(() => hasPermission('images:commit', environmentID));
 	const canKill = useClientManager(() => hasPermission('containers:kill', environmentID));
 

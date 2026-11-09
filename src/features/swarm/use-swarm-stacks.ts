@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -40,6 +41,7 @@ export function useSwarmStacks(environmentID: EnvironmentID) {
 		debouncedSearch
 	);
 	const canManage = can(Permission.Swarm.stacks);
+	const [advanced] = useAdvancedFeatures();
 
 	const deleteStack = async (stack: SwarmStackSummary) => {
 		const client = useClientManager.getState().client;
@@ -67,6 +69,7 @@ export function useSwarmStacks(environmentID: EnvironmentID) {
 		environmentID,
 		setSearchText,
 		canManage,
+		canCreate: canManage && advanced,
 		emptyTitle: debouncedSearch === '' ? 'No Stacks' : 'No Results',
 		servicesText: (stack: SwarmStackSummary) =>
 			`${stack.services} service${stack.services === 1 ? '' : 's'}`,
@@ -91,6 +94,7 @@ export function useSwarmStackDetail() {
 	const [sourceError, setSourceError] = useState<string>();
 	const [runningActionID, setRunningActionID] = useState<string>();
 	const canManage = can(Permission.Swarm.stacks);
+	const [advanced] = useAdvancedFeatures();
 
 	const tabs: ScrollableTabOption<StackDetailTab>[] = [
 		{
@@ -137,15 +141,16 @@ export function useSwarmStackDetail() {
 		);
 	};
 
-	const primary: ActionButtonItem | undefined = canManage
-		? {
-				id: 'edit',
-				title: 'Edit',
-				systemImage: 'pencil',
-				tint: accent,
-				action: () => swarm.openStackEditor(environmentID, name)
-			}
-		: undefined;
+	const primary: ActionButtonItem | undefined =
+		canManage && advanced
+			? {
+					id: 'edit',
+					title: 'Edit',
+					systemImage: 'pencil',
+					tint: accent,
+					action: () => swarm.openStackEditor(environmentID, name)
+				}
+			: undefined;
 	const overflow: ActionButtonItem[] = canManage
 		? [
 				{

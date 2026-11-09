@@ -35,7 +35,8 @@ import {
 	normalizeServerURLInput,
 	serverCacheIdentity
 } from '@/core/networking/server-identity';
-import { Keys, storage } from '@/core/storage';
+import { migrateAdvancedFeatures } from '@/core/advanced-features';
+import { defaults, Keys, storage } from '@/core/storage';
 import { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { APIGeneration } from '@/sdk/client/apiGeneration';
 import { EnvironmentID, RetryPolicy } from '@/sdk/client/environment';
@@ -99,6 +100,7 @@ type ClientManagerState = {
 	authenticationGeneration: number;
 	cacheSessionIdentity: string;
 	accessGeneration: number;
+	advancedFeatures: boolean;
 
 	currentUserAvatarURI: string | undefined;
 
@@ -202,6 +204,12 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 	let avatarFetchKey: string | undefined;
 
 	const bumpAccess = () => set((s) => ({ accessGeneration: s.accessGeneration + 1 }));
+
+	storage.subscribe(Keys.advancedFeatures, () => {
+		const next = defaults.getBoolean(Keys.advancedFeatures) ?? false;
+		if (next === get().advancedFeatures) return;
+		set((s) => ({ advancedFeatures: next, accessGeneration: s.accessGeneration + 1 }));
+	});
 
 	const isCurrentAuthentication = (generation: number) =>
 		generation === get().authenticationGeneration;
@@ -566,6 +574,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		authenticationGeneration: 0,
 		cacheSessionIdentity: newSessionIdentity(),
 		accessGeneration: 0,
+		advancedFeatures: migrateAdvancedFeatures(),
 		currentUserAvatarURI: undefined,
 
 		serverOrigin: () => {

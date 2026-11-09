@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -91,7 +92,7 @@ function PermissionsBlock({
 	);
 }
 
-export function CreateAPIKeyScreen() {
+function CreateAPIKeyScreenContent() {
 	const model = useCreateAPIKey();
 	return (
 		<>
@@ -179,7 +180,7 @@ export function CreateAPIKeyScreen() {
 	);
 }
 
-export function EditAPIKeyScreen() {
+function EditAPIKeyScreenContent() {
 	const model = useEditAPIKey();
 	return (
 		<View style={{ flex: 1 }}>
@@ -264,5 +265,21 @@ export function EditAPIKeyScreen() {
 				reservesTabBarSpace={false}
 			/>
 		</View>
+	);
+}
+
+export function CreateAPIKeyScreen() {
+	return (
+		<AdvancedGate>
+			<CreateAPIKeyScreenContent />
+		</AdvancedGate>
+	);
+}
+
+export function EditAPIKeyScreen() {
+	return (
+		<AdvancedGate>
+			<EditAPIKeyScreenContent />
+		</AdvancedGate>
 	);
 }

@@ -13,6 +13,7 @@ import {
 	performAllEnvironmentsMaintenance,
 	performAllEnvironmentsPrune
 } from '@/core/all-environments-actions';
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { usePermissionCheck } from '@/core/auth/permissions';
 import { BulkActionRunner, type BulkResult } from '@/core/bulk-action-runner';
 import { friendlyErrorMessage } from '@/core/errors';
@@ -366,9 +367,10 @@ export function useContainersList({
 	const listEnvironments: ListEnvironment[] = allEnvironments
 		? snapshot.environments
 		: [{ id: environmentID }];
-	const createEnvironments = listEnvironments.filter((e) =>
-		can(Permission.Containers.create, e.id)
-	);
+	const [advanced] = useAdvancedFeatures();
+	const createEnvironments = advanced
+		? listEnvironments.filter((e) => can(Permission.Containers.create, e.id))
+		: [];
 	const canStartAll = can(Permission.Containers.start, environmentID);
 	const canStopAll = can(Permission.Containers.stop, environmentID);
 	const enabledEnvironments = environmentsStoreEnabled.filter((e) => e.enabled);
@@ -581,6 +583,7 @@ export function useContainersList({
 			});
 		}
 		if (
+			advanced &&
 			isRBAC &&
 			selectionEnvironmentID !== undefined &&
 			can(Permission.Containers.read, selectionEnvironmentID)

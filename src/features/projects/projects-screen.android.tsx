@@ -123,7 +123,7 @@ function ProjectsToolbar({ model }: { model: ProjectsListModel }) {
 		onPress: model.openFilter
 	});
 	const create = model.createEnvironments;
-	if (!model.allEnvironments) {
+	if (model.canCreateProject && !model.allEnvironments) {
 		items.push({
 			kind: 'button',
 			id: 'create',
@@ -131,7 +131,7 @@ function ProjectsToolbar({ model }: { model: ProjectsListModel }) {
 			label: 'Create project',
 			onPress: () => model.presentCreateProject(model.environmentID)
 		});
-	} else if (environmentActionIsMenu(create)) {
+	} else if (model.canCreateProject && environmentActionIsMenu(create)) {
 		items.push({
 			kind: 'menu',
 			id: 'create',
@@ -143,7 +143,7 @@ function ProjectsToolbar({ model }: { model: ProjectsListModel }) {
 				onPress: () => model.presentCreateProject(environment.id)
 			}))
 		});
-	} else if (create[0]) {
+	} else if (model.canCreateProject && create[0]) {
 		const first = create[0];
 		items.push({
 			kind: 'button',
@@ -207,24 +207,30 @@ export function ProjectsScreen(props: ProjectsListProps) {
 					title="No Projects"
 					message="No Compose projects found in any environment."
 				/>
-				<MaterialListGroup>
-					<EnvironmentActionButton
-						title="Create Project"
-						systemImage="plus"
-						environments={model.createEnvironments}
-						action={model.presentCreateProject}
-					/>
-				</MaterialListGroup>
+				{model.canCreateProject ? (
+					<MaterialListGroup>
+						<EnvironmentActionButton
+							title="Create Project"
+							systemImage="plus"
+							environments={model.createEnvironments}
+							action={model.presentCreateProject}
+						/>
+					</MaterialListGroup>
+				) : null}
 			</View>
 		) : (
 			<CenteredMessage
 				icon="folder"
 				title="No Projects"
 				message="No Compose projects found in this environment."
-				action={{
-					title: 'Create Project',
-					onPress: () => model.presentCreateProject(props.environmentID)
-				}}
+				action={
+					model.canCreateProject
+						? {
+								title: 'Create Project',
+								onPress: () => model.presentCreateProject(props.environmentID)
+							}
+						: undefined
+				}
 			/>
 		);
 	} else if (visibleCount === 0 && !snapshot.hasMore) {

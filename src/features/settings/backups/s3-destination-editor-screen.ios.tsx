@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Button, Section, Text, Toggle } from '@expo/ui/swift-ui';
 import {
 	autocorrectionDisabled,
@@ -87,11 +88,27 @@ function S3DestinationEditor({
 	);
 }
 
-export function S3DestinationEditorScreen() {
+function S3DestinationEditorScreenContent() {
 	const destination = useS3DestinationParam();
 	return <S3DestinationEditor destination={destination} presentation="push" />;
 }
 
-export function S3DestinationCreateScreen() {
+function S3DestinationCreateScreenContent() {
 	return <S3DestinationEditor destination={undefined} presentation="sheet" />;
+}
+
+export function S3DestinationEditorScreen() {
+	return (
+		<AdvancedGate>
+			<S3DestinationEditorScreenContent />
+		</AdvancedGate>
+	);
+}
+
+export function S3DestinationCreateScreen() {
+	return (
+		<AdvancedGate>
+			<S3DestinationCreateScreenContent />
+		</AdvancedGate>
+	);
 }

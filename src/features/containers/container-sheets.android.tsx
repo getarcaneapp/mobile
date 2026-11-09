@@ -8,6 +8,7 @@ import { monoFamily } from '@/ui/components/type-scale';
 import { AndroidToolbar } from './android-toolbar';
 import { CenteredMessage, M3Section, M3TextField, SwitchRow } from './android-material';
 import { useContainerCommit, useContainerCompose } from './use-container-sheets';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
 type Params = { id?: string; envID?: string; name?: string };
 
@@ -80,7 +81,7 @@ export function ContainerCommitScreen() {
 	);
 }
 
-export function ContainerComposeScreen() {
+function ContainerComposeScreenContent() {
 	const { envID = '0', ids = '' } = useLocalSearchParams<{ envID?: string; ids?: string }>();
 	const model = useContainerCompose(envID, ids.split(','));
 	return (
@@ -131,5 +132,13 @@ export function ContainerComposeScreen() {
 				/>
 			)}
 		</>
+	);
+}
+
+export function ContainerComposeScreen() {
+	return (
+		<AdvancedGate>
+			<ContainerComposeScreenContent />
+		</AdvancedGate>
 	);
 }

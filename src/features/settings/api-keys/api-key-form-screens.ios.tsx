@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import {
@@ -103,7 +104,7 @@ function Sheet({ children }: { children: ReactNode }) {
 	);
 }
 
-export function CreateAPIKeyScreen() {
+function CreateAPIKeyScreenContent() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const model = useCreateAPIKey();
 	const search = usePermissionSearchModifier(model.supportsRBAC, model.setPermissionSearch);
@@ -212,7 +213,7 @@ export function CreateAPIKeyScreen() {
 	);
 }
 
-export function EditAPIKeyScreen() {
+function EditAPIKeyScreenContent() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const model = useEditAPIKey();
 	const search = usePermissionSearchModifier(
@@ -323,5 +324,21 @@ export function EditAPIKeyScreen() {
 				reservesTabBarSpace={false}
 			/>
 		</Sheet>
+	);
+}
+
+export function CreateAPIKeyScreen() {
+	return (
+		<AdvancedGate>
+			<CreateAPIKeyScreenContent />
+		</AdvancedGate>
+	);
+}
+
+export function EditAPIKeyScreen() {
+	return (
+		<AdvancedGate>
+			<EditAPIKeyScreenContent />
+		</AdvancedGate>
 	);
 }

@@ -242,7 +242,7 @@ export function SwarmServicesScreen() {
 					}
 				}}
 			/>
-			{model.canManage ? (
+			{model.canCreate ? (
 				<AppToolbar placement="right" tintColor={accent}>
 					<Stack.Toolbar.Button
 						icon={icon('plus')}

@@ -14,6 +14,7 @@ const context = (overrides: Partial<AccessContext>): AccessContext => ({
 	permissionsManifest: undefined,
 	activeEnvironmentID: '0',
 	allEnvironmentsPreview: false,
+	advancedFeatures: true,
 	...overrides
 });
 

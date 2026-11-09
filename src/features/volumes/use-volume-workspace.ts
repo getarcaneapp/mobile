@@ -2,6 +2,7 @@ import { File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { localizedStandardCompare } from '@/core/list-sort-order';
@@ -36,6 +37,7 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 	const userID = useClientManager((s) => s.currentUser?.id);
 	const canUpload = usePermission(Permission.Volumes.upload, environmentID);
 	const canDelete = usePermission(Permission.Volumes.delete, environmentID);
+	const [advanced] = useAdvancedFeatures();
 
 	const identity = `${generation}|${userID ?? ''}|${environmentID}|${volumeName}`;
 	useEffect(() => {
@@ -91,7 +93,7 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 		title: directory === '' ? volumeName : directory,
 		canUpload,
 		canDelete,
-		showsAddMenu: canUpload && state.workspace !== undefined,
+		showsAddMenu: advanced && canUpload && state.workspace !== undefined,
 		canRenameOrMove: (file: ProjectFile) => canUpload && canDelete && file.isSymlink !== true,
 		load: () => WorkspaceStore.load(environmentID, volumeName),
 		goToParent: () => setDirectory((d) => parentOf(d)),

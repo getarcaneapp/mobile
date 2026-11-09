@@ -132,7 +132,7 @@ export function VolumeBackupsScreen() {
 						<>
 							<Section>
 								<Button label="Create backup" onPress={model.openCreate} />
-								{model.supportsPolicies ? (
+								{model.showsPolicies ? (
 									<NavigationRow title="Backup policies" onPress={model.openPolicies} />
 								) : null}
 								{model.canUpload ? (

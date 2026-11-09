@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { RemoteDataLimits } from '@/core/networking/remote-data-limits';
@@ -156,8 +157,10 @@ export function useProjectFilesWorkspace() {
 	const sessionIsCurrent = () => isSessionCurrent(sessionIdentity, envID);
 	const sessionCurrent = sessionIdentity === currentSession && acceptsEnvironmentContext;
 	const readOnlyReason = projectLock === undefined ? undefined : lockReasons[projectLock];
-	const canEdit = projectLock === undefined && sessionCurrent && canUpdateProject;
-	const canEditEnv = projectLock !== 'archived' && sessionCurrent && canUpdateProject;
+	const [advanced] = useAdvancedFeatures();
+	const canWrite = projectLock === undefined && sessionCurrent && canUpdateProject;
+	const canEdit = canWrite && advanced;
+	const canEditEnv = projectLock !== 'archived' && sessionCurrent && canUpdateProject && advanced;
 
 	const hasCoreChanges =
 		composeContent !== originalComposeContent || envContent !== originalEnvContent;
@@ -663,6 +666,8 @@ export function useProjectFilesWorkspace() {
 		retryFiles: () => (hasManagedChanges ? setShowReloadConfirmation(true) : void loadWorkspace()),
 		readOnlyReason,
 		envReadOnlyReason: projectLock === 'archived' ? lockReasons.archived : undefined,
+		advanced,
+		canWrite,
 		canEdit,
 		canEditEnv,
 		sessionIsCurrent: sessionCurrent,

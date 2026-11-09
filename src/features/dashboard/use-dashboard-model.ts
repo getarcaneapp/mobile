@@ -296,10 +296,11 @@ export function useDashboardModel() {
 
 	const pinned = useNavTabsStore((s) => s.pinnedTabs);
 	const canAccess = useClientManager((s) => s.canAccess);
-	const visibleTabs = useMemo(
-		() => new Set<AppTab>(resolveTabs(pinned, new Set(AppTabIDs.filter(canAccess)))),
-		[pinned, canAccess]
-	);
+	const accessGeneration = useClientManager((s) => s.accessGeneration);
+	const visibleTabs = useMemo(() => {
+		void accessGeneration;
+		return new Set<AppTab>(resolveTabs(pinned, new Set(AppTabIDs.filter(canAccess))));
+	}, [pinned, canAccess, accessGeneration]);
 
 	const selectTab = (tab: AppTab, params?: Record<string, string>) => {
 		if (visibleTabs.has(tab))

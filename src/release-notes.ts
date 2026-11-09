@@ -23,6 +23,9 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Live list refresh and environment variable setting locks on Arcane v3.'
+			},
+			{
+				text: 'Show Advanced Features setting.'
 			}
 		],
 		changed: [
@@ -34,6 +37,12 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Faster loading and scrolling.'
+			},
+			{
+				text: 'More grouped into Monitor, Resources, Operations and Setup.'
+			},
+			{
+				text: 'Editing and setup screens hidden unless Show Advanced Features is on.'
 			}
 		],
 		removed: [

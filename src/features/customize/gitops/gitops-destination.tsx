@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { useClientManager } from '@/stores/client-manager';
@@ -36,6 +37,7 @@ export function GitOpsSyncsView({
 }) {
 	const nav = useGitOpsNavigation();
 	const canManageRepositories = useClientManager((s) => s.canAccess('gitRepositories'));
+	const [advanced] = useAdvancedFeatures();
 	return (
 		<DynamicResourceListView
 			title="GitOps"
@@ -46,9 +48,9 @@ export function GitOpsSyncsView({
 			emptyTitle="No GitOps Syncs"
 			actions={actions}
 			createTitle="Create GitOps Sync"
-			createFields={gitOpsSyncFields}
-			createPath={syncsPath}
-			edit={gitOpsSyncEditConfig}
+			createFields={advanced ? gitOpsSyncFields : undefined}
+			createPath={advanced ? syncsPath : undefined}
+			edit={advanced ? gitOpsSyncEditConfig : undefined}
 			managementDestination={canManageRepositories ? 'gitRepositories' : undefined}
 			openDetail={(item, onChange) =>
 				nav.openSync({ resource: item.value, environmentID: item.environmentID, onChange })

@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 
@@ -39,6 +40,7 @@ export function useSwarmServices(environmentID: EnvironmentID, stackName?: strin
 	);
 
 	const canManage = can(Permission.Swarm.services);
+	const [advanced] = useAdvancedFeatures();
 	const canReadLogs = can(Permission.Swarm.servicesLogs);
 
 	const deleteService = async (service: SwarmServiceSummary) => {
@@ -69,6 +71,7 @@ export function useSwarmServices(environmentID: EnvironmentID, stackName?: strin
 		debouncedSearch,
 		setSearchText,
 		canManage,
+		canCreate: canManage && advanced,
 		canReadLogs,
 		emptyTitle: debouncedSearch === '' ? 'No Services' : 'No Results',
 		showsStack: stackName === undefined,

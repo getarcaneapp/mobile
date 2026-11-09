@@ -74,6 +74,13 @@ function GeneralSection({ model }: { model: AppSettingsModel }) {
 					color={systemColors.indigo}
 				/>
 			</Toggle>
+			<Toggle isOn={model.advancedFeatures} onIsOnChange={model.setAdvancedFeatures}>
+				<SettingsRow
+					title="Show Advanced Features"
+					systemImage="slider.horizontal.3"
+					color={systemColors.gray}
+				/>
+			</Toggle>
 		</Section>
 	);
 }

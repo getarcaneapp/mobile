@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { FormNumberField, FormPicker, FormTextField } from '@/ui/components/form-fields';
 
 import { M3Section, SwitchRow, TextButtonRow } from '../shared/android-material';
@@ -6,7 +7,7 @@ import { BackupDestinationPicker } from './backup-forms-screens';
 import { usePolicyEditorParam } from './backup-routes';
 import { policyVolumeSelectionOptions, useBackupPolicyEditor } from './use-backup-policy-editor';
 
-export function BackupPolicyEditorScreen() {
+function BackupPolicyEditorScreenContent() {
 	const model = useBackupPolicyEditor(usePolicyEditorParam());
 	return (
 		<AndroidFormScreen
@@ -109,5 +110,13 @@ export function BackupPolicyEditorScreen() {
 				</M3Section>
 			) : null}
 		</AndroidFormScreen>
+	);
+}
+
+export function BackupPolicyEditorScreen() {
+	return (
+		<AdvancedGate>
+			<BackupPolicyEditorScreenContent />
+		</AdvancedGate>
 	);
 }

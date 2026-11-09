@@ -93,5 +93,6 @@ export const Keys = {
 	rememberLastTab: 'arcane.rememberLastTab',
 	lastSelectedTabID: 'arcane.lastSelectedTabID',
 	showTabLabels: 'arcane.showTabLabels',
-	navBarTabs: 'arcane.navBarTabs'
+	navBarTabs: 'arcane.navBarTabs',
+	advancedFeatures: 'arcane.advancedFeatures'
 } as const;

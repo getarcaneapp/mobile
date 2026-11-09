@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
@@ -11,7 +12,7 @@ import { TextRow } from './android-rows';
 import { BackupDestinationPicker } from './backup-destination-picker';
 import { useBackupPolicyEditor } from './use-backup-policy-editor';
 
-export function BackupPolicyEditorScreen() {
+function BackupPolicyEditorScreenContent() {
 	const { name = '', envID = '0' } = useLocalSearchParams<{ name?: string; envID?: string }>();
 	const model = useBackupPolicyEditor(envID, name);
 
@@ -111,5 +112,13 @@ export function BackupPolicyEditorScreen() {
 				</View>
 			</ScrollView>
 		</>
+	);
+}
+
+export function BackupPolicyEditorScreen() {
+	return (
+		<AdvancedGate>
+			<BackupPolicyEditorScreenContent />
+		</AdvancedGate>
 	);
 }

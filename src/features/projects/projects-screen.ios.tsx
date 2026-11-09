@@ -201,7 +201,7 @@ function ProjectsToolbar({ model }: { model: ProjectsListModel }) {
 						</Stack.Toolbar.MenuAction>
 					)}
 				</Stack.Toolbar.Menu>
-				{!model.allEnvironments ? (
+				{!model.canCreateProject ? null : !model.allEnvironments ? (
 					<Stack.Toolbar.Button
 						icon="plus"
 						separateBackground
@@ -265,7 +265,7 @@ export function ProjectsScreen(props: ProjectsListProps) {
 						: 'No Compose projects found in this environment.'
 				}
 			>
-				{props.allEnvironments ? (
+				{!model.canCreateProject ? null : props.allEnvironments ? (
 					<EnvironmentActionButton
 						title="Create Project"
 						systemImage="plus"

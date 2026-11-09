@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { File, Paths } from 'expo-file-system';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createStore, type StoreApi } from 'zustand/vanilla';
@@ -164,6 +165,7 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 
 	const canBackup = usePermission('volumes:backup', environmentID);
 	const canUpload = usePermission('volumes:upload', environmentID);
+	const [advanced] = useAdvancedFeatures();
 
 	const createActionRef = useRef<() => Promise<boolean>>(async () => false);
 	const [createState] = useState<BackupCreateStore>(() =>
@@ -437,6 +439,7 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 		canBackup,
 		canUpload,
 		supportsPolicies,
+		showsPolicies: supportsPolicies && advanced,
 		destinations,
 		downloadFile,
 		discoverID,

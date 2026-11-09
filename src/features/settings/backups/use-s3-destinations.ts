@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { withCleanup } from '@/core/with-cleanup';
@@ -46,6 +47,7 @@ async function fetchS3DestinationsPage(
 }
 
 export function useS3Destinations() {
+	const [advanced] = useAdvancedFeatures();
 	const client = useClientManager((s) => s.client);
 	const clientGeneration = useClientManager((s) => s.clientGeneration);
 	const permissions = useGlobalPermissions();
@@ -149,7 +151,7 @@ export function useS3Destinations() {
 		loadMoreError,
 		hasMore,
 		busy,
-		canCreate: permissions.has('s3-destinations:create'),
+		canCreate: advanced && permissions.has('s3-destinations:create'),
 		canDelete: permissions.has('s3-destinations:delete'),
 		deleteTarget,
 		setDeleteTarget,

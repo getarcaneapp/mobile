@@ -9,8 +9,9 @@ import { CenteredMessage, M3Section } from '@/features/containers/android-materi
 import { AndroidToolbar, type AndroidToolbarItem } from '@/features/containers/android-toolbar';
 
 import { useRenderCompose } from './use-render-compose';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
-export function RenderComposeScreen() {
+function RenderComposeScreenContent() {
 	const model = useRenderCompose();
 	const items: AndroidToolbarItem[] = [];
 	if (model.showPreview)
@@ -129,5 +130,13 @@ export function RenderComposeScreen() {
 			<AndroidToolbar items={items} />
 			{body}
 		</>
+	);
+}
+
+export function RenderComposeScreen() {
+	return (
+		<AdvancedGate>
+			<RenderComposeScreenContent />
+		</AdvancedGate>
 	);
 }

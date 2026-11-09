@@ -49,6 +49,13 @@ export function AppSettingsScreen() {
 						value={model.rememberLastTab}
 						onValueChange={model.setRememberLastTab}
 					/>
+					<IconSwitchRow
+						title="Show Advanced Features"
+						icon="slider.horizontal.3"
+						iconColor={systemColors.gray}
+						value={model.advancedFeatures}
+						onValueChange={model.setAdvancedFeatures}
+					/>
 				</M3Section>
 
 				<M3Section

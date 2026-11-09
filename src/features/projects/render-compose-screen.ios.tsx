@@ -30,8 +30,9 @@ import {
 import { FormTextField } from '@/ui/components/form-fields';
 
 import { useRenderCompose } from './use-render-compose';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
-export function RenderComposeScreen() {
+function RenderComposeScreenContent() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const model = useRenderCompose();
 	const titled = [navigationTitle(model.title), navigationBarTitleDisplayMode('inline')];
@@ -148,5 +149,13 @@ export function RenderComposeScreen() {
 				</Toolbar>
 			</NavigationStack>
 		</Host>
+	);
+}
+
+export function RenderComposeScreen() {
+	return (
+		<AdvancedGate>
+			<RenderComposeScreenContent />
+		</AdvancedGate>
 	);
 }

@@ -181,34 +181,35 @@ function projectFileActions(model: Model, folderPath: string): ComposeMenuAction
 			id: 'deploy-saved',
 			title: 'Deploy Saved Project',
 			systemImage: 'play',
-			disabled: !model.canEdit || model.hasChanges || model.isSaving,
+			disabled: !model.canWrite || model.hasChanges || model.isSaving,
 			onPress: model.deploySaved
 		});
 	}
-	actions.push(
-		{
-			id: 'new-file',
-			title: 'New File',
-			systemImage: 'doc.badge.plus',
-			disabled: !model.canEdit,
-			dividerBefore: actions.length > 0,
-			onPress: () => model.newFile(folderPath)
-		},
-		{
-			id: 'new-folder',
-			title: 'New Folder',
-			systemImage: 'folder.badge.plus',
-			disabled: !model.canEdit,
-			onPress: () => model.newFolder(folderPath)
-		},
-		{
-			id: 'reload',
-			title: 'Reload',
-			systemImage: 'arrow.clockwise',
-			dividerBefore: true,
-			onPress: model.reload
-		}
-	);
+	if (model.advanced)
+		actions.push(
+			{
+				id: 'new-file',
+				title: 'New File',
+				systemImage: 'doc.badge.plus',
+				disabled: !model.canEdit,
+				dividerBefore: actions.length > 0,
+				onPress: () => model.newFile(folderPath)
+			},
+			{
+				id: 'new-folder',
+				title: 'New Folder',
+				systemImage: 'folder.badge.plus',
+				disabled: !model.canEdit,
+				onPress: () => model.newFolder(folderPath)
+			}
+		);
+	actions.push({
+		id: 'reload',
+		title: 'Reload',
+		systemImage: 'arrow.clockwise',
+		dividerBefore: actions.length > 0,
+		onPress: model.reload
+	});
 	return actions;
 }
 
@@ -739,18 +740,22 @@ export function ProjectFilesScreen() {
 
 	const folderPath = destinationFolderPath(current);
 	const menu: AndroidMenuItem[] = [
-		{
-			id: 'new-file',
-			title: 'New File',
-			disabled: !model.canEdit,
-			onPress: () => model.newFile(folderPath)
-		},
-		{
-			id: 'new-folder',
-			title: 'New Folder',
-			disabled: !model.canEdit,
-			onPress: () => model.newFolder(folderPath)
-		},
+		...(model.advanced
+			? [
+					{
+						id: 'new-file',
+						title: 'New File',
+						disabled: !model.canEdit,
+						onPress: () => model.newFile(folderPath)
+					},
+					{
+						id: 'new-folder',
+						title: 'New Folder',
+						disabled: !model.canEdit,
+						onPress: () => model.newFolder(folderPath)
+					}
+				]
+			: []),
 		{ id: 'reload', title: 'Reload', onPress: model.reload }
 	];
 	const previewMenu: AndroidMenuItem[] = projectFileActions(model, folderPath).map((action) => ({
@@ -796,8 +801,8 @@ export function ProjectFilesScreen() {
 										: ({
 												kind: 'menu',
 												id: 'add',
-												icon: 'plus',
-												label: 'Add file or folder',
+												icon: model.advanced ? 'plus' : 'ellipsis',
+												label: model.advanced ? 'Add file or folder' : 'Project file actions',
 												items: menu
 											} as const)
 								]),

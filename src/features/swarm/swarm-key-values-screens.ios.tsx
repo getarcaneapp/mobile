@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Host } from '@/ui/host';
 import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import {
@@ -70,7 +71,7 @@ export function SwarmKeyValuesScreen() {
 					}
 				}}
 			/>
-			{model.canManage ? (
+			{model.canCreate ? (
 				<AppToolbar placement="right">
 					<AppToolbar.Button
 						icon={icon('plus')}
@@ -214,7 +215,7 @@ export function SwarmKeyValueDetailScreen() {
 	);
 }
 
-export function SwarmKeyValueCreateScreen() {
+function SwarmKeyValueCreateScreenContent() {
 	const model = useSwarmKeyValueCreate();
 	return (
 		<>
@@ -291,5 +292,13 @@ export function SwarmKeyValueCreateScreen() {
 				</NavigationStack>
 			</Host>
 		</>
+	);
+}
+
+export function SwarmKeyValueCreateScreen() {
+	return (
+		<AdvancedGate>
+			<SwarmKeyValueCreateScreenContent />
+		</AdvancedGate>
 	);
 }

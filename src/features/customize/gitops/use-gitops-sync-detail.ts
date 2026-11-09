@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -26,6 +27,7 @@ import { gitOpsSyncEditConfig, type GitOpsSyncPayload } from './gitops-routes';
 export function useGitOpsSyncDetail() {
 	const nav = useDynamicResourceNavigation();
 	const accent = useAccentColor();
+	const [advanced] = useAdvancedFeatures();
 	const params = useLocalSearchParams<{ id?: string; envID?: string; token?: string }>();
 	const [payload] = useState(() => settingsPayloads.get<GitOpsSyncPayload>(params.token));
 	const syncID = payload?.resource.id ?? params.id ?? '';
@@ -175,7 +177,7 @@ export function useGitOpsSyncDetail() {
 			action: () => openURL(repositoryWebURL)
 		});
 	}
-	if (!isBackup && resource !== undefined) {
+	if (advanced && !isBackup && resource !== undefined) {
 		overflowActions.push({
 			id: 'edit',
 			title: 'Edit',

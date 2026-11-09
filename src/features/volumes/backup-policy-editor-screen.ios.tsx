@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Host } from '@/ui/host';
 import { Button, Form, Section, Stepper, Text, Toggle } from '@expo/ui/swift-ui';
 import { disabled, foregroundStyle } from '@expo/ui/swift-ui/modifiers';
@@ -10,7 +11,7 @@ import { AppToolbar } from '@/ui/components/toolbar';
 import { BackupDestinationPicker } from './backup-destination-picker';
 import { useBackupPolicyEditor } from './use-backup-policy-editor';
 
-export function BackupPolicyEditorScreen() {
+function BackupPolicyEditorScreenContent() {
 	const { name = '', envID = '0' } = useLocalSearchParams<{ name?: string; envID?: string }>();
 	const model = useBackupPolicyEditor(envID, name);
 
@@ -86,5 +87,13 @@ export function BackupPolicyEditorScreen() {
 				</Form>
 			</Host>
 		</>
+	);
+}
+
+export function BackupPolicyEditorScreen() {
+	return (
+		<AdvancedGate>
+			<BackupPolicyEditorScreenContent />
+		</AdvancedGate>
 	);
 }
