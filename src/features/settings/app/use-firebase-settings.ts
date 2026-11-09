@@ -52,7 +52,9 @@ export function useFirebaseSettings() {
 		() => ArcaneFirebase.getOptions() ?? emptyFirebaseSettings
 	);
 	const [busy, setBusy] = useState(false);
-	const firebaseReady = usePushNotificationCoordinator((s) => s.firebaseReady);
+	const [hasSavedSettings, setHasSavedSettings] = useState(
+		() => ArcaneFirebase.getOptions() !== undefined
+	);
 
 	const setField = (field: keyof FirebaseSettings, value: string) =>
 		setSettings((current) => ({ ...current, [field]: value }));
@@ -74,8 +76,12 @@ export function useFirebaseSettings() {
 		void (async () => {
 			const problem = await saveSettings(settings);
 			setBusy(false);
-			if (problem) showToast(Toasts.error(problem));
-			else showToast(Toasts.success('Firebase settings saved'));
+			if (problem) {
+				showToast(Toasts.error(problem));
+				return;
+			}
+			setHasSavedSettings(ArcaneFirebase.getOptions() !== undefined);
+			showToast(Toasts.success('Firebase settings saved'));
 		})();
 	};
 
@@ -85,6 +91,7 @@ export function useFirebaseSettings() {
 			await clearSettings();
 			setBusy(false);
 			setSettings(emptyFirebaseSettings);
+			setHasSavedSettings(ArcaneFirebase.getOptions() !== undefined);
 			showToast(Toasts.info('Firebase settings removed'));
 		})();
 	};
@@ -93,7 +100,7 @@ export function useFirebaseSettings() {
 		settings,
 		setField,
 		busy,
-		firebaseReady,
+		hasSavedSettings,
 		packageName: Application.applicationId ?? '',
 		importFromClipboard,
 		save,

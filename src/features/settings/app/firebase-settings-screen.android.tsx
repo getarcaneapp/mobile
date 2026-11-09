@@ -53,7 +53,7 @@ export function FirebaseSettingsScreen() {
 				</M3Section>
 				<M3Section>
 					<TextButtonRow title="Save" onPress={model.save} disabled={model.busy} />
-					{model.firebaseReady ? (
+					{model.hasSavedSettings ? (
 						<TextButtonRow title="Remove" onPress={model.clear} disabled={model.busy} destructive />
 					) : null}
 				</M3Section>
