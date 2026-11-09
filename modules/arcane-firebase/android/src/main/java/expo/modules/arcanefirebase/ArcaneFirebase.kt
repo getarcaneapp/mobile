@@ -1,5 +1,7 @@
 package expo.modules.arcanefirebase
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
@@ -44,6 +46,8 @@ object ArcaneFirebase {
   private const val APPLICATION_ID = "applicationId"
   private const val API_KEY = "apiKey"
   private const val SENDER_ID = "senderId"
+  private const val RESTART_REQUEST_CODE = 7301
+  private const val RESTART_DELAY_MS = 500L
 
   fun read(context: Context): ArcaneFirebaseOptions? {
     val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
@@ -91,8 +95,15 @@ object ArcaneFirebase {
   fun restart(context: Context) {
     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-    context.startActivity(intent)
-    Handler(Looper.getMainLooper()).postDelayed({ Process.killProcess(Process.myPid()) }, 300)
+    val pending = PendingIntent.getActivity(
+      context,
+      RESTART_REQUEST_CODE,
+      intent,
+      PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+    val alarms = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+    alarms.set(AlarmManager.RTC, System.currentTimeMillis() + RESTART_DELAY_MS, pending)
+    Handler(Looper.getMainLooper()).postDelayed({ Process.killProcess(Process.myPid()) }, 100)
   }
 }
 
