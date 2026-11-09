@@ -9,35 +9,13 @@ import { m3 } from '@/ui/components/material-colors';
 import type { ActionButtonItem } from '@/ui/components/toolbar';
 import { Icon } from '@/ui/Icon';
 
-export type AndroidMenuItem = {
-	id: string;
-	title: string;
-	destructive?: boolean;
-	disabled?: boolean;
-	checked?: boolean;
-	selected?: boolean;
-	onPress: () => void;
-};
+import type {
+	AndroidResourceActionsToolbarProps,
+	AndroidToolbarItem,
+	AndroidToolbarProps
+} from './android-toolbar.types';
 
-export type AndroidToolbarItem =
-	| {
-			kind: 'button';
-			id: string;
-			icon: string;
-			label: string;
-			onPress: () => void;
-			disabled?: boolean;
-			color?: ColorValue;
-	  }
-	| {
-			kind: 'menu';
-			id: string;
-			icon: string;
-			label: string;
-			items: AndroidMenuItem[];
-			disabled?: boolean;
-	  }
-	| { kind: 'spinner'; id: string; label: string };
+export type { AndroidMenuItem, AndroidToolbarItem } from './android-toolbar.types';
 
 function IconGlyph({
 	icon,
@@ -85,13 +63,7 @@ function isSelectedIcon(icon: string) {
 	return selectedIcons.has(icon);
 }
 
-export function AndroidToolbar({
-	placement = 'right',
-	items
-}: {
-	placement?: 'left' | 'right';
-	items: AndroidToolbarItem[];
-}) {
+export function AndroidToolbar({ placement = 'right', items }: AndroidToolbarProps) {
 	return (
 		<Stack.Toolbar placement={placement}>
 			<Stack.Toolbar.View>
@@ -168,14 +140,7 @@ export function AndroidResourceActionsToolbar({
 	runningItemID,
 	isDisabled = false,
 	resourceName
-}: {
-	primary?: ActionButtonItem;
-	secondary?: ActionButtonItem[];
-	overflow?: ActionButtonItem[];
-	runningItemID?: string;
-	isDisabled?: boolean;
-	resourceName?: string;
-}) {
+}: AndroidResourceActionsToolbarProps) {
 	const [pending, setPending] = useState<ActionButtonItem>();
 	useItemDeleteConfirmation(pending, setPending, (item) => ({
 		title: resourceName ? `${item.title} ${resourceName}?` : `${item.title}?`,

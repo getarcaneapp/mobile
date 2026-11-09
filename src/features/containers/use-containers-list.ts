@@ -25,6 +25,7 @@ import type {
 } from '@/sdk/models/container/ContainerSummary';
 import { Permission } from '@/sdk/models/role/Permission';
 import { useAllEnvironmentsOperationStore } from '@/stores/all-environments-operation-store';
+import { resourcePage } from '@/core/networking/pagination-loader';
 import { useClientManager } from '@/stores/client-manager';
 import { ContainerResourceSampleStore } from '@/stores/container-resource-sample-store';
 import { useContainerDeploymentStore } from '@/stores/container-deployment-store';
@@ -119,11 +120,12 @@ export function useContainerRowMetrics(
 	}, [item.value, supported, sample, pending]);
 }
 
-const bulkTint = {
-	green: systemColors.green,
-	red: systemColors.red,
-	orange: systemColors.orange
-} as const;
+const bulkTint = () =>
+	({
+		green: systemColors.green,
+		red: systemColors.red,
+		orange: systemColors.orange
+	}) as const;
 
 async function runPowerAll(action: PowerAllAction, environmentID: EnvironmentID) {
 	const current = useClientManager.getState().client;
@@ -236,7 +238,7 @@ export function useContainersList({
 				includeHidden: showHidden ? true : undefined,
 				label: trimmedLabel === '' ? undefined : trimmedLabel
 			});
-			return { items: response.data, pagination: response.pagination };
+			return resourcePage(response);
 		};
 	}, []);
 
@@ -247,7 +249,7 @@ export function useContainersList({
 			const environments = await useEnvironmentsStore
 				.getState()
 				.listEnvironments(environmentID, allEnvironments);
-			await list.reload(environments, fetch, { preservingLoadedRange });
+			await list.reload(environments, fetch, { preservingLoadedRange, aggregates: true });
 		},
 		[containersPage, list, environmentID, allEnvironments]
 	);
@@ -557,7 +559,7 @@ export function useContainersList({
 			id: info.id,
 			title: info.title,
 			systemImage: info.systemImage,
-			tint: bulkTint[info.tint],
+			tint: bulkTint()[info.tint],
 			action: () => void runBulkAction(action)
 		};
 	};

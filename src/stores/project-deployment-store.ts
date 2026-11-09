@@ -314,6 +314,8 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 					}
 					flush();
 					if (useClientManager.getState().clientGeneration !== session) {
+						LiveActivities.finish(operation.id, 'cancelled');
+						finishActivityToast(operation.id, operation.title, 'cancelled');
 						set({ operation: undefined });
 						return;
 					}

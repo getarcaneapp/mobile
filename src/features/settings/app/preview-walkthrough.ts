@@ -58,7 +58,7 @@ export const refreshedDashboardWalkthrough: WalkthroughContent = {
 		{
 			title: 'Make it yours.',
 			message:
-				'Touch and hold the tiles to choose what they show. Each host lists its containers, images, volumes and disk.'
+				'Edit Dashboard reorders and hides widgets. Each environment lists its containers, images, volumes and disk.'
 		}
 	],
 	seenKey: RefreshedDashboardIntroduction.seenKey,

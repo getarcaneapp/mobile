@@ -1,4 +1,5 @@
 import type { PaginationResponse } from '@/sdk/models/base/pagination';
+import type { EnvironmentFailure } from '@/sdk/pagination/PaginatedResponse';
 
 import { RemoteDataLimitError, RemoteDataLimits } from './remote-data-limits';
 
@@ -7,11 +8,44 @@ export type Identifiable = { id: string };
 export interface ResourcePage<Element> {
 	items: Element[];
 	pagination: PaginationResponse;
+	failedEnvironments?: EnvironmentFailure[];
+}
+
+export function resourcePage<Element>(response: {
+	data: Element[];
+	pagination: PaginationResponse;
+	failedEnvironments?: EnvironmentFailure[];
+}): ResourcePage<Element> {
+	return {
+		items: response.data,
+		pagination: response.pagination,
+		failedEnvironments: response.failedEnvironments
+	};
 }
 
 export type FetchPage<Element> = (start: number, limit: number) => Promise<ResourcePage<Element>>;
 
 const maxSafeOffset = Number.MAX_SAFE_INTEGER;
+
+const maximumConcurrentPages = 4;
+
+async function mapWithConcurrency<Input, Output>(
+	inputs: readonly Input[],
+	concurrency: number,
+	run: (input: Input) => Promise<Output>
+): Promise<Output[]> {
+	const results: Output[] = Array.from({ length: inputs.length });
+	let nextIndex = 0;
+	const worker = async () => {
+		while (nextIndex < inputs.length) {
+			const index = nextIndex;
+			nextIndex += 1;
+			results[index] = await run(inputs[index] as Input);
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(concurrency, inputs.length) }, worker));
+	return results;
+}
 
 export const PaginationLoader = {
 	defaultPageSize: 50,
@@ -46,7 +80,9 @@ export const PaginationLoader = {
 			if (nextStart > maxSafeOffset || nextStart <= at)
 				throw RemoteDataLimitError.collectionTooLarge(itemLimit);
 			let reachedEnd: boolean;
-			if (page.pagination.totalItems >= 0) {
+			if (page.pagination.hasNextPage !== undefined && page.pagination.totalItems < 0) {
+				reachedEnd = !page.pagination.hasNextPage;
+			} else if (page.pagination.totalItems >= 0) {
 				reachedEnd = nextStart >= page.pagination.totalItems;
 			} else if (page.pagination.totalPages >= 0) {
 				reachedEnd = page.pagination.currentPage >= page.pagination.totalPages;
@@ -77,7 +113,9 @@ export const PaginationLoader = {
 				start = following.start;
 				continue;
 			}
-			const pages = await Promise.all(starts.map((pageStart) => fetchPage(pageStart, limit)));
+			const pages = await mapWithConcurrency(starts, maximumConcurrentPages, (pageStart) =>
+				fetchPage(pageStart, limit)
+			);
 			for (const loaded of pages) append(loaded);
 			const lastStart = starts[starts.length - 1];
 			const lastPage = pages[pages.length - 1];
@@ -157,7 +195,9 @@ export const ProgressivePaginationState = {
 		}
 		if (itemCount <= 0) return { ...state, totalItems, nextStart: candidateStart, hasMore: false };
 		let hasMore: boolean;
-		if (pagination.totalItems >= 0) {
+		if (pagination.hasNextPage !== undefined && pagination.totalItems < 0) {
+			hasMore = pagination.hasNextPage;
+		} else if (pagination.totalItems >= 0) {
 			hasMore = candidateStart < pagination.totalItems;
 		} else if (pagination.totalPages >= 0) {
 			hasMore = pagination.currentPage < pagination.totalPages;

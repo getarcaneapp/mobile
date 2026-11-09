@@ -1,6 +1,5 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
@@ -40,23 +39,27 @@ import { downloadAndShare } from './share-file';
 
 export type DetailTab = 'overview' | 'stats' | 'logs' | 'processes';
 
-export const detailTabs: { value: DetailTab; title: string; systemImage: string; tint: string }[] =
-	[
-		{
-			value: 'overview',
-			title: 'Overview',
-			systemImage: 'info.circle.fill',
-			tint: systemColors.purple
-		},
-		{ value: 'stats', title: 'Stats', systemImage: 'chart.xyaxis.line', tint: systemColors.blue },
-		{ value: 'logs', title: 'Logs', systemImage: 'text.alignleft', tint: systemColors.teal },
-		{
-			value: 'processes',
-			title: 'Processes',
-			systemImage: 'list.number',
-			tint: systemColors.orange
-		}
-	];
+export const detailTabs = (): {
+	value: DetailTab;
+	title: string;
+	systemImage: string;
+	tint: string;
+}[] => [
+	{
+		value: 'overview',
+		title: 'Overview',
+		systemImage: 'info.circle.fill',
+		tint: systemColors.purple
+	},
+	{ value: 'stats', title: 'Stats', systemImage: 'chart.xyaxis.line', tint: systemColors.blue },
+	{ value: 'logs', title: 'Logs', systemImage: 'text.alignleft', tint: systemColors.teal },
+	{
+		value: 'processes',
+		title: 'Processes',
+		systemImage: 'list.number',
+		tint: systemColors.orange
+	}
+];
 
 const nonEmpty = (value?: string) => (value ? value : undefined);
 
@@ -89,8 +92,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 		containerRef.current = container;
 	});
 
-	const showError = (error: unknown) =>
-		Alert.alert('Error', friendlyErrorMessage(error), [{ text: 'OK' }]);
+	const showError = (error: unknown) => showToast(Toasts.error(friendlyErrorMessage(error)));
 
 	const loadDetails = useCallback(async () => {
 		const client = useClientManager.getState().client;
@@ -145,7 +147,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 	})();
 	const headerIconUrl = (isDark: boolean) =>
 		(details ? themedIconUrl(details, isDark) : undefined) ?? themedIconUrl(container, isDark);
-	const availableTabs = detailTabs.filter(
+	const availableTabs = detailTabs().filter(
 		(tab) => tab.value !== 'processes' || (isRunning && !isPaused)
 	);
 	useEffect(() => {

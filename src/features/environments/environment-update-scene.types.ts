@@ -206,13 +206,23 @@ export function pipelineBubbleSize(count: number): number {
 	return 20;
 }
 
+export function pipelineIsActive(
+	environment: EnvironmentUpdateRingEnvironment,
+	activeEnvironmentID: string | undefined
+): boolean {
+	return (
+		environment.result.status === 'updating' ||
+		EnvironmentUpdateRingEnvironment.id(environment) === activeEnvironmentID
+	);
+}
+
 export function pipelineConnectorFill(
 	environment: EnvironmentUpdateRingEnvironment,
 	activeEnvironmentID: string | undefined
 ): number {
 	const p = EnvironmentUpdateBubblePresentation.fromStatus(environment.result.status);
 	if (EnvironmentUpdateBubblePresentation.isTerminal(p)) return 1;
-	if (EnvironmentUpdateRingEnvironment.id(environment) === activeEnvironmentID) return 0.5;
+	if (pipelineIsActive(environment, activeEnvironmentID)) return 0.5;
 	return 0;
 }
 

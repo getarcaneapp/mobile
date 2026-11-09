@@ -34,7 +34,12 @@ import {
 	type TemplatePreviewModel
 } from './use-template-preview';
 
-const fileTabs: { value: TemplateFileTab; title: string; systemImage: string; tint: string }[] = [
+const fileTabs = (): {
+	value: TemplateFileTab;
+	title: string;
+	systemImage: string;
+	tint: string;
+}[] => [
 	{ value: 'compose', title: 'compose.yml', systemImage: 'doc.text.fill', tint: systemColors.blue },
 	{ value: 'env', title: '.env', systemImage: 'key.fill', tint: systemColors.orange }
 ];
@@ -220,7 +225,7 @@ export function TemplatePreviewScreen() {
 				<ScrollableTabBar
 					selection={model.selectedTab}
 					onSelectionChange={model.setSelectedTab}
-					options={fileTabs}
+					options={fileTabs()}
 					accessibilityLabel="Template files"
 				/>
 				{model.selectedTab === 'compose' ? (

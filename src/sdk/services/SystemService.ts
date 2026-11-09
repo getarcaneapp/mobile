@@ -4,12 +4,16 @@ import { DockerInfo } from '../models/system/DockerInfo';
 import type { ConvertDockerRunRequest, ConvertDockerRunResponse } from '../models/system/DockerRun';
 import type { HealthResponse } from '../models/system/HealthResponse';
 import { PruneAllResult, type PruneAllRequest } from '../models/system/Prune';
+import { SystemDiskUsage } from '../models/system/SystemDiskUsage';
 import type { SystemStats } from '../models/system/SystemStats';
 import {
 	EnvironmentUpdateJob,
 	SystemContainerActionResult,
+	UpgradeJobStreamEvent,
+	UpgradeProgressEvent,
 	type UpgradeCheckResult
 } from '../models/system/Upgrade';
+import { NDJSONStream } from '../streaming/NDJSONStream';
 import { StatsStream } from '../streaming/Streams';
 
 export class SystemService {
@@ -40,6 +44,12 @@ export class SystemService {
 			{ authorized: true }
 		);
 		return this.rest.transport.decode(text, DockerInfo.decode);
+	}
+
+	diskUsage(args: { envID?: EnvironmentID } = {}): Promise<SystemDiskUsage> {
+		return this.rest.get(this.rest.environmentPath(args.envID, 'system/df'), {
+			decode: SystemDiskUsage.decode
+		});
 	}
 
 	prune(args: { options: PruneAllRequest; envID?: EnvironmentID }): Promise<PruneAllResult> {
@@ -95,9 +105,36 @@ export class SystemService {
 		return this.rest.postVoid(this.rest.environmentPath(args.envID, 'system/upgrade'));
 	}
 
-	triggerUpdateAll(args: { envID?: EnvironmentID } = {}): Promise<EnvironmentUpdateJob> {
+	triggerUpdateAll(
+		args: { envID?: EnvironmentID; environmentIDs?: readonly string[] } = {}
+	): Promise<EnvironmentUpdateJob> {
 		return this.rest.post(this.rest.environmentPath(args.envID, 'system/upgrade/all'), {
+			body:
+				args.environmentIDs && args.environmentIDs.length > 0
+					? { environmentIds: args.environmentIDs }
+					: undefined,
 			decode: EnvironmentUpdateJob.decode
+		});
+	}
+
+	upgradeJobStream(): NDJSONStream<UpgradeJobStreamEvent> {
+		return new NDJSONStream<UpgradeJobStreamEvent>(this.rest.transport, {
+			path: 'stream',
+			method: 'GET',
+			contentType: null,
+			query: [{ name: 'channels', value: UpgradeJobStreamEvent.channel }],
+			decode: UpgradeJobStreamEvent.decode
+		});
+	}
+
+	upgradeProgress(args: { envID?: EnvironmentID } = {}): NDJSONStream<UpgradeProgressEvent> {
+		return new NDJSONStream<UpgradeProgressEvent>(this.rest.transport, {
+			path: this.rest.environmentPath(args.envID, 'system/upgrade/progress'),
+			method: 'GET',
+			contentType: null,
+			terminalAction: (event) =>
+				UpgradeProgressEvent.isDone(event) ? { kind: 'finish' } : { kind: 'continueStreaming' },
+			decode: UpgradeProgressEvent.decode
 		});
 	}
 

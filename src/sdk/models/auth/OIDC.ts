@@ -3,8 +3,8 @@ import { D } from '../base/decoding';
 import { User } from '../user/User';
 
 export interface OIDCStatusInfo {
-	envForced: boolean;
-	envConfigured: boolean;
+	envForced?: boolean;
+	envConfigured?: boolean;
 	mergeAccounts: boolean;
 	providerName?: string;
 	providerLogoUrl?: string;

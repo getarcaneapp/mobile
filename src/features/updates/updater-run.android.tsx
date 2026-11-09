@@ -196,11 +196,7 @@ function SpinningIcon({ tint }: { tint: string }) {
 	const rotation = useSharedValue(0);
 	useEffect(() => {
 		if (reduceMotion) return;
-		rotation.value = withRepeat(
-			withTiming(360, { duration: 1200, easing: Easing.linear }),
-			-1,
-			false
-		);
+		rotation.set(withRepeat(withTiming(360, { duration: 1200, easing: Easing.linear }), -1, false));
 		return () => cancelAnimation(rotation);
 	}, [reduceMotion, rotation]);
 	const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }));

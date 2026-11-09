@@ -1,15 +1,15 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
-import { useShallow } from 'zustand/react/shallow';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermissionCheck } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { nextInstanceKey, withCleanup } from '@/core/with-cleanup';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
+import { resourcePage } from '@/core/networking/pagination-loader';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
+import { ItemEnvironment } from '@/sdk/pagination/PaginatedResponse';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { EnvironmentVulnerabilitySummary } from '@/sdk/models/vulnerability/Vulnerability';
 import type { VulnerabilityRiskOverview } from '@/sdk/types/VulnerabilityRiskOverview';
@@ -115,6 +115,7 @@ export function useAllVulnerabilities({
 	const accent = useAccentColor();
 	const supportsActivities = useClientManager((s) => s.supportsActivities());
 	useClientManager((s) => s.accessGeneration);
+	const can = usePermissionCheck();
 	const storeEnvironments = useEnvironmentsStore((s) => s.environments);
 	const enabledEnvironments = enabledEnvironmentsOf(storeEnvironments);
 
@@ -176,7 +177,7 @@ export function useAllVulnerabilities({
 		updateFilter(listKey, { environments: snapshot.environments });
 	}, [listKey, snapshot.environments, updateFilter]);
 
-	const showError = (message: string) => Alert.alert('Error', message, [{ text: 'OK' }]);
+	const showError = (message: string) => showToast(Toasts.error(message));
 
 	const findingsPage = (): EnvironmentFetch<VulnerabilityFinding> | undefined => {
 		const client = useClientManager.getState().client;
@@ -194,7 +195,10 @@ export function useAllVulnerabilities({
 				imageName,
 				fixAvailable
 			});
-			return { items: response.data.map(vulnerabilityFinding), pagination: response.pagination };
+			return {
+				...resourcePage(response),
+				items: response.data.map((item) => ItemEnvironment.carry(item, vulnerabilityFinding(item)))
+			};
 		};
 	};
 
@@ -204,7 +208,7 @@ export function useAllVulnerabilities({
 		const environments = await useEnvironmentsStore
 			.getState()
 			.listEnvironments(environmentID, allEnvironments);
-		await list.reload(environments, fetch);
+		await list.reload(environments, fetch, { aggregates: true });
 		setCleared(false);
 		const error = list.getSnapshot().errorMessage;
 		if (error !== undefined) showError(error);
@@ -363,16 +367,10 @@ export function useAllVulnerabilities({
 		{ value: 'findings', title: 'Findings', systemImage: 'list.bullet', tint: systemColors.orange }
 	];
 
-	const patchEnvironments = useClientManager(
-		useShallow(() =>
-			listEnvironments.filter((environment) =>
-				hasPermission('vulnerabilities:read', environment.id)
-			)
-		)
+	const patchEnvironments = listEnvironments.filter((environment) =>
+		can('vulnerabilities:read', environment.id)
 	);
-	const canReadVulnerabilities = useClientManager(() =>
-		hasPermission('vulnerabilities:read', environmentID)
-	);
+	const canReadVulnerabilities = can('vulnerabilities:read', environmentID);
 	const exportEnvironments = listEnvironments.filter((environment) =>
 		items.some((item) => item.environmentID === environment.id)
 	);

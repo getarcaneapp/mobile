@@ -1,5 +1,11 @@
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { RequestBody } from '@/sdk/client/ArcaneTransport';
+import {
+	ArcaneError,
+	ArcaneUnknownError,
+	arcaneErrorFrom,
+	type ArcaneErrorKind
+} from '@/sdk/errors/ArcaneError';
 import { parseArcaneJSON } from '@/sdk/http/json';
 
 export const RemoteDataLimits = {
@@ -15,6 +21,7 @@ export const RemoteDataLimits = {
 	maximumTemplateBytes: 2 * 1_024 * 1_024,
 	maximumImageBytes: 5 * 1_024 * 1_024,
 	maximumStreamLineBytes: 16 * 1_024,
+	maximumLogBatchFrameBytes: 1_024 * 1_024,
 	maximumTerminalFrameBytes: 256 * 1_024
 } as const;
 
@@ -70,12 +77,37 @@ export class RemoteDataLimitError extends Error {
 	}
 }
 
+const statusKinds: Readonly<Record<number, ArcaneErrorKind>> = {
+	401: 'unauthorized',
+	403: 'forbidden',
+	404: 'notFound',
+	409: 'conflict',
+	429: 'rateLimited'
+};
+
 export function isHTTPStatusError(error: unknown, status: number): boolean {
+	if (error instanceof ArcaneUnknownError) return error.statusCode === status;
+	if (error instanceof ArcaneError && statusKinds[status] !== undefined)
+		return error.kind === statusKinds[status];
 	return (
 		error instanceof RemoteDataLimitError &&
 		error.detail.kind === 'httpStatus' &&
 		error.detail.status === status
 	);
+}
+
+const maximumErrorBodyBytes = 64 * 1_024;
+
+async function readErrorBody(bytes: AsyncIterable<Uint8Array>): Promise<string> {
+	const decoder = new TextDecoder();
+	let text = '';
+	let total = 0;
+	for await (const chunk of bytes) {
+		total += chunk.byteLength;
+		text += decoder.decode(chunk, { stream: true });
+		if (total >= maximumErrorBodyBytes) break;
+	}
+	return text + decoder.decode();
 }
 
 export async function boundedData(
@@ -102,8 +134,11 @@ export async function boundedData(
 	});
 	const status = result.http.status;
 	if (status < 200 || status >= 300) {
+		const body = await readErrorBody(result.bytes).catch(() => '');
 		result.cancel();
-		throw RemoteDataLimitError.httpStatus(status);
+		if (body.trim() === '' && statusKinds[status] === undefined)
+			throw RemoteDataLimitError.httpStatus(status);
+		throw arcaneErrorFrom(status, body, result.http.headers);
 	}
 	const declared = Number(result.http.headers.get('content-length') ?? -1);
 	if (declared > maximumBytes) {

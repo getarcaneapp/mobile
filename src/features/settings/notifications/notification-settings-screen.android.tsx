@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import { MaterialListItem } from '@/ui/material/list';
 import { Icon } from '@/ui/Icon';
@@ -87,7 +87,7 @@ export function NotificationsDestination() {
 												<Icon
 													name={providerSystemImage[provider]}
 													size={24}
-													color={providerIconColor[provider]}
+													color={systemColors[providerIconColor[provider]]}
 												/>
 											}
 											trailing={

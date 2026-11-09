@@ -6,6 +6,10 @@ Guidance for AI agents and new contributors working on Arcane Mobile: the Expo /
 
 1. **iOS is native SwiftUI; Android is Material 3.** Both platforms get the same features and flows, each in its own platform's design language. Never dress Android in iOS chrome or the reverse.
 2. **Every user-facing change goes in `src/release-notes.ts`** under the entry whose `version` matches `MARKETING_VERSION` in `app.config.ts` (prepend the entry if it's missing): `new:`, `changed:`, `removed:` or `fixed:`. Bullets are terse one-liners that state the change. No explanations, no "now", no comparisons.
+   - Keep each bullet under ~80 characters and the whole entry short (aim for 20 bullets or fewer). Before adding a bullet, merge it into an existing one when it touches the same area (e.g. "Container stats showing zeros and terminal size mismatches.").
+   - `fixed:` bullets name the broken behavior ("Signing out not revoking the session."), not the fix. Group small polish into "Assorted visual and tap target issues."
+   - Skip internal changes users can't see: dependency bumps, refactors, request batching, and fixes for features new in the same release.
+   - Say "on Arcane v3" once per bullet at most, and leave it out where the whole feature is v3-only and already covered.
 3. **Never `git commit` or `git push`.** The user handles git.
 4. **No code comments** of any kind (line, block, doc or JSX). Tool directives (`// oxlint-disable-next-line`, `// @ts-expect-error`) are the only exception.
 5. **`ios/` and `android/` are generated** by `expo prebuild`. Never edit them; configure native behavior in `app.config.ts` and config plugins (`plugins/`, `modules/*/plugin/`).

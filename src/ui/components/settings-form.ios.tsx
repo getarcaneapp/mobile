@@ -37,6 +37,7 @@ import {
 	useDraft,
 	isFieldVisible,
 	registeredSettingsDraft,
+	settingLockCaption,
 	type EnvironmentSettingsDraft
 } from './settings-form-draft';
 import {
@@ -63,15 +64,31 @@ import {
 } from './settings-form.types';
 import { useSettingsCategory } from './use-settings-category';
 
-export function SettingFieldRow({
-	field,
-	draft,
-	onOpenContainerSelect
-}: {
+type SettingFieldRowProps = {
 	field: SettingFieldDef;
 	draft: EnvironmentSettingsDraft;
 	onOpenContainerSelect: (field: SettingFieldDef) => void;
-}) {
+};
+
+export function SettingFieldRow(props: SettingFieldRowProps) {
+	const lockCaption = useDraft(props.draft, (s) => settingLockCaption(s.locks[props.field.key]));
+	if (lockCaption === undefined) return <SettingFieldControl {...props} />;
+	return (
+		<VStack alignment="leading" spacing={6} modifiers={[disabledModifier(true)]}>
+			<SettingFieldControl {...props} />
+			<Label
+				title={lockCaption}
+				systemImage="lock.fill"
+				modifiers={[
+					font({ textStyle: 'caption' }),
+					foregroundStyle({ type: 'hierarchical', style: 'secondary' })
+				]}
+			/>
+		</VStack>
+	);
+}
+
+function SettingFieldControl({ field, draft, onOpenContainerSelect }: SettingFieldRowProps) {
 	const value = useDraft(draft, (s) => s.values[field.key] ?? '');
 	const networkNames = useDraft(draft, (s) => s.networkNames);
 	const setValue = (next: string) => draft.getState().setValue(field.key, next);

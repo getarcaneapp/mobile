@@ -1,7 +1,6 @@
 import { File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
@@ -190,7 +189,7 @@ async function pruneImages({
 		showToast(Toasts.success(imagePruneResultMessage(report)));
 		back();
 	} catch (error) {
-		Alert.alert('Prune failed', friendlyErrorMessage(error), [{ text: 'OK' }]);
+		showToast(Toasts.error(friendlyErrorMessage(error)));
 	}
 }
 

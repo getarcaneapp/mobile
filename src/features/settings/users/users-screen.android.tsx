@@ -5,13 +5,13 @@ import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { User } from '@/sdk/models/user/User';
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
 import { m3 } from '@/ui/components/material-colors';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { ActionErrorAlert } from '../shared/action-error-alert';
 import { AndroidToolbar } from '../shared/android-toolbar';
@@ -76,6 +76,17 @@ export function UsersDestination() {
 	const [refreshing, setRefreshing] = useState(false);
 	const { users } = model;
 
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			colors={[m3.primary as string]}
+			onRefresh={() => {
+				setRefreshing(true);
+				void model.load().finally(() => setRefreshing(false));
+			}}
+		/>
+	);
+
 	let content;
 	if (model.isLoading && users.length === 0) {
 		content = (
@@ -103,30 +114,45 @@ export function UsersDestination() {
 		);
 	} else {
 		content = (
-			<>
-				<ResourceCountSectionHeader
-					title="Users"
-					loadedCount={users.length}
-					totalCount={model.totalItems}
-					hasMore={model.hasMore}
-				/>
-				<MaterialListGroup>
-					{users.map((user, index) => (
-						<View key={user.id}>
-							{index > 0 ? (
-								<View style={{ height: 0.5, marginLeft: 68, backgroundColor: colors.separator }} />
-							) : null}
-							<UserItem model={model} user={user} />
-						</View>
-					))}
-				</MaterialListGroup>
-				<PaginatedListFooter
-					hasMore={model.hasMore}
-					loadMoreError={model.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</>
+			<GroupedFlashList
+				data={users.map((user, index) => ({
+					key: user.id,
+					type: 'user',
+					user,
+					grouped: groupPosition(index, users.length)
+				}))}
+				renderEntry={(entry) => (
+					<>
+						{entry.grouped.isFirst ? null : (
+							<View style={{ height: 0.5, marginLeft: 68, backgroundColor: colors.separator }} />
+						)}
+						<UserItem model={model} user={entry.user} />
+					</>
+				)}
+				header={
+					<ResourceCountSectionHeader
+						title="Users"
+						loadedCount={users.length}
+						totalCount={model.totalItems}
+						hasMore={model.hasMore}
+					/>
+				}
+				footer={
+					<PaginatedListFooter
+						hasMore={model.hasMore}
+						loadMoreError={model.loadMoreError}
+						onRetry={() => void model.loadMore()}
+						onLoadMore={() => void model.loadMore()}
+					/>
+				}
+				onEndReached={
+					model.hasMore && model.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				refreshControl={refreshControl}
+				contentContainerStyle={{ paddingBottom: 32 }}
+			/>
 		);
 	}
 
@@ -154,23 +180,18 @@ export function UsersDestination() {
 					{ kind: 'button', id: 'add', icon: 'plus', label: 'Add User', onPress: model.openCreate }
 				]}
 			/>
-			<ScrollView
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						colors={[m3.primary as string]}
-						onRefresh={() => {
-							setRefreshing(true);
-							void model.load().finally(() => setRefreshing(false));
-						}}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{users.length > 0 ? (
+				content
+			) : (
+				<ScrollView
+					style={{ backgroundColor: colors.systemGroupedBackground }}
+					contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
+					keyboardShouldPersistTaps="handled"
+					refreshControl={refreshControl}
+				>
+					{content}
+				</ScrollView>
+			)}
 			<ActionErrorAlert
 				title="Couldn't Delete User"
 				message={model.actionErrorMessage}

@@ -29,10 +29,11 @@ export function MetricRing({
 		const previous = shown.current;
 		shown.current = { identity, progress: clamped };
 		if (previous.identity === identity && previous.progress === clamped) return;
-		value.value =
+		value.set(
 			reduceMotion || previous.identity !== identity
 				? clamped
-				: withSpring(clamped, springConfig(Motion.gauge.response, Motion.gauge.dampingFraction));
+				: withSpring(clamped, springConfig(Motion.gauge.response, Motion.gauge.dampingFraction))
+		);
 	}, [clamped, identity, reduceMotion, value]);
 
 	const radius = (size - lineWidth) / 2;

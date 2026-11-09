@@ -6,11 +6,11 @@ import { withCleanup } from '@/core/with-cleanup';
 import type { Webhook } from '@/sdk/models/webhook/Webhook';
 import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
 import { m3 } from '@/ui/components/material-colors';
 import { m3Type, monoFamily } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { CenteredMessage } from '../shared/android-material';
 import { AndroidToolbar } from '../shared/android-toolbar';
@@ -93,6 +93,14 @@ export function WebhooksDestination() {
 		);
 	};
 
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
+
 	let content;
 	if (model.isLoading && webhooks.length === 0) {
 		content = (
@@ -111,41 +119,49 @@ export function WebhooksDestination() {
 		);
 	} else {
 		content = (
-			<View>
-				<View style={{ paddingHorizontal: 16 }}>
-					<ResourceCountSectionHeader title="Webhooks" loadedCount={webhooks.length} />
-				</View>
-				<MaterialListGroup>
-					{webhooks.map((webhook, index) => (
-						<View key={webhook.id}>
-							{index > 0 ? (
-								<View
-									style={{ height: 0.5, marginHorizontal: 16, backgroundColor: colors.separator }}
-								/>
-							) : null}
-							<LongPressMenu
-								title={webhook.name}
-								items={[
-									{
-										id: 'toggle',
-										title: webhook.enabled ? 'Disable' : 'Enable',
-										onPress: () => model.toggleWebhook(webhook)
-									},
-									{
-										id: 'delete',
-										title: 'Delete',
-										destructive: true,
-										onPress: () => model.requestDelete(webhook)
-									}
-								]}
-								style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12 }}
-							>
-								<WebhookRow webhook={webhook} />
-							</LongPressMenu>
-						</View>
-					))}
-				</MaterialListGroup>
-			</View>
+			<GroupedFlashList
+				data={webhooks.map((webhook, index) => ({
+					key: webhook.id,
+					type: 'webhook',
+					webhook,
+					grouped: groupPosition(index, webhooks.length)
+				}))}
+				extraData={model}
+				renderEntry={({ webhook, grouped }) => (
+					<>
+						{grouped.isFirst ? null : (
+							<View
+								style={{ height: 0.5, marginHorizontal: 16, backgroundColor: colors.separator }}
+							/>
+						)}
+						<LongPressMenu
+							title={webhook.name}
+							items={[
+								{
+									id: 'toggle',
+									title: webhook.enabled ? 'Disable' : 'Enable',
+									onPress: () => model.toggleWebhook(webhook)
+								},
+								{
+									id: 'delete',
+									title: 'Delete',
+									destructive: true,
+									onPress: () => model.requestDelete(webhook)
+								}
+							]}
+							style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12 }}
+						>
+							<WebhookRow webhook={webhook} />
+						</LongPressMenu>
+					</>
+				)}
+				header={
+					<View style={{ paddingHorizontal: 16 }}>
+						<ResourceCountSectionHeader title="Webhooks" loadedCount={webhooks.length} />
+					</View>
+				}
+				refreshControl={refreshControl}
+			/>
 		);
 	}
 
@@ -163,20 +179,18 @@ export function WebhooksDestination() {
 					}
 				]}
 			/>
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{webhooks.length > 0 ? (
+				content
+			) : (
+				<ScrollView
+					contentInsetAdjustmentBehavior="automatic"
+					style={{ backgroundColor: colors.systemGroupedBackground }}
+					contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+					refreshControl={refreshControl}
+				>
+					{content}
+				</ScrollView>
+			)}
 		</>
 	);
 }

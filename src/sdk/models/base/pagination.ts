@@ -6,6 +6,7 @@ export interface PaginationResponse {
 	currentPage: number;
 	itemsPerPage: number;
 	grandTotalItems?: number;
+	hasNextPage?: boolean;
 }
 
 export type SortOrder = 'asc' | 'desc';

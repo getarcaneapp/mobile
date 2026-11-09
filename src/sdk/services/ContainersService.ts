@@ -17,7 +17,7 @@ import type { ContainerCreated, ContainerStatusCounts } from '../models/containe
 import { MessageResponse } from '../models/base/message';
 import { SearchPaginationSort } from '../models/base/pagination';
 import { LogStream, StatsStream } from '../streaming/Streams';
-import { TerminalSession } from '../streaming/TerminalSession';
+import { TerminalSession, type TerminalSize } from '../streaming/TerminalSession';
 
 export class ContainersService {
 	private readonly rest: RESTService;
@@ -164,15 +164,6 @@ export class ContainersService {
 		});
 	}
 
-	rename(args: { envID?: EnvironmentID; id: string; newName: string }): Promise<void> {
-		return this.rest.postVoid(
-			this.rest.environmentPath(args.envID, `containers/${args.id}/rename`),
-			{
-				query: [q('name', args.newName)]
-			}
-		);
-	}
-
 	setAutoUpdate(args: { envID?: EnvironmentID; id: string; enabled: boolean }): Promise<void> {
 		return this.rest.putVoid(
 			this.rest.environmentPath(args.envID, `containers/${args.id}/auto-update`),
@@ -229,12 +220,19 @@ export class ContainersService {
 		);
 	}
 
-	exec(args: { envID?: EnvironmentID; id: string; shell?: string }): Promise<TerminalSession> {
+	exec(args: {
+		envID?: EnvironmentID;
+		id: string;
+		shell?: string;
+		size?: TerminalSize;
+	}): Promise<TerminalSession> {
 		const env = args.envID ?? this.rest.defaultEnvironmentID;
 		return TerminalSession.connect(
 			this.rest.transport,
 			`environments/${env}/ws/containers/${args.id}/terminal`,
-			args.shell ?? '/bin/sh'
+			args.shell ?? '/bin/sh',
+			this.rest.transport.webSocketConfig,
+			args.size
 		);
 	}
 

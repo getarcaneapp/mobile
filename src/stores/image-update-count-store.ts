@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { environmentUpdateCount } from '@/features/updates/environment-updates';
+import { useClientManager } from '@/stores/client-manager';
 
 type Scope = { transport: object; userID: string };
 
@@ -106,7 +107,11 @@ export const useImageUpdateCountStore = create<ImageUpdateCountState>((set, get)
 		refreshCount: async (environmentID, client, userID) => {
 			if (!client) return;
 			const count = await environmentUpdateCount(environmentID, client).catch(() => undefined);
-			if (count !== undefined) get().setCount(count, environmentID, client, userID);
+			if (count === undefined) return;
+			const manager = useClientManager.getState();
+			if (!sameScope(scopeFor(client, userID), scopeFor(manager.client, manager.currentUser?.id)))
+				return;
+			get().setCount(count, environmentID, client, userID);
 		}
 	};
 });

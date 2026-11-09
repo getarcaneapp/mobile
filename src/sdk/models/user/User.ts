@@ -3,6 +3,15 @@ import { Permission } from '../role/Permission';
 import { Role } from '../role/Role';
 import type { RoleAssignmentSummary } from '../role/RoleAssignment';
 
+export interface DashboardWidgetLayout {
+	id: string;
+	x?: number;
+	y?: number;
+	w?: number;
+	h?: number;
+	hidden?: boolean;
+}
+
 export interface UserPreferences {
 	themeMode?: string;
 	applicationTheme?: string;
@@ -17,6 +26,7 @@ export interface UserPreferences {
 	mobileNavigationShowLabels?: boolean;
 	defaultLandingPage?: string;
 	defaultProjectEditorLayout?: string;
+	dashboardLayout?: DashboardWidgetLayout[];
 }
 
 export interface User {

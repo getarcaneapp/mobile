@@ -28,6 +28,7 @@ import {
 	EnvironmentUpdateSceneModelHelpers as M,
 	pipelineBubbleSize,
 	pipelineConnectorFill,
+	pipelineIsActive,
 	type EnvironmentUpdateSceneModel,
 	type EnvironmentUpdateTint
 } from './environment-update-scene.types';
@@ -51,7 +52,7 @@ export function EnvironmentUpdateScene({ model }: { model: EnvironmentUpdateScen
 
 	const appear = useSharedValue(0);
 	useEffect(() => {
-		appear.value = reduceMotion ? withTiming(1, { duration: 200 }) : withSpring(1, stageSpring);
+		appear.set(reduceMotion ? withTiming(1, { duration: 200 }) : withSpring(1, stageSpring));
 	}, [appear, reduceMotion]);
 	const appearStyle = useAnimatedStyle(() => ({
 		opacity: appear.value,
@@ -61,7 +62,7 @@ export function EnvironmentUpdateScene({ model }: { model: EnvironmentUpdateScen
 	const focusScale = useSharedValue(isTerminal ? 1.06 : 1);
 	useEffect(() => {
 		const target = isTerminal ? 1.06 : 1;
-		focusScale.value = reduceMotion ? target : withSpring(target, stageSpring);
+		focusScale.set(reduceMotion ? target : withSpring(target, stageSpring));
 	}, [focusScale, isTerminal, reduceMotion]);
 	const focusStyle = useAnimatedStyle(() => ({ transform: [{ scale: focusScale.value }] }));
 
@@ -189,15 +190,13 @@ function SpinningIcon({
 	const rotation = useSharedValue(0);
 	useEffect(() => {
 		if (spins) {
-			rotation.value = 0;
-			rotation.value = withRepeat(
-				withTiming(360, { duration: 1000, easing: Easing.linear }),
-				-1,
-				false
+			rotation.set(0);
+			rotation.set(
+				withRepeat(withTiming(360, { duration: 1000, easing: Easing.linear }), -1, false)
 			);
 		} else {
 			cancelAnimation(rotation);
-			rotation.value = 0;
+			rotation.set(0);
 		}
 	}, [rotation, spins]);
 	const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }));
@@ -236,7 +235,7 @@ function EnvironmentUpdatePipeline({
 						key={`bubble-${id}`}
 						environment={environment}
 						index={index}
-						isActive={id === activeEnvironmentID}
+						isActive={pipelineIsActive(environment, activeEnvironmentID)}
 						tint={tint}
 						size={size}
 					/>
@@ -260,10 +259,12 @@ function EnvironmentUpdateConnector({ fill, tint }: { fill: number; tint: Enviro
 	const resolve = useTintColor();
 	const progress = useSharedValue(fill);
 	useEffect(() => {
-		progress.value = withTiming(fill, {
-			duration: 1350,
-			easing: Easing.bezier(0.25, 0.1, 0.25, 1)
-		});
+		progress.set(
+			withTiming(fill, {
+				duration: 1350,
+				easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+			})
+		);
 	}, [progress, fill]);
 	const fillStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 	return (
@@ -314,8 +315,8 @@ function EnvironmentUpdateBubble({
 	const dy = useSharedValue(0);
 	useEffect(() => {
 		if (!floats) {
-			dx.value = withSpring(0, handoffSpring);
-			dy.value = withSpring(0, handoffSpring);
+			dx.set(withSpring(0, handoffSpring));
+			dy.set(withSpring(0, handoffSpring));
 			return;
 		}
 		const count = EnvironmentUpdateBubblePhases.length;
@@ -324,15 +325,19 @@ function EnvironmentUpdateBubble({
 			(_, i) => EnvironmentUpdateBubblePhases[(index + 1 + i) % count]
 		);
 		const timing = { duration: 1800, easing: Easing.inOut(Easing.cubic) };
-		dx.value = withRepeat(
-			withSequence(...ordered.map((p) => withTiming((p?.x ?? 0) * floatScale * 0.4, timing))),
-			-1,
-			false
+		dx.set(
+			withRepeat(
+				withSequence(...ordered.map((p) => withTiming((p?.x ?? 0) * floatScale * 0.4, timing))),
+				-1,
+				false
+			)
 		);
-		dy.value = withRepeat(
-			withSequence(...ordered.map((p) => withTiming((p?.y ?? 0) * floatScale, timing))),
-			-1,
-			false
+		dy.set(
+			withRepeat(
+				withSequence(...ordered.map((p) => withTiming((p?.y ?? 0) * floatScale, timing))),
+				-1,
+				false
+			)
 		);
 	}, [dx, dy, floats, floatScale, index]);
 	const floatStyle = useAnimatedStyle(() => ({
@@ -342,7 +347,7 @@ function EnvironmentUpdateBubble({
 	const scale = useSharedValue(isActive ? 1.15 : 1);
 	useEffect(() => {
 		const target = isActive ? 1.15 : 1;
-		scale.value = reduceMotion ? target : withSpring(target, handoffSpring);
+		scale.set(reduceMotion ? target : withSpring(target, handoffSpring));
 	}, [scale, isActive, reduceMotion]);
 	const scaleStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -350,15 +355,13 @@ function EnvironmentUpdateBubble({
 	const spins = !reduceMotion && showsSpinner;
 	useEffect(() => {
 		if (spins) {
-			rotation.value = 0;
-			rotation.value = withRepeat(
-				withTiming(360, { duration: 1450, easing: Easing.linear }),
-				-1,
-				false
+			rotation.set(0);
+			rotation.set(
+				withRepeat(withTiming(360, { duration: 1450, easing: Easing.linear }), -1, false)
 			);
 		} else {
 			cancelAnimation(rotation);
-			rotation.value = 0;
+			rotation.set(0);
 		}
 	}, [rotation, spins]);
 	const spinStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }));

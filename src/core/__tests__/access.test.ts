@@ -80,5 +80,6 @@ describe('canAccessTab', () => {
 			}),
 			true
 		);
+		assert.equal(canAccessTab('dashboard', { ...base, activeEnvironmentID: '0' }), true);
 	});
 });

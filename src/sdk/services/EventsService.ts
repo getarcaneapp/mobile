@@ -2,7 +2,9 @@ import type { QueryItem } from '../client/url';
 import type { RESTService } from '../http/RESTService';
 import type { SortOrder } from '../models/base/pagination';
 import type { Event, EventSeverityCounts } from '../models/event/Event';
+import { EnvironmentChanges, EnvironmentChangesEvent } from '../models/event/EnvironmentChanges';
 import type { PaginatedResponse } from '../pagination/PaginatedResponse';
+import { NDJSONStream } from '../streaming/NDJSONStream';
 
 interface EventListOptions {
 	search?: string;
@@ -27,6 +29,33 @@ export class EventsService {
 
 	constructor(rest: RESTService) {
 		this.rest = rest;
+	}
+
+	changesStream(): NDJSONStream<EnvironmentChangesEvent> {
+		return new NDJSONStream<EnvironmentChangesEvent>(this.rest.transport, {
+			path: 'stream',
+			method: 'GET',
+			contentType: null,
+			query: [{ name: 'channels', value: 'events' }],
+			decode: EnvironmentChangesEvent.decode
+		});
+	}
+
+	waitForChanges(args: {
+		envID: string;
+		epoch?: string;
+		since?: number;
+		waitSeconds?: number;
+	}): Promise<EnvironmentChanges> {
+		const query: QueryItem[] = [];
+		if (args.epoch !== undefined) query.push({ name: 'epoch', value: args.epoch });
+		if (args.since !== undefined) query.push({ name: 'since', value: String(args.since) });
+		if (args.waitSeconds !== undefined)
+			query.push({ name: 'wait', value: String(args.waitSeconds) });
+		return this.rest.get(this.rest.environmentPath(args.envID, 'events/changes'), {
+			query,
+			decode: EnvironmentChanges.decode
+		});
 	}
 
 	listPaginated(

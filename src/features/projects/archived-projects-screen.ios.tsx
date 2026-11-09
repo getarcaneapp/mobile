@@ -31,6 +31,7 @@ import { CachedAsyncImageSwiftUI } from '@/ui/components/cached-async-image-swif
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 
 import { archivedDateText, projectDisplayName, projectThemedIconUrl } from './project-model';
 import { useArchivedProjects } from './use-archived-projects';
@@ -104,30 +105,36 @@ export function ArchivedProjectsScreen() {
 						/>
 					}
 				>
-					{model.displayedProjects.map((project) => (
-						<SwipeActions key={project.id}>
-							<ContextMenu>
-								<ContextMenu.Trigger>
-									<ArchivedProjectRow project={project} />
-								</ContextMenu.Trigger>
-								<ContextMenu.Items>
+					<List.ForEach
+						data={model.displayedProjects}
+						keyExtractor={stableItemKey}
+						estimatedItemSize={56}
+					>
+						{({ item: project }) => (
+							<SwipeActions>
+								<ContextMenu>
+									<ContextMenu.Trigger>
+										<ArchivedProjectRow project={project} />
+									</ContextMenu.Trigger>
+									<ContextMenu.Items>
+										<Button
+											label="Unarchive"
+											systemImage="tray.and.arrow.up"
+											onPress={() => void model.unarchive(project)}
+										/>
+									</ContextMenu.Items>
+								</ContextMenu>
+								<SwipeActions.Actions edge="trailing">
 									<Button
 										label="Unarchive"
 										systemImage="tray.and.arrow.up"
 										onPress={() => void model.unarchive(project)}
+										modifiers={[tint(systemColors.indigo)]}
 									/>
-								</ContextMenu.Items>
-							</ContextMenu>
-							<SwipeActions.Actions edge="trailing">
-								<Button
-									label="Unarchive"
-									systemImage="tray.and.arrow.up"
-									onPress={() => void model.unarchive(project)}
-									modifiers={[tint(systemColors.indigo)]}
-								/>
-							</SwipeActions.Actions>
-						</SwipeActions>
-					))}
+								</SwipeActions.Actions>
+							</SwipeActions>
+						)}
+					</List.ForEach>
 					<PaginatedListFooter
 						hasMore={snapshot.hasMore}
 						loadMoreError={snapshot.loadMoreError}

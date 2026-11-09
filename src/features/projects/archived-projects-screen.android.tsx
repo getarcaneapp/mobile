@@ -6,12 +6,12 @@ import type { ProjectDetails } from '@/sdk/models/project/Project';
 import { colors, systemColors } from '@/theme/colors';
 import { useIsDark } from '@/ui/components/accessibility';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { CachedAsyncImage } from '@/ui/components/cached-async-image';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type } from '@/ui/components/type-scale';
-import { MaterialListGroup } from '@/ui/material/list';
 
 import { CenteredMessage } from '@/features/containers/android-material';
 import { LongPressMenu } from '@/features/containers/long-press-menu';
@@ -63,6 +63,17 @@ export function ArchivedProjectsScreen() {
 	const { snapshot, projects } = model;
 	const [refreshing, setRefreshing] = useState(false);
 
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => {
+				setRefreshing(true);
+				void model.load().finally(() => setRefreshing(false));
+			}}
+			colors={[systemColors.blue]}
+		/>
+	);
+
 	let content;
 	if (snapshot.isLoading && projects.length === 0) {
 		content = (
@@ -88,66 +99,74 @@ export function ArchivedProjectsScreen() {
 		);
 	} else {
 		content = (
-			<View>
-				<View
-					style={{
-						flexDirection: 'row',
-						alignItems: 'center',
-						paddingHorizontal: 16,
-						paddingTop: 20,
-						paddingBottom: 6
-					}}
-				>
-					<Text
-						accessibilityRole="header"
-						style={[m3Type.titleSmall, { flex: 1, color: colors.secondaryLabel }]}
-					>
-						Archived Projects
-					</Text>
-					<ResourceCountLabel
-						loadedCount={projects.length}
-						totalCount={snapshot.totalItems}
-						hasMore={snapshot.hasMore}
+			<GroupedFlashList
+				data={model.displayedProjects.map((project, index, all) => ({
+					key: project.id,
+					type: 'project',
+					project,
+					grouped: groupPosition(index, all.length)
+				}))}
+				renderEntry={(entry) => (
+					<ArchivedProjectRow
+						project={entry.project}
+						onUnarchive={() => void model.unarchive(entry.project)}
 					/>
-				</View>
-				<MaterialListGroup>
-					{model.displayedProjects.map((project) => (
-						<ArchivedProjectRow
-							key={project.id}
-							project={project}
-							onUnarchive={() => void model.unarchive(project)}
+				)}
+				header={
+					<View
+						style={{
+							flexDirection: 'row',
+							alignItems: 'center',
+							paddingHorizontal: 16,
+							paddingTop: 20,
+							paddingBottom: 6
+						}}
+					>
+						<Text
+							accessibilityRole="header"
+							style={[m3Type.titleSmall, { flex: 1, color: colors.secondaryLabel }]}
+						>
+							Archived Projects
+						</Text>
+						<ResourceCountLabel
+							loadedCount={projects.length}
+							totalCount={snapshot.totalItems}
+							hasMore={snapshot.hasMore}
 						/>
-					))}
-				</MaterialListGroup>
-				<PaginatedListFooter
-					hasMore={snapshot.hasMore}
-					loadMoreError={snapshot.loadMoreError}
-					onRetry={() => void model.loadMore()}
-					onLoadMore={() => void model.loadMore()}
-				/>
-			</View>
+					</View>
+				}
+				footer={
+					<PaginatedListFooter
+						hasMore={snapshot.hasMore}
+						loadMoreError={snapshot.loadMoreError}
+						onRetry={() => void model.loadMore()}
+						onLoadMore={() => void model.loadMore()}
+					/>
+				}
+				onEndReached={
+					snapshot.hasMore && snapshot.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				refreshControl={refreshControl}
+			/>
 		);
 	}
 
 	return (
 		<>
 			<Stack.Screen options={{ title: 'Archived Projects' }} />
-			<ScrollView
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => {
-							setRefreshing(true);
-							void model.load().finally(() => setRefreshing(false));
-						}}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{projects.length > 0 ? (
+				content
+			) : (
+				<ScrollView
+					style={{ backgroundColor: colors.systemGroupedBackground }}
+					contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+					refreshControl={refreshControl}
+				>
+					{content}
+				</ScrollView>
+			)}
 		</>
 	);
 }

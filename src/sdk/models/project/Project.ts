@@ -245,6 +245,7 @@ export interface ProjectStatusCounts {
 	stoppedProjects: number;
 	totalProjects: number;
 	archivedProjects: number;
+	updatesAvailable?: number;
 }
 
 export const ProjectStatusCounts = {

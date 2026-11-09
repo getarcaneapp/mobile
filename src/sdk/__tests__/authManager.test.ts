@@ -7,6 +7,7 @@ import { ArcaneTransport } from '../client/ArcaneTransport';
 import { RetryPolicy } from '../client/environment';
 import { ArcaneUnauthorizedError, isArcaneError } from '../errors/ArcaneError';
 import { isoIn, mockFetch, type RecordedRequest } from './helpers';
+import { APIGenerationState } from '../client/apiGeneration';
 
 const BASE = 'https://arcane.test';
 
@@ -128,6 +129,7 @@ describe('ArcaneTransport 401 handling', () => {
 		const authManager = new AuthManager({ baseURL: BASE, tokenStore: store, fetch });
 		const transport = new ArcaneTransport({
 			baseURL: BASE,
+			apiGeneration: new APIGenerationState('legacy'),
 			authManager,
 			fetch,
 			streamingFetch: fetch,
@@ -155,6 +157,7 @@ describe('ArcaneTransport 401 handling', () => {
 		const authManager = new AuthManager({ baseURL: BASE, tokenStore: store, fetch });
 		const transport = new ArcaneTransport({
 			baseURL: BASE,
+			apiGeneration: new APIGenerationState('legacy'),
 			authManager,
 			fetch,
 			streamingFetch: fetch
@@ -177,6 +180,7 @@ describe('ArcaneTransport 401 handling', () => {
 		const authManager = new AuthManager({ baseURL: BASE, tokenStore: store, fetch });
 		const transport = new ArcaneTransport({
 			baseURL: BASE,
+			apiGeneration: new APIGenerationState('legacy'),
 			authManager,
 			fetch,
 			streamingFetch: fetch

@@ -107,6 +107,7 @@ export const useContainerDeploymentStore = create<ContainerDeploymentState>((set
 				failure === undefined ? 'success' : failure === 'Cancelled' ? 'cancelled' : 'failure'
 			);
 			if (useClientManager.getState().clientGeneration !== session) {
+				finishActivityToast(id, title, 'cancelled');
 				set({ isRunning: false });
 				return;
 			}

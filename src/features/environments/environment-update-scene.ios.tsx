@@ -57,6 +57,7 @@ import {
 	EnvironmentUpdateSceneModelHelpers as M,
 	pipelineBubbleSize,
 	pipelineConnectorFill,
+	pipelineIsActive,
 	type EnvironmentUpdateSceneModel,
 	type EnvironmentUpdateTint
 } from './environment-update-scene.types';
@@ -381,7 +382,7 @@ function EnvironmentUpdatePipeline({
 						key={`bubble-${id}`}
 						environment={environment}
 						index={index}
-						isActive={id === activeEnvironmentID}
+						isActive={pipelineIsActive(environment, activeEnvironmentID)}
 						tint={tint}
 						size={size}
 					/>

@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { useEffect, useEffectEvent, useState, type ReactNode } from 'react';
-import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { withCleanup } from '@/core/with-cleanup';
 import { formattedClockTime, formattedISO8601 } from '@/core/date-formatting';
@@ -11,6 +11,7 @@ import { ErrorBanner } from '@/ui/components/error-banner';
 import { ResourceStatusBadge } from '@/ui/components/resource-status-badge';
 import { m3Type } from '@/ui/components/type-scale';
 import { Icon } from '@/ui/Icon';
+import { showToast, Toasts } from '@/ui/toast';
 import { MaterialListGroup, MaterialSectionHeader } from '@/ui/material/list';
 
 import {
@@ -122,8 +123,8 @@ export function ActivityDetailScreen({
 	const dismissError = useEffectEvent(() => model.dismissError());
 	useEffect(() => {
 		if (errorMessage === undefined) return;
-		const dismiss = () => dismissError();
-		Alert.alert('Error', errorMessage, [{ text: 'OK', onPress: dismiss }], { onDismiss: dismiss });
+		showToast(Toasts.error(errorMessage));
+		dismissError();
 	}, [errorMessage]);
 
 	const onRefresh = async () => {

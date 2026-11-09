@@ -6,6 +6,7 @@
 	"build": {
 		"beta": {
 			"distribution": "store",
+			"environment": "production",
 			"env": {
 				"EXPO_NO_GIT_STATUS": "1"
 			},

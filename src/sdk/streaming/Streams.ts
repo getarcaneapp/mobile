@@ -20,26 +20,41 @@ interface LogLineMessage {
 	timestamp?: string;
 }
 
-function parseLogLineMessage(text: string): LogLineMessage | undefined {
+function logLineMessage(raw: unknown): LogLineMessage | undefined {
+	if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined;
+	const o = raw as Record<string, unknown>;
+	if (typeof o.message !== 'string') return undefined;
+	const optString = (value: unknown) => (typeof value === 'string' ? value : undefined);
+	if (o.seq !== undefined && typeof o.seq !== 'number') return undefined;
+	if ([o.level, o.service, o.timestamp].some((v) => v !== undefined && typeof v !== 'string'))
+		return undefined;
+	return {
+		seq: typeof o.seq === 'number' ? o.seq : undefined,
+		level: optString(o.level),
+		message: o.message,
+		service: optString(o.service),
+		timestamp: optString(o.timestamp)
+	};
+}
+
+function parseLogLineMessages(text: string): LogLineMessage[] | undefined {
+	let raw: unknown;
 	try {
-		const raw = parseArcaneJSON(text);
-		if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined;
-		const o = raw as Record<string, unknown>;
-		if (typeof o.message !== 'string') return undefined;
-		const optString = (value: unknown) => (typeof value === 'string' ? value : undefined);
-		if (o.seq !== undefined && typeof o.seq !== 'number') return undefined;
-		if ([o.level, o.service, o.timestamp].some((v) => v !== undefined && typeof v !== 'string'))
-			return undefined;
-		return {
-			seq: typeof o.seq === 'number' ? o.seq : undefined,
-			level: optString(o.level),
-			message: o.message,
-			service: optString(o.service),
-			timestamp: optString(o.timestamp)
-		};
+		raw = parseArcaneJSON(text);
 	} catch {
 		return undefined;
 	}
+	if (!Array.isArray(raw)) {
+		const single = logLineMessage(raw);
+		return single ? [single] : undefined;
+	}
+	const messages: LogLineMessage[] = [];
+	for (const item of raw) {
+		const message = logLineMessage(item);
+		if (!message) return undefined;
+		messages.push(message);
+	}
+	return messages;
 }
 
 function toLogLine(json: LogLineMessage): LogLine {
@@ -52,14 +67,14 @@ function toLogLine(json: LogLineMessage): LogLine {
 	};
 }
 
-export function decodeLogFrame(message: WebSocketMessage): LogLine {
+export function decodeLogFrame(message: WebSocketMessage): LogLine[] {
 	if (message.kind === 'string') {
-		const json = parseLogLineMessage(message.value);
-		return json ? toLogLine(json) : { text: message.value };
+		const json = parseLogLineMessages(message.value);
+		return json ? json.map(toLogLine) : [{ text: message.value }];
 	}
-	const json = parseLogLineMessage(decodeUTF8(message.value));
+	const json = parseLogLineMessages(decodeUTF8(message.value));
 	if (!json) throw ArcaneError.decoding('Log frame was not a valid LogLineMessage');
-	return toLogLine(json);
+	return json.map(toLogLine);
 }
 
 async function* iterateChannel<Element>(
@@ -78,6 +93,12 @@ async function* iterateChannel<Element>(
 	}
 }
 
+async function* flatten<Element>(
+	batches: AsyncIterable<Element[]>
+): AsyncGenerator<Element, void, undefined> {
+	for await (const batch of batches) yield* batch;
+}
+
 export class LogStream implements AsyncIterable<LogLine> {
 	private readonly transport: ArcaneTransport;
 	private readonly path: string;
@@ -92,16 +113,20 @@ export class LogStream implements AsyncIterable<LogLine> {
 	) {
 		this.transport = transport;
 		this.path = path;
-		this.query = [...query, { name: 'format', value: 'json' }];
+		this.query = [...query, { name: 'format', value: 'json' }, { name: 'batched', value: 'true' }];
 		this.config = config ?? transport.webSocketConfig;
 	}
 
 	[Symbol.asyncIterator](): AsyncIterator<LogLine> {
+		return flatten(this.batches());
+	}
+
+	private batches(): AsyncGenerator<LogLine[], void, undefined> {
 		const signal = this.transport.defaultSignal;
 		return iterateChannel(
 			async () => {
 				const request = await this.transport.websocketRequest(this.path, { query: this.query });
-				return new WebSocketChannel<never, LogLine>({
+				return new WebSocketChannel<never, LogLine[]>({
 					request,
 					factory: this.config.factory,
 					idleTimeoutMs: this.config.idleTimeoutMs,

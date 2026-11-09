@@ -2,16 +2,12 @@ import { useRouter } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { hasPermission } from '@/core/auth/permissions';
-import { friendlyErrorMessage, isCancellation } from '@/core/errors';
+import { isCancellation } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { useClientManager } from '@/stores/client-manager';
 import { useResourceMutationStore } from '@/stores/resource-mutation-store';
 import { showToast, Toasts } from '@/ui/toast';
-
-import { containersChanged } from './container-actions';
-
-const nameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_.-]+$/;
 
 function useDismissOnContextChange(environmentID: EnvironmentID, onDismiss: () => void) {
 	const generation = useClientManager((s) => s.clientGeneration);
@@ -26,52 +22,6 @@ function useDismissOnContextChange(environmentID: EnvironmentID, onDismiss: () =
 		)
 			dismiss();
 	}, [generation, activeEnvironmentID, environmentID]);
-}
-
-export function useRenameContainer(
-	environmentID: EnvironmentID,
-	containerID: string,
-	currentName: string
-) {
-	const router = useRouter();
-	const [newName, setNewName] = useState(currentName);
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [errorMessage, setErrorMessage] = useState<string>();
-	const isValid = nameRegex.test(newName);
-	const hasChanged = newName !== currentName;
-
-	const submit = async () => {
-		const client = useClientManager.getState().client;
-		setIsSubmitting(true);
-		setErrorMessage(undefined);
-		const rename = async () => {
-			if (!client) throw new Error('No client');
-			await client.containers.rename({ envID: environmentID, id: containerID, newName });
-			containersChanged(environmentID);
-			showToast(Toasts.success('Container renamed'));
-			router.back();
-		};
-		await withCleanup(
-			async () => {
-				try {
-					await rename();
-				} catch (error) {
-					setErrorMessage(friendlyErrorMessage(error));
-				}
-			},
-			() => setIsSubmitting(false)
-		);
-	};
-
-	return {
-		newName,
-		setNewName,
-		isSubmitting,
-		errorMessage,
-		canSave: isValid && hasChanged && !isSubmitting,
-		submit: () => void submit(),
-		cancel: () => router.back()
-	};
 }
 
 export function useContainerCommit(environmentID: EnvironmentID, containerID: string) {

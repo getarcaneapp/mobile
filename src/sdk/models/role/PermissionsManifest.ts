@@ -217,7 +217,12 @@ export const AccessSurfaceScopeMode = {
 		return value;
 	},
 	decode(raw: unknown): AccessSurfaceScopeMode {
-		return D.str(raw);
+		return AccessSurfaceScopeMode.normalized(D.str(raw));
+	},
+	normalized(value: string): AccessSurfaceScopeMode {
+		return value === 'env-plus-global'
+			? AccessSurfaceScopeMode.selectedEnvironmentPlusGlobal
+			: value;
 	}
 } as const;
 
@@ -273,7 +278,7 @@ export const AccessSurface = {
 			label: D.optString(o, 'label') ?? '',
 			accessMode: D.optString(o, 'accessMode') ?? AccessSurfaceAccessMode.unknown(''),
 			matchMode: D.optString(o, 'matchMode') ?? AccessSurfaceMatchMode.unknown(''),
-			scopeMode: D.optString(o, 'scopeMode') ?? AccessSurfaceScopeMode.unknown(''),
+			scopeMode: AccessSurfaceScopeMode.normalized(D.optString(o, 'scopeMode') ?? ''),
 			permissions: D.optArray(o, 'permissions', D.str) ?? [],
 			children: D.optArray(o, 'children', D.str) ?? [],
 			fallbackOrder: D.optInt(o, 'fallbackOrder')

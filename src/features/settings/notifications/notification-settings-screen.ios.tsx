@@ -48,7 +48,10 @@ function ProviderRow({ provider, model }: { provider: NotificationProvider; mode
 			<HStack spacing={12} modifiers={[contentShape(shapes.rectangle())]}>
 				<Image
 					systemName={providerSystemImage[provider] as SFSymbol}
-					modifiers={[foregroundStyle(providerIconColor[provider]), frame({ width: 28 })]}
+					modifiers={[
+						foregroundStyle(systemColors[providerIconColor[provider]]),
+						frame({ width: 28 })
+					]}
 				/>
 				<VStack alignment="leading" spacing={2}>
 					<Text modifiers={[foregroundStyle('primary')]}>{providerDisplayName[provider]}</Text>

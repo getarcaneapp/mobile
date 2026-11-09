@@ -15,6 +15,18 @@ describe('normalizeServerURLInput (configure(serverURL:))', () => {
 	it('defaults to https and trims', () => {
 		assert.equal(normalizeServerURLInput('  arcane.example.com  '), 'https://arcane.example.com');
 	});
+	it('defaults to http for local network hosts', () => {
+		assert.equal(normalizeServerURLInput('192.168.1.25'), 'http://192.168.1.25');
+		assert.equal(normalizeServerURLInput('10.0.0.5:3552'), 'http://10.0.0.5:3552');
+		assert.equal(normalizeServerURLInput('localhost:3552'), 'http://localhost:3552');
+		assert.equal(normalizeServerURLInput('nas.local:3552'), 'http://nas.local:3552');
+		assert.equal(normalizeServerURLInput('docker'), 'http://docker');
+		assert.equal(normalizeServerURLInput('[fd00::1]:3552'), 'http://[fd00::1]:3552');
+	});
+	it('keeps https for public hosts and explicit schemes', () => {
+		assert.equal(normalizeServerURLInput('8.8.8.8'), 'https://8.8.8.8');
+		assert.equal(normalizeServerURLInput('https://192.168.1.25'), 'https://192.168.1.25');
+	});
 	it('keeps an explicit http scheme, case-insensitively', () => {
 		assert.equal(normalizeServerURLInput('HTTP://10.0.0.5:3552'), 'HTTP://10.0.0.5:3552');
 	});

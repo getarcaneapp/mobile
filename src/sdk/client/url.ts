@@ -70,8 +70,23 @@ export function appendingAPIPath(baseURL: string, path: string): string {
 	const trimmed = encodePathSegment(trimSlashes(path));
 	const parsed = parseURL(normalizedBase);
 	const basePath = parsed?.path ?? '/';
-	if (basePath.endsWith('/api/')) return `${normalizedBase}${trimmed}`;
-	return `${normalizedBase}api/${trimmed}`;
+	const query = baseQuery(baseURL);
+	const suffix = query ? `?${query}` : '';
+	if (basePath.endsWith('/api/')) return `${normalizedBase}${trimmed}${suffix}`;
+	return `${normalizedBase}api/${trimmed}${suffix}`;
+}
+
+export function baseQuery(url: string): string | undefined {
+	const hashIndex = url.indexOf('#');
+	const withoutHash = hashIndex >= 0 ? url.slice(0, hashIndex) : url;
+	const queryIndex = withoutHash.indexOf('?');
+	if (queryIndex < 0) return undefined;
+	const query = withoutHash
+		.slice(queryIndex + 1)
+		.split('&')
+		.filter((part) => part !== '')
+		.join('&');
+	return query === '' ? undefined : query;
 }
 
 export function withQueryItems(url: string, items: readonly QueryItem[]): string {

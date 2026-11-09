@@ -87,6 +87,7 @@ export const Keys = {
 	activeEnvironmentName: 'arcane.activeEnvironmentName',
 	allEnvironmentsPreview: 'arcane.allEnvironmentsPreview',
 	refreshedDashboardPreview: 'arcane.refreshedDashboardPreview',
+	serverAPIGeneration: 'arcane.serverAPIGeneration',
 	accentColorHex: 'accentColorHex',
 	launchAnimationEnabled: 'arcane.launchAnimationEnabled',
 	rememberLastTab: 'arcane.rememberLastTab',

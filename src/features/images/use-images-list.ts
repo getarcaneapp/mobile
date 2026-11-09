@@ -1,6 +1,5 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
 import {
 	performAllEnvironmentsMaintenance,
@@ -18,6 +17,7 @@ import type { ImageSummary } from '@/sdk/models/image/ImageSummary';
 import type { ImageUpdateResponse } from '@/sdk/models/imageUpdate/ImageUpdate';
 import { User } from '@/sdk/models/user/User';
 import { useAllEnvironmentsOperationStore } from '@/stores/all-environments-operation-store';
+import { resourcePage } from '@/core/networking/pagination-loader';
 import { useClientManager } from '@/stores/client-manager';
 import {
 	useEnvironmentPagedList,
@@ -115,17 +115,14 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 	const currentUser = useClientManager((s) => s.currentUser);
 	const isAdmin = currentUser !== undefined && User.isAdmin(currentUser);
 
-	const showActionError = (error: unknown) =>
-		Alert.alert('Something Went Wrong', friendlyErrorMessage(error), [
-			{ text: 'OK', style: 'cancel' }
-		]);
+	const showActionError = (error: unknown) => showToast(Toasts.error(friendlyErrorMessage(error)));
 
 	const imagesPage = useCallback((): EnvironmentFetch<ImageSummary> | undefined => {
 		const current = useClientManager.getState().client;
 		if (!current) return undefined;
 		return async (envID, start, limit) => {
 			const response = await current.images.list({ envID, query: { start, limit } });
-			return { items: response.data, pagination: response.pagination };
+			return resourcePage(response);
 		};
 	}, []);
 
@@ -174,7 +171,7 @@ export function useImagesList({ environmentID, allEnvironments = false }: Images
 			const environments = await useEnvironmentsStore
 				.getState()
 				.listEnvironments(environmentID, allEnvironments);
-			await list.reload(environments, fetch, { preservingLoadedRange });
+			await list.reload(environments, fetch, { preservingLoadedRange, aggregates: true });
 			if (loadGeneration.current !== generation) return;
 			const loaded = list.getSnapshot().items;
 			const shown = new Set(loaded.map((image) => image.environmentID));

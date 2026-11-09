@@ -79,9 +79,44 @@ export interface EnvironmentUpdateResult {
 	environmentName: string;
 	status: EnvironmentUpdateResultStatus;
 	fromVersion?: string;
+	fromDigest?: string;
 	toVersion?: string;
 	error?: string;
+	stage?: EnvironmentUpdateStage;
+	stageStartedAt?: ISODateString;
+	percent?: number;
+	logs?: string[];
 }
+
+export type EnvironmentUpdateStage =
+	| 'checking'
+	| 'starting'
+	| 'pulling'
+	| 'upgrading'
+	| 'reconnecting'
+	| 'verifying'
+	| (string & {});
+
+export const EnvironmentUpdateStage = {
+	label(this: void, stage: EnvironmentUpdateStage): string {
+		switch (stage) {
+			case 'checking':
+				return 'Checking for updates';
+			case 'starting':
+				return 'Starting';
+			case 'pulling':
+				return 'Pulling image';
+			case 'upgrading':
+				return 'Replacing container';
+			case 'reconnecting':
+				return 'Reconnecting';
+			case 'verifying':
+				return 'Verifying';
+			default:
+				return stage.charAt(0).toUpperCase() + stage.slice(1);
+		}
+	}
+} as const;
 
 export const EnvironmentUpdateResult = {
 	id(this: void, value: EnvironmentUpdateResult): string {
@@ -95,8 +130,13 @@ export const EnvironmentUpdateResult = {
 			environmentName: D.string(o, 'environmentName'),
 			status: D.nested(o, 'status', EnvironmentUpdateResultStatus.decode),
 			fromVersion: D.optString(o, 'fromVersion'),
+			fromDigest: D.optString(o, 'fromDigest'),
 			toVersion: D.optString(o, 'toVersion'),
-			error: D.optString(o, 'error')
+			error: D.optString(o, 'error'),
+			stage: D.optString(o, 'stage'),
+			stageStartedAt: D.optString(o, 'stageStartedAt'),
+			percent: D.optInt(o, 'percent'),
+			logs: D.optArray(o, 'logs', D.str)
 		};
 	}
 } as const;
@@ -125,6 +165,14 @@ export const EnvironmentUpdateJob = {
 		return value.status === 'completed' || value.status === 'failed';
 	},
 
+	result(
+		this: void,
+		value: EnvironmentUpdateJob,
+		environmentID: string
+	): EnvironmentUpdateResult | undefined {
+		return value.results?.find((result) => result.environmentId === environmentID);
+	},
+
 	decode(this: void, raw: unknown): EnvironmentUpdateJob {
 		const o = D.object(raw, 'EnvironmentUpdateJob');
 		return {
@@ -141,6 +189,26 @@ export const EnvironmentUpdateJob = {
 			error: D.optString(o, 'error'),
 			completedAt: D.optString(o, 'completedAt')
 		};
+	}
+} as const;
+
+export interface UpgradeJobStreamEvent {
+	job?: EnvironmentUpdateJob;
+}
+
+export const UpgradeJobStreamEvent = {
+	channel: 'arcane-upgrade',
+
+	decode(this: void, raw: unknown): UpgradeJobStreamEvent {
+		const envelope = D.object(raw, 'UpgradeJobStreamEvent');
+		const payload =
+			envelope.channel === UpgradeJobStreamEvent.channel ? envelope.upgrade : undefined;
+		if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return {};
+		try {
+			return { job: EnvironmentUpdateJob.decode(payload) };
+		} catch {
+			return {};
+		}
 	}
 } as const;
 
@@ -173,5 +241,36 @@ export const SystemContainerActionResult = {
 	encode(this: void, value: SystemContainerActionResult): Record<string, unknown> {
 		const { activityID, ...rest } = value;
 		return { ...rest, activityId: activityID };
+	}
+} as const;
+
+export type UpgradeProgressEventType = 'stage' | 'progress' | 'log' | 'done' | (string & {});
+
+export interface UpgradeProgressEvent {
+	type: UpgradeProgressEventType;
+	percent: number;
+	message?: string;
+	fromVersion?: string;
+	toVersion?: string;
+	at?: ISODateString;
+	replay?: boolean;
+}
+
+export const UpgradeProgressEvent = {
+	isDone(this: void, value: UpgradeProgressEvent): boolean {
+		return value.type === 'done';
+	},
+
+	decode(this: void, raw: unknown): UpgradeProgressEvent {
+		const o = D.object(raw, 'UpgradeProgressEvent');
+		return {
+			type: D.optString(o, 'type') ?? 'progress',
+			percent: D.optInt(o, 'percent') ?? 0,
+			message: D.optString(o, 'message'),
+			fromVersion: D.optString(o, 'fromVersion'),
+			toVersion: D.optString(o, 'toVersion'),
+			at: D.optString(o, 'at'),
+			replay: D.optBoolean(o, 'replay')
+		};
 	}
 } as const;

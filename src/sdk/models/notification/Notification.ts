@@ -415,21 +415,6 @@ export interface NotificationTestResponse {
 	warning?: string;
 }
 
-export interface AppriseSettings {
-	id: number;
-	apiUrl: string;
-	enabled: boolean;
-	imageUpdateTag: string;
-	containerUpdateTag: string;
-}
-
-export interface UpdateAppriseSettings {
-	apiUrl: string;
-	enabled: boolean;
-	imageUpdateTag: string;
-	containerUpdateTag: string;
-}
-
 export type NotificationTestType =
 	| 'simple'
 	| 'image-update'

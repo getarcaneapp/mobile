@@ -32,12 +32,12 @@ function ScheduleRow({ model, field }: { model: JobScheduleConfigModel; field: J
 						width: 28,
 						height: 28,
 						borderRadius: 14,
-						backgroundColor: withOpacity(field.tint, 0.15),
+						backgroundColor: withOpacity(systemColors[field.tint], 0.15),
 						alignItems: 'center',
 						justifyContent: 'center'
 					}}
 				>
-					<Icon name={field.icon} size={16} color={field.tint} />
+					<Icon name={field.icon} size={16} color={systemColors[field.tint]} />
 				</View>
 				<Text style={[m3Type.titleSmall, { color: colors.label }]}>{field.label}</Text>
 			</View>

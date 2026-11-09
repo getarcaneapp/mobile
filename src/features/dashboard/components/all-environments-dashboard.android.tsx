@@ -1,12 +1,13 @@
 import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { pluralCount } from '@/core/plural';
+import { activityStatusTint } from '@/features/activities/activity-display';
 import type { ContainerSummary } from '@/sdk/models/container/ContainerSummary';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import type { DockerInfo } from '@/sdk/models/system/DockerInfo';
 import type { BusiestEntry } from '@/stores/busiest-containers-logic';
 import { environmentIsOnline } from '@/stores/dashboard-stream-logic';
-import { useEnvironmentCounts } from '../use-environment-counts';
 import { colors, systemColors, withOpacity } from '@/theme/colors';
 import { Icon } from '@/ui/Icon';
 import { useIsDark } from '@/ui/components/accessibility';
@@ -18,45 +19,50 @@ import { CardEntranceView } from '@/ui/components/motion-views';
 import { RowIcon } from '@/ui/components/row-icon';
 import { GlassCard } from '@/ui/components/surfaces';
 import { m3Type } from '@/ui/components/type-scale';
-import { MaterialListGroup, MaterialSectionHeader } from '@/ui/material/list';
 
 import {
+	byteString,
 	containerDisplayName,
 	containerIconURL,
 	containerIsRunning,
-	DashboardTotalsTile,
 	displayName,
 	percent0,
-	ResourceMetricsText,
-	type AllEnvironmentsCounts
+	ResourceMetricsText
 } from '../dashboard-logic';
+import {
+	activityEnvironmentID,
+	activityTime,
+	activityTitle,
+	filterActivityGroups,
+	jobLabel,
+	overviewListLimit,
+	sortOverviewAttention,
+	type ActivityFilter,
+	type OverviewAttentionAction,
+	type OverviewAttentionSeverity,
+	type OverviewAttentionSort
+} from '../dashboard-overview-logic';
+import { DashboardWidget, type DashboardWidgetID } from '../dashboard-widgets';
 import {
 	relativeNamed,
 	useAllEnvironmentsDashboard,
 	useBusiestCard,
+	useHealthyStat,
 	useHostDiskPercent,
-	useTileValues,
+	useOverviewAttention,
+	useReclaimable,
+	useRecentActivity,
+	useRiskStat,
+	useTopMemory,
+	useUpcomingJobs,
 	useUsageCard,
 	type AllEnvironmentsDashboardModel
 } from '../use-all-environments-dashboard';
-import { DashboardRowChevron, DashboardSectionTitle, DashboardStatTile } from './dashboard-parts';
-import { MaterialMenu } from './material-menu';
-import { MaterialSheet } from './material-sheet';
+import { useEnvironmentCounts } from '../use-environment-counts';
+import type { AllEnvironmentsDashboardProps } from './all-environments-dashboard.types';
+import { DashboardRowChevron, DashboardSectionTitle } from './dashboard-parts';
 import { MetricRing } from './metric-ring';
 import { UsageChart } from './usage-chart';
-import { pluralCount } from '@/core/plural';
-
-export type AllEnvironmentsDashboardProps = {
-	environments: Environment[];
-	dockerInfo: Readonly<Record<string, DockerInfo>>;
-	counts: AllEnvironmentsCounts;
-	volumeCounts: Readonly<Record<string, number>>;
-	onOpenEnvironment: (environment: Environment) => void;
-	onOpenContainer: (container: ContainerSummary, environmentID: string) => void;
-	onOpenTile: (tile: DashboardTotalsTile) => void;
-	totalsFootnote: ReactNode;
-	hostsAccessory: ReactNode;
-};
 
 function Segmented<T extends string>({
 	options,
@@ -226,183 +232,6 @@ function BusiestRow({
 	);
 }
 
-function TilesEditorSheet({
-	isPresented,
-	storedTiles,
-	setStoredTiles,
-	onDismiss
-}: {
-	isPresented: boolean;
-	storedTiles: string;
-	setStoredTiles: (value: string) => void;
-	onDismiss: () => void;
-}) {
-	const tiles = DashboardTotalsTile.decode(storedTiles);
-	const available = DashboardTotalsTile.allCases.filter((t) => !tiles.includes(t));
-	const full = tiles.length >= DashboardTotalsTile.maximum;
-	const save = (next: DashboardTotalsTile[]) => setStoredTiles(DashboardTotalsTile.encode(next));
-	const move = (index: number, delta: number) => {
-		const next = [...tiles];
-		const [tile] = next.splice(index, 1);
-		if (tile) next.splice(index + delta, 0, tile);
-		save(next);
-	};
-	const iconButton = (
-		icon: string,
-		label: string,
-		onPress: () => void,
-		isDisabled = false,
-		tint: string = colors.secondaryLabel as string
-	) => (
-		<Pressable
-			onPress={onPress}
-			disabled={isDisabled}
-			accessibilityRole="button"
-			accessibilityLabel={label}
-			android_ripple={{ color: colors.separator as string, borderless: true, radius: 20 }}
-			style={{
-				width: 40,
-				height: 40,
-				alignItems: 'center',
-				justifyContent: 'center',
-				opacity: isDisabled ? 0.38 : 1
-			}}
-		>
-			<Icon name={icon} size={20} color={tint} />
-		</Pressable>
-	);
-	const info = (tile: DashboardTotalsTile) => {
-		const tileInfo = DashboardTotalsTile.info[tile];
-		return (
-			<View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-				<RowIcon systemImage={tileInfo.systemImage} tint={systemColors[tileInfo.tint]} size={30} />
-				<View style={{ flex: 1, gap: 2 }}>
-					<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{tileInfo.title}</Text>
-					<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
-						{tileInfo.detail}
-					</Text>
-				</View>
-			</View>
-		);
-	};
-	return (
-		<MaterialSheet isPresented={isPresented} onDismiss={onDismiss} fullHeight>
-			<View style={{ paddingBottom: 32 }}>
-				<View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24 }}>
-					<Text style={[m3Type.titleLarge, { flex: 1, color: colors.label }]}>Dashboard Tiles</Text>
-					<Pressable onPress={onDismiss} accessibilityRole="button" style={{ padding: 12 }}>
-						<Text style={[m3Type.labelLarge, { color: m3.primary }]}>Done</Text>
-					</Pressable>
-				</View>
-				<MaterialSectionHeader title="Shown" />
-				<MaterialListGroup>
-					{tiles.map((tile, index) => (
-						<View
-							key={`shown.${tile}`}
-							style={{
-								flexDirection: 'row',
-								alignItems: 'center',
-								paddingLeft: 16,
-								paddingVertical: 4
-							}}
-						>
-							{info(tile)}
-							{iconButton('chevron.up', 'Move up', () => move(index, -1), index === 0)}
-							{iconButton(
-								'chevron.down',
-								'Move down',
-								() => move(index, 1),
-								index === tiles.length - 1
-							)}
-							{iconButton(
-								'minus.circle.fill',
-								'Remove',
-								() => save(tiles.filter((t) => t !== tile)),
-								tiles.length <= 1,
-								systemColors.red
-							)}
-						</View>
-					))}
-				</MaterialListGroup>
-				<Text
-					style={[
-						m3Type.bodySmall,
-						{ color: colors.secondaryLabel, paddingHorizontal: 24, paddingTop: 6 }
-					]}
-				>
-					{`Up to ${DashboardTotalsTile.maximum} tiles. Use the arrows to reorder.`}
-				</Text>
-				{available.length > 0 ? (
-					<>
-						<MaterialSectionHeader title="Available" />
-						<MaterialListGroup>
-							{available.map((tile) => (
-								<Pressable
-									key={`available.${tile}`}
-									onPress={() => save([...tiles, tile])}
-									disabled={full}
-									android_ripple={{ color: colors.separator as string }}
-									style={{
-										flexDirection: 'row',
-										alignItems: 'center',
-										paddingHorizontal: 16,
-										paddingVertical: 10,
-										opacity: full ? 0.4 : 1
-									}}
-								>
-									{info(tile)}
-									<Icon name="plus.circle.fill" size={24} color={systemColors.green} />
-								</Pressable>
-							))}
-						</MaterialListGroup>
-					</>
-				) : null}
-				<View style={{ height: 16 }} />
-				<MaterialListGroup>
-					<Pressable
-						onPress={() => save(DashboardTotalsTile.defaults)}
-						android_ripple={{ color: colors.separator as string }}
-						style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}
-					>
-						<Icon name="arrow.counterclockwise" size={20} color={m3.primary} />
-						<Text style={[m3Type.bodyLarge, { color: m3.primary }]}>Reset to Defaults</Text>
-					</Pressable>
-				</MaterialListGroup>
-			</View>
-		</MaterialSheet>
-	);
-}
-
-function TotalsTiles({
-	model,
-	onOpenTile,
-	onLongPress
-}: {
-	model: AllEnvironmentsDashboardModel;
-	onOpenTile: (tile: DashboardTotalsTile) => void;
-	onLongPress: () => void;
-}) {
-	const values = useTileValues(model);
-	return (
-		<>
-			{model.tiles.map((tile, index) => {
-				const info = DashboardTotalsTile.info[tile];
-				return (
-					<DashboardStatTile
-						key={tile}
-						title={info.title}
-						value={values[index] ?? '—'}
-						icon={info.systemImage}
-						tint={systemColors[info.tint]}
-						onPress={info.opensDestination ? () => onOpenTile(tile) : undefined}
-						onLongPress={onLongPress}
-					/>
-				);
-			})}
-		</>
-	);
-}
-
 function UsageCard({ model }: { model: AllEnvironmentsDashboardModel }) {
 	const usage = useUsageCard(model);
 	return (
@@ -486,7 +315,7 @@ function BusiestSection({
 }) {
 	const busiest = useBusiestCard(model);
 	return (
-		<CardEntranceView id="dashboard.all.busiest" index={2} style={{ gap: 14 }}>
+		<View style={{ gap: 14 }}>
 			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
 				<View style={{ flex: 1, gap: 2 }}>
 					<DashboardSectionTitle title="Busiest Containers" />
@@ -538,7 +367,7 @@ function BusiestSection({
 					))
 				)}
 			</GlassCard>
-		</CardEntranceView>
+		</View>
 	);
 }
 
@@ -627,87 +456,760 @@ function HostRow({
 	);
 }
 
-export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
-	const { environments, dockerInfo, counts, volumeCounts } = props;
-	const model = useAllEnvironmentsDashboard(environments, counts);
-	const [totalsMenu, setTotalsMenu] = useState(false);
-
+function WidgetHeader({ title, children }: { title: string; children?: ReactNode }) {
 	return (
-		<View style={{ gap: 36 }}>
-			<CardEntranceView id="dashboard.all.totals" index={0} style={{ gap: 10 }}>
-				<View>
-					<Pressable onLongPress={() => setTotalsMenu(true)} accessibilityHint="Hold to edit tiles">
-						<GlassCard
-							style={{
-								flexDirection: 'row',
-								alignItems: 'flex-start',
-								gap: 8,
-								paddingHorizontal: 16,
-								paddingVertical: 14
-							}}
-						>
-							<TotalsTiles
-								model={model}
-								onOpenTile={props.onOpenTile}
-								onLongPress={() => setTotalsMenu(true)}
-							/>
-						</GlassCard>
-					</Pressable>
-					<MaterialMenu
-						expanded={totalsMenu}
-						onDismiss={() => setTotalsMenu(false)}
-						entries={[
-							{
-								kind: 'item',
-								id: 'edit',
-								title: 'Edit Tiles',
-								onPress: () => model.setShowsTileEditor(true)
-							}
-						]}
-					/>
-				</View>
-				{props.totalsFootnote}
-			</CardEntranceView>
-
-			<CardEntranceView id="dashboard.all.usage" index={1}>
-				<UsageCard model={model} />
-			</CardEntranceView>
-
-			{model.showsBusiest ? (
-				<BusiestSection model={model} onOpenContainer={props.onOpenContainer} />
-			) : null}
-
-			<CardEntranceView id="dashboard.all.hosts" index={3} style={{ gap: 14 }}>
-				<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-					<View style={{ flex: 1, gap: 2 }}>
-						<DashboardSectionTitle title="Hosts" />
-						<Text
-							style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}
-						>{`${model.onlineCount} of ${environments.length} online`}</Text>
-					</View>
-					{props.hostsAccessory}
-				</View>
-				<GlassCard style={{ paddingVertical: 4, overflow: 'hidden' }}>
-					{environments.map((environment, index) => (
-						<HostRow
-							key={environment.id}
-							model={model}
-							environment={environment}
-							index={index}
-							info={dockerInfo[environment.id]}
-							volumes={volumeCounts[environment.id]}
-							onOpenEnvironment={props.onOpenEnvironment}
-						/>
-					))}
-				</GlassCard>
-			</CardEntranceView>
-
-			<TilesEditorSheet
-				isPresented={model.showsTileEditor}
-				storedTiles={model.storedTiles}
-				setStoredTiles={model.setStoredTiles}
-				onDismiss={() => model.setShowsTileEditor(false)}
-			/>
+		<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+			<View style={{ flex: 1 }}>
+				<DashboardSectionTitle title={title} />
+			</View>
+			{children}
 		</View>
 	);
+}
+
+function WidgetMessage({ text }: { text: string }) {
+	return (
+		<Text
+			style={[
+				m3Type.bodyMedium,
+				{ color: colors.secondaryLabel, paddingHorizontal: 16, paddingVertical: 14 }
+			]}
+		>
+			{text}
+		</Text>
+	);
+}
+
+function WidgetLoading() {
+	return (
+		<View style={{ alignItems: 'center', paddingVertical: 20 }}>
+			<ArcaneLoadingView variant="inline" />
+		</View>
+	);
+}
+
+function WidgetRows<T>({
+	items,
+	keyFor,
+	labelFor,
+	onPress,
+	children
+}: {
+	items: readonly T[];
+	keyFor: (item: T) => string;
+	labelFor: (item: T) => string;
+	onPress?: (item: T) => void;
+	children: (item: T) => ReactNode;
+}) {
+	return (
+		<View style={{ paddingVertical: 4 }}>
+			{items.map((item, index) => (
+				<View key={keyFor(item)}>
+					{index > 0 ? (
+						<View style={{ height: 1, marginLeft: 16, backgroundColor: colors.separator }} />
+					) : null}
+					<Pressable
+						onPress={onPress ? () => onPress(item) : undefined}
+						disabled={!onPress}
+						android_ripple={onPress ? { color: colors.separator as string } : undefined}
+						accessibilityRole={onPress ? 'button' : undefined}
+						accessibilityLabel={labelFor(item)}
+						style={{
+							flexDirection: 'row',
+							alignItems: 'center',
+							gap: 12,
+							paddingHorizontal: 16,
+							paddingVertical: 10
+						}}
+					>
+						{children(item)}
+					</Pressable>
+				</View>
+			))}
+		</View>
+	);
+}
+
+function Dot({ color }: { color: string }) {
+	return <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />;
+}
+
+function TrailingCaption({ text }: { text: string }) {
+	return (
+		<Text
+			numberOfLines={1}
+			style={[m3Type.bodySmall, { color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }]}
+		>
+			{text}
+		</Text>
+	);
+}
+
+function CountBadge({ count }: { count: number | undefined }) {
+	if (!count || count < 2) return null;
+	return (
+		<View
+			style={{
+				paddingHorizontal: 6,
+				paddingVertical: 2,
+				borderRadius: 8,
+				backgroundColor: m3.surfaceContainerHighest
+			}}
+		>
+			<Text style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>{`×${count}`}</Text>
+		</View>
+	);
+}
+
+function RowText({
+	title,
+	environmentID,
+	model,
+	detail,
+	badge
+}: {
+	title: string;
+	environmentID: string;
+	model: AllEnvironmentsDashboardModel;
+	detail?: string;
+	badge?: number;
+}) {
+	return (
+		<View style={{ flex: 1, gap: 3 }}>
+			<View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+				<Text numberOfLines={1} style={[m3Type.titleSmall, { flexShrink: 1, color: colors.label }]}>
+					{title}
+				</Text>
+				<CountBadge count={badge} />
+			</View>
+			<EnvironmentLabel
+				name={model.environmentName(environmentID)}
+				color={model.environmentColor(environmentID)}
+			/>
+			{detail ? (
+				<Text numberOfLines={1} style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
+					{detail}
+				</Text>
+			) : null}
+		</View>
+	);
+}
+
+function StatCard({
+	id,
+	value,
+	detail,
+	loading = false,
+	onPress
+}: {
+	id: DashboardWidgetID;
+	value: string | undefined;
+	detail: string;
+	loading?: boolean;
+	onPress?: () => void;
+}) {
+	const info = DashboardWidget.info[id];
+	const shown = loading ? '—' : (value ?? '—');
+	return (
+		<Pressable
+			onPress={onPress}
+			disabled={!onPress}
+			android_ripple={onPress ? { color: colors.separator as string } : undefined}
+			accessibilityRole={onPress ? 'button' : undefined}
+			accessibilityLabel={`${info.title}: ${shown}, ${detail}`}
+			style={{ flex: 1 }}
+		>
+			<GlassCard style={{ paddingHorizontal: 14, paddingVertical: 12, gap: 6 }}>
+				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+					<Icon name={info.systemImage} size={14} color={systemColors[info.tint]} />
+					<Text numberOfLines={1} style={[m3Type.labelMedium, { color: colors.secondaryLabel }]}>
+						{info.title}
+					</Text>
+				</View>
+				<Text
+					numberOfLines={1}
+					adjustsFontSizeToFit
+					style={[
+						m3Type.headlineSmall,
+						{ color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }
+					]}
+				>
+					{shown}
+				</Text>
+				<Text numberOfLines={1} style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
+					{detail}
+				</Text>
+			</GlassCard>
+		</Pressable>
+	);
+}
+
+function HealthyStat({ model }: { model: AllEnvironmentsDashboardModel }) {
+	const stat = useHealthyStat(model);
+	return <StatCard id="healthy" value={stat.value} detail={stat.detail} />;
+}
+
+function AttentionCountStat({ model }: { model: AllEnvironmentsDashboardModel }) {
+	const attention = useOverviewAttention(model);
+	return (
+		<StatCard
+			id="attentionCount"
+			value={String(attention.items.length)}
+			detail={`${attention.critical} critical`}
+			loading={attention.loading}
+		/>
+	);
+}
+
+function UpdatesStat({
+	model,
+	onPress
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onPress: () => void;
+}) {
+	const pending = model.counts.updates;
+	return (
+		<StatCard
+			id="updates"
+			value={pending === undefined ? undefined : String(pending)}
+			detail={
+				pending === undefined ? 'Checking…' : pending === 0 ? 'Up to date' : 'Updates available'
+			}
+			onPress={onPress}
+		/>
+	);
+}
+
+function RiskStat({ onPress }: { onPress: () => void }) {
+	const risk = useRiskStat();
+	const delta =
+		risk.delta !== undefined && risk.delta !== 0
+			? `${risk.delta > 0 ? '↑' : '↓'}${Math.abs(risk.delta)} · `
+			: '';
+	return (
+		<StatCard
+			id="risk"
+			value={risk.score === undefined ? undefined : String(risk.score)}
+			detail={
+				risk.failed
+					? 'Unavailable'
+					: risk.score === undefined
+						? 'No scan'
+						: `${delta}${risk.knownExploited} known exploited`
+			}
+			loading={risk.loading}
+			onPress={onPress}
+		/>
+	);
+}
+
+function ReclaimableStat() {
+	const reclaimable = useReclaimable();
+	return (
+		<StatCard
+			id="reclaimableTotal"
+			value={reclaimable.failed ? undefined : byteString(reclaimable.total)}
+			detail={
+				reclaimable.environmentCount > 1
+					? `Across ${reclaimable.environmentCount} environments`
+					: 'Unused data'
+			}
+			loading={reclaimable.loading}
+		/>
+	);
+}
+
+function StatWidget({
+	id,
+	model,
+	props
+}: {
+	id: DashboardWidgetID;
+	model: AllEnvironmentsDashboardModel;
+	props: AllEnvironmentsDashboardProps;
+}) {
+	switch (id) {
+		case 'healthy':
+			return <HealthyStat model={model} />;
+		case 'attentionCount':
+			return <AttentionCountStat model={model} />;
+		case 'updates':
+			return <UpdatesStat model={model} onPress={props.onOpenUpdates} />;
+		case 'risk':
+			return <RiskStat onPress={props.onOpenSecurity} />;
+		case 'reclaimableTotal':
+			return <ReclaimableStat />;
+		default:
+			return null;
+	}
+}
+
+const severityColor = (severity: OverviewAttentionSeverity) =>
+	severity === 'critical'
+		? systemColors.red
+		: severity === 'warning'
+			? systemColors.orange
+			: systemColors.blue;
+
+function AttentionWidget({
+	model,
+	onAction
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onAction: (action: OverviewAttentionAction) => void;
+}) {
+	const attention = useOverviewAttention(model);
+	const [sort, setSort] = useState<OverviewAttentionSort>('impact');
+	const items = sortOverviewAttention(attention.items, sort).slice(0, overviewListLimit);
+	return (
+		<View style={{ gap: 14 }}>
+			<WidgetHeader title="Needs Attention">
+				<Segmented
+					options={[
+						{ label: 'Impact', value: 'impact' as const },
+						{ label: 'Newest', value: 'newest' as const }
+					]}
+					selection={sort}
+					onChange={setSort}
+				/>
+			</WidgetHeader>
+			<GlassCard style={{ overflow: 'hidden' }}>
+				{attention.loading ? (
+					<WidgetLoading />
+				) : items.length === 0 ? (
+					<WidgetMessage text={attention.failed ? 'Unavailable' : 'No issues'} />
+				) : (
+					<WidgetRows
+						items={items}
+						keyFor={(item) => item.key}
+						labelFor={(item) => `${item.title}, ${item.detail}, ${item.actionLabel}`}
+						onPress={(item) => onAction(item.action)}
+					>
+						{(item) => (
+							<>
+								<Dot color={severityColor(item.severity)} />
+								<RowText
+									title={item.title}
+									environmentID={item.environmentID}
+									model={model}
+									detail={item.detail}
+									badge={item.count}
+								/>
+								<Text style={[m3Type.labelLarge, { color: m3.primary }]}>{item.actionLabel}</Text>
+							</>
+						)}
+					</WidgetRows>
+				)}
+			</GlassCard>
+		</View>
+	);
+}
+
+function ActivityWidget({
+	model,
+	onOpenActivity
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenActivity: (status?: 'failed') => void;
+}) {
+	const recent = useRecentActivity();
+	const [filter, setFilter] = useState<ActivityFilter>('all');
+	const groups = filterActivityGroups(recent.groups, filter);
+	return (
+		<View style={{ gap: 14 }}>
+			<DashboardSectionTitle title="Recent Activity" />
+			<Segmented
+				options={[
+					{ label: 'All', value: 'all' as const },
+					{ label: 'Deploys', value: 'deploys' as const },
+					{ label: 'Failures', value: 'failures' as const }
+				]}
+				selection={filter}
+				onChange={setFilter}
+			/>
+			<GlassCard style={{ overflow: 'hidden' }}>
+				{recent.loading ? (
+					<WidgetLoading />
+				) : groups.length === 0 ? (
+					<WidgetMessage text={recent.failed ? 'Unavailable' : 'No recent activity'} />
+				) : (
+					<WidgetRows
+						items={groups}
+						keyFor={(group) => group.key}
+						labelFor={({ activity }) => `${activityTitle(activity)}, ${activity.status}`}
+						onPress={(group) =>
+							onOpenActivity(group.activity.status === 'failed' ? 'failed' : undefined)
+						}
+					>
+						{({ activity, ids }) => {
+							const title = activityTitle(activity);
+							const at = activityTime(activity);
+							return (
+								<>
+									<Dot color={activityStatusTint(activity.status)} />
+									<RowText
+										title={[
+											activity.status === 'failed' ? `${title} failed` : title,
+											activity.resourceName
+										]
+											.filter(Boolean)
+											.join(' · ')}
+										environmentID={activityEnvironmentID(activity)}
+										model={model}
+										badge={ids.length}
+									/>
+									{at !== undefined ? <TrailingCaption text={relativeNamed(at)} /> : null}
+								</>
+							);
+						}}
+					</WidgetRows>
+				)}
+				<View style={{ height: 1, marginLeft: 16, backgroundColor: colors.separator }} />
+				<Pressable
+					onPress={() => onOpenActivity()}
+					android_ripple={{ color: colors.separator as string }}
+					accessibilityRole="button"
+					style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+				>
+					<Text style={[m3Type.labelLarge, { color: m3.primary }]}>View All</Text>
+				</Pressable>
+			</GlassCard>
+		</View>
+	);
+}
+
+function JobsWidget({
+	model,
+	onOpenJobs
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenJobs: (environmentID: string) => void;
+}) {
+	const upcoming = useUpcomingJobs();
+	return (
+		<View style={{ gap: 14 }}>
+			<WidgetHeader title="Upcoming Jobs" />
+			<GlassCard style={{ overflow: 'hidden' }}>
+				{upcoming.loading ? (
+					<WidgetLoading />
+				) : upcoming.jobs.length === 0 ? (
+					<WidgetMessage text={upcoming.failed ? 'Unavailable' : 'No upcoming jobs'} />
+				) : (
+					<WidgetRows
+						items={upcoming.jobs}
+						keyFor={(entry) => `${entry.environmentID}:${entry.job.id}`}
+						labelFor={(entry) => `${jobLabel(entry.job)}, ${relativeNamed(entry.nextRun)}`}
+						onPress={(entry) => onOpenJobs(entry.environmentID)}
+					>
+						{(entry) => (
+							<>
+								<RowText
+									title={jobLabel(entry.job)}
+									environmentID={entry.environmentID}
+									model={model}
+								/>
+								<TrailingCaption text={relativeNamed(entry.nextRun)} />
+							</>
+						)}
+					</WidgetRows>
+				)}
+			</GlassCard>
+		</View>
+	);
+}
+
+function ReclaimableWidget({
+	model,
+	onPrune
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onPrune: (() => void) | undefined;
+}) {
+	const reclaimable = useReclaimable();
+	return (
+		<View style={{ gap: 14 }}>
+			<WidgetHeader title="Reclaimable Space">
+				{onPrune && reclaimable.total > 0 ? (
+					<Pressable
+						onPress={onPrune}
+						accessibilityRole="button"
+						android_ripple={{ color: colors.separator as string, borderless: false }}
+						style={{
+							flexDirection: 'row',
+							alignItems: 'center',
+							gap: 6,
+							height: 36,
+							paddingHorizontal: 14,
+							borderRadius: 18,
+							borderWidth: 1,
+							borderColor: m3.outline
+						}}
+					>
+						<Icon name="trash" size={16} color={m3.primary} />
+						<Text style={[m3Type.labelLarge, { color: m3.primary }]}>Prune</Text>
+					</Pressable>
+				) : null}
+			</WidgetHeader>
+			<GlassCard style={{ overflow: 'hidden' }}>
+				{reclaimable.loading ? (
+					<WidgetLoading />
+				) : reclaimable.total === 0 ? (
+					<WidgetMessage text={reclaimable.failed ? 'Unavailable' : 'Nothing to reclaim'} />
+				) : (
+					<View style={{ padding: 16, gap: 14 }}>
+						<Text
+							style={[
+								m3Type.headlineSmall,
+								{ color: colors.label, fontWeight: '600', fontVariant: ['tabular-nums'] }
+							]}
+						>
+							{byteString(reclaimable.total)}
+						</Text>
+						{reclaimable.resources.map((resource) => (
+							<View
+								key={resource.key}
+								accessible
+								accessibilityLabel={`${resource.title}: ${byteString(resource.total)}`}
+								style={{ gap: 6 }}
+							>
+								<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+									<Text
+										numberOfLines={1}
+										style={[m3Type.bodyMedium, { flex: 1, color: colors.secondaryLabel }]}
+									>
+										{resource.title}
+									</Text>
+									<Text
+										style={[
+											m3Type.titleSmall,
+											{ color: colors.label, fontVariant: ['tabular-nums'] }
+										]}
+									>
+										{byteString(resource.total)}
+									</Text>
+								</View>
+								<View style={{ flexDirection: 'row', height: 8, gap: 2 }}>
+									{resource.segments.map((segment) => (
+										<View
+											key={segment.environmentID}
+											style={{
+												flexGrow: segment.bytes,
+												flexBasis: 0,
+												height: 8,
+												borderRadius: 4,
+												backgroundColor: model.environmentColor(segment.environmentID)
+											}}
+										/>
+									))}
+								</View>
+							</View>
+						))}
+						{reclaimable.environmentCount > 1 ? (
+							<View>
+								{reclaimable.topEnvironments.map((entry, index) => (
+									<View key={entry.environmentID}>
+										{index > 0 ? (
+											<View style={{ height: 1, backgroundColor: colors.separator }} />
+										) : null}
+										<View
+											style={{
+												flexDirection: 'row',
+												alignItems: 'center',
+												gap: 8,
+												paddingVertical: 8
+											}}
+										>
+											<Dot color={model.environmentColor(entry.environmentID)} />
+											<Text
+												numberOfLines={1}
+												style={[m3Type.titleSmall, { flex: 1, color: colors.label }]}
+											>
+												{model.environmentName(entry.environmentID) ?? entry.environmentID}
+											</Text>
+											<TrailingCaption text={byteString(entry.bytes)} />
+										</View>
+									</View>
+								))}
+							</View>
+						) : null}
+					</View>
+				)}
+			</GlassCard>
+		</View>
+	);
+}
+
+function TopMemoryWidget({
+	model,
+	onOpenContainer
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onOpenContainer: (container: ContainerSummary, environmentID: string) => void;
+}) {
+	const top = useTopMemory(model);
+	return (
+		<View style={{ gap: 14 }}>
+			<WidgetHeader title="Top Memory" />
+			<GlassCard style={{ overflow: 'hidden' }}>
+				{top.entries.length === 0 ? (
+					top.loading ? (
+						<WidgetLoading />
+					) : (
+						<WidgetMessage text="No running containers" />
+					)
+				) : (
+					<WidgetRows
+						items={top.entries}
+						keyFor={(entry) => entry.id}
+						labelFor={(entry) =>
+							`${containerDisplayName(entry.container)}, ${ResourceMetricsText.memoryUsed(entry.sample)}`
+						}
+						onPress={(entry) => onOpenContainer(entry.container, entry.environmentID)}
+					>
+						{(entry) => (
+							<>
+								<RowText
+									title={containerDisplayName(entry.container)}
+									environmentID={entry.environmentID}
+									model={model}
+								/>
+								<TrailingCaption text={ResourceMetricsText.memoryUsed(entry.sample)} />
+							</>
+						)}
+					</WidgetRows>
+				)}
+			</GlassCard>
+		</View>
+	);
+}
+
+function EnvironmentsWidget({
+	model,
+	props
+}: {
+	model: AllEnvironmentsDashboardModel;
+	props: AllEnvironmentsDashboardProps;
+}) {
+	return (
+		<View style={{ gap: 14 }}>
+			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+				<View style={{ flex: 1, gap: 2 }}>
+					<DashboardSectionTitle title="Environments" />
+					<Text
+						style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}
+					>{`${model.onlineCount} of ${model.environments.length} online`}</Text>
+				</View>
+				{props.hostsAccessory}
+			</View>
+			<GlassCard style={{ paddingVertical: 4, overflow: 'hidden' }}>
+				{model.environments.map((environment, index) => (
+					<HostRow
+						key={environment.id}
+						model={model}
+						environment={environment}
+						index={index}
+						info={props.dockerInfo[environment.id]}
+						volumes={props.volumeCounts[environment.id]}
+						onOpenEnvironment={props.onOpenEnvironment}
+					/>
+				))}
+			</GlassCard>
+		</View>
+	);
+}
+
+function PanelWidget({
+	id,
+	model,
+	props
+}: {
+	id: DashboardWidgetID;
+	model: AllEnvironmentsDashboardModel;
+	props: AllEnvironmentsDashboardProps;
+}) {
+	switch (id) {
+		case 'environments':
+			return <EnvironmentsWidget model={model} props={props} />;
+		case 'usage':
+			return (
+				<View style={{ gap: 14 }}>
+					<WidgetHeader title="Usage" />
+					<UsageCard model={model} />
+				</View>
+			);
+		case 'busiest':
+			return <BusiestSection model={model} onOpenContainer={props.onOpenContainer} />;
+		case 'attention':
+			return <AttentionWidget model={model} onAction={props.onAttention} />;
+		case 'activity':
+			return <ActivityWidget model={model} onOpenActivity={props.onOpenActivity} />;
+		case 'jobs':
+			return <JobsWidget model={model} onOpenJobs={props.onOpenJobs} />;
+		case 'reclaimable':
+			return (
+				<ReclaimableWidget model={model} onPrune={props.canPrune ? props.onPrune : undefined} />
+			);
+		case 'memory':
+			return <TopMemoryWidget model={model} onOpenContainer={props.onOpenContainer} />;
+		default:
+			return null;
+	}
+}
+
+export function AllEnvironmentsDashboard(props: AllEnvironmentsDashboardProps) {
+	const model = useAllEnvironmentsDashboard(props.environments, props.counts, props.isAdmin);
+	const firstStats = model.groups.findIndex((group) => group.kind === 'stats');
+	return (
+		<View style={{ gap: 36 }}>
+			{model.groups.map((group, index) => (
+				<CardEntranceView
+					key={group.key}
+					id={`dashboard.widget.${group.key}`}
+					index={Math.min(index, 5)}
+					style={{ gap: 10 }}
+				>
+					{group.kind === 'stats' ? (
+						<>
+							{chunk(group.ids, 2).map((pair) => (
+								<View key={pair.join('|')} style={{ flexDirection: 'row', gap: 12 }}>
+									{pair.map((id) => (
+										<StatWidget key={id} id={id} model={model} props={props} />
+									))}
+									{pair.length === 1 ? <View style={{ flex: 1 }} /> : null}
+								</View>
+							))}
+							{index === firstStats ? props.totalsFootnote : null}
+						</>
+					) : (
+						<PanelWidget id={group.id} model={model} props={props} />
+					)}
+				</CardEntranceView>
+			))}
+			<Pressable
+				onPress={props.onEditLayout}
+				accessibilityRole="button"
+				android_ripple={{ color: colors.separator as string }}
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					justifyContent: 'center',
+					gap: 8,
+					height: 40,
+					borderRadius: 20,
+					borderWidth: 1,
+					borderColor: m3.outline
+				}}
+			>
+				<Icon name="square.grid.2x2" size={18} color={m3.primary} />
+				<Text style={[m3Type.labelLarge, { color: m3.primary }]}>Edit Dashboard</Text>
+			</Pressable>
+		</View>
+	);
+}
+
+function chunk<T>(items: readonly T[], size: number): T[][] {
+	const rows: T[][] = [];
+	for (let i = 0; i < items.length; i += size) rows.push(items.slice(i, i + size));
+	return rows;
 }

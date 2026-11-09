@@ -8,7 +8,6 @@ export interface JobScheduleConfig {
 	dockerClientRefreshInterval: string;
 	pollingInterval: string;
 	scheduledPruneInterval: string;
-	gitopsSyncInterval: string;
 	vulnerabilityScanInterval: string;
 	autoHealInterval: string;
 }
@@ -21,7 +20,6 @@ export interface UpdateJobScheduleConfig {
 	dockerClientRefreshInterval?: string;
 	pollingInterval?: string;
 	scheduledPruneInterval?: string;
-	gitopsSyncInterval?: string;
 	vulnerabilityScanInterval?: string;
 	autoHealInterval?: string;
 }
@@ -39,6 +37,36 @@ export interface JobStatus {
 	canRunManually: boolean;
 	prerequisites: JobPrerequisite[];
 	settingsKey?: string;
+	lastRun?: JobRunSummary;
+	lastError?: string;
+	children?: JobStatus[];
+}
+
+export type JobRunStatus =
+	| 'queued'
+	| 'waiting'
+	| 'running'
+	| 'retrying'
+	| 'succeeded'
+	| 'partial'
+	| 'skipped'
+	| 'failed'
+	| 'needs_attention'
+	| 'canceled'
+	| (string & {});
+
+export interface JobRunSummary {
+	id: string;
+	status: JobRunStatus;
+	updatedAt?: ISODateString;
+	finishedAt?: ISODateString;
+	activityId?: string;
+	outcome?: {
+		status?: JobRunStatus;
+		message?: string;
+		activityId?: string;
+		targets?: { id: string; activityId?: string }[];
+	};
 }
 
 export const JobStatus = {

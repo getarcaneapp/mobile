@@ -20,11 +20,12 @@ import {
 	contentShape,
 	contentTransition,
 	disabled,
-	fixedSize,
 	font,
 	foregroundStyle,
 	frame,
+	layoutPriority,
 	lineLimit,
+	minimumScaleFactor,
 	monospacedDigit,
 	padding,
 	shapes,
@@ -47,11 +48,12 @@ import type { EnvironmentRowProps } from './environment-row.types';
 import { MetricRing } from './metric-ring';
 import { revealedEnvironmentIDs, ringValueText, useEnvironmentRow } from '../use-environment-row';
 
-const statusColors = {
-	orange: systemColors.orange,
-	secondary: 'secondary',
-	green: systemColors.green
-} as const;
+const statusColors = () =>
+	({
+		orange: systemColors.orange,
+		secondary: 'secondary',
+		green: systemColors.green
+	}) as const;
 
 function Count({
 	value,
@@ -80,6 +82,8 @@ function Count({
 				modifiers={[
 					font({ textStyle: 'subheadline', weight: 'semibold' }),
 					monospacedDigit(),
+					lineLimit(1),
+					minimumScaleFactor(0.7),
 					foregroundStyle(highlight ?? 'primary'),
 					contentTransition('numericText'),
 					...motionAwareAnimation(Motion.state, hashKey(value), reduceMotion)
@@ -108,7 +112,6 @@ function RingGauge({
 		<HStack
 			spacing={7}
 			modifiers={[
-				fixedSize(),
 				accessibilityElement('ignore'),
 				accessibilityLabel(title),
 				accessibilityValue(percent === undefined ? 'Unavailable' : `${Math.round(percent)} percent`)
@@ -129,6 +132,8 @@ function RingGauge({
 			<Text
 				modifiers={[
 					font({ textStyle: 'caption' }),
+					lineLimit(1),
+					minimumScaleFactor(0.8),
 					foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 				]}
 			>
@@ -138,6 +143,9 @@ function RingGauge({
 				modifiers={[
 					font({ textStyle: 'subheadline', weight: 'semibold' }),
 					monospacedDigit(),
+					lineLimit(1),
+					minimumScaleFactor(0.7),
+					layoutPriority(1),
 					foregroundStyle('primary'),
 					contentTransition('numericText')
 				]}
@@ -196,7 +204,7 @@ export function EnvironmentRow(props: EnvironmentRowProps) {
 								systemName="circle.fill"
 								modifiers={[
 									font({ size: 8 }),
-									foregroundStyle(statusColors[row.statusTint]),
+									foregroundStyle(statusColors()[row.statusTint]),
 									accessibilityHidden(true)
 								]}
 							/>
@@ -211,7 +219,7 @@ export function EnvironmentRow(props: EnvironmentRowProps) {
 								{name}
 							</Text>
 							<Spacer minLength={10} />
-							<HStack spacing={10} modifiers={[fixedSize()]}>
+							<HStack spacing={10} modifiers={[layoutPriority(1)]}>
 								<Count
 									value={row.updatesText}
 									systemImage="arrow.triangle.2.circlepath"

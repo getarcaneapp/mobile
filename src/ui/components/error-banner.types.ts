@@ -8,10 +8,10 @@ export type ErrorBannerProps = {
 	retry?: () => void;
 };
 
-export const errorBannerTint: Record<ErrorBannerSeverity, string> = {
+export const errorBannerTint = (): Record<ErrorBannerSeverity, string> => ({
 	error: systemColors.red,
 	warning: systemColors.orange
-};
+});
 
 export const errorBannerAccessibilityPrefix: Record<ErrorBannerSeverity, string> = {
 	error: 'Error: ',

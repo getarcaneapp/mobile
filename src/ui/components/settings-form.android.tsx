@@ -13,7 +13,8 @@ import {
 	useDraft,
 	isFieldVisible,
 	registeredSettingsDraft,
-	type EnvironmentSettingsDraft
+	type EnvironmentSettingsDraft,
+	settingLockCaption
 } from './settings-form-draft';
 import {
 	useOpenContainerMultiSelect,
@@ -45,15 +46,37 @@ function Divider() {
 	return <View style={{ height: 1, marginLeft: 16, backgroundColor: colors.separator }} />;
 }
 
-export function SettingFieldRow({
-	field,
-	draft,
-	onOpenContainerSelect
-}: {
+type SettingFieldRowProps = {
 	field: SettingFieldDef;
 	draft: EnvironmentSettingsDraft;
 	onOpenContainerSelect: (field: SettingFieldDef) => void;
-}) {
+};
+
+export function SettingFieldRow(props: SettingFieldRowProps) {
+	const lockCaption = useDraft(props.draft, (s) => settingLockCaption(s.locks[props.field.key]));
+	if (lockCaption === undefined) return <SettingFieldControl {...props} />;
+	return (
+		<View accessibilityState={{ disabled: true }}>
+			<View pointerEvents="none" style={{ opacity: 0.38 }}>
+				<SettingFieldControl {...props} />
+			</View>
+			<View
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					gap: 6,
+					paddingHorizontal: 16,
+					paddingBottom: 12
+				}}
+			>
+				<Icon name="lock.fill" size={14} color={colors.secondaryLabel} />
+				<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>{lockCaption}</Text>
+			</View>
+		</View>
+	);
+}
+
+function SettingFieldControl({ field, draft, onOpenContainerSelect }: SettingFieldRowProps) {
 	const value = useDraft(draft, (s) => s.values[field.key] ?? '');
 	const networkNames = useDraft(draft, (s) => s.networkNames);
 	const setValue = (next: string) => draft.getState().setValue(field.key, next);

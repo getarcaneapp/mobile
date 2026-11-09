@@ -9,7 +9,6 @@ import type { SystemStats } from '@/sdk/models/system/SystemStats';
 import type { VersionInfo } from '@/sdk/models/version/VersionInfo';
 import {
 	DockerCounts,
-	environmentIsOnline,
 	SystemStatsDisplay,
 	type AggregateCounts,
 	type AttentionSummary,
@@ -385,114 +384,6 @@ export type DashboardTotalsTile =
 	| 'cpuCores'
 	| 'memory';
 
-type TileInfo = {
-	title: string;
-	systemImage: string;
-	tint: TileTint;
-	opensDestination: boolean;
-	detail: string;
-};
-export type TileTint = 'orange' | 'gray' | 'purple' | 'blue' | 'green' | 'red' | 'teal';
-
-export const DashboardTotalsTile = {
-	preferenceKey: 'arcane.dashboardTiles',
-	defaults: ['running', 'images', 'volumes'] as DashboardTotalsTile[],
-	maximum: 4,
-	allCases: [
-		'running',
-		'stopped',
-		'images',
-		'volumes',
-		'updates',
-		'vulnerabilities',
-		'hostsOnline',
-		'cpuCores',
-		'memory'
-	] as DashboardTotalsTile[],
-	info: {
-		running: {
-			title: 'Running',
-			systemImage: 'cube.box.fill',
-			tint: 'orange',
-			opensDestination: true,
-			detail: 'Running out of all containers'
-		},
-		stopped: {
-			title: 'Stopped',
-			systemImage: 'stop.circle.fill',
-			tint: 'gray',
-			opensDestination: true,
-			detail: 'Containers not running'
-		},
-		images: {
-			title: 'Images',
-			systemImage: 'square.3.layers.3d.top.filled',
-			tint: 'purple',
-			opensDestination: true,
-			detail: 'Images on every host'
-		},
-		volumes: {
-			title: 'Volumes',
-			systemImage: 'externaldrive.fill',
-			tint: 'blue',
-			opensDestination: true,
-			detail: 'Volumes on every host'
-		},
-		updates: {
-			title: 'Updates',
-			systemImage: 'arrow.triangle.2.circlepath',
-			tint: 'green',
-			opensDestination: true,
-			detail: 'Images with an update available'
-		},
-		vulnerabilities: {
-			title: 'Vulnerabilities',
-			systemImage: 'exclamationmark.shield.fill',
-			tint: 'red',
-			opensDestination: true,
-			detail: 'Actionable vulnerabilities'
-		},
-		hostsOnline: {
-			title: 'Online',
-			systemImage: 'server.rack',
-			tint: 'teal',
-			opensDestination: false,
-			detail: 'Environments online'
-		},
-		cpuCores: {
-			title: 'CPU Cores',
-			systemImage: 'cpu.fill',
-			tint: 'blue',
-			opensDestination: false,
-			detail: 'Cores across live hosts'
-		},
-		memory: {
-			title: 'Memory',
-			systemImage: 'memorychip.fill',
-			tint: 'purple',
-			opensDestination: false,
-			detail: 'Memory in use across live hosts'
-		}
-	} satisfies Record<DashboardTotalsTile, TileInfo>,
-
-	decode(raw: string): DashboardTotalsTile[] {
-		const seen = new Set<DashboardTotalsTile>();
-		const tiles = raw
-			.split(',')
-			.filter((value): value is DashboardTotalsTile =>
-				(DashboardTotalsTile.allCases as string[]).includes(value)
-			)
-			.filter((tile) => (seen.has(tile) ? false : (seen.add(tile), true)));
-		return tiles.length === 0
-			? [...DashboardTotalsTile.defaults]
-			: tiles.slice(0, DashboardTotalsTile.maximum);
-	},
-
-	encode(tiles: readonly DashboardTotalsTile[]): string {
-		return tiles.join(',');
-	}
-} as const;
-
 export type AllEnvironmentsCounts = {
 	running?: number;
 	total?: number;
@@ -501,49 +392,6 @@ export type AllEnvironmentsCounts = {
 	updates?: number;
 	vulnerabilities?: number;
 };
-
-export function stoppedCount(counts: AllEnvironmentsCounts): number | undefined {
-	return counts.running !== undefined && counts.total !== undefined
-		? counts.total - counts.running
-		: undefined;
-}
-
-export function tileValue(
-	tile: DashboardTotalsTile,
-	counts: AllEnvironmentsCounts,
-	environments: readonly Pick<Environment, 'status'>[],
-	live: readonly SystemStats[]
-): string {
-	const count = (value: number | undefined) => (value === undefined ? '—' : String(value));
-	switch (tile) {
-		case 'running':
-			return counts.running !== undefined && counts.total !== undefined
-				? `${counts.running} / ${counts.total}`
-				: '—';
-		case 'stopped':
-			return count(stoppedCount(counts));
-		case 'images':
-			return count(counts.images);
-		case 'volumes':
-			return count(counts.volumes);
-		case 'updates':
-			return count(counts.updates);
-		case 'vulnerabilities':
-			return count(counts.vulnerabilities);
-		case 'hostsOnline':
-			return `${environments.filter(environmentIsOnline).length} / ${environments.length}`;
-		case 'cpuCores':
-			return live.length === 0
-				? '—'
-				: String(live.reduce((total, stats) => total + stats.cpuCount, 0));
-		case 'memory': {
-			const total = live.reduce((sum, stats) => sum + stats.memoryTotal, 0);
-			if (total <= 0) return '—';
-			const used = live.reduce((sum, stats) => sum + stats.memoryUsage, 0);
-			return percent0((used / total) * 100);
-		}
-	}
-}
 
 export type UsageMetric = 'CPU' | 'Memory';
 

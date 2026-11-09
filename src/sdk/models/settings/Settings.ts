@@ -1,12 +1,24 @@
+export type SettingLockReason = 'env' | 'readOnly' | (string & {});
+
 export interface PublicSetting {
 	key: string;
 	type: string;
 	value: string;
+	default?: string;
+	source?: 'default' | 'db' | 'env' | (string & {});
+	scope?: 'manager' | 'environment' | (string & {});
+	locked?: boolean;
+	lockReason?: SettingLockReason;
+	sensitive?: boolean;
+	envName?: string;
 }
 
 export const PublicSetting = {
 	id(value: PublicSetting): string {
 		return value.key;
+	},
+	isLocked(value: PublicSetting | undefined): boolean {
+		return value?.locked === true;
 	}
 } as const;
 

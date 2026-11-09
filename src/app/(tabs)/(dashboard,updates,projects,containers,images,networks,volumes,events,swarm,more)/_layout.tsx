@@ -28,7 +28,6 @@ export default function TabStackLayout({ segment }: { segment?: string }) {
 				<Stack.Screen name="container-configuration" options={largeSheetOptions} />
 				<Stack.Screen name="containers-compose" options={largeSheetOptions} />
 				<Stack.Screen name="container/[id]/inspect" options={largeSheetOptions} />
-				<Stack.Screen name="container/[id]/rename" options={largeSheetOptions} />
 				<Stack.Screen name="container/[id]/commit" options={largeSheetOptions} />
 				<Stack.Screen name="container/[id]/logs" options={fullScreenOptions} />
 				<Stack.Screen name="container/[id]/terminal" options={fullScreenOptions} />

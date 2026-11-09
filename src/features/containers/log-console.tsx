@@ -30,12 +30,12 @@ const wideMinimumWidth = 640;
 const bottomThreshold = 28;
 const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
-const messageColor: Record<LogViewerSeverity, string> = {
+const messageColor = (): Record<LogViewerSeverity, string> => ({
 	error: systemColors.red,
 	warning: systemColors.orange,
 	debug: colors.secondaryLabel as string,
 	standard: colors.label as string
-};
+});
 
 const metadataColor = (severity: LogViewerSeverity) =>
 	severity === 'error'
@@ -66,7 +66,7 @@ const LogLineRow = memo(function LogLineRow({
 		<Text
 			style={[
 				styles.message,
-				{ color: messageColor[presentation.severity] as string },
+				{ color: messageColor()[presentation.severity] as string },
 				wide && wrapLines ? { flex: 1 } : null
 			]}
 			numberOfLines={wrapLines ? undefined : 1}

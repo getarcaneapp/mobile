@@ -1,5 +1,4 @@
 import { randomUUID } from 'expo-crypto';
-import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { friendlyErrorMessage } from '@/core/errors';
@@ -7,7 +6,11 @@ import { cachedClient } from '@/core/networking/use-cached-client';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { ArcaneError, ArcaneServerError } from '@/sdk/errors/ArcaneError';
 import { ArcaneRequestOptions } from '@/sdk/http/requestOptions';
-import { EnvironmentUpdateJob, type EnvironmentUpdateResult } from '@/sdk/models/system/Upgrade';
+import {
+	EnvironmentUpdateJob,
+	EnvironmentUpdateStage,
+	type EnvironmentUpdateResult
+} from '@/sdk/models/system/Upgrade';
 import { User } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
 import { useResourceMutationStore } from '@/stores/resource-mutation-store';
@@ -19,18 +22,21 @@ import {
 	type EnvironmentUpdateSceneKind,
 	type EnvironmentUpdateSceneModel
 } from './environment-update-scene.types';
+import {
+	failedEnvironmentIDs,
+	followUpgradeJob,
+	managerEnvironmentID,
+	managerRestarting
+} from './upgrade-job-follow';
 
 export type UpdateAllPhase =
 	| { kind: 'loading' }
-	| { kind: 'ready'; lastJob?: EnvironmentUpdateJob }
 	| { kind: 'triggering' }
 	| { kind: 'polling'; job: EnvironmentUpdateJob }
 	| { kind: 'reconnecting'; job: EnvironmentUpdateJob }
 	| { kind: 'finished'; job: EnvironmentUpdateJob; note?: string }
 	| { kind: 'unsupported'; message: string }
 	| { kind: 'failed'; message: string };
-
-const managerEnvID = '0';
 
 export interface ResultCounts {
 	updated: number;
@@ -41,8 +47,8 @@ export interface ResultCounts {
 export function resultsInProcessingOrder(
 	results: EnvironmentUpdateResult[]
 ): EnvironmentUpdateResult[] {
-	const remote = results.filter((r) => r.environmentId !== managerEnvID);
-	const manager = results.filter((r) => r.environmentId === managerEnvID);
+	const remote = results.filter((r) => r.environmentId !== managerEnvironmentID);
+	const manager = results.filter((r) => r.environmentId === managerEnvironmentID);
 	return [...remote, ...manager];
 }
 
@@ -56,6 +62,24 @@ function completedResultCount(results: EnvironmentUpdateResult[]): number {
 
 function ringModels(results: EnvironmentUpdateResult[]): EnvironmentUpdateRingEnvironment[] {
 	return results.map((result, index) => ({ result, slotIndex: index, totalCount: results.length }));
+}
+
+export interface RunCounts {
+	updating: number;
+	pending: number;
+	done: number;
+	failed: number;
+}
+
+export function runCounts(results: readonly EnvironmentUpdateResult[]): RunCounts {
+	const counts: RunCounts = { updating: 0, pending: 0, done: 0, failed: 0 };
+	for (const result of results) {
+		if (result.status === 'updating') counts.updating += 1;
+		else if (result.status === 'pending') counts.pending += 1;
+		else if (result.status === 'failed') counts.failed += 1;
+		else counts.done += 1;
+	}
+	return counts;
 }
 
 export function resultCounts(results: EnvironmentUpdateResult[]): ResultCounts {
@@ -84,57 +108,46 @@ export function lastRunSummary(job: EnvironmentUpdateJob): string {
 	return parts.join(' · ');
 }
 
-export function phaseKey(phase: UpdateAllPhase): number {
-	switch (phase.kind) {
-		case 'loading':
-			return 0;
-		case 'ready':
-			return 1;
-		case 'triggering':
-			return 2;
-		case 'polling':
-			return phase.job.status === 'pending_restart' ? 4 : 3;
-		case 'reconnecting':
-			return 5;
-		case 'finished':
-			return 6;
-		case 'unsupported':
-			return 7;
-		case 'failed':
-			return 8;
-	}
+function resultProgress(result: EnvironmentUpdateResult): number {
+	if (isCompletedResult(result)) return 1;
+	return Math.min(1, Math.max(0, (result.percent ?? 0) / 100));
 }
 
 function progressModel(job: EnvironmentUpdateJob) {
 	const results = resultsInProcessingOrder(job.results ?? []);
 	const done = completedResultCount(results);
+	const reportsPercent = results.some((r) => r.percent !== undefined);
+	let progress: number | undefined;
+	if (results.length > 0) {
+		progress = reportsPercent
+			? results.reduce((sum, r) => sum + resultProgress(r), 0) / results.length
+			: done / results.length;
+	}
 	return {
 		results,
 		done,
-		progress: results.length === 0 ? undefined : done / results.length,
+		progress,
 		active: results.find((r) => r.status === 'updating')
 	};
 }
 
-export function sceneModel(
-	phase: UpdateAllPhase,
-	environmentCount: number
-): EnvironmentUpdateSceneModel | undefined {
+function activeStageSuffix(
+	results: EnvironmentUpdateResult[],
+	active: EnvironmentUpdateResult | undefined
+): string {
+	const updating = results.filter((r) => r.status === 'updating').length;
+	if (updating > 1) return ` · ${updating} updating`;
+	if (!active?.stage) return '';
+	return ` · ${EnvironmentUpdateStage.label(active.stage)}`;
+}
+
+export function sceneModel(phase: UpdateAllPhase): EnvironmentUpdateSceneModel | undefined {
 	switch (phase.kind) {
 		case 'loading':
 			return makeEnvironmentUpdateSceneModel({
 				kind: 'loading',
 				title: 'Checking readiness',
 				subtitle: "Reading the manager's update status"
-			});
-		case 'ready':
-			return makeEnvironmentUpdateSceneModel({
-				kind: 'ready',
-				title: 'Update every environment',
-				subtitle:
-					environmentCount === 1
-						? '1 environment · latest release'
-						: `${environmentCount} environments · latest release`
 			});
 		case 'triggering':
 			return makeEnvironmentUpdateSceneModel({
@@ -160,7 +173,9 @@ export function sceneModel(
 				kind: 'updating',
 				title: 'Updating environments',
 				subtitle:
-					results.length === 0 ? 'Preparing environments' : `${done} of ${results.length} complete`,
+					results.length === 0
+						? 'Preparing environments'
+						: `${done} of ${results.length} complete${activeStageSuffix(results, active)}`,
 				progress,
 				completedCount: done,
 				totalCount: results.length,
@@ -218,33 +233,20 @@ export function sceneModel(
 	}
 }
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-export function useUpdateAllEnvironmentsRoute(): { environmentCount: number } {
-	const params = useLocalSearchParams<{ count?: string }>();
-	const parsed = Number.parseInt(params.count ?? '', 10);
-	return { environmentCount: Number.isFinite(parsed) ? parsed : 0 };
-}
-
-export function useUpdateAllEnvironments({
-	environmentCount,
-	startsImmediately = false
-}: {
-	environmentCount: number;
-	startsImmediately?: boolean;
-}) {
+export function useUpdateAllEnvironments() {
 	const currentUser = useClientManager((s) => s.currentUser);
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
+	const supportsJobs = useClientManager((s) => s.apiGeneration === 'v3');
 	const [phase, setPhase] = useState<UpdateAllPhase>({ kind: 'loading' });
 
 	const mounted = useRef(true);
-	const pollGeneration = useRef(0);
 	const started = useRef(false);
+	const stopFollowing = useRef<(() => void) | undefined>(undefined);
 
 	const finish = (job: EnvironmentUpdateJob, note: string | undefined) => {
 		setPhase({ kind: 'finished', job, note });
 		if (note == null) {
-			const failedCount = (job.results ?? []).filter((r) => r.status === 'failed').length;
+			const failedCount = failedEnvironmentIDs(job).length;
 			if (job.status === 'completed' && failedCount === 0) {
 				showToast(Toasts.success('All environments updated'));
 			} else if (job.status === 'failed') {
@@ -255,49 +257,37 @@ export function useUpdateAllEnvironments({
 		useResourceMutationStore.getState().markChanged('environments');
 	};
 
-	const startPolling = (client: ArcaneClient, initialJob: EnvironmentUpdateJob) => {
-		const generation = ++pollGeneration.current;
-		const isCancelled = () => !mounted.current || pollGeneration.current !== generation;
-		void (async () => {
-			let lastKnown = initialJob;
-			let consecutiveFailures = 0;
-			const maxFailures = 60;
-			while (!isCancelled()) {
-				await sleep(3000);
-				if (isCancelled()) return;
-				try {
-					const job = await client.system.updateAllStatus({ envID: managerEnvID });
-					if (isCancelled()) return;
-					consecutiveFailures = 0;
-					lastKnown = job;
-					if (EnvironmentUpdateJob.isTerminal(job)) {
-						finish(job, undefined);
-						return;
-					}
-					setPhase({ kind: 'polling', job });
-				} catch {
-					if (isCancelled()) return;
-					consecutiveFailures += 1;
-					if (consecutiveFailures === 2) setPhase({ kind: 'reconnecting', job: lastKnown });
-					if (consecutiveFailures >= maxFailures) {
-						const managerStatus = EnvironmentUpdateJob.managerResult(lastKnown)?.status;
-						const managerDone =
-							lastKnown.status === 'pending_restart' &&
-							(managerStatus === 'updated' ||
-								managerStatus === 'triggered' ||
-								managerStatus === 'updating');
-						const note = managerDone
+	const follow = (client: ArcaneClient, initialJob: EnvironmentUpdateJob) => {
+		stopFollowing.current?.();
+		const live = () => mounted.current;
+		stopFollowing.current = followUpgradeJob({
+			client,
+			job: initialJob,
+			streams: supportsJobs,
+			handlers: {
+				onJob: (job) => {
+					if (live()) setPhase({ kind: 'polling', job });
+				},
+				onFinish: (job) => {
+					if (live()) finish(job, undefined);
+				},
+				onReconnecting: (job) => {
+					if (live()) setPhase({ kind: 'reconnecting', job });
+				},
+				onLost: (job) => {
+					if (!live()) return;
+					finish(
+						job,
+						managerRestarting(job)
 							? 'The Arcane manager is restarting — check back in a minute.'
-							: "Lost connection before the update finished. Check the server once it's reachable again.";
-						finish(lastKnown, note);
-						return;
-					}
+							: "Lost connection before the update finished. Check the server once it's reachable again."
+					);
 				}
 			}
-		})();
+		});
 	};
 
-	const trigger = async (): Promise<void> => {
+	const trigger = async (environmentIDs?: string[]): Promise<void> => {
 		const client = useClientManager.getState().client;
 		if (!client) {
 			setPhase({ kind: 'failed', message: 'Not connected' });
@@ -307,13 +297,16 @@ export function useUpdateAllEnvironments({
 		try {
 			const job = await client
 				.withRequestOptions(ArcaneRequestOptions.withActivityBatchID(randomUUID().toLowerCase()))
-				.system.triggerUpdateAll({ envID: managerEnvID });
+				.system.triggerUpdateAll({
+					envID: managerEnvironmentID,
+					environmentIDs: supportsJobs ? environmentIDs : undefined
+				});
 			setPhase({ kind: 'polling', job });
-			startPolling(client, job);
+			follow(client, job);
 		} catch (error) {
 			if (error instanceof ArcaneError) {
 				if (error.kind === 'conflict') {
-					await preflight();
+					await preflight({ afterConflict: true });
 					return;
 				}
 				if (error.kind === 'notFound') {
@@ -333,12 +326,7 @@ export function useUpdateAllEnvironments({
 		}
 	};
 
-	const readyOrStart = async () => {
-		if (startsImmediately) await trigger();
-		else setPhase({ kind: 'ready' });
-	};
-
-	const preflight = async (): Promise<void> => {
+	const preflight = async ({ afterConflict = false } = {}): Promise<void> => {
 		const client = useClientManager.getState().client;
 		if (!client) {
 			setPhase({ kind: 'failed', message: 'Not connected' });
@@ -346,20 +334,24 @@ export function useUpdateAllEnvironments({
 		}
 		setPhase({ kind: 'loading' });
 		try {
-			const job = await client.system.updateAllStatus({ envID: managerEnvID });
+			const job = await client.system.updateAllStatus({ envID: managerEnvironmentID });
 			if (EnvironmentUpdateJob.isTerminal(job)) {
-				if (startsImmediately) await trigger();
-				else setPhase({ kind: 'ready', lastJob: job });
+				if (afterConflict) {
+					setPhase({ kind: 'failed', message: 'Another update is already running. Try again.' });
+					return;
+				}
+				await trigger();
 			} else {
 				setPhase({ kind: 'polling', job });
-				startPolling(client, job);
+				follow(client, job);
 			}
 		} catch (error) {
 			if (
 				error instanceof ArcaneError &&
-				(error.kind === 'notFound' || error.kind === 'decoding')
+				(error.kind === 'notFound' || error.kind === 'decoding') &&
+				!afterConflict
 			) {
-				await readyOrStart();
+				await trigger();
 				return;
 			}
 			setPhase({ kind: 'failed', message: friendlyErrorMessage(error) });
@@ -378,17 +370,27 @@ export function useUpdateAllEnvironments({
 		}
 		return () => {
 			mounted.current = false;
+			stopFollowing.current?.();
 		};
 	}, [isAdmin]);
 
+	const failedIDs = phase.kind === 'finished' ? failedEnvironmentIDs(phase.job) : [];
+	const jobResults =
+		phase.kind === 'polling' || phase.kind === 'reconnecting' || phase.kind === 'finished'
+			? resultsInProcessingOrder(phase.job.results ?? [])
+			: [];
+
 	return {
 		isAdmin,
+		supportsJobs,
 		phase,
-		phaseKey: phaseKey(phase),
-		sceneModel: sceneModel(phase, environmentCount),
+		sceneModel: sceneModel(phase),
 		doneTitle: phase.kind === 'finished' ? 'Done' : 'Close',
 		interactiveDismissDisabled: phase.kind === 'triggering',
-		trigger: () => void trigger(),
+		jobResults,
+		runCounts: runCounts(jobResults),
+		failedIDs,
+		retryFailed: () => void trigger(failedIDs),
 		retry: () => void preflight()
 	};
 }

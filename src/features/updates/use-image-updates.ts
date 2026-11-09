@@ -11,6 +11,7 @@ import {
 	saturatingAdd
 } from '@/core/networking/remote-data-limits';
 import type { CachedClient } from '@/core/networking/cached-client';
+import { environmentSources, type EnvironmentSource } from '@/core/networking/environment-sources';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -26,7 +27,12 @@ import type { AllEnvironmentsMaintenanceAction } from '@/ui/components/all-envir
 import { useAllEnvironmentsMaintenanceConfirmation } from '@/ui/components/all-environments-maintenance';
 import { showToast, Toasts } from '@/ui/toast';
 
-import { fetchEnvironmentUpdates, type EnvironmentUpdates } from './environment-updates';
+import {
+	collectEnvironmentImages,
+	fetchEnvironmentUpdates,
+	type EnvironmentImages,
+	type EnvironmentUpdates
+} from './environment-updates';
 import {
 	actionableConsumers,
 	containsInsensitive,
@@ -62,6 +68,45 @@ async function fetchEnv(
 	client: ArcaneClient
 ): Promise<EnvLoadResult> {
 	return { index, ...(await fetchEnvironmentUpdates(envID, client)) };
+}
+
+function failedEnv(index: number, error: string): EnvLoadResult {
+	return { index, images: [], byRef: {}, totalImages: 0, listFailed: true, error };
+}
+
+async function fetchSource(
+	source: EnvironmentSource<Environment>,
+	indexOf: (env: Environment) => number,
+	client: ArcaneClient,
+	deliver: (result: EnvLoadResult) => void
+): Promise<void> {
+	const [only] = source.environments;
+	if (source.environments.length === 1 && only) {
+		deliver(await fetchEnv(indexOf(only), only.id, client));
+		return;
+	}
+	let collected: EnvironmentImages;
+	try {
+		collected = await collectEnvironmentImages(source.key, client);
+	} catch {
+		await Promise.all(
+			source.environments.map(async (env) => deliver(await fetchEnv(indexOf(env), env.id, client)))
+		);
+		return;
+	}
+	await Promise.all(
+		source.environments.map(async (env) => {
+			const failure = collected.failures.get(env.id);
+			deliver(
+				failure === undefined
+					? {
+							index: indexOf(env),
+							...(await fetchEnvironmentUpdates(env.id, client, collected.images.get(env.id) ?? []))
+						}
+					: failedEnv(indexOf(env), failure)
+			);
+		})
+	);
 }
 
 export type ImageUpdatesModel = ReturnType<typeof useImageUpdates>;
@@ -199,11 +244,18 @@ export function useImageUpdates({
 			return;
 		}
 
+		const sources = await environmentSources(activeClient, envs);
 		await Promise.all(
-			envs.map(async (env, index) => {
-				const result = await fetchEnv(index, env.id, activeClient);
-				if (isCurrent()) apply(result);
-			})
+			sources.map((source) =>
+				fetchSource(
+					source,
+					(env) => envs.indexOf(env),
+					activeClient,
+					(result) => {
+						if (isCurrent()) apply(result);
+					}
+				)
+			)
 		);
 		if (isCurrent()) {
 			publishUpdateCount(bucketsRef.current);

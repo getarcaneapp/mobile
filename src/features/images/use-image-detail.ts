@@ -2,9 +2,8 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { randomUUID } from 'expo-crypto';
 import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermission } from '@/core/auth/permissions';
 import { formattedISO8601 } from '@/core/date-formatting';
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
@@ -165,8 +164,7 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 	const generation = useClientManager((s) => s.clientGeneration);
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
 
-	const showError = (error: unknown) =>
-		Alert.alert('Error', friendlyErrorMessage(error), [{ text: 'OK', onPress: () => {} }]);
+	const showError = (error: unknown) => showToast(Toasts.error(friendlyErrorMessage(error)));
 
 	const loadDetails = useCallback(async () => {
 		const client = useClientManager.getState().client;
@@ -316,8 +314,8 @@ export function useImageDetail(environmentID: EnvironmentID, imageID: string) {
 		action: () => void checkForUpdate()
 	};
 
-	const canTag = useClientManager(() => hasPermission('images:tag', environmentID));
-	const canRead = useClientManager(() => hasPermission('images:read', environmentID));
+	const canTag = usePermission('images:tag', environmentID);
+	const canRead = usePermission('images:read', environmentID);
 	const overflow: ActionButtonItem[] = [
 		...(canTag
 			? [

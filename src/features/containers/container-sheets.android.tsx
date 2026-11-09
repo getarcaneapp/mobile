@@ -1,61 +1,15 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { ScrollView, Share, TextInput, View } from 'react-native';
 
-import { colors, systemColors } from '@/theme/colors';
+import { colors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
-import { m3Type, monoFamily } from '@/ui/components/type-scale';
+import { monoFamily } from '@/ui/components/type-scale';
 
 import { AndroidToolbar } from './android-toolbar';
 import { CenteredMessage, M3Section, M3TextField, SwitchRow } from './android-material';
-import {
-	useContainerCommit,
-	useContainerCompose,
-	useRenameContainer
-} from './use-container-sheets';
+import { useContainerCommit, useContainerCompose } from './use-container-sheets';
 
 type Params = { id?: string; envID?: string; name?: string };
-
-export function RenameContainerScreen() {
-	const { id = '', envID = '0', name = '' } = useLocalSearchParams<Params>();
-	const model = useRenameContainer(envID, id, name);
-	return (
-		<>
-			<Stack.Screen options={{ title: 'Rename Container' }} />
-			<AndroidToolbar
-				items={[
-					{
-						kind: 'button',
-						id: 'save',
-						icon: 'checkmark',
-						label: 'Save',
-						disabled: !model.canSave,
-						onPress: model.submit
-					}
-				]}
-			/>
-			<ScrollView
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				keyboardShouldPersistTaps="handled"
-			>
-				<M3Section
-					title="New name"
-					footer="Must start with a letter or digit, and contain only letters, digits, underscores, dots, or hyphens."
-				>
-					<M3TextField
-						label="Container Name"
-						value={model.newName}
-						onChangeText={model.setNewName}
-					/>
-				</M3Section>
-				{model.errorMessage ? (
-					<Text style={[m3Type.bodyMedium, { color: systemColors.red, padding: 16 }]}>
-						{model.errorMessage}
-					</Text>
-				) : null}
-			</ScrollView>
-		</>
-	);
-}
 
 export function ContainerCommitScreen() {
 	const { id = '', envID = '0' } = useLocalSearchParams<Params>();

@@ -54,8 +54,10 @@ export function canAccessTab(tab: AppTab, context: AccessContext): boolean {
 	}
 
 	const manifest = context.permissionsManifest;
-	const surfaces = accessSurfaceIDs(tab);
-	if (supportsV2 && manifest && manifest.accessSurfaces.length > 0 && surfaces.length > 0) {
+	const surfaces = accessSurfaceIDs(tab).filter((id) =>
+		manifest?.accessSurfaces.some((surface) => surface.id === id)
+	);
+	if (supportsV2 && manifest && surfaces.length > 0) {
 		const scopes =
 			context.allEnvironmentsPreview && isEnvironmentScoped(tab)
 				? [...new Set([context.activeEnvironmentID, ...Object.keys(user.permissionsByEnv ?? {})])]

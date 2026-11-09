@@ -38,9 +38,9 @@ function ScheduleRow({ model, field }: { model: JobScheduleConfigModel; field: J
 					systemName={field.icon as SFSymbol}
 					modifiers={[
 						font({ textStyle: 'callout', weight: 'semibold' }),
-						foregroundStyle(field.tint),
+						foregroundStyle(systemColors[field.tint]),
 						frame({ width: 28, height: 28 }),
-						background(withOpacity(field.tint, 0.15), shapes.circle())
+						background(withOpacity(systemColors[field.tint], 0.15), shapes.circle())
 					]}
 				/>
 				<Text modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' })]}>

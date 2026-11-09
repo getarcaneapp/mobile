@@ -33,6 +33,7 @@ import {
 	type EnvironmentDetailSection,
 	type EnvironmentDetails
 } from './environment-detail-model';
+import { normalizeV3Environment } from '@/sdk/client/v3Responses';
 
 const refreshIntervalMs = 30_000;
 
@@ -116,7 +117,10 @@ export function useEnvironmentDetail(environmentID: string, environmentName: str
 				client,
 				`environments/${encodeURIComponent(environmentID)}`,
 				{
-					decode: decodeEnvironmentDetails
+					decode: (raw) =>
+						decodeEnvironmentDetails(
+							client.currentAPIGeneration() === 'v3' ? normalizeV3Environment(raw) : raw
+						)
 				}
 			);
 			if (stale()) return;

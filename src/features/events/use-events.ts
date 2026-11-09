@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { usePermission } from '@/core/auth/permissions';
 import { formattedISO8601 } from '@/core/date-formatting';
 import { friendlyErrorMessage } from '@/core/errors';
 import { parseArcaneDate } from '@/sdk/models/base/date';
@@ -58,12 +58,15 @@ export function severityTint(severity: string) {
 	}
 }
 
-export const severityFilterTint: Record<EventSeverityFilter, string> = {
-	info: systemColors.blue,
-	success: systemColors.green,
-	warning: systemColors.orange,
-	error: systemColors.red
-};
+const severityFilterColor = {
+	info: 'blue',
+	success: 'green',
+	warning: 'orange',
+	error: 'red'
+} as const;
+
+export const severityFilterTint = (severity: EventSeverityFilter) =>
+	systemColors[severityFilterColor[severity]];
 
 export const severityCount = (counts: EventSeverityCounts, severity: EventSeverityFilter) =>
 	counts[severity];
@@ -155,16 +158,21 @@ export function useEvents() {
 
 	useEffect(() => {
 		if (!isLive || !isActive || !isFocused) return;
-		const timer = setInterval(() => {
-			void (async () => {
-				await store.poll();
-				await store.loadSeverityCounts();
-			})();
-		}, 5000);
-		return () => clearInterval(timer);
+		let cancelled = false;
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const tick = async () => {
+			await store.poll();
+			await store.loadSeverityCounts();
+			if (!cancelled) timer = setTimeout(() => void tick(), 5000);
+		};
+		timer = setTimeout(() => void tick(), 5000);
+		return () => {
+			cancelled = true;
+			if (timer) clearTimeout(timer);
+		};
 	}, [store, isLive, isActive, isFocused, queryTaskKey]);
 
-	const canDeleteEvents = useClientManager(() => hasPermission(Permission.Events.delete, null));
+	const canDeleteEvents = usePermission(Permission.Events.delete, null);
 
 	const deleteEvent = async (event: Event) => {
 		try {

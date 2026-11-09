@@ -26,7 +26,7 @@ import {
 } from './error-banner.types';
 
 export function ErrorBanner({ message, severity = 'error', retry }: ErrorBannerProps) {
-	const tint = errorBannerTint[severity];
+	const tint = errorBannerTint()[severity];
 	return (
 		<HStack
 			alignment="top"

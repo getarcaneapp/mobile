@@ -1,6 +1,5 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { performAllEnvironmentsPrune } from '@/core/all-environments-actions';
 import { friendlyErrorMessage } from '@/core/errors';
@@ -9,6 +8,7 @@ import { nextInstanceKey } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { NetworkSummary } from '@/sdk/models/network/Network';
 import { useAllEnvironmentsOperationStore } from '@/stores/all-environments-operation-store';
+import { resourcePage } from '@/core/networking/pagination-loader';
 import { useClientManager } from '@/stores/client-manager';
 import { useEnvironmentPagedList, type EnvironmentFetch } from '@/stores/environment-paged-list';
 import { useEnvironmentsStore, type ListEnvironment } from '@/stores/environments-store';
@@ -43,8 +43,8 @@ export type NetworksListProps = {
 export const networkCacheKey = (environmentID: EnvironmentID, id: string) =>
 	`network:${environmentID}/${id}`;
 
-export function showActionFailed(message: string, title = 'Action Failed') {
-	Alert.alert(title, message, [{ text: 'OK', style: 'cancel' }]);
+export function showActionFailed(message: string) {
+	showToast(Toasts.error(message));
 }
 
 export function useNetworksList({ environmentID, allEnvironments = false }: NetworksListProps) {
@@ -75,7 +75,7 @@ export function useNetworksList({ environmentID, allEnvironments = false }: Netw
 		if (!current) return undefined;
 		return async (envID, start, limit) => {
 			const response = await current.networks.list({ envID, query: { start, limit } });
-			return { items: response.data, pagination: response.pagination };
+			return resourcePage(response);
 		};
 	}, []);
 
@@ -86,7 +86,7 @@ export function useNetworksList({ environmentID, allEnvironments = false }: Netw
 			const environments = await useEnvironmentsStore
 				.getState()
 				.listEnvironments(environmentID, allEnvironments);
-			await list.reload(environments, fetch, { preservingLoadedRange });
+			await list.reload(environments, fetch, { preservingLoadedRange, aggregates: true });
 		},
 		[networksPage, list, environmentID, allEnvironments]
 	);

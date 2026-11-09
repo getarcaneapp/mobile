@@ -32,6 +32,7 @@ export class ContainerResourceSampleStore {
 
 	private samples: Samples = new Map();
 	private unsupported = new Set<EnvironmentID>();
+	private transport: object | undefined;
 	revision = 0;
 	private listeners = new Set<() => void>();
 
@@ -62,6 +63,14 @@ export class ContainerResourceSampleStore {
 	}
 
 	async refresh(client: ArcaneClient, environments: readonly EnvironmentID[]): Promise<void> {
+		const transport = client.transport;
+		if (this.transport !== transport) {
+			const hadData = this.samples.size > 0 || this.unsupported.size > 0;
+			this.transport = transport;
+			this.samples = new Map();
+			this.unsupported = new Set();
+			if (hadData) this.changed();
+		}
 		const targets = environments.filter((id) => !this.unsupported.has(id));
 		if (targets.length === 0) return;
 		const results = await Promise.all(
@@ -80,6 +89,7 @@ export class ContainerResourceSampleStore {
 				}
 			)
 		);
+		if (this.transport !== transport) return;
 		let didChange = false;
 		const next = new Map(this.samples);
 		for (const [environmentID, response] of results) {

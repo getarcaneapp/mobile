@@ -10,6 +10,83 @@ export type ReleaseNote = {
 
 export const releaseNotes: ReleaseNote[] = [
 	{
+		version: '0.12.0',
+		new: [
+			{
+				text: 'Arcane v3 server support.'
+			},
+			{
+				text: 'On Android, Firebase settings are entered at runtime under App Settings > Firebase.'
+			},
+			{
+				text: 'Live upgrade progress and per-environment logs, with Update All and Retry Failed.'
+			},
+			{
+				text: 'Dashboard widgets and Edit Dashboard on Arcane v3.'
+			},
+			{
+				text: 'Live list refresh and environment variable setting locks on Arcane v3.'
+			}
+		],
+		changed: [
+			{
+				text: 'Local server addresses without a scheme use http://.'
+			},
+			{
+				text: 'All Environments and the refreshed dashboard are always on with Arcane v3.'
+			},
+			{
+				text: 'Faster loading and scrolling.'
+			}
+		],
+		removed: [
+			{
+				text: 'Container rename, GitOps Sync job schedule and Dashboard totals tiles.'
+			}
+		],
+		fixed: [
+			{
+				text: 'Clear History confirmation hidden behind the Activities sheet.'
+			},
+			{
+				text: 'Project files hanging on large folders and .env locked in GitOps projects.'
+			},
+			{
+				text: 'Environment cards cut off at larger text sizes.'
+			},
+			{
+				text: 'Push notifications failing to enable on Android.'
+			},
+			{
+				text: 'Sign-in dropping proxy tokens in the URL and unreadable certificate errors.'
+			},
+			{
+				text: 'Signing out not revoking the session.'
+			},
+			{
+				text: 'Stale dashboard, image update counts and background changes.'
+			},
+			{
+				text: 'Container stats showing zeros and terminal size mismatches.'
+			},
+			{
+				text: 'Event Cleanup schedule not saving and Update All looping.'
+			},
+			{
+				text: 'Interrupted deployments leaving their toast and Live Activity open.'
+			},
+			{
+				text: 'An offline environment stalling the app.'
+			},
+			{
+				text: 'Volume browsing without manage permission and hidden server error messages.'
+			},
+			{
+				text: 'Assorted visual, scrolling and tap target issues.'
+			}
+		]
+	},
+	{
 		version: '0.11.0',
 		new: [
 			{
@@ -23,9 +100,6 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Push notifications on Android.'
-			},
-			{
-				text: 'On Android, Firebase settings are entered at runtime under App Settings > Firebase.'
 			},
 			{
 				text: 'Home Screen and Lock Screen widgets on iOS: Status, Environments, and Updates & Vulnerabilities.'

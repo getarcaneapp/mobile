@@ -37,12 +37,6 @@ import {
 import { MetricRing } from './metric-ring';
 import type { ContainerRowMetrics } from './use-containers-list';
 
-const healthColor = {
-	red: systemColors.red,
-	yellow: systemColors.yellow,
-	green: systemColors.green
-} as const;
-
 export const ContainerResourceText = {
 	cpu: (sample: ContainerResourceSample) => percentText(sample.cpuPercent),
 	memoryUsed: (sample: ContainerResourceSample) => formatFileBytes(sample.memoryUsageBytes),
@@ -74,7 +68,7 @@ function MetricLine({
 		const target = value !== undefined ? 1 : 0;
 		const recycled = shownIdentity.current !== identity;
 		shownIdentity.current = identity;
-		revealed.value =
+		revealed.set(
 			reduceMotion || recycled
 				? target
 				: withDelay(
@@ -83,7 +77,8 @@ function MetricLine({
 							target,
 							springConfig(Motion.entrance.response, Motion.entrance.dampingFraction)
 						)
-					);
+					)
+		);
 	}, [value, delay, identity, reduceMotion, revealed]);
 	const style = useAnimatedStyle(() => ({
 		opacity: revealed.value,
@@ -205,7 +200,7 @@ export function ContainerRow({
 								</Text>
 							) : null}
 							{health ? (
-								<Icon name={health.icon} size={15} color={healthColor[health.color]} />
+								<Icon name={health.icon} size={15} color={systemColors[health.color]} />
 							) : null}
 						</View>
 					) : null}

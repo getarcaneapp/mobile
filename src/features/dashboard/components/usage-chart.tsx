@@ -131,11 +131,11 @@ export function UsageChart({
 		const delta = end - previous;
 		cancelAnimation(offset);
 		if (reduceMotion || delta <= 0 || delta > maxAnimatedStepMs) {
-			offset.value = 0;
+			offset.set(0);
 			return;
 		}
-		offset.value = Math.min(offset.value + (delta / windowMs) * plotWidth, slidePadding);
-		offset.value = animateTo(Motion.chartScroll, 0);
+		offset.set(Math.min(offset.get() + (delta / windowMs) * plotWidth, slidePadding));
+		offset.set(animateTo(Motion.chartScroll, 0));
 	}, [end, plotWidth, reduceMotion, offset]);
 	const slideStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.value }] }));
 

@@ -8,6 +8,7 @@ import { RESTService } from '../http/RESTService';
 import { ProjectFileDraft } from '../models/project/ProjectFiles';
 import { ProjectsService } from '../services/ProjectsService';
 import { isoIn, mockFetch, type MockReply } from './helpers';
+import { APIGenerationState } from '../client/apiGeneration';
 
 const BASE = 'https://arcane.test';
 
@@ -39,6 +40,7 @@ function makeService(handler: Parameters<typeof mockFetch>[0]) {
 	const authManager = new AuthManager({ baseURL: BASE, tokenStore, fetch });
 	const transport = new ArcaneTransport({
 		baseURL: BASE,
+		apiGeneration: new APIGenerationState('legacy'),
 		authManager,
 		fetch,
 		streamingFetch: fetch,

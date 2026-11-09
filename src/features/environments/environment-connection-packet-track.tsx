@@ -40,7 +40,7 @@ export function EnvironmentPacketTrack({
 	const duration = (isEdge ? edgePacketDuration : directPacketDuration) * 1000;
 
 	const frame = useFrameCallback((info) => {
-		time.value = info.timestamp;
+		time.set(info.timestamp);
 	}, false);
 	useEffect(() => {
 		frame.setActive(animating);
@@ -63,7 +63,7 @@ export function EnvironmentPacketTrack({
 			accessibilityElementsHidden
 			importantForAccessibility="no-hide-descendants"
 			onLayout={(event) => {
-				width.value = event.nativeEvent.layout.width;
+				width.set(event.nativeEvent.layout.width);
 			}}
 			style={{ flex: 1, height: 10, justifyContent: 'center' }}
 		>

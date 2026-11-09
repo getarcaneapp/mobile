@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 
-import { hasPermission } from '@/core/auth/permissions';
+import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
 import type { EnvironmentID } from '@/sdk/client/environment';
@@ -324,7 +324,7 @@ export function useImagePatch({
 		live.current.scope = scope;
 	});
 
-	const hasPatchPermission = useClientManager(() => hasPermission('images:patch', environmentID));
+	const hasPatchPermission = usePermission('images:patch', environmentID);
 	const canPatch = available && !localOnly && hasPatchPermission;
 
 	const cancelPatch = () => {

@@ -24,7 +24,6 @@ import {
 import {
 	aggregateLiveCounts,
 	countAvailabilityIssues,
-	DashboardTotalsTile,
 	dashboardEnvironments,
 	environmentSummary,
 	formatPruneResult,
@@ -34,10 +33,31 @@ import {
 	retainingActiveActivities,
 	smoothed,
 	smoothedSeries,
-	tileValue,
 	usageHeadline,
 	windowEnd
 } from '@/features/dashboard/dashboard-logic';
+import {
+	buildOverviewAttentionItems,
+	collapseActivities,
+	filterActivityGroups,
+	jobLabel,
+	reclaimableByEnvironment,
+	reclaimableResources,
+	sortOverviewAttention,
+	upcomingJobs,
+	type OverviewAttentionSources
+} from '@/features/dashboard/dashboard-overview-logic';
+import {
+	DashboardWidget,
+	groupVisibleWidgets,
+	layoutFromServer,
+	moveWidgetEntries,
+	resolveDashboardLayout,
+	setWidgetHidden,
+	availableWidgets
+} from '@/features/dashboard/dashboard-widgets';
+import type { Activity } from '@/sdk/models/activity/Activity';
+import type { JobStatus } from '@/sdk/models/jobSchedule/JobSchedule';
 
 const env = (
 	id: string,
@@ -289,21 +309,6 @@ describe('dashboard view logic', () => {
 		assert.equal(items.find((i) => i.id === 'image-updates')?.count, 6);
 	});
 
-	it('decodes stored tiles', () => {
-		assert.deepEqual(DashboardTotalsTile.decode(''), ['running', 'images', 'volumes']);
-		assert.deepEqual(
-			DashboardTotalsTile.decode('memory,bogus,memory,stopped,images,volumes,updates'),
-			['memory', 'stopped', 'images', 'volumes']
-		);
-		assert.equal(tileValue('running', { running: 2, total: 5 }, [], []), '2 / 5');
-		assert.equal(tileValue('stopped', { running: 2, total: 5 }, [], []), '3');
-		assert.equal(
-			tileValue('hostsOnline', {}, [{ status: 'online' }, { status: 'offline' }], []),
-			'1 / 2'
-		);
-		assert.equal(tileValue('cpuCores', {}, [], []), '—');
-	});
-
 	it('keeps the newest three failed activities and filters cleared ones', () => {
 		const activity = (id: string, updatedAt: string, extra: Record<string, unknown> = {}) =>
 			({
@@ -443,5 +448,288 @@ describe('coalesced stats updates', () => {
 		assert.deepEqual(committed, ['b']);
 		updates.flush();
 		assert.deepEqual(committed, ['b']);
+	});
+});
+
+describe('dashboard widgets', () => {
+	const ids = (entries: { id: string; hidden: boolean }[]) =>
+		entries.map((entry) => (entry.hidden ? `-${entry.id}` : entry.id));
+
+	it('falls back to defaults with Reclaimable hidden', () => {
+		const layout = resolveDashboardLayout({ stored: undefined, server: undefined });
+		assert.equal(layout[0]?.id, 'healthy');
+		assert.deepEqual(layout.at(-1), { id: 'reclaimableTotal', hidden: true });
+		assert.equal(layout.length, DashboardWidget.allCases.length);
+	});
+
+	it('orders the web layout by row and column and keeps mobile widgets after environments', () => {
+		const layout = layoutFromServer([
+			{ id: 'activity', x: 0, y: 9, w: 8, h: 6 },
+			{ id: 'environments', x: 0, y: 2, w: 12, h: 4 },
+			{ id: 'risk', x: 3, y: 0, w: 3, h: 2 },
+			{ id: 'healthy', x: 0, y: 0, w: 3, h: 2 },
+			{ id: 'memory', x: 0, y: 0, w: 3, h: 2, hidden: true },
+			{ id: 'bogus', x: 0, y: 0, w: 1, h: 1 }
+		]);
+		assert.ok(layout);
+		assert.deepEqual(ids(layout).slice(0, 6), [
+			'healthy',
+			'attentionCount',
+			'updates',
+			'risk',
+			'environments',
+			'usage'
+		]);
+		assert.equal(ids(layout).indexOf('activity') > ids(layout).indexOf('usage'), true);
+		assert.ok(ids(layout).includes('-memory'));
+		assert.equal(new Set(layout.map((entry) => entry.id)).size, DashboardWidget.allCases.length);
+	});
+
+	it('prefers the stored layout and round-trips it', () => {
+		const stored = DashboardWidget.decode(
+			DashboardWidget.encode([
+				{ id: 'jobs', hidden: false },
+				{ id: 'healthy', hidden: true }
+			])
+		);
+		const layout = resolveDashboardLayout({
+			stored,
+			server: [{ id: 'healthy', x: 0, y: 0, w: 3, h: 2 }]
+		});
+		assert.equal(layout[0]?.id, 'jobs');
+		assert.deepEqual(layout.at(-1), { id: 'healthy', hidden: true });
+		assert.ok(layout.some((entry) => entry.id === 'reclaimableTotal' && entry.hidden));
+		assert.equal(DashboardWidget.decode('not json'), undefined);
+		assert.equal(DashboardWidget.decode('{"order":["nope"]}'), undefined);
+	});
+
+	it('groups consecutive stats and moves, hides and shows widgets', () => {
+		const entries = [
+			{ id: 'healthy' as const, hidden: false },
+			{ id: 'updates' as const, hidden: false },
+			{ id: 'environments' as const, hidden: false },
+			{ id: 'risk' as const, hidden: false },
+			{ id: 'jobs' as const, hidden: true }
+		];
+		assert.deepEqual(
+			groupVisibleWidgets(entries).map((group) => group.key),
+			['healthy|updates', 'environments', 'risk']
+		);
+		assert.deepEqual(ids(moveWidgetEntries(entries, [0], 3)), [
+			'updates',
+			'environments',
+			'healthy',
+			'risk',
+			'-jobs'
+		]);
+		assert.deepEqual(ids(setWidgetHidden(entries, 'healthy', true)), [
+			'updates',
+			'environments',
+			'risk',
+			'-jobs',
+			'-healthy'
+		]);
+		assert.deepEqual(ids(setWidgetHidden(entries, 'jobs', false)), [
+			'healthy',
+			'updates',
+			'environments',
+			'risk',
+			'jobs'
+		]);
+		assert.deepEqual(ids(availableWidgets(entries, false)), [
+			'healthy',
+			'updates',
+			'environments',
+			'-jobs'
+		]);
+	});
+});
+
+describe('dashboard overview', () => {
+	const now = Date.parse('2026-10-30T12:00:00Z');
+	const activity = (id: string, extra: Partial<Activity> = {}): Activity => ({
+		id,
+		environmentID: '0',
+		type: 'project_deploy',
+		status: 'success',
+		resourceID: 'p1',
+		resourceName: 'web',
+		step: '',
+		latestMessage: '',
+		startedAt: '2026-10-30T11:30:00Z',
+		createdAt: '2026-10-30T11:30:00Z',
+		...extra
+	});
+	const job = (id: string, extra: Partial<JobStatus> = {}): JobStatus => ({
+		id,
+		name: id,
+		description: '',
+		category: '',
+		schedule: '',
+		enabled: true,
+		managerOnly: false,
+		isContinuous: false,
+		canRunManually: true,
+		prerequisites: [],
+		...extra
+	});
+	const sources = (extra: Partial<OverviewAttentionSources> = {}): OverviewAttentionSources => ({
+		environments: [],
+		unhealthy: {},
+		events: [],
+		findings: [],
+		disk: {},
+		jobs: [],
+		activityGroups: [],
+		expiringKeys: 0,
+		keysEnvironmentID: '0',
+		versions: {},
+		upgradable: new Set(),
+		now,
+		...extra
+	});
+
+	it('collapses repeated activities and filters them', () => {
+		const groups = collapseActivities([
+			activity('a'),
+			activity('b'),
+			activity('c', { status: 'failed', type: 'container_restart' })
+		]);
+		assert.equal(groups.length, 2);
+		assert.deepEqual(groups[0]?.ids, ['a', 'b']);
+		assert.equal(filterActivityGroups(groups, 'failures').length, 1);
+		assert.equal(filterActivityGroups(groups, 'deploys').length, 1);
+	});
+
+	it('lists upcoming user jobs in order', () => {
+		const jobs = [
+			{ environmentID: '0', job: job('auto-update', { nextRun: '2026-10-30T14:00:00Z' }) },
+			{ environmentID: '0', job: job('image-polling', { nextRun: '2026-10-30T13:00:00Z' }) },
+			{ environmentID: '0', job: job('event-cleanup', { nextRun: '2026-10-30T12:30:00Z' }) },
+			{
+				environmentID: '0',
+				job: job('scheduled-prune', { nextRun: '2026-10-30T12:30:00Z', enabled: false })
+			}
+		];
+		assert.deepEqual(
+			upcomingJobs(jobs, now).map((entry) => entry.job.id),
+			['image-polling', 'auto-update']
+		);
+		assert.equal(jobLabel(job('volume-backup:data')), 'Volume Backup: data');
+		assert.equal(jobLabel(job('environment-health:2')), 'Health Check');
+	});
+
+	it('splits reclaimable space by resource and environment', () => {
+		const usage = [
+			{
+				environmentID: '0',
+				usage: {
+					unusedImagesBytes: 100,
+					buildCacheBytes: 0,
+					unusedVolumesBytes: 50,
+					stoppedContainersBytes: 0
+				}
+			},
+			{
+				environmentID: '1',
+				usage: {
+					unusedImagesBytes: 300,
+					buildCacheBytes: 0,
+					unusedVolumesBytes: 0,
+					stoppedContainersBytes: 0
+				}
+			}
+		];
+		assert.deepEqual(
+			reclaimableResources(usage).map((resource) => [resource.key, resource.total]),
+			[
+				['images', 400],
+				['volumes', 50]
+			]
+		);
+		assert.deepEqual(
+			reclaimableByEnvironment(usage).map((entry) => entry.environmentID),
+			['1', '0']
+		);
+	});
+
+	it('builds attention items like the web dashboard', () => {
+		const items = buildOverviewAttentionItems(
+			sources({
+				environments: [
+					{ id: '0', name: 'Local', status: 'online' },
+					{ id: '1', name: 'Edge', status: 'offline', lastSeen: '2026-10-30T11:00:00Z' }
+				],
+				unhealthy: { '0': 2 },
+				events: [
+					{
+						environmentID: '0',
+						event: {
+							id: 'e1',
+							type: 'container.oom',
+							severity: 'error',
+							title: '',
+							resourceId: 'c1',
+							resourceName: 'db',
+							timestamp: '2026-10-30T11:50:00Z',
+							createdAt: '2026-10-30T11:50:00Z'
+						}
+					},
+					{
+						environmentID: '0',
+						event: {
+							id: 'e2',
+							type: 'container.die',
+							severity: 'info',
+							title: '',
+							resourceId: 'c2',
+							metadata: { exitCode: '0' },
+							timestamp: '2026-10-30T11:55:00Z',
+							createdAt: '2026-10-30T11:55:00Z'
+						}
+					}
+				],
+				disk: { '0': { percent: 96, used: 96, total: 100 } },
+				jobs: [
+					{
+						environmentID: '0',
+						job: job('auto-update', {
+							lastRun: { id: 'r1', status: 'failed', finishedAt: '2026-10-30T11:00:00Z' },
+							lastError: 'boom'
+						})
+					}
+				],
+				expiringKeys: 1,
+				versions: {
+					'0': {
+						currentVersion: '3.0.0',
+						revision: '',
+						shortRevision: '',
+						goVersion: '',
+						displayVersion: 'v3.0.0',
+						isSemverVersion: true,
+						updateAvailable: true,
+						newestVersion: 'v3.1.0'
+					}
+				},
+				upgradable: new Set(['0'])
+			})
+		);
+		assert.deepEqual(
+			items.map((item) => item.key),
+			[
+				'offline:1',
+				'unhealthy:0',
+				'event:0:c1',
+				'disk:0',
+				'job:0:auto-update',
+				'apikeys',
+				'version:0'
+			]
+		);
+		assert.equal(items.find((item) => item.key === 'version:0')?.action.kind, 'upgrade');
+		assert.equal(items.find((item) => item.key === 'disk:0')?.severity, 'critical');
+		const sorted = sortOverviewAttention(items, 'impact');
+		assert.equal(sorted.at(-1)?.severity, 'info');
 	});
 });

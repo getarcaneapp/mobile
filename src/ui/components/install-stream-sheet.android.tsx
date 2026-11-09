@@ -85,10 +85,10 @@ export function InstallStreamSheet({
 
 	useEffect(() => {
 		if (!terminal && !reduceMotion)
-			blink.value = withRepeat(withTiming(0, { duration: 900 }), -1, true);
+			blink.set(withRepeat(withTiming(0, { duration: 900 }), -1, true));
 		else {
 			cancelAnimation(blink);
-			blink.value = 1;
+			blink.set(1);
 		}
 	}, [terminal, reduceMotion, blink]);
 	const dotStyle = useAnimatedStyle(() => ({ opacity: 0.35 + 0.65 * blink.value }));

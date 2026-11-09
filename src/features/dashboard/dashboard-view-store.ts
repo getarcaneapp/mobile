@@ -7,6 +7,8 @@ import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { useActivityHistoryMutationStore } from '@/stores/activity-history-mutation-store';
 import { useBusiestContainersStore } from '@/stores/busiest-containers-store';
 import { useClientManager } from '@/stores/client-manager';
+import { useDashboardOverviewStore } from '@/stores/dashboard-overview-store';
+import { environmentIsOnline } from '@/stores/dashboard-stream-logic';
 import { useDashboardStreamStore } from '@/stores/dashboard-stream-store';
 import { useEnvironmentsStore } from '@/stores/environments-store';
 import { useImageUpdateCountStore } from '@/stores/image-update-count-store';
@@ -276,11 +278,21 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 				}
 				await get().loadData(true);
 				const client = manager().client;
-				if (client && manager().refreshedDashboardPreview)
+				if (client && manager().refreshedDashboardPreview) {
+					const environments = enabled(get().allEnvironments);
 					void useBusiestContainersStore.getState().refresh(
 						client,
-						enabled(get().allEnvironments).map((e) => e.id)
+						environments.map((e) => e.id)
 					);
+					const online = environments.filter(environmentIsOnline).map((e) => e.id);
+					if (online.length > 0)
+						void useDashboardOverviewStore.getState().load({
+							client,
+							environmentIDs: online,
+							supportsV3: manager().apiGeneration === 'v3',
+							supportsActivities: manager().supportsActivities()
+						});
+				}
 				await environmentsStore().refreshDockerInformation(client);
 				await environmentsStore().refreshActionItems(client);
 				if (isCancelled()) return;

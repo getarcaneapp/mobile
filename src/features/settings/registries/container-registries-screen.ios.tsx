@@ -1,4 +1,5 @@
 import { Host } from '@/ui/host';
+import { stableItemKey } from '@/ui/components/stable-sectioned-list.types';
 import {
 	Button,
 	ContextMenu,
@@ -168,9 +169,9 @@ export function ContainerRegistriesScreen() {
 						/>
 					}
 				>
-					{model.registries.map((registry) => (
-						<RegistryActionRow key={registry.id} model={model} registry={registry} />
-					))}
+					<List.ForEach data={model.registries} keyExtractor={stableItemKey} estimatedItemSize={64}>
+						{({ item }) => <RegistryActionRow model={model} registry={item} />}
+					</List.ForEach>
 					<PaginatedListFooter
 						hasMore={model.hasMore}
 						loadMoreError={model.loadMoreError}

@@ -72,6 +72,18 @@ const envRules: Rule[] = [
 
 const editorFont = Platform.select({ ios: 'Menlo', default: monoFamily });
 
+const editorTextStyle = {
+	fontFamily: editorFont,
+	fontSize: 13.5
+};
+
+const editorPadding = {
+	paddingTop: 12,
+	paddingLeft: Platform.OS === 'ios' ? 13 : 8,
+	paddingRight: Platform.OS === 'ios' ? 13 : 8,
+	paddingBottom: 32
+};
+
 const maximumHighlightedLength = 120_000;
 
 type Span = { text: string; color?: ColorName };
@@ -280,11 +292,41 @@ export function CodeEditor({
 		</View>
 	);
 
+	const highlighted = (
+		<Text>
+			{spans.map((span, index) => (
+				<Text
+					key={index}
+					style={span.color ? { color: palette[span.color][isDark ? 'dark' : 'light'] } : undefined}
+				>
+					{span.text}
+				</Text>
+			))}
+		</Text>
+	);
+
+	const containerStyle = height !== undefined ? { height } : { flex: 1 };
+
+	if (readOnly) {
+		return (
+			<View style={containerStyle}>
+				<ScrollView
+					style={{ flex: 1 }}
+					contentContainerStyle={editorPadding}
+					accessibilityLabel={accessibilityLabel}
+				>
+					<Text selectable style={{ ...editorTextStyle, color: colors.label }}>
+						{highlighted}
+					</Text>
+				</ScrollView>
+			</View>
+		);
+	}
+
 	return (
-		<View style={height !== undefined ? { height } : { flex: 1 }}>
+		<View style={containerStyle}>
 			<TextInput
 				multiline
-				editable={!readOnly}
 				autoCapitalize="none"
 				autoCorrect={false}
 				spellCheck={false}
@@ -293,7 +335,7 @@ export function CodeEditor({
 				textAlignVertical="top"
 				scrollEnabled
 				accessibilityLabel={accessibilityLabel}
-				inputAccessoryViewID={Platform.OS === 'ios' && !readOnly ? accessoryID : undefined}
+				inputAccessoryViewID={Platform.OS === 'ios' ? accessoryID : undefined}
 				selection={pendingSelection}
 				onFocus={() => setFocused(true)}
 				onBlur={() => setFocused(false)}
@@ -324,23 +366,12 @@ export function CodeEditor({
 					paddingBottom: 32
 				}}
 			>
-				<Text>
-					{spans.map((span, index) => (
-						<Text
-							key={index}
-							style={
-								span.color ? { color: palette[span.color][isDark ? 'dark' : 'light'] } : undefined
-							}
-						>
-							{span.text}
-						</Text>
-					))}
-				</Text>
+				{highlighted}
 			</TextInput>
-			{Platform.OS === 'ios' && !readOnly ? (
+			{Platform.OS === 'ios' ? (
 				<InputAccessoryView nativeID={accessoryID}>{quickKeys}</InputAccessoryView>
 			) : null}
-			{Platform.OS === 'android' && focused && !readOnly ? quickKeys : null}
+			{Platform.OS === 'android' && focused ? quickKeys : null}
 		</View>
 	);
 }

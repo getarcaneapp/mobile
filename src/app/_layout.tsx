@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { Keys, useStoredString } from '@/core/storage';
+import { startEnvironmentChangeWatcher } from '@/core/environment-change-watcher';
 import { startWidgetPublisher } from '@/core/widgets/widget-publisher';
 import { useClientManager } from '@/stores/client-manager';
 import { useLaunchSplash } from '@/stores/launch-splash-store';
@@ -36,6 +37,7 @@ export default function RootLayout() {
 	useEffect(() => usePushNotificationCoordinator.getState().observeDeviceToken(), []);
 
 	useEffect(() => startWidgetPublisher(), []);
+	useEffect(() => startEnvironmentChangeWatcher(), []);
 
 	useEffect(() => {
 		const subscription = AppState.addEventListener('change', (state) => {

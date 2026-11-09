@@ -38,6 +38,7 @@ import {
 	type DashboardTotalsTile,
 	type NeedsAttentionItem
 } from './dashboard-logic';
+import type { OverviewAttentionAction } from './dashboard-overview-logic';
 import { createDashboardViewStore } from './dashboard-view-store';
 
 function createViewState() {
@@ -321,8 +322,7 @@ export function useDashboardModel() {
 	const openImageUpdates = () => push('image-updates-sheet');
 	const openActivityCenter = () => push('activity-center');
 	const openAPIKeys = () => push('apiKeys');
-	const openUpdateAll = () =>
-		push('update-all-environments', { count: String(view.rawEnvironmentCount) });
+	const openUpdateAll = () => push('update-all-environments');
 
 	const openTile = (tile: DashboardTotalsTile) => {
 		switch (tile) {
@@ -359,6 +359,34 @@ export function useDashboardModel() {
 				return push('activity-center', { status: 'failed' });
 		}
 	};
+
+	const environmentNamed = (environmentID: string) => {
+		const environment = view.allEnvironments.find((e) => e.id === environmentID);
+		return { id: environmentID, name: environment?.name ?? environmentID };
+	};
+
+	const runOverviewAction = (action: OverviewAttentionAction) => {
+		switch (action.kind) {
+			case 'environment':
+				return openEnvironment(environmentNamed(action.environmentID));
+			case 'containers':
+				return selectTab('containers', { request: String(Date.now()) });
+			case 'containerLogs':
+				return push('container/[id]', { id: action.containerID, envID: action.environmentID });
+			case 'vulnerabilities':
+				return openVulnerabilities(action.environmentID);
+			case 'jobs':
+				return openJobs(action.environmentID);
+			case 'failedActivities':
+				return push('activity-center', { status: 'failed' });
+			case 'apiKeys':
+				return openAPIKeys();
+			case 'upgrade':
+				return push('system-upgrade', { envID: action.environmentID });
+		}
+	};
+
+	const openJobs = (environmentID: string) => push('jobs-list', { envID: environmentID });
 
 	const performAttention = (item: NeedsAttentionItem) => {
 		setShowAttentionSummary(false);
@@ -471,6 +499,13 @@ export function useDashboardModel() {
 		openProject,
 		openTile,
 		openActivityCenter,
+		openActivity: (status?: 'failed') => push('activity-center', status ? { status } : undefined),
+		openImageUpdates,
+		openSecurity: () =>
+			openVulnerabilities(attention.mostVulnerableEnvironmentID ?? activeEnvironmentID),
+		openJobs,
+		runOverviewAction,
+		openDashboardLayout: () => push('settings/app/dashboard-widgets'),
 		openSystemUpgrade: (environmentID: string) => push('system-upgrade', { envID: environmentID }),
 		openPrune: (environmentID?: string) =>
 			router.push({

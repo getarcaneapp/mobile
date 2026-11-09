@@ -4,11 +4,11 @@ import { RefreshControl, ScrollView, Text, View } from 'react-native';
 
 import { colors, systemColors } from '@/theme/colors';
 import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
+import { GroupedFlashList, groupPosition } from '@/ui/components/grouped-flash-list';
 import { ResourceCountLabel } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
 import { RowIcon } from '@/ui/components/row-icon';
 import { m3Type } from '@/ui/components/type-scale';
-import { MaterialListGroup } from '@/ui/material/list';
 import type { ContainerRegistry } from '@/sdk/models/containerRegistry/ContainerRegistry';
 
 import { ActionErrorAlert } from '../shared/action-error-alert';
@@ -57,6 +57,14 @@ export function ContainerRegistriesScreen() {
 		);
 	};
 
+	const refreshControl = (
+		<RefreshControl
+			refreshing={refreshing}
+			onRefresh={() => void onRefresh()}
+			colors={[systemColors.blue]}
+		/>
+	);
+
 	let content;
 	if (!model.isAdmin) {
 		content = (
@@ -92,62 +100,75 @@ export function ContainerRegistriesScreen() {
 		);
 	} else {
 		content = (
-			<View>
-				<View
-					style={{
-						flexDirection: 'row',
-						alignItems: 'center',
-						paddingHorizontal: 16,
-						paddingTop: 20,
-						paddingBottom: 6
-					}}
-				>
-					<Text
-						accessibilityRole="header"
-						style={[m3Type.titleSmall, { color: colors.secondaryLabel, flex: 1 }]}
+			<GroupedFlashList
+				data={model.registries.map((registry, index) => ({
+					key: registry.id,
+					type: 'registry',
+					registry,
+					grouped: groupPosition(index, model.registries.length)
+				}))}
+				renderEntry={({ registry }) => (
+					<LongPressMenu
+						title={registryName(registry)}
+						onPress={() => model.openEdit(registry)}
+						items={[
+							{ id: 'edit', title: 'Edit', onPress: () => model.openEdit(registry) },
+							{
+								id: 'delete',
+								title: 'Delete',
+								destructive: true,
+								onPress: () => model.setPendingDeleteRegistry(registry)
+							}
+						]}
+						style={{
+							flexDirection: 'row',
+							alignItems: 'center',
+							minHeight: 72,
+							paddingHorizontal: 16,
+							paddingVertical: 10
+						}}
 					>
-						Container Registries
-					</Text>
-					<ResourceCountLabel
-						loadedCount={model.registries.length}
-						totalCount={model.totalItems}
-						hasMore={model.hasMore}
-					/>
-				</View>
-				<MaterialListGroup>
-					{model.registries.map((registry) => (
-						<LongPressMenu
-							key={registry.id}
-							title={registryName(registry)}
-							onPress={() => model.openEdit(registry)}
-							items={[
-								{ id: 'edit', title: 'Edit', onPress: () => model.openEdit(registry) },
-								{
-									id: 'delete',
-									title: 'Delete',
-									destructive: true,
-									onPress: () => model.setPendingDeleteRegistry(registry)
-								}
-							]}
-							style={{
-								flexDirection: 'row',
-								alignItems: 'center',
-								minHeight: 72,
-								paddingHorizontal: 16,
-								paddingVertical: 10
-							}}
+						<RegistryRow registry={registry} />
+					</LongPressMenu>
+				)}
+				header={
+					<View
+						style={{
+							flexDirection: 'row',
+							alignItems: 'center',
+							paddingHorizontal: 16,
+							paddingTop: 20,
+							paddingBottom: 6
+						}}
+					>
+						<Text
+							accessibilityRole="header"
+							style={[m3Type.titleSmall, { color: colors.secondaryLabel, flex: 1 }]}
 						>
-							<RegistryRow registry={registry} />
-						</LongPressMenu>
-					))}
+							Container Registries
+						</Text>
+						<ResourceCountLabel
+							loadedCount={model.registries.length}
+							totalCount={model.totalItems}
+							hasMore={model.hasMore}
+						/>
+					</View>
+				}
+				footer={
 					<PaginatedListFooter
 						hasMore={model.hasMore}
 						loadMoreError={model.loadMoreError}
 						onRetry={() => void model.loadMore()}
 						onLoadMore={() => void model.loadMore()}
 					/>
-				</MaterialListGroup>
-			</View>
+				}
+				onEndReached={
+					model.hasMore && model.loadMoreError === undefined
+						? () => void model.loadMore()
+						: undefined
+				}
+				refreshControl={refreshControl}
+			/>
 		);
 	}
 
@@ -176,21 +197,19 @@ export function ContainerRegistriesScreen() {
 					]}
 				/>
 			) : null}
-			<ScrollView
-				contentInsetAdjustmentBehavior="automatic"
-				style={{ backgroundColor: colors.systemGroupedBackground }}
-				contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={() => void onRefresh()}
-						colors={[systemColors.blue]}
-					/>
-				}
-			>
-				{content}
-			</ScrollView>
+			{model.isAdmin && model.registries.length > 0 ? (
+				content
+			) : (
+				<ScrollView
+					contentInsetAdjustmentBehavior="automatic"
+					style={{ backgroundColor: colors.systemGroupedBackground }}
+					contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+					keyboardShouldPersistTaps="handled"
+					refreshControl={refreshControl}
+				>
+					{content}
+				</ScrollView>
+			)}
 			<ActionErrorAlert
 				title="Couldn't Delete Registry"
 				message={model.actionErrorMessage}

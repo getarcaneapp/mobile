@@ -8,6 +8,7 @@ import {
 	progressiveFanOut,
 	type ResourcePage
 } from '@/core/networking/pagination-loader';
+import { environmentSources, type EnvironmentSource } from '@/core/networking/environment-sources';
 import { RemoteDataLimits } from '@/core/networking/remote-data-limits';
 import {
 	ActivityCenterItem,
@@ -27,6 +28,7 @@ import type {
 	ActivityMessage,
 	ActivityStreamEvent
 } from '@/sdk/models/activity/Activity';
+import { addDetail, capMessages } from '@/stores/activity-detail-cache';
 
 const pageSize = 50;
 const streamRebuildIntervalMs = 200;
@@ -44,6 +46,8 @@ export type ActivityHistoryClearResult = {
 type StreamWarning = 'loadPartial' | 'missed' | 'environmentFailure' | 'persistentFailure';
 
 type ActivityEnvironment = { id: EnvironmentID; name: string };
+
+type ActivitySource = EnvironmentSource<ActivityEnvironment>;
 
 export type ActivityCenterState = {
 	activities: Activity[];
@@ -184,7 +188,7 @@ function insertMessage(
 		if (candidate && dateMs(candidate.createdAt) <= createdAt) low = mid + 1;
 		else high = mid;
 	}
-	return [...messages.slice(0, low), message, ...messages.slice(low)];
+	return capMessages([...messages.slice(0, low), message, ...messages.slice(low)]);
 }
 
 const sleep = (seconds: number, signal: AbortSignal) =>
@@ -590,59 +594,64 @@ export function createActivityCenterStore(): ActivityCenterStore {
 						if (!environmentNames.has(environment.id))
 							environmentNames.set(environment.id, environment.name);
 					}
-					const requests: [ActivityEnvironment, number][] = [];
-					for (const environment of environments) {
-						const id = environment.id;
-						if (!paginationByEnvironment.has(id)) {
+					const sources = await environmentSources(activeClient, environments);
+					if (loadGeneration !== generation) return;
+					const requests: [ActivitySource, number][] = [];
+					for (const source of sources) {
+						const key = source.key;
+						if (!paginationByEnvironment.has(key)) {
 							paginationByEnvironment.set(
-								id,
+								key,
 								ProgressivePaginationState.reset(ProgressivePaginationState.initial)
 							);
-							failedPageEnvironmentIDs.add(id);
+							failedPageEnvironmentIDs.add(key);
 						}
 						if (
 							!(
 								reset ||
-								paginationByEnvironment.get(id)?.hasMore === true ||
-								failedPageEnvironmentIDs.has(id)
+								paginationByEnvironment.get(key)?.hasMore === true ||
+								failedPageEnvironmentIDs.has(key)
 							)
 						)
 							continue;
-						requests.push([environment, paginationByEnvironment.get(id)?.nextStart ?? 0]);
+						requests.push([source, paginationByEnvironment.get(key)?.nextStart ?? 0]);
 					}
 					let failures = 0;
 					await progressiveFanOut(
 						requests,
-						async ([environment, start]): Promise<
-							[ActivityEnvironment, number, ResourcePage<Activity> | undefined]
+						async ([source, start]): Promise<
+							[ActivitySource, number, ResourcePage<Activity> | undefined, number]
 						> => {
 							try {
 								const response = await activeClient.activities.listPaginated({
-									envID: environment.id,
+									envID: source.key,
 									order: 'desc',
 									start,
 									limit: pageSize
 								});
 								return [
-									environment,
+									source,
 									start,
-									{ items: response.data, pagination: response.pagination }
+									{ items: response.data, pagination: response.pagination },
+									response.failedEnvironments?.length ?? 0
 								];
 							} catch {
-								return [environment, start, undefined];
+								return [source, start, undefined, 0];
 							}
 						},
 						(batch) => {
 							if (loadGeneration !== generation) return;
-							for (const [environment, start, page] of batch) {
-								const id = environment.id;
+							for (const [source, start, page, failedEnvironments] of batch) {
+								const key = source.key;
 								if (!page) {
 									failures += 1;
-									failedPageEnvironmentIDs.add(id);
+									failedPageEnvironmentIDs.add(key);
 									continue;
 								}
-								failedPageEnvironmentIDs.delete(id);
-								const state = paginationByEnvironment.get(id) ?? ProgressivePaginationState.initial;
+								failures += failedEnvironments;
+								failedPageEnvironmentIDs.delete(key);
+								const state =
+									paginationByEnvironment.get(key) ?? ProgressivePaginationState.initial;
 								const received = ProgressivePaginationState.receive(state, {
 									pagination: page.pagination,
 									itemCount: page.items.length,
@@ -650,31 +659,48 @@ export function createActivityCenterStore(): ActivityCenterStore {
 									requestedLimit: pageSize,
 									generation: state.generation
 								});
-								paginationByEnvironment.set(id, received ?? state);
-								const normalized = page.items.map((activity) => normalize(activity, environment));
-								activityBuckets.set(
-									id,
-									sortActivities(
-										PaginationLoader.merge(
-											normalized,
-											reset ? [] : (activityBuckets.get(id) ?? []),
-											false
-										)
-									)
+								paginationByEnvironment.set(key, received ?? state);
+								const grouped = new Map<string, Activity[]>(
+									source.environments.map((environment) => [environment.id, []])
 								);
+								for (const activity of page.items) {
+									const environment =
+										source.environments.length === 1 && source.environments[0]
+											? source.environments[0]
+											: environmentFor(activity.environmentID);
+									const normalized = normalize(activity, environment);
+									const id =
+										source.environments.length === 1 ? environment.id : activity.environmentID;
+									grouped.set(id, [...(grouped.get(id) ?? []), normalized]);
+								}
+								for (const [id, items] of grouped) {
+									activityBuckets.set(
+										id,
+										sortActivities(
+											PaginationLoader.merge(
+												items,
+												reset ? [] : (activityBuckets.get(id) ?? []),
+												false
+											)
+										)
+									);
+								}
 							}
 							rebuildActivities();
 							if (get().activities.length > 0) set({ isLoading: false });
 						}
 					);
 					if (loadGeneration !== generation) return;
-					const validIDs = new Set(environmentIDs);
-					activityBuckets = new Map([...activityBuckets].filter(([key]) => validIDs.has(key)));
+					const validEnvironmentIDs = new Set(environmentIDs);
+					const validSourceKeys = new Set(sources.map((source) => source.key));
+					activityBuckets = new Map(
+						[...activityBuckets].filter(([key]) => validEnvironmentIDs.has(key))
+					);
 					paginationByEnvironment = new Map(
-						[...paginationByEnvironment].filter(([key]) => validIDs.has(key))
+						[...paginationByEnvironment].filter(([key]) => validSourceKeys.has(key))
 					);
 					failedPageEnvironmentIDs = new Set(
-						[...failedPageEnvironmentIDs].filter((id) => validIDs.has(id))
+						[...failedPageEnvironmentIDs].filter((key) => validSourceKeys.has(key))
 					);
 					set({
 						hasMore:
@@ -699,7 +725,7 @@ export function createActivityCenterStore(): ActivityCenterStore {
 				try {
 					await get().load({ reset: false });
 				} finally {
-					if (loadGeneration === generation) set({ isLoadingMore: false });
+					if (loadGeneration <= generation) set({ isLoadingMore: false });
 				}
 			},
 
@@ -710,7 +736,9 @@ export function createActivityCenterStore(): ActivityCenterStore {
 				if (!activeClient) return;
 				const key = activityItemKey(activity);
 				if (!get().activityDetails[key]) {
-					set({ activityDetails: { ...get().activityDetails, [key]: { activity, messages: [] } } });
+					set({
+						activityDetails: addDetail(get().activityDetails, key, { activity, messages: [] })
+					});
 				}
 				const previousActivity = get().activityDetails[key]?.activity;
 				const identity = clientTransportIdentity;
@@ -732,10 +760,12 @@ export function createActivityCenterStore(): ActivityCenterStore {
 					upsert(current.activity);
 					current = get().activityDetails[key] ?? current;
 				}
-				const messages = PaginationLoader.merge(current.messages, response.messages, false).sort(
-					(a, b) => dateMs(a.createdAt) - dateMs(b.createdAt)
+				const messages = capMessages(
+					PaginationLoader.merge(current.messages, response.messages, false).sort(
+						(a, b) => dateMs(a.createdAt) - dateMs(b.createdAt)
+					)
 				);
-				set({ activityDetails: { ...get().activityDetails, [key]: { ...current, messages } } });
+				set({ activityDetails: addDetail(get().activityDetails, key, { ...current, messages }) });
 			},
 
 			startStream: () => {

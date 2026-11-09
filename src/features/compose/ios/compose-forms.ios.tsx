@@ -514,7 +514,10 @@ export function ComposeCollectionForm({
 							{kind === 'keyValue' ? entryName(item) : item}
 						</Text>
 						<Spacer />
-						<Image systemName="chevron.right" modifiers={[foregroundStyle('secondary')]} />
+						<Image
+							systemName="chevron.right"
+							modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}
+						/>
 					</HStack>
 				</Button>
 			</ContextMenu.Trigger>

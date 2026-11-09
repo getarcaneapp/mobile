@@ -5,9 +5,9 @@ import Svg, { Path } from 'react-native-svg';
 import { systemColors } from '@/theme/colors';
 
 const lines = [
-	{ name: 'Production', color: systemColors.blue, base: 28, phase: 0 },
-	{ name: 'Media', color: systemColors.orange, base: 52, phase: 1.4 },
-	{ name: 'Home', color: systemColors.teal, base: 14, phase: 2.6 }
+	{ name: 'Production', color: 'blue', base: 28, phase: 0 },
+	{ name: 'Media', color: 'orange', base: 52, phase: 1.4 },
+	{ name: 'Home', color: 'teal', base: 14, phase: 2.6 }
 ] as const;
 
 const steps = 24;
@@ -47,7 +47,7 @@ export function SampleUsageChart({ height = 110 }: { height?: number }) {
 										[x(step), y(line.base + 9 * Math.sin(step / 3 + line.phase))] as const
 								)
 							)}
-							stroke={line.color}
+							stroke={systemColors[line.color]}
 							strokeWidth={2}
 							strokeLinecap="round"
 							fill="none"
