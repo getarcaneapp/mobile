@@ -88,7 +88,7 @@ const config: ExpoConfig = {
 		[
 			'expo-build-properties',
 			{
-				ios: { deploymentTarget: '18.0' },
+				ios: { deploymentTarget: '26.0' },
 				android: {
 					minSdkVersion: 26,
 					usesCleartextTraffic: true

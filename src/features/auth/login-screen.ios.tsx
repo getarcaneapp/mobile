@@ -74,7 +74,7 @@ import { Motion, Radius } from '@/theme/tokens';
 import { useReduceMotion } from '@/ui/components/accessibility';
 import { ErrorBanner } from '@/ui/components/error-banner';
 import { hashKey, swiftAnimation } from '@/ui/components/swiftui-motion';
-import { glassEffectCompat, isIOS26 as isGlass } from '@/ui/components/swiftui-surfaces';
+import { glassEffectCompat } from '@/ui/components/swiftui-surfaces';
 
 import { useLoginModel, type LoginField, type LoginModel } from './use-login-model';
 
@@ -649,11 +649,7 @@ function PrimaryButton({ title, icon, loading, disabled: isDisabled, onPress }: 
 	return (
 		<Button
 			onPress={onPress}
-			modifiers={[
-				buttonStyle(isGlass ? 'glassProminent' : 'borderedProminent'),
-				controlSize('extraLarge'),
-				disabled(isDisabled)
-			]}
+			modifiers={[buttonStyle('glassProminent'), controlSize('extraLarge'), disabled(isDisabled)]}
 		>
 			<ButtonLabel title={title} icon={icon} loading={loading} scale={0.85} />
 		</Button>
@@ -670,11 +666,7 @@ function SecondaryButton({
 	return (
 		<Button
 			onPress={onPress}
-			modifiers={[
-				buttonStyle(isGlass ? 'glass' : 'bordered'),
-				controlSize('extraLarge'),
-				disabled(isDisabled)
-			]}
+			modifiers={[buttonStyle('glass'), controlSize('extraLarge'), disabled(isDisabled)]}
 		>
 			<ButtonLabel title={title} icon={icon} loading={loading} scale={0.8} />
 		</Button>

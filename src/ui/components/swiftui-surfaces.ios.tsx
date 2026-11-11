@@ -1,16 +1,12 @@
 import { Background, Overlay, RoundedRectangle } from '@expo/ui/swift-ui';
 import {
-	background,
 	foregroundStyle,
 	glassEffect,
 	shadow,
-	shapes,
 	strokeBorder,
-	type ModifierConfig,
-	type Shape
+	type ModifierConfig
 } from '@expo/ui/swift-ui/modifiers';
 import type { ReactNode } from 'react';
-import { Platform } from 'react-native';
 
 import { useAccentColor } from '@/theme/accent';
 import { colors, withOpacity } from '@/theme/colors';
@@ -18,18 +14,7 @@ import { Radius } from '@/theme/tokens';
 
 import { groupedHex, useIsDark, useReduceTransparency } from './accessibility';
 
-export const isIOS26 = Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) >= 26;
-
 type GlassShape = 'circle' | 'capsule' | 'rectangle' | 'roundedRectangle';
-
-const glassShapeOf = (shape: GlassShape, cornerRadius?: number): Shape =>
-	shape === 'circle'
-		? shapes.circle()
-		: shape === 'capsule'
-			? shapes.capsule()
-			: shape === 'rectangle'
-				? shapes.rectangle()
-				: shapes.roundedRectangle({ cornerRadius, roundedCornerStyle: 'continuous' });
 
 export function glassEffectCompat({
 	tint,
@@ -42,12 +27,7 @@ export function glassEffectCompat({
 	shape?: GlassShape;
 	cornerRadius?: number;
 } = {}): ModifierConfig {
-	if (isIOS26) {
-		return glassEffect({ glass: { variant: 'regular', tint, interactive }, shape, cornerRadius });
-	}
-	return tint
-		? background(withOpacity(tint, 0.15), glassShapeOf(shape, cornerRadius))
-		: background({ type: 'material', material: 'regular' }, glassShapeOf(shape, cornerRadius));
+	return glassEffect({ glass: { variant: 'regular', tint, interactive }, shape, cornerRadius });
 }
 
 export function glassChipCompat({
@@ -61,9 +41,7 @@ export function glassChipCompat({
 	shape?: GlassShape;
 	cornerRadius?: number;
 }): ModifierConfig {
-	return isIOS26
-		? glassEffect({ glass: { variant: 'regular', tint, interactive }, shape, cornerRadius })
-		: background(tint, glassShapeOf(shape, cornerRadius));
+	return glassEffectCompat({ tint, interactive, shape, cornerRadius });
 }
 
 export const floatingSurfaceShadow = (): ModifierConfig =>
@@ -99,54 +77,16 @@ export function DashboardCardBackground({
 	cornerRadius?: number;
 	children: ReactNode;
 }) {
-	const isDark = useIsDark();
-	if (isIOS26) {
-		return (
-			<Background>
-				{children}
-				<Background.Content>
-					<RoundedRectangle
-						cornerRadius={cornerRadius}
-						modifiers={[foregroundStyle(colors.secondarySystemGroupedBackground)]}
-					/>
-				</Background.Content>
-			</Background>
-		);
-	}
 	return (
-		<Overlay>
-			<Background>
-				{children}
-				<Background.Content>
-					<RoundedRectangle
-						cornerRadius={cornerRadius}
-						modifiers={[
-							foregroundStyle(colors.secondarySystemGroupedBackground),
-							shadow({ color: '#0000000F', radius: 8, y: 3 })
-						]}
-					/>
-				</Background.Content>
-			</Background>
-			<Overlay.Content>
+		<Background>
+			{children}
+			<Background.Content>
 				<RoundedRectangle
 					cornerRadius={cornerRadius}
-					modifiers={[
-						foregroundStyle('#00000000'),
-						strokeBorder({
-							content: {
-								type: 'linearGradient',
-								colors: [isDark ? '#FFFFFF12' : '#FFFFFF59', '#FFFFFF00'],
-								startPoint: { x: 0.5, y: 0 },
-								endPoint: { x: 0.5, y: 0.5 }
-							},
-							style: { lineWidth: 1 },
-							shape: 'roundedRectangle',
-							cornerRadius
-						})
-					]}
+					modifiers={[foregroundStyle(colors.secondarySystemGroupedBackground)]}
 				/>
-			</Overlay.Content>
-		</Overlay>
+			</Background.Content>
+		</Background>
 	);
 }
 
@@ -174,7 +114,7 @@ export function GlassCardBackground({
 		</Overlay.Content>
 	);
 
-	if (isIOS26 && !reduceTransparency) {
+	if (!reduceTransparency) {
 		const wash = withOpacity(
 			isDark
 				? groupedHex.dark.secondarySystemGroupedBackground

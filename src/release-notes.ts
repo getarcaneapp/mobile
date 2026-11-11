@@ -43,6 +43,9 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Editing and setup screens hidden unless Show Advanced Features is on.'
+			},
+			{
+				text: 'Requires iOS 26.'
 			}
 		],
 		removed: [

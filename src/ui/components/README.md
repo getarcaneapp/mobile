@@ -6,8 +6,8 @@ Ports of the reference app's shared SwiftUI components. **SwiftUI-tree** = retur
 
 - `CardEntrance`, `StaggeredReveal`, `LoadingCrossfade`, `ScrollEdgeFadeSwiftUI` (no-op), `swiftAnimation`, `motionAwareAnimation`, `pressableButtonStyle`, `cardRowLinkStyle` — `swiftui-motion.ios.tsx` — SwiftUI-tree — Extensions/Motion.swift, CardVocabulary.swift (`CardRowLinkStyle`)
 - `CardEntranceView`, `StaggeredRevealView`, `ScrollEdgeFadeScrollView` + `ScrollEdgeFade`, `LoadingCrossfadeView`, `PressableScale`, `CardRowPressable`, `animateTo` — `motion-views.tsx` — Standalone — Extensions/Motion.swift, CardVocabulary.swift
-- `DashboardCardBackground`, `GlassCardBackground`, `RaisedChipBackground`, `floatingSurfaceShadow`, `glassEffectCompat`, `glassChipCompat`, `isIOS26` — `swiftui-surfaces.ios.tsx` — SwiftUI-tree — Extensions/CardVocabulary.swift, Extensions/GlassCompat.swift
-- `DashboardCard`, `GlassCard`, `RaisedChip`, `floatingSurfaceShadowStyle` — `surfaces.tsx` — Standalone — Extensions/CardVocabulary.swift
+- `DashboardCardBackground`, `GlassCardBackground`, `RaisedChipBackground`, `floatingSurfaceShadow`, `glassEffectCompat`, `glassChipCompat` — `swiftui-surfaces.ios.tsx` — SwiftUI-tree — Extensions/CardVocabulary.swift, Extensions/GlassCompat.swift
+- `DashboardCard`, `GlassCard`, `RaisedChip` — `surfaces.tsx` — Standalone — Extensions/CardVocabulary.swift
 - `useReduceMotion`, `useReduceTransparency`, `useIsDark` — `accessibility.ts` — hooks — SwiftUI environment values
 - `m3`, `m3Type` — `material-colors.ts`, `type-scale.ts` — Android Material 3 roles / type scale
 

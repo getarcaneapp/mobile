@@ -30,7 +30,7 @@ import type { SFSymbol } from 'sf-symbols-typescript';
 
 import { systemColors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
-import { glassEffectCompat, isIOS26 } from '@/ui/components/swiftui-surfaces';
+import { glassEffectCompat } from '@/ui/components/swiftui-surfaces';
 import { showToast, ToastHost, Toasts } from '@/ui/toast';
 
 import type { SecretRevealProps } from './secret-reveal.types';
@@ -126,10 +126,7 @@ export function SecretRevealScreen(props: SecretRevealProps) {
 								) : null}
 								<Button
 									onPress={copy}
-									modifiers={[
-										buttonStyle(isIOS26 ? 'glassProminent' : 'borderedProminent'),
-										padding({ horizontal: 24 })
-									]}
+									modifiers={[buttonStyle('glassProminent'), padding({ horizontal: 24 })]}
 								>
 									<Label
 										title="Copy to Clipboard"

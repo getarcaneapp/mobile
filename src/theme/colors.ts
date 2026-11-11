@@ -87,21 +87,6 @@ const classicLight: SystemColorTable = {
 	brown: '#A2845E',
 	gray: '#8E8E93'
 };
-const classicDark: SystemColorTable = {
-	blue: '#0A84FF',
-	green: '#30D158',
-	indigo: '#5E5CE6',
-	orange: '#FF9F0A',
-	pink: '#FF375F',
-	purple: '#BF5AF2',
-	red: '#FF453A',
-	teal: '#40C8E0',
-	yellow: '#FFD60A',
-	mint: '#63E6E2',
-	cyan: '#64D2FF',
-	brown: '#AC8E68',
-	gray: '#8E8E93'
-};
 const ios26Light: SystemColorTable = {
 	blue: '#0088FF',
 	green: '#34C759',
@@ -133,13 +118,10 @@ const ios26Dark: SystemColorTable = {
 	gray: '#8E8E93'
 };
 
-const isIOS26OrLater = Platform.OS === 'ios' && parseInt(String(Platform.Version), 10) >= 26;
-
 function currentSystemTable(): SystemColorTable {
 	const dark = Appearance.getColorScheme() === 'dark';
 	if (Platform.OS !== 'ios') return classicLight;
-	if (isIOS26OrLater) return dark ? ios26Dark : ios26Light;
-	return dark ? classicDark : classicLight;
+	return dark ? ios26Dark : ios26Light;
 }
 
 export const systemColors: Readonly<SystemColorTable> = Object.defineProperties(

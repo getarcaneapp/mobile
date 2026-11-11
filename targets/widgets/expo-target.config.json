@@ -3,7 +3,7 @@
 	"name": "ArcaneWidgets",
 	"displayName": "Arcane",
 	"bundleIdentifier": ".ArcaneWidgets",
-	"deploymentTarget": "18.0",
+	"deploymentTarget": "26.0",
 	"frameworks": ["SwiftUI", "WidgetKit", "ActivityKit", "AppIntents"],
 	"colors": {
 		"$accent": "#AF52DE",
