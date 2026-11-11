@@ -228,7 +228,7 @@ const ENVIRONMENT_RULES: readonly RouteRule[] = [
 		path: 'swarm/join/tokens',
 		action: 'rotate'
 	})),
-	rule(POST, /^swarm\/join-environments$/, () => ({ path: 'swarm/join/environments' })),
+	rule(POST, /^swarm\/join-environments$/, () => ({ path: 'swarm/join/agents' })),
 	rule(GET, /^swarm\/unlock-key$/, () => ({ path: 'swarm/unlock/key' })),
 	rule(POST, /^swarm\/nodes\/([^/]+)\/(promote|demote)$/, (m) => ({
 		path: `swarm/nodes/${g(m, 1)}`,
@@ -336,6 +336,13 @@ function translateRoute(route: APIRoute): APIRoute {
 	};
 }
 
+function withAgentPaths(route: APIRoute): APIRoute {
+	const path = route.path
+		.replace(/^(\/*)environments(?=\/|$)/, '$1agents')
+		.replace(/^(\/*)events\/environment\//, '$1events/agent/');
+	return path === route.path ? route : { ...route, path };
+}
+
 export function translateRouteForV3(route: APIRoute): APIRoute {
-	return withTotals(translateRoute(route));
+	return withAgentPaths(withTotals(translateRoute(route)));
 }

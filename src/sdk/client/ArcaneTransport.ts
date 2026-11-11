@@ -853,7 +853,7 @@ export function retryAfterMs(value: string | null, now = Date.now()): number | u
 }
 
 function isRemoteEnvironmentPath(path: string): boolean {
-	const match = /^\/?(?:api\/)?environments\/([^/?]+)\//.exec(path);
+	const match = /^\/?(?:api\/)?(?:environments|agents)\/([^/?]+)\//.exec(path);
 	return match !== null && match[1] !== '0';
 }
 
