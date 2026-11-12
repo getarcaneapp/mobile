@@ -16,6 +16,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Arcane v3 server support.'
 			},
 			{
+				text: 'On Android, Firebase settings are entered at runtime under App Settings > Firebase.'
+			},
+			{
 				text: 'Live upgrade progress and per-environment logs, with Update All and Retry Failed.'
 			},
 			{

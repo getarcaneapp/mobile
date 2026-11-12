@@ -15,6 +15,7 @@ const arcaneBuildNumber = env?.ARCANE_BUILD_NUMBER;
 const googleServicesFile =
 	env?.GOOGLE_SERVICES_JSON ??
 	(fs.existsSync('./google-services.json') ? './google-services.json' : undefined);
+const androidPackage = env?.ARCANE_ANDROID_PACKAGE || 'app.getarcane.android';
 if (env?.EAS_BUILD === 'true' && env.EAS_BUILD_PLATFORM === 'android' && !googleServicesFile) {
 	throw new Error('GOOGLE_SERVICES_JSON is missing; Android push notifications need it.');
 }
@@ -49,7 +50,7 @@ const config: ExpoConfig = {
 		}
 	},
 	android: {
-		package: 'app.getarcane.android',
+		package: androidPackage,
 		versionCode: BUILD_NUMBER,
 		adaptiveIcon: {
 			backgroundImage: './assets/images/android-icon-background.png',

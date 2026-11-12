@@ -19,6 +19,8 @@ import type { MobilePushDevice, MobilePushStatus } from '@/sdk/models/mobilePush
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
+import { ArcaneFirebase } from '../../modules/arcane-firebase';
+
 export type PushAuthorizationStatus =
 	| 'notDetermined'
 	| 'denied'
@@ -58,6 +60,8 @@ export class PushError extends Error {
 		new PushError("This push relay doesn't support Android notifications yet.");
 	static relay = (status: number, message: string) =>
 		new PushError(`Push relay error (${status}): ${message}`);
+	static firebaseNotConfigured = () =>
+		new PushError('Enter your Firebase settings in App Settings before you turn on push.');
 	static notSignedIn = () => new PushError('Sign in to enable push notifications.');
 }
 
@@ -214,6 +218,7 @@ type PushNotificationState = {
 	serverStatus: MobilePushStatus | undefined;
 	errorMessage: string | undefined;
 	credentials: PushCredentials | undefined;
+	firebaseReady: boolean;
 
 	isSupported: boolean;
 	isEnabled: (origin: string | undefined) => boolean;
@@ -221,6 +226,7 @@ type PushNotificationState = {
 	isAuthorizationDenied: () => boolean;
 
 	observeDeviceToken: () => () => void;
+	firebaseDidChange: () => Promise<void>;
 	sessionDidChange: () => void;
 	refreshAuthorizationStatus: () => Promise<void>;
 	registerIfAuthorized: () => Promise<void>;
@@ -324,6 +330,7 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 		serverStatus: undefined,
 		errorMessage: undefined,
 		credentials: undefined,
+		firebaseReady: pushPlatform !== 'fcm' || ArcaneFirebase.isInitialized(),
 
 		isSupported: supportedPushPlatform !== undefined,
 		isEnabled: (origin) => get().binding(origin) !== undefined,
@@ -337,6 +344,15 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 				if (typeof token.data === 'string') void get().didRegister(token.data);
 			});
 			return () => subscription.remove();
+		},
+
+		firebaseDidChange: async () => {
+			latestDeviceToken = undefined;
+			set({
+				firebaseReady: pushPlatform !== 'fcm' || ArcaneFirebase.isInitialized(),
+				errorMessage: undefined
+			});
+			if (get().firebaseReady) await get().registerIfAuthorized();
 		},
 
 		sessionDidChange: () => {
@@ -428,6 +444,7 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 				const client = manager.client;
 				const origin = manager.serverOrigin();
 				if (!client || !origin) throw PushError.notSignedIn();
+				if (!get().firebaseReady) throw PushError.firebaseNotConfigured();
 				await ensureAndroidChannel();
 				checkSession();
 				const permissions = await Notifications.requestPermissionsAsync({
