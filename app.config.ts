@@ -88,9 +88,10 @@ const config: ExpoConfig = {
 		[
 			'expo-build-properties',
 			{
-				ios: { deploymentTarget: '26.0' },
+				ios: { deploymentTarget: '26.0', ccacheEnabled: true },
 				android: {
 					minSdkVersion: 26,
+					buildArchs: ['arm64-v8a', 'armeabi-v7a'],
 					usesCleartextTraffic: true
 				}
 			}

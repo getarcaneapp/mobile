@@ -19,6 +19,7 @@ concurrency:
 env:
   NODE_VERSION: 26
   EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  EAS_LOCAL_BUILD_WORKINGDIR: ${{ github.workspace }}/../eas-build
 
 jobs:
   ios:
@@ -35,6 +36,7 @@ jobs:
         run: |
           command -v pod >/dev/null || brew install cocoapods
           command -v fastlane >/dev/null || brew install fastlane
+          command -v ccache >/dev/null || brew install ccache
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -42,10 +44,20 @@ jobs:
             ~/.cocoapods/repos
           key: cocoapods-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: cocoapods-${{ runner.os }}-
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-ios-${{ github.run_id }}
+          restore-keys: ccache-ios-
       - name: Build number
         run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
       - name: Build
         run: vpx eas-cli@latest build --local --platform ios --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.ipa"
+      - name: Compiler cache stats
+        if: always()
+        run: |
+          ccache --show-stats
+          CCACHE_MAXSIZE=2G ccache --cleanup
       - name: Submit to TestFlight
         run: vpx eas-cli@latest submit --platform ios --profile internal --non-interactive --path "$RUNNER_TEMP/Arcane.ipa"
 
@@ -70,6 +82,8 @@ jobs:
       - name: Build number
         run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
       - name: Build
+        env:
+          GRADLE_OPTS: -Dorg.gradle.caching=true
         run: vpx eas-cli@latest build --local --platform android --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.aab"
       - name: Submit to Google Play
         run: vpx eas-cli@latest submit --platform android --profile internal --non-interactive --path "$RUNNER_TEMP/Arcane.aab"
