@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import {
 	Button,
 	ContentUnavailableView,
@@ -155,11 +156,12 @@ export function ComposePreviewEditorView({
 }) {
 	const binding = useComposeBinding(bindingRef);
 	const menuActions = useComposeMenuActions(bindingRef.session);
+	const [advanced] = useAdvancedFeatures();
 	const [mode, setMode] = useState<Mode>('editor');
 	const [addingConfiguration, setAddingConfiguration] = useState(false);
 	const [error, setError] = useState<string>();
 	const document = ComposeDocument.tryParse(binding.text);
-	const yaml = mode === 'yaml';
+	const yaml = advanced && mode === 'yaml';
 
 	const mutate = (change: () => string) => {
 		try {
@@ -175,15 +177,21 @@ export function ComposePreviewEditorView({
 	return (
 		<Toolbar>
 			<VStack spacing={0} modifiers={titleModifiers(title)}>
-				<ScrollableTabBarContent
-					selection={mode}
-					onSelectionChange={setMode}
-					options={[
-						{ value: 'editor', title: 'Editor', systemImage: 'slider.horizontal.3' },
-						{ value: 'yaml', title: 'YAML', systemImage: 'chevron.left.forwardslash.chevron.right' }
-					]}
-					accessibilityLabel="Compose editor mode"
-				/>
+				{advanced ? (
+					<ScrollableTabBarContent
+						selection={mode}
+						onSelectionChange={setMode}
+						options={[
+							{ value: 'editor', title: 'Editor', systemImage: 'slider.horizontal.3' },
+							{
+								value: 'yaml',
+								title: 'YAML',
+								systemImage: 'chevron.left.forwardslash.chevron.right'
+							}
+						]}
+						accessibilityLabel="Compose editor mode"
+					/>
+				) : null}
 				<ModeContent
 					showsSource={yaml}
 					source={<SourceEditor binding={binding} language="yaml" readOnly={readOnly} />}
@@ -197,10 +205,10 @@ export function ComposePreviewEditorView({
 						/>
 					) : (
 						<UnavailableView
-							title="Open YAML to continue"
+							title={advanced ? 'Open YAML to continue' : 'Compose file unavailable'}
 							systemImage="doc.text"
 							description={parseError(binding.text)}
-							actions={[{ title: 'Edit YAML', onPress: () => setMode('yaml') }]}
+							actions={advanced ? [{ title: 'Edit YAML', onPress: () => setMode('yaml') }] : []}
 						/>
 					)}
 				</ModeContent>
@@ -434,12 +442,13 @@ export function EnvPreviewEditorView({
 }) {
 	const binding = useComposeBinding(bindingRef);
 	const menuActions = useComposeMenuActions(bindingRef.session);
+	const [advanced] = useAdvancedFeatures();
 	const [mode, setMode] = useState<'editor' | 'text'>('editor');
 	const [revealed, setRevealed] = useState<Set<string>>(new Set());
 	const [adding, setAdding] = useState(false);
 	const [error, setError] = useState<string>();
 	const document = new EnvDocument(binding.text);
-	const raw = mode === 'text';
+	const raw = advanced && mode === 'text';
 
 	const toggleReveal = (name: string) =>
 		setRevealed((current) => {
@@ -486,15 +495,21 @@ export function EnvPreviewEditorView({
 	return (
 		<Toolbar>
 			<VStack spacing={0} modifiers={titleModifiers(title)}>
-				<ScrollableTabBarContent
-					selection={mode}
-					onSelectionChange={setMode}
-					options={[
-						{ value: 'editor', title: 'Editor', systemImage: 'slider.horizontal.3' },
-						{ value: 'text', title: 'Text', systemImage: 'chevron.left.forwardslash.chevron.right' }
-					]}
-					accessibilityLabel="Environment editor mode"
-				/>
+				{advanced ? (
+					<ScrollableTabBarContent
+						selection={mode}
+						onSelectionChange={setMode}
+						options={[
+							{ value: 'editor', title: 'Editor', systemImage: 'slider.horizontal.3' },
+							{
+								value: 'text',
+								title: 'Text',
+								systemImage: 'chevron.left.forwardslash.chevron.right'
+							}
+						]}
+						accessibilityLabel="Environment editor mode"
+					/>
+				) : null}
 				<ModeContent
 					showsSource={raw}
 					source={<SourceEditor binding={binding} language="env" readOnly={readOnly} />}

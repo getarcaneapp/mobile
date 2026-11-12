@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { BackHandler, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { nextInstanceKey } from '@/core/with-cleanup';
 import { M3Section, SwitchRow, ValueRow } from '@/features/containers/android-material';
 import {
@@ -324,11 +325,12 @@ function EditorScreen({
 	const push = usePush();
 	const { readOnly } = destination;
 	const menuActions = useComposeMenuActions(destination.binding.session);
+	const [advanced] = useAdvancedFeatures();
 	const [tab, setTab] = useState<'editor' | 'source'>('editor');
 	const [addingConfiguration, setAddingConfiguration] = useState(false);
 	const { error, mutate } = useMutate(binding, readOnly);
 	const document = ComposeDocument.tryParse(binding.text);
-	const yaml = tab === 'source';
+	const yaml = advanced && tab === 'source';
 
 	const items: AndroidMenuItem[] = [];
 	if (!readOnly && !yaml)
@@ -362,12 +364,14 @@ function EditorScreen({
 						: []
 				}
 			/>
-			<ScrollableTabBar
-				selection={tab}
-				onSelectionChange={setTab}
-				options={editorTabs('YAML')}
-				accessibilityLabel="Compose editor mode"
-			/>
+			{advanced ? (
+				<ScrollableTabBar
+					selection={tab}
+					onSelectionChange={setTab}
+					options={editorTabs('YAML')}
+					accessibilityLabel="Compose editor mode"
+				/>
+			) : null}
 			{yaml ? (
 				<View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
 					<CodeEditor
@@ -524,10 +528,10 @@ function EditorScreen({
 				</Screen>
 			) : (
 				<UnavailableView
-					title="Open YAML to continue"
+					title={advanced ? 'Open YAML to continue' : 'Compose file unavailable'}
 					systemImage="doc.text"
 					description={parseError(binding.text)}
-					actions={[{ title: 'Edit YAML', onPress: () => setTab('source') }]}
+					actions={advanced ? [{ title: 'Edit YAML', onPress: () => setTab('source') }] : []}
 				/>
 			)}
 			{yaml ? <ErrorText error={error} /> : null}
@@ -549,12 +553,13 @@ function EnvEditorScreen({
 	const binding = useComposeBinding(destination.binding);
 	const { readOnly } = destination;
 	const menuActions = useComposeMenuActions(destination.binding.session);
+	const [advanced] = useAdvancedFeatures();
 	const [tab, setTab] = useState<'editor' | 'source'>('editor');
 	const [revealed, setRevealed] = useState<Set<string>>(new Set());
 	const [adding, setAdding] = useState(false);
 	const [error, setError] = useState<string>();
 	const document = new EnvDocument(binding.text);
-	const raw = tab === 'source';
+	const raw = advanced && tab === 'source';
 
 	const change = (action: () => string) => {
 		if (readOnly) return;
@@ -588,12 +593,14 @@ function EnvEditorScreen({
 						: []
 				}
 			/>
-			<ScrollableTabBar
-				selection={tab}
-				onSelectionChange={setTab}
-				options={editorTabs('Text')}
-				accessibilityLabel="Environment editor mode"
-			/>
+			{advanced ? (
+				<ScrollableTabBar
+					selection={tab}
+					onSelectionChange={setTab}
+					options={editorTabs('Text')}
+					accessibilityLabel="Environment editor mode"
+				/>
+			) : null}
 			{raw ? (
 				<View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
 					<CodeEditor
