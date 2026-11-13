@@ -109,7 +109,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Editing network options breaking compact compose files.'
 			},
 			{
-				text: 'Selected agent and running deployments carrying over to another server.'
+				text: 'Selected agent, pins and running deployments carrying over to another server.'
 			},
 			{
 				text: 'Expired sessions failing silently instead of showing an error.'
