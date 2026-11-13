@@ -247,8 +247,11 @@ export function useUpdateAllEnvironments() {
 		setPhase({ kind: 'finished', job, note });
 		if (note == null) {
 			const failedCount = failedEnvironmentIDs(job).length;
-			if (job.status === 'completed' && failedCount === 0) {
+			const skippedCount = resultCounts(job.results ?? []).skipped;
+			if (job.status === 'completed' && failedCount === 0 && skippedCount === 0) {
 				showToast(Toasts.success('All agents updated'));
+			} else if (job.status === 'completed' && failedCount === 0) {
+				showToast(Toasts.info(lastRunSummary(job)));
 			} else if (job.status === 'failed') {
 				showToast(Toasts.error(job.error ?? 'Agent update failed'));
 			}

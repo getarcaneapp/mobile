@@ -91,7 +91,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Container stats showing zeros and terminal size mismatches.'
 			},
 			{
-				text: 'Job schedules saving blank intervals and Update All looping.'
+				text: 'Job schedules saving blank intervals and Update All looping or misreporting.'
 			},
 			{
 				text: 'Interrupted deployments leaving their toast and Live Activity open.'
