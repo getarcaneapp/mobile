@@ -168,9 +168,7 @@ export function ImageUpdatesScreen() {
 						)}
 					</Section>
 					<Section
-						footer={
-							<Text>Contacts each image's registry. Can take a while for large environments.</Text>
-						}
+						footer={<Text>Contacts each image's registry. Can take a while for large agents.</Text>}
 					>
 						<Button onPress={model.scanAll} modifiers={[disabled(model.isScanning)]}>
 							<HStack>

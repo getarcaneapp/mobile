@@ -39,7 +39,7 @@ export async function collectEnvironmentImages(
 			query: { start, limit: aggregatePageSize }
 		});
 		for (const failure of response.failedEnvironments ?? [])
-			failures.set(failure.environment.id, failure.message || 'Environment unavailable');
+			failures.set(failure.environment.id, failure.message || 'Agent unavailable');
 		for (const image of response.data) {
 			const environmentID = ItemEnvironment.get(image)?.id;
 			if (environmentID === undefined) continue;

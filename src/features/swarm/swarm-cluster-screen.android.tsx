@@ -158,7 +158,7 @@ export function SwarmClusterScreen() {
 					</>
 				) : null}
 				{model.canLeave ? (
-					<M3Section footer="This environment's Docker host leaves the swarm.">
+					<M3Section footer="This agent's Docker host leaves the swarm.">
 						<ActionItem
 							title="Leave Swarm"
 							icon="rectangle.portrait.and.arrow.right"

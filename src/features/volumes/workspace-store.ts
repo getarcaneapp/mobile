@@ -2,6 +2,13 @@ import { create } from 'zustand';
 
 import { hasPermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
+import {
+	assembleWorkspaceFolders,
+	mergeWorkspaceFolder,
+	normalizeWorkspacePath,
+	workspaceFolderChain
+} from '@/core/workspace-folders';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import { Permission } from '@/sdk/models/role/Permission';
@@ -18,13 +25,61 @@ export type WorkspaceEntry = {
 	loading: boolean;
 	errorMessage?: string;
 	unsupported: boolean;
+	incremental: boolean;
+	loadedFolders: readonly string[];
+	loadingFolders: readonly string[];
 };
 
 const emptyEntry = (identity: string): WorkspaceEntry => ({
 	identity,
 	loading: false,
-	unsupported: false
+	unsupported: false,
+	incremental: false,
+	loadedFolders: [],
+	loadingFolders: []
 });
+
+export function workspaceFolderReady(entry: WorkspaceEntry, folder: string): boolean {
+	if (entry.workspace === undefined) return false;
+	return !entry.incremental || entry.loadedFolders.includes(normalizeWorkspacePath(folder));
+}
+
+async function fetchFolders(
+	client: ArcaneClient,
+	environmentID: EnvironmentID,
+	volumeName: string,
+	folders: readonly string[]
+) {
+	const [root, ...rest] = ['', ...folders.filter((folder) => folder !== '')];
+	const rootListing = await client.volumes.workspace({
+		envID: environmentID,
+		name: volumeName,
+		path: root
+	});
+	const incremental = (await client.apiGeneration()) === 'v3';
+	if (!incremental) return { workspace: rootListing, incremental, loaded: [''] };
+	const others = await Promise.all(
+		rest.map((path) =>
+			client.volumes
+				.workspace({ envID: environmentID, name: volumeName, path })
+				.then((listing) => ({ path, files: listing.files, truncated: listing.fileTreeTruncated }))
+				.catch(() => undefined)
+		)
+	);
+	const assembled = assembleWorkspaceFolders([
+		{ path: '', files: rootListing.files, truncated: rootListing.fileTreeTruncated },
+		...others.filter((listing) => listing !== undefined)
+	]);
+	return {
+		workspace: {
+			...rootListing,
+			files: assembled.files,
+			fileTreeTruncated: assembled.truncated
+		},
+		incremental,
+		loaded: assembled.loaded
+	};
+}
 
 type Store = { entries: Record<string, WorkspaceEntry> };
 
@@ -75,7 +130,7 @@ export const WorkspaceStore = {
 		});
 	},
 
-	async load(environmentID: EnvironmentID, volumeName: string) {
+	async load(environmentID: EnvironmentID, volumeName: string, folders?: readonly string[]) {
 		const client = useClientManager.getState().client;
 		if (!client || !hasPermission(Permission.Volumes.read, environmentID)) return;
 		const key = workspaceKey(environmentID, volumeName);
@@ -83,11 +138,19 @@ export const WorkspaceStore = {
 		const isCurrent = () =>
 			workspaceIdentity(environmentID, volumeName) === identity &&
 			entry(key)?.identity === identity;
+		const requested = folders ?? entry(key)?.loadedFolders ?? [];
 		patch(key, identity, { loading: true });
 		try {
-			const result = await client.volumes.workspace({ envID: environmentID, name: volumeName });
+			const result = await fetchFolders(client, environmentID, volumeName, requested);
 			if (!isCurrent()) return;
-			patch(key, identity, { workspace: result, errorMessage: undefined, unsupported: false });
+			patch(key, identity, {
+				workspace: result.workspace,
+				incremental: result.incremental,
+				loadedFolders: result.loaded,
+				loadingFolders: [],
+				errorMessage: undefined,
+				unsupported: false
+			});
 		} catch (error) {
 			if (!isCurrent()) return;
 			patch(key, identity, {
@@ -96,6 +159,52 @@ export const WorkspaceStore = {
 			});
 		} finally {
 			if (isCurrent()) patch(key, identity, { loading: false });
+		}
+	},
+
+	async loadFolder(environmentID: EnvironmentID, volumeName: string, folder: string) {
+		const key = workspaceKey(environmentID, volumeName);
+		const client = useClientManager.getState().client;
+		const initial = entry(key);
+		if (!client || !initial?.workspace || !initial.incremental || initial.loading) return;
+		const identity = initial.identity;
+		const isCurrent = () =>
+			workspaceIdentity(environmentID, volumeName) === identity &&
+			entry(key)?.identity === identity;
+		for (const path of workspaceFolderChain(folder)) {
+			const current = entry(key);
+			if (!current?.workspace || current.identity !== identity) return;
+			if (current.loadedFolders.includes(path) || current.loadingFolders.includes(path)) continue;
+			if (!current.workspace.files.some((file) => file.isDirectory && file.relativePath === path))
+				return;
+			patch(key, identity, { loadingFolders: [...current.loadingFolders, path] });
+			try {
+				const listing = await client.volumes.workspace({
+					envID: environmentID,
+					name: volumeName,
+					path
+				});
+				if (!isCurrent()) return;
+				const latest = entry(key);
+				if (!latest?.workspace) return;
+				patch(key, identity, {
+					workspace: {
+						...latest.workspace,
+						files: mergeWorkspaceFolder(latest.workspace.files, path, listing.files),
+						fileTreeTruncated: latest.workspace.fileTreeTruncated || listing.fileTreeTruncated
+					},
+					loadedFolders: [...latest.loadedFolders.filter((loaded) => loaded !== path), path],
+					loadingFolders: latest.loadingFolders.filter((loading) => loading !== path)
+				});
+			} catch (error) {
+				if (!isCurrent()) return;
+				const latest = entry(key);
+				patch(key, identity, {
+					loadingFolders: (latest?.loadingFolders ?? []).filter((loading) => loading !== path)
+				});
+				showToast(Toasts.error(friendlyErrorMessage(error)));
+				return;
+			}
 		}
 	},
 
@@ -118,11 +227,19 @@ export const WorkspaceStore = {
 			const result = await client.volumes.updateWorkspace({
 				envID: environmentID,
 				name: volumeName,
-				manifest: { fileTreeRevision: current.workspace.fileTreeRevision, fileChanges: changes },
+				manifest: {
+					fileTreeRevision: current.workspace.fileTreeRevision || undefined,
+					fileChanges: changes
+				},
 				files
 			});
 			if (!isCurrent()) return false;
-			patch(key, identity, { workspace: result, errorMessage: undefined });
+			if (result && !current.incremental) {
+				patch(key, identity, { workspace: result, errorMessage: undefined });
+			} else {
+				patch(key, identity, { errorMessage: undefined, loading: false });
+				await WorkspaceStore.load(environmentID, volumeName);
+			}
 			showToast(Toasts.success('Files updated'));
 			return true;
 		} catch (error) {

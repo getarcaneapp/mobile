@@ -47,7 +47,7 @@ export function useEnvironmentColor(environment: Environment) {
 	const save = (hex: string) => {
 		if (!useEnvironmentColorStore.getState().set(hex, serverURL, environment.id)) {
 			showToast(
-				Toasts.info('That color is already used by another environment. Choose a different color.')
+				Toasts.info('That color is already used by another agent. Choose a different color.')
 			);
 		}
 	};
@@ -64,7 +64,7 @@ export function useEnvironmentColor(environment: Environment) {
 
 export const EnvironmentColorsCopy = {
 	footer:
-		'Colors apply to environment names and icons in resource lists. Swipe a row to reset its color.',
+		'Colors apply to agent names and icons in resource lists. Swipe a row to reset its color.',
 	androidFooter:
-		'Colors apply to environment names and icons in resource lists. Touch and hold a row to reset its color.'
+		'Colors apply to agent names and icons in resource lists. Touch and hold a row to reset its color.'
 } as const;

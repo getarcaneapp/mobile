@@ -31,7 +31,7 @@ import { LogStream } from '../streaming/Streams';
 import { OperationStreamEvent } from '../types/streaming/OperationStreamEvent';
 
 interface ProjectWorkspaceUpdateManifest {
-	fileTreeRevision: string;
+	fileTreeRevision?: string;
 	fileChanges: ProjectWorkspaceManifestChange[];
 }
 
@@ -120,11 +120,15 @@ export class ProjectsService {
 		);
 	}
 
-	async workspace(args: { envID?: EnvironmentID; projectID: string }): Promise<ProjectWorkspace> {
+	async workspace(args: {
+		envID?: EnvironmentID;
+		projectID: string;
+		path?: string;
+	}): Promise<ProjectWorkspace> {
 		try {
 			return await this.rest.get(
 				this.rest.environmentPath(args.envID, `projects/${args.projectID}/workspace`),
-				{ decode: ProjectWorkspace.decode }
+				{ query: ProjectWorkspace.folderQuery(args.path), decode: ProjectWorkspace.decode }
 			);
 		} catch (error) {
 			if (!isArcaneError(error, 'notFound')) throw error;
@@ -193,7 +197,7 @@ export class ProjectsService {
 		projectID: string;
 		fileTreeRevision: string | undefined;
 		changes: ProjectFileChange[];
-	}): Promise<ProjectWorkspace> {
+	}): Promise<ProjectWorkspace | undefined> {
 		try {
 			return await this.updateCurrentWorkspace({
 				envID: args.envID,
@@ -303,7 +307,7 @@ export class ProjectsService {
 		projectID: string;
 		fileTreeRevision: string;
 		changes: ProjectFileChange[];
-	}): Promise<ProjectWorkspace> {
+	}): Promise<ProjectWorkspace | undefined> {
 		const manifestChanges: ProjectWorkspaceManifestChange[] = [];
 		const uploads: MultipartFile[] = [];
 		for (const change of args.changes) {
@@ -333,10 +337,9 @@ export class ProjectsService {
 			});
 		}
 
-		const manifest: ProjectWorkspaceUpdateManifest = {
-			fileTreeRevision: args.fileTreeRevision,
-			fileChanges: manifestChanges
-		};
+		const manifest: ProjectWorkspaceUpdateManifest = args.fileTreeRevision
+			? { fileTreeRevision: args.fileTreeRevision, fileChanges: manifestChanges }
+			: { fileChanges: manifestChanges };
 		let manifestJSON: string;
 		try {
 			manifestJSON = encodeArcaneJSON(manifest);
@@ -350,7 +353,7 @@ export class ProjectsService {
 				method: 'PUT',
 				fields: { manifest: manifestJSON },
 				files: uploads,
-				decode: ProjectWorkspace.decode
+				decode: ProjectWorkspace.decodeUpdate
 			}
 		);
 	}

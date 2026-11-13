@@ -60,7 +60,7 @@ export function EnvironmentColorsScreen() {
 	const model = useEnvironmentColors();
 	return (
 		<>
-			<Stack.Screen options={{ title: 'Environment Colors' }} />
+			<Stack.Screen options={{ title: 'Agent Colors' }} />
 			<ScrollView
 				contentInsetAdjustmentBehavior="automatic"
 				style={{ backgroundColor: colors.systemGroupedBackground }}

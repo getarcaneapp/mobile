@@ -39,9 +39,7 @@ export function DashboardPinnedSection({
 					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16 }}>
 						{isLoading ? <ActivityIndicator size="small" color={m3.primary} /> : null}
 						<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
-							{isLoading
-								? 'Loading pinned items…'
-								: 'Pinned items are unavailable in this environment.'}
+							{isLoading ? 'Loading pinned items…' : 'Pinned items are unavailable in this agent.'}
 						</Text>
 					</View>
 				) : (

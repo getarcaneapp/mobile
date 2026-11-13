@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
 import { useSettingsNavigation } from '@/features/settings/shared/settings-routes';
+import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
 import { useRoutePayload } from '../dynamic-resources/dynamic-resource-routes';
@@ -24,6 +25,12 @@ export function useVariableEditor() {
 	const [value, setValue] = useState(variable?.isSecret ? '' : (variable?.value ?? ''));
 	const [isSecret, setIsSecret] = useState(variable?.isSecret ?? false);
 	const [allEnvironments, setAllEnvironments] = useState(variable?.allEnvironments ?? true);
+	const supportsInjection = useClientManager((s) =>
+		variable ? variable.injectIntoContainers !== undefined : s.apiGeneration === 'v3'
+	);
+	const [injectIntoContainers, setInjectIntoContainers] = useState(
+		variable?.injectIntoContainers ?? false
+	);
 	const [selectedEnvironmentIDs, setSelectedEnvironmentIDs] = useState<ReadonlySet<string>>(
 		() => new Set(variable?.environmentIDs ?? [])
 	);
@@ -77,12 +84,20 @@ export function useVariableEditor() {
 						value: value === '' && variable.isSecret && isSecret ? undefined : value,
 						isSecret,
 						allEnvironments,
-						environmentIDs: scopedIDs
+						environmentIDs: scopedIDs,
+						injectIntoContainers: supportsInjection ? injectIntoContainers : undefined
 					}
 				}
 			: {
 					kind: 'create',
-					request: { key: trimmedKey, value, isSecret, allEnvironments, environmentIDs: scopedIDs }
+					request: {
+						key: trimmedKey,
+						value,
+						isSecret,
+						allEnvironments,
+						environmentIDs: scopedIDs,
+						injectIntoContainers: supportsInjection ? injectIntoContainers : undefined
+					}
 				};
 
 		setIsSaving(true);
@@ -113,6 +128,9 @@ export function useVariableEditor() {
 		setValue,
 		isSecret,
 		setIsSecret,
+		supportsInjection,
+		injectIntoContainers,
+		setInjectIntoContainers,
 		allEnvironments,
 		setAllEnvironments,
 		environmentOptions,

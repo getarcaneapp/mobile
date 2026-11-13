@@ -74,7 +74,7 @@ function allEnvironmentsIllustration(index: number) {
 	if (index === 0) {
 		return (
 			<>
-				<IconLabel title="All Environments" icon="server.rack" bold />
+				<IconLabel title="All Agents" icon="server.rack" bold />
 				<SampleResource name="Website" environment="Production" color={systemColors.blue} />
 				<Divider />
 				<SampleResource name="API" environment="Staging" color={systemColors.purple} />
@@ -105,7 +105,7 @@ function allEnvironmentsIllustration(index: number) {
 			<DestructiveLabel text="Prune" />
 			<Divider />
 			<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
-				Across all enabled environments
+				Across all enabled agents
 			</Text>
 			<View style={{ flexDirection: 'row', gap: 16 }}>
 				<Icon name="server.rack" size={22} color={systemColors.blue} />
@@ -169,7 +169,7 @@ function refreshedDashboardIllustration(index: number) {
 						38.4%
 					</Text>
 					<Text style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}>
-						3 environments · 24 cores
+						3 agents · 24 cores
 					</Text>
 				</View>
 				<SampleUsageChart height={110} />

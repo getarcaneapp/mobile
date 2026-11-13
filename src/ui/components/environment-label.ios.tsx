@@ -42,16 +42,16 @@ export function EnvironmentFilterSection({
 }: EnvironmentFilterSectionProps) {
 	if (!showsEnvironmentFilter(environments)) return null;
 	return (
-		<Section title="Environment">
+		<Section title="Agent">
 			<Picker
-				label="Environment"
+				label="Agent"
 				selection={selection ?? allEnvironmentsTag}
 				onSelectionChange={(value: string) =>
 					onSelectionChange(value === allEnvironmentsTag ? undefined : value)
 				}
 				modifiers={[pickerStyle('inline'), labelsHidden()]}
 			>
-				<Text modifiers={[tag(allEnvironmentsTag)]}>All Environments</Text>
+				<Text modifiers={[tag(allEnvironmentsTag)]}>All Agents</Text>
 				{environments.map((environment) => (
 					<Text key={environment.id} modifiers={[tag(environment.id)]}>
 						{environmentTitle(environment)}

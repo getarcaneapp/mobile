@@ -61,6 +61,7 @@ export interface TransportRequestOptions {
 	method?: string;
 	query?: QueryItem[];
 	authorized?: boolean;
+	keepsCredentialsOnUnauthorized?: boolean;
 	options?: ArcaneRequestOptions;
 	signal?: AbortSignal;
 }
@@ -309,6 +310,7 @@ export class ArcaneTransport {
 			body: init.body === undefined ? undefined : encodeArcaneJSON(init.body),
 			contentType: 'application/json',
 			authorized: init.authorized,
+			keepsCredentialsOnUnauthorized: init.keepsCredentialsOnUnauthorized,
 			options: init.options,
 			signal: init.signal,
 			expectsJSONResponse: true
@@ -330,6 +332,7 @@ export class ArcaneTransport {
 		const route = await this.route(path, init.method ?? 'PUT', init.query ?? []);
 		const method = route.method;
 		const authorized = init.authorized ?? true;
+		const keepsCredentials = init.keepsCredentialsOnUnauthorized ?? false;
 		const requestOptions = this.resolvedRequestOptions(init.options);
 		const linked = linkAbort([this.defaultSignal, init.signal]);
 		let didRefresh = false;
@@ -396,7 +399,7 @@ export class ArcaneTransport {
 					}
 
 					if (response.status < 200 || response.status >= 300) {
-						if (response.status === 401 && generation !== undefined) {
+						if (response.status === 401 && generation !== undefined && !keepsCredentials) {
 							await this.authManager
 								.clearIfCredentialGenerationMatches(generation)
 								.catch(() => undefined);

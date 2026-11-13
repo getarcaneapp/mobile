@@ -13,7 +13,6 @@ import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
 import { settingsPayloads } from '../shared/settings-routes';
-import { useAPIKeyAccess } from './api-key-access';
 import {
 	defaultExpirationDate,
 	type APIKeyMutationRequest,
@@ -78,7 +77,6 @@ export function useCreateAPIKey() {
 	const { token } = useLocalSearchParams<{ token?: string }>();
 	const payload = settingsPayloads.get<CreateAPIKeyPayload>(token);
 	const dismiss = useSheetDismiss();
-	const { supportsRBAC } = useAPIKeyAccess();
 	const [name, setName] = useState('');
 	const [description, setDescription] = useState('');
 	const [hasExpiration, setHasExpiration] = useState(false);
@@ -87,12 +85,10 @@ export function useCreateAPIKey() {
 	const [permissionSearch, setPermissionSearch] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>();
-	const { manifest, isLoadingPermissions } = useManifest(supportsRBAC, setErrorMessage);
+	const { manifest, isLoadingPermissions } = useManifest(true, setErrorMessage);
 
 	const canCreate =
-		name.trim() !== '' &&
-		!isLoading &&
-		(!supportsRBAC || (manifest !== undefined && selectedPermissions.size > 0));
+		name.trim() !== '' && !isLoading && manifest !== undefined && selectedPermissions.size > 0;
 
 	const createKey = async () => {
 		const client = useClientManager.getState().client;
@@ -104,7 +100,7 @@ export function useCreateAPIKey() {
 			name: name.trim(),
 			description: trimmedDescription === '' ? undefined : trimmedDescription,
 			expiresAt: hasExpiration ? formatArcaneDate(expiresAt) : undefined,
-			permissions: supportsRBAC ? grants(selectedPermissions) : undefined
+			permissions: grants(selectedPermissions)
 		};
 		const notifyCreated = (key: string) => payload?.onCreated(key);
 		await withCleanup(
@@ -123,7 +119,6 @@ export function useCreateAPIKey() {
 	};
 
 	return {
-		supportsRBAC,
 		manifest,
 		isLoadingPermissions,
 		name,
@@ -152,7 +147,6 @@ export function useEditAPIKey() {
 	const { token } = useLocalSearchParams<{ token?: string }>();
 	const payload = settingsPayloads.get<EditAPIKeyPayload>(token);
 	const dismiss = useSheetDismiss();
-	const { supportsRBAC } = useAPIKeyAccess();
 	const apiKey: APIKey | undefined = payload?.apiKey;
 	const metadata = payload?.metadata;
 	const originalExpiresAt = parseArcaneDate(apiKey?.expiresAt);
@@ -170,9 +164,9 @@ export function useEditAPIKey() {
 	const [errorMessage, setErrorMessage] = useState<string>();
 
 	const isPersonal = metadata?.kind === 'personal';
-	const { manifest, isLoadingPermissions } = useManifest(supportsRBAC && !isPersonal);
+	const { manifest, isLoadingPermissions } = useManifest(!isPersonal);
 	const showsPermissionPicker =
-		supportsRBAC && !isPersonal && metadata?.permissions !== undefined && manifest !== undefined;
+		!isPersonal && metadata?.permissions !== undefined && manifest !== undefined;
 
 	const hasChanges =
 		name.trim() !== (apiKey?.name ?? '') ||
@@ -228,7 +222,6 @@ export function useEditAPIKey() {
 
 	return {
 		apiKey,
-		supportsRBAC,
 		isPersonal,
 		manifest,
 		metadata,

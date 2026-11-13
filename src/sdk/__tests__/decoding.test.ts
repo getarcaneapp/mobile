@@ -26,7 +26,7 @@ describe('User.decode (v1 / v2 tolerance)', () => {
 		assert.equal(user.canDelete, false);
 		assert.equal(user.requiresPasswordChange, false);
 		assert.equal(user.email, undefined);
-		assert.equal(ServerCapabilities.detect(user), 'legacyRoles');
+		assert.equal(ServerCapabilities.isSupportedServer(user), false);
 	});
 
 	it('synthesizes deduped roles from v2 role assignments and maps isGlobalAdmin', () => {
@@ -44,7 +44,7 @@ describe('User.decode (v1 / v2 tolerance)', () => {
 		assert.deepEqual(user.roles, ['role_admin', 'role_viewer']);
 		assert.equal(user.serverIsGlobalAdmin, true);
 		assert.deepEqual(user.permissionsByEnv?.['1'], ['containers:read']);
-		assert.equal(ServerCapabilities.detect(user), 'rbac');
+		assert.equal(ServerCapabilities.isSupportedServer(user), true);
 		assert.equal(User.encode(user).isGlobalAdmin, true);
 	});
 

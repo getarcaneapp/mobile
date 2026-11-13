@@ -93,15 +93,7 @@ export function RolesDestination() {
 	const count = { loadedCount: roles.length, totalCount: model.totalItems, hasMore: model.hasMore };
 
 	let content;
-	if (!model.rbacAvailable) {
-		content = (
-			<CenteredMessage
-				icon="lock.slash"
-				title="Roles Not Available"
-				message="Role-based access control requires Arcane v2 or newer."
-			/>
-		);
-	} else if (!model.canManageRoles) {
+	if (!model.canManageRoles) {
 		content = (
 			<CenteredMessage
 				icon="lock.fill"
@@ -163,7 +155,7 @@ export function RolesDestination() {
 			onPress: model.openOIDCMappings
 		});
 	}
-	if (model.rbacAvailable && model.canManageRoles) {
+	if (model.canManageRoles) {
 		toolbarItems.push({
 			kind: 'button',
 			id: 'create',

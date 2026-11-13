@@ -147,7 +147,7 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 
 		const loadFailedWork = async (): Promise<Activity[]> => {
 			const client = manager().client;
-			if (!manager().supportsActivities() || !client) return [];
+			if (!client) return [];
 			const targets = get().allEnvironments.map((e) => {
 				const name = e.name?.trim() ?? '';
 				return { id: e.id, name: name ? name : e.id };
@@ -289,8 +289,7 @@ export function createDashboardViewStore(isCancelled: () => boolean) {
 						void useDashboardOverviewStore.getState().load({
 							client,
 							environmentIDs: online,
-							supportsV3: manager().apiGeneration === 'v3',
-							supportsActivities: manager().supportsActivities()
+							supportsV3: manager().apiGeneration === 'v3'
 						});
 				}
 				await environmentsStore().refreshDockerInformation(client);

@@ -62,7 +62,12 @@ export default function RootLayout() {
 						<Stack.Protected guard={authState === 'authenticated'}>
 							<Stack.Screen name="(tabs)" />
 						</Stack.Protected>
-						<Stack.Protected guard={authState !== 'authenticated'}>
+						<Stack.Protected guard={authState === 'passwordChange'}>
+							<Stack.Screen name="change-password" options={{ gestureEnabled: false }} />
+						</Stack.Protected>
+						<Stack.Protected
+							guard={authState !== 'authenticated' && authState !== 'passwordChange'}
+						>
 							<Stack.Screen name="login" />
 						</Stack.Protected>
 						<Stack.Screen

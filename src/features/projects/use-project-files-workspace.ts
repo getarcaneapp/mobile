@@ -8,6 +8,13 @@ import { RemoteDataLimits } from '@/core/networking/remote-data-limits';
 import { cachedClient } from '@/core/networking/use-cached-client';
 import { withCleanup } from '@/core/with-cleanup';
 import { storage } from '@/core/storage';
+import {
+	assembleWorkspaceFolders,
+	mergeWorkspaceFolder,
+	workspaceFolderChain,
+	workspaceServerPath,
+	type WorkspaceFolderListing
+} from '@/core/workspace-folders';
 import { makeComposePreviewSession } from '@/features/compose/model/compose-preview-session';
 import { ProjectDraftReview } from '@/features/compose/model/project-draft-snapshot';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
@@ -58,7 +65,7 @@ function isSessionCurrent(sessionIdentity: string | undefined, envID: string) {
 	);
 }
 
-async function fetchWorkspace(client: ArcaneClient, envID: string, projectID: string) {
+async function fetchWorkspace(client: ArcaneClient, envID: string, projectID: string, path = '') {
 	const controller = new AbortController();
 	const deadline = { expired: false };
 	const timer = setTimeout(() => {
@@ -68,7 +75,7 @@ async function fetchWorkspace(client: ArcaneClient, envID: string, projectID: st
 	try {
 		const workspace = await client
 			.withSignal(controller.signal)
-			.projects.workspace({ envID, projectID });
+			.projects.workspace({ envID, projectID, path });
 		return {
 			...limitWorkspaceFiles(
 				workspace.files,
@@ -84,6 +91,29 @@ async function fetchWorkspace(client: ArcaneClient, envID: string, projectID: st
 		clearTimeout(timer);
 	}
 }
+
+type FolderListingResult =
+	| (WorkspaceFolderListing<ProjectFile> & { error?: undefined })
+	| { path: string; error: unknown };
+
+function fetchFolderListing(
+	client: ArcaneClient,
+	envID: string,
+	projectID: string,
+	path: string
+): Promise<FolderListingResult> {
+	return fetchWorkspace(client, envID, projectID, path).then(
+		(workspace) => ({ path, files: workspace.files, truncated: workspace.truncated }),
+		(error: unknown) => ({ path, error })
+	);
+}
+
+const isListing = (
+	result: FolderListingResult
+): result is WorkspaceFolderListing<ProjectFile> & { error?: undefined } =>
+	result.error === undefined;
+
+type FolderState = 'loading' | 'loaded' | 'failed';
 
 const workspaceFileText = (file: { content?: string }) => file.content ?? '';
 
@@ -129,6 +159,8 @@ export function useProjectFilesWorkspace() {
 	const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([]);
 	const [composeRelatedPaths, setComposeRelatedPaths] = useState<Set<string>>(new Set());
 	const [fileTreeRevision, setFileTreeRevision] = useState<string>();
+	const [incremental, setIncremental] = useState(false);
+	const [folderStates, setFolderStates] = useState<Record<string, FolderState>>({});
 	const [stagedChanges, setStagedChanges] = useState<ProjectFileChange[]>([]);
 	const [managedFileContents, setManagedFileContents] = useState<Record<string, string>>({});
 	const [originalManagedFileContents, setOriginalManagedFileContents] = useState<
@@ -188,9 +220,21 @@ export function useProjectFilesWorkspace() {
 		[displayedFiles]
 	);
 
-	const latest = useRef({ managedFileContents, displayedFiles });
+	const latest = useRef({
+		managedFileContents,
+		displayedFiles,
+		projectFiles,
+		stagedChanges,
+		folderStates
+	});
 	useLayoutEffect(() => {
-		latest.current = { managedFileContents, displayedFiles };
+		latest.current = {
+			managedFileContents,
+			displayedFiles,
+			projectFiles,
+			stagedChanges,
+			folderStates
+		};
 	});
 
 	const dismiss = () => {
@@ -207,9 +251,24 @@ export function useProjectFilesWorkspace() {
 			async () => {
 				try {
 					const workspace = await fetchWorkspace(client, envID, projectID);
+					const isIncremental = (await client.apiGeneration()) === 'v3';
+					const requested = isIncremental
+						? Object.keys(latest.current.folderStates).filter((path) => path !== '')
+						: [];
+					const listings = await Promise.all(
+						requested.map((path) => fetchFolderListing(client, envID, projectID, path))
+					);
 					if (!current()) return;
-					setProjectFiles(workspace.files);
-					setFilesTruncated(workspace.truncated);
+					const assembled = assembleWorkspaceFolders([
+						{ path: '', files: workspace.files, truncated: workspace.truncated },
+						...listings.filter(isListing)
+					]);
+					setProjectFiles(assembled.files);
+					setFilesTruncated(assembled.truncated);
+					setIncremental(isIncremental);
+					setFolderStates(
+						Object.fromEntries(assembled.loaded.map((path) => [path, 'loaded' as const]))
+					);
 					setFileTreeRevision(workspace.fileTreeRevision);
 					setStagedChanges([]);
 					setManagedFileContents({});
@@ -223,6 +282,36 @@ export function useProjectFilesWorkspace() {
 			() => setFilesLoading(false)
 		);
 	}, [envID, projectID, sessionIdentity]);
+
+	const loadFolder = useCallback(
+		async (displayedPath: string) => {
+			const client = useClientManager.getState().client;
+			const current = () => isSessionCurrent(sessionIdentity, envID);
+			if (!current() || !client) return;
+			const serverPath = workspaceServerPath(latest.current.stagedChanges, displayedPath);
+			if (!serverPath) return;
+			let files = latest.current.projectFiles;
+			for (const path of workspaceFolderChain(serverPath)) {
+				const state = latest.current.folderStates[path];
+				if (state === 'loaded') continue;
+				if (state !== undefined) return;
+				if (!files.some((file) => file.isDirectory && file.relativePath === path)) return;
+				setFolderStates((states) => ({ ...states, [path]: 'loading' }));
+				const result = await fetchFolderListing(client, envID, projectID, path);
+				if (!current()) return;
+				if (!isListing(result)) {
+					setFolderStates((states) => ({ ...states, [path]: 'failed' }));
+					showToast(Toasts.error(friendlyErrorMessage(result.error)));
+					return;
+				}
+				files = mergeWorkspaceFolder(files, path, result.files);
+				setProjectFiles((existing) => mergeWorkspaceFolder(existing, path, result.files));
+				if (result.truncated) setFilesTruncated(true);
+				setFolderStates((states) => ({ ...states, [path]: 'loaded' }));
+			}
+		},
+		[envID, projectID, sessionIdentity]
+	);
 
 	const loadFiles = useCallback(async () => {
 		const client = useClientManager.getState().client;
@@ -636,12 +725,35 @@ export function useProjectFilesWorkspace() {
 	const childEntries = (folderPath: string): readonly ManagedProjectFileEntry[] =>
 		childrenIndex.get(folderPath) ?? [];
 
+	const folderServerState = (folderPath: string): FolderState | 'local' | undefined => {
+		if (!incremental) return 'loaded';
+		const serverPath = workspaceServerPath(stagedChanges, folderPath);
+		if (serverPath === null) return 'local';
+		if (serverPath === '') return hasLoaded ? 'loaded' : undefined;
+		return folderStates[serverPath];
+	};
+	const folderReady = (folderPath: string) => {
+		const state = folderServerState(folderPath);
+		return state === 'loaded' || state === 'local';
+	};
+	const folderLoading = (folderPath: string) =>
+		filesLoading || folderServerState(folderPath) === 'loading';
+	const folderNeedsLoad = (folderPath: string) =>
+		incremental && !filesLoading && folderServerState(folderPath) === undefined;
+
+	const selectedFolder = destinationFolderPath(selected);
+	const selectedFolderNeedsLoad = selectedFolder !== '' && folderNeedsLoad(selectedFolder);
+	useEffect(() => {
+		if (selectedFolderNeedsLoad) void loadFolder(selectedFolder);
+	}, [selectedFolderNeedsLoad, selectedFolder, loadFolder]);
+
 	const fileHasUnsavedContent = (path: string) =>
 		managedFileContents[path] !== undefined &&
 		managedFileContents[path] !== originalManagedFileContents[path];
 
 	const browserRowDetail = (entry: ManagedProjectFileEntry): string | undefined => {
 		if (entry.isDirectory) {
+			if (!folderReady(entry.relativePath)) return undefined;
 			const count = childEntries(entry.relativePath).length;
 			return count === 1 ? '1 item' : `${count} items`;
 		}
@@ -683,6 +795,10 @@ export function useProjectFilesWorkspace() {
 		composeRelatedPaths,
 		displayedFiles,
 		childEntries,
+		folderLoading,
+		folderReady,
+		folderNeedsLoad,
+		loadFolder,
 		browserRowDetail,
 		fileHasUnsavedContent,
 		entryFor,
@@ -762,6 +878,14 @@ export function useProjectFilesWorkspace() {
 }
 
 export type ProjectFilesWorkspaceModel = ReturnType<typeof useProjectFilesWorkspace>;
+
+export function useProjectWorkspaceFolder(model: ProjectFilesWorkspaceModel, folderPath: string) {
+	const needsLoad = model.folderNeedsLoad(folderPath);
+	const { loadFolder } = model;
+	useEffect(() => {
+		if (needsLoad) void loadFolder(folderPath);
+	}, [needsLoad, loadFolder, folderPath]);
+}
 
 export function destinationTitle(
 	model: ProjectFilesWorkspaceModel,

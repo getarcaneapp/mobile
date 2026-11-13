@@ -127,7 +127,7 @@ export function useSystemUpgrade(
 					if (result?.status === 'skipped_offline') {
 						setPhase({
 							kind: 'triggerFailed',
-							message: 'The environment was offline, so it was skipped.',
+							message: 'The agent was offline, so it was skipped.',
 							logs
 						});
 						return;

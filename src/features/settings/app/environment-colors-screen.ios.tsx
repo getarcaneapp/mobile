@@ -70,7 +70,7 @@ export function EnvironmentColorsScreen() {
 	const model = useEnvironmentColors();
 	return (
 		<>
-			<Stack.Screen options={{ title: 'Environment Colors', headerLargeTitleEnabled: false }} />
+			<Stack.Screen options={{ title: 'Agent Colors', headerLargeTitleEnabled: false }} />
 			<Host style={{ flex: 1 }}>
 				<List>
 					<Section footer={<Text>{EnvironmentColorsCopy.footer}</Text>}>

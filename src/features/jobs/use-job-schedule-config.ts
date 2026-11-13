@@ -31,7 +31,7 @@ export const jobScheduleFields: readonly JobScheduleField[] = [
 	},
 	{
 		key: 'environmentHealthInterval',
-		label: 'Environment Health',
+		label: 'Agent Health',
 		icon: 'waveform.path.ecg',
 		tint: 'green'
 	},

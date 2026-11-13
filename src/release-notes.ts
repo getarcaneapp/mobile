@@ -16,7 +16,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Arcane v3 server support.'
 			},
 			{
-				text: 'Live upgrade progress and per-environment logs, with Update All and Retry Failed.'
+				text: 'Live upgrade progress and per-agent logs, with Update All and Retry Failed.'
 			},
 			{
 				text: 'Dashboard widgets and Edit Dashboard on Arcane v3.'
@@ -26,14 +26,23 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Show Advanced Features setting.'
+			},
+			{
+				text: 'Password rule and variable container injection settings on Arcane v3.'
+			},
+			{
+				text: 'Required password change prompt after sign-in.'
 			}
 		],
 		changed: [
 			{
+				text: 'Environments renamed to Agents.'
+			},
+			{
 				text: 'Local server addresses without a scheme use http://.'
 			},
 			{
-				text: 'All Environments and the refreshed dashboard are always on with Arcane v3.'
+				text: 'All Agents and the refreshed dashboard are always on with Arcane v3.'
 			},
 			{
 				text: 'Faster loading and scrolling.'
@@ -50,6 +59,9 @@ export const releaseNotes: ReleaseNote[] = [
 		],
 		removed: [
 			{
+				text: 'Arcane v1 server support.'
+			},
+			{
 				text: 'Container rename, GitOps Sync job schedule and Dashboard totals tiles.'
 			}
 		],
@@ -61,7 +73,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Project files hanging on large folders and .env locked in GitOps projects.'
 			},
 			{
-				text: 'Environment cards cut off at larger text sizes.'
+				text: 'Agent cards cut off at larger text sizes.'
 			},
 			{
 				text: 'Push notifications failing to enable on Android.'
@@ -85,10 +97,13 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Interrupted deployments leaving their toast and Live Activity open.'
 			},
 			{
-				text: 'An offline environment stalling the app.'
+				text: 'An offline agent stalling the app.'
 			},
 			{
 				text: 'Volume browsing without manage permission and hidden server error messages.'
+			},
+			{
+				text: 'Backup actions, file saves and subfolders failing on Arcane v3.'
 			},
 			{
 				text: 'Assorted visual, scrolling and tap target issues.'

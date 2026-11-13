@@ -142,7 +142,7 @@ export function UsageChart({
 	return (
 		<View
 			accessible
-			accessibilityLabel={`${metric} usage over time for each environment`}
+			accessibilityLabel={`${metric} usage over time for each agent`}
 			style={{ height }}
 			onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
 		>

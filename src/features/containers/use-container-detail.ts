@@ -80,7 +80,6 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 	const [autoUpdateEnabled, setAutoUpdateEnabled] = useState<boolean>();
 	const [isSavingAutoUpdate, setIsSavingAutoUpdate] = useState(false);
 	useClientManager((s) => s.accessGeneration);
-	const isRBAC = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
 	const canAutoUpdate = useClientManager(() =>
 		hasPermission(Permission.Containers.autoUpdate, environmentID)
 	);
@@ -347,7 +346,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 			tint: accent,
 			action: () => void downloadLogs()
 		},
-		...(isRBAC && canEdit
+		...(canEdit
 			? [
 					{
 						id: 'edit',
@@ -358,7 +357,7 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 					}
 				]
 			: []),
-		...(isRBAC && canCommit
+		...(canCommit
 			? [
 					{
 						id: 'commit',

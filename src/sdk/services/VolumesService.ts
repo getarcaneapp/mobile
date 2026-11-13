@@ -441,8 +441,13 @@ export class VolumesService {
 		);
 	}
 
-	workspace(args: { envID?: EnvironmentID; name: string }): Promise<VolumeWorkspace> {
+	workspace(args: {
+		envID?: EnvironmentID;
+		name: string;
+		path?: string;
+	}): Promise<VolumeWorkspace> {
 		return this.rest.get(this.rest.environmentPath(args.envID, `volumes/${args.name}/workspace`), {
+			query: ProjectWorkspace.folderQuery(args.path),
 			decode: ProjectWorkspace.decode
 		});
 	}
@@ -476,16 +481,15 @@ export class VolumesService {
 		name: string;
 		manifest: VolumeWorkspaceUpdateManifest;
 		files?: string[];
-	}): Promise<VolumeWorkspace> {
-		const { manifest } = args;
+	}): Promise<VolumeWorkspace | undefined> {
+		const { fileTreeRevision, fileChanges } = args.manifest;
+		const manifest: VolumeWorkspaceUpdateManifest = fileTreeRevision
+			? { fileTreeRevision, fileChanges }
+			: { fileChanges };
 		const files = args.files ?? [];
-		if (
-			manifest.fileTreeRevision === '' ||
-			manifest.fileChanges.length < 1 ||
-			manifest.fileChanges.length > 500
-		) {
+		if (manifest.fileChanges.length < 1 || manifest.fileChanges.length > 500) {
 			return Promise.reject(
-				ArcaneError.validation({ manifest: ['A revision and 1 to 500 changes are required.'] })
+				ArcaneError.validation({ manifest: ['1 to 500 changes are required.'] })
 			);
 		}
 		for (const change of manifest.fileChanges) {
@@ -517,7 +521,7 @@ export class VolumesService {
 				method: 'PUT',
 				fields: { manifest: encodeArcaneJSON(manifest) },
 				files: uploads,
-				decode: ProjectWorkspace.decode
+				decode: ProjectWorkspace.decodeUpdate
 			}
 		);
 	}

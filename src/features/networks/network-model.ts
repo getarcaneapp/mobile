@@ -89,7 +89,7 @@ export function networkPreview(network: NetworkItem): {
 		details.unshift({ icon: 'shippingbox', label: 'Connected Containers', value: String(count) });
 	details.push({ icon: 'number', label: 'ID', value: value.id, monospaced: true });
 	if (network.environmentName)
-		details.push({ icon: 'server.rack', label: 'Environment', value: network.environmentName });
+		details.push({ icon: 'server.rack', label: 'Agent', value: network.environmentName });
 	return { title: value.name === '' ? value.id : value.name, badges, details };
 }
 

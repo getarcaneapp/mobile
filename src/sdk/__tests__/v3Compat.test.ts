@@ -75,6 +75,20 @@ describe('translateRouteForV3', () => {
 		expect(route('PUT', 'backups/recovery-key')).toBe('PUT backups/recovery/key');
 	});
 
+	it('routes system backup actions through the local agent', () => {
+		expect(route('POST', 'backups/b1/restore')).toBe('POST agents/0/backups/b1?action=restore');
+		expect(route('POST', 'backups/b1/restore-files')).toBe(
+			'POST agents/0/backups/b1?action=restorefiles'
+		);
+		expect(route('POST', 'backups/b1/files/browse', [{ name: 'path', value: '/' }])).toBe(
+			'POST agents/0/backups/b1/files/browse?path=/'
+		);
+		expect(route('POST', 'backups/b1/upload')).toBe('POST agents/0/backups/b1/upload');
+		expect(route('DELETE', 'backups/b1')).toBe('DELETE agents/0/backups/b1');
+		expect(route('POST', 'backups/discover')).toBe('POST backups/discover');
+		expect(route('GET', 'backups/history')).toBe('GET backups/history?includeTotal=true');
+	});
+
 	it('renames environment routes to agents', () => {
 		expect(route('GET', 'environments')).toBe('GET agents');
 		expect(route('GET', '/environments/e1/')).toBe('GET /agents/e1/');

@@ -58,9 +58,9 @@ export function EnvironmentContextPicker({
 			<NavigationStack>
 				<Toolbar
 					modifiers={[
-						navigationTitle('Choose Environment'),
+						navigationTitle('Choose Agent'),
 						navigationBarTitleDisplayMode('inline'),
-						searchable(searchText, { prompt: 'Search environments', onChange: setSearch })
+						searchable(searchText, { prompt: 'Search agents', onChange: setSearch })
 					]}
 				>
 					<ZStack>

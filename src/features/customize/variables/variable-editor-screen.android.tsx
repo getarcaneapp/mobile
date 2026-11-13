@@ -80,12 +80,22 @@ export function VariableEditorScreen() {
 					</View>
 				</M3Section>
 
+				{model.supportsInjection ? (
+					<M3Section footer="When off, the variable is only used for substitution in Compose files.">
+						<SwitchRow
+							title="Inject into All Containers"
+							value={model.injectIntoContainers}
+							onValueChange={model.setInjectIntoContainers}
+						/>
+					</M3Section>
+				) : null}
+
 				<M3Section
 					title="Scope"
-					footer="Scoped variables are materialized only into the selected environments."
+					footer="Scoped variables are materialized only into the selected agents."
 				>
 					<SwitchRow
-						title="All Environments"
+						title="All Agents"
 						value={model.allEnvironments}
 						onValueChange={model.setAllEnvironments}
 					/>
@@ -94,8 +104,8 @@ export function VariableEditorScreen() {
 							<View style={{ minHeight: 160 }}>
 								<CenteredMessage
 									icon="server.rack"
-									title="No Environments Available"
-									message="Load environments or choose All Environments."
+									title="No Agents Available"
+									message="Load agents or choose All Agents."
 								/>
 							</View>
 						) : (

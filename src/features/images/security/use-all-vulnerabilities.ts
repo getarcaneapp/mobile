@@ -113,7 +113,6 @@ export function useAllVulnerabilities({
 }: AllVulnerabilitiesProps) {
 	const nav = useSecurityNavigation();
 	const accent = useAccentColor();
-	const supportsActivities = useClientManager((s) => s.supportsActivities());
 	useClientManager((s) => s.accessGeneration);
 	const can = usePermissionCheck();
 	const storeEnvironments = useEnvironmentsStore((s) => s.environments);
@@ -222,7 +221,7 @@ export function useAllVulnerabilities({
 
 	const loadOverview = async () => {
 		const client = useClientManager.getState().client;
-		if (!useClientManager.getState().supportsActivities() || !client) return;
+		if (!client) return;
 		const target = currentOverviewEnvironmentID();
 		try {
 			const response = await client.vulnerabilities.riskOverview({ envID: target });
@@ -375,8 +374,8 @@ export function useAllVulnerabilities({
 		items.some((item) => item.environmentID === environment.id)
 	);
 	const toolbar = {
-		showsPatchEnvironmentAction: allEnvironments && supportsActivities,
-		showsPatchLink: !allEnvironments && canReadVulnerabilities && supportsActivities,
+		showsPatchEnvironmentAction: allEnvironments,
+		showsPatchLink: !allEnvironments && canReadVulnerabilities,
 		showsOverviewEnvironmentPicker: allEnvironments && selectedSection === 'overview',
 		showsFindingsActions: selectedSection === 'findings',
 		exportDisabled: isExporting || items.length === 0

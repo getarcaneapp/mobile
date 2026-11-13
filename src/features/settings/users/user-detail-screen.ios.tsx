@@ -1,5 +1,5 @@
 import { Host } from '@/ui/host';
-import { Button, Form, HStack, Section, Spacer, Text, Toggle, VStack } from '@expo/ui/swift-ui';
+import { Button, Form, HStack, Section, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { Image } from '@/ui/components/swiftui-image';
 import {
 	buttonStyle,
@@ -51,7 +51,7 @@ export function UserDetailScreen() {
 						/>
 					</Section>
 					<Section title="Access">
-						{model.supportsV2 ? (
+						{
 							<Button onPress={model.openRoleAssignments} modifiers={[buttonStyle('plain')]}>
 								<HStack modifiers={[contentShape(shapes.rectangle())]}>
 									<HStack spacing={12} modifiers={[padding({ vertical: 3 })]}>
@@ -67,7 +67,7 @@ export function UserDetailScreen() {
 													foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 												]}
 											>
-												Manage global and per-environment roles
+												Manage global and per-agent roles
 											</Text>
 										</VStack>
 									</HStack>
@@ -75,9 +75,7 @@ export function UserDetailScreen() {
 									<DisclosureChevron />
 								</HStack>
 							</Button>
-						) : (
-							<Toggle label="Administrator" isOn={model.isAdmin} onIsOnChange={model.setIsAdmin} />
-						)}
+						}
 					</Section>
 					<FormErrorSection message={model.errorMessage} />
 					<SettingsSaveBarSpacer />

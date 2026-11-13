@@ -323,11 +323,11 @@ export function EnvironmentRow(props: EnvironmentRowProps) {
 			</ContextMenu.Trigger>
 			<ContextMenu.Items>
 				{allEnvironmentsPreview ? (
-					<Button label="Environment Color" systemImage="paintpalette" onPress={props.onColor} />
+					<Button label="Agent Color" systemImage="paintpalette" onPress={props.onColor} />
 				) : null}
 				{!isActive && !allEnvironmentsPreview ? (
 					<Button
-						label="Use Environment"
+						label="Use Agent"
 						systemImage="checkmark.circle"
 						onPress={props.onUseEnvironment}
 					/>

@@ -317,13 +317,13 @@ export function createActivityCenterStore(): ActivityCenterStore {
 			streamWarning = warning;
 			switch (warning) {
 				case 'loadPartial':
-					set({ streamErrorMessage: 'Some environments could not load. Pull to refresh.' });
+					set({ streamErrorMessage: 'Some agents could not load. Pull to refresh.' });
 					break;
 				case 'missed':
 					set({ streamErrorMessage: 'Some activity updates were missed. Pull to refresh.' });
 					break;
 				case 'environmentFailure':
-					set({ streamErrorMessage: 'Some environments could not provide live activity updates.' });
+					set({ streamErrorMessage: 'Some agents could not provide live activity updates.' });
 					break;
 				case 'persistentFailure':
 					set({ streamErrorMessage: 'Live updates paused. Pull to refresh.' });

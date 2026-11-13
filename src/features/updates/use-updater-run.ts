@@ -60,7 +60,7 @@ export function sceneModel(
 			return makeEnvironmentUpdateSceneModel({
 				kind: 'starting',
 				title: 'Starting the updater',
-				subtitle: 'Contacting the selected environment'
+				subtitle: 'Contacting the selected agent'
 			});
 		case 'running':
 			return makeEnvironmentUpdateSceneModel({

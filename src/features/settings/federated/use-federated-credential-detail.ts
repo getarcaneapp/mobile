@@ -37,7 +37,7 @@ export function accessRows(credential: FederatedCredential): DetailRowValue[] {
 	const rows: DetailRowValue[] = [
 		{ label: 'Role', value: credential.roleName ?? credential.roleId },
 		{
-			label: 'Environment',
+			label: 'Agent',
 			value: credential.environmentName ?? credential.environmentId ?? 'Global'
 		},
 		{ label: 'Service user', value: credential.serviceUsername ?? credential.identityUserId },

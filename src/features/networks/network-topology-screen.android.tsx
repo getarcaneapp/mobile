@@ -37,7 +37,7 @@ export function NetworkTopologyScreen({
 			kind: 'menu',
 			id: 'environment',
 			icon: 'server.rack',
-			label: 'Environment',
+			label: 'Agent',
 			items: model.enabledEnvironments.map((environment) => ({
 				id: environment.id,
 				title: environment.title,
@@ -84,7 +84,7 @@ export function NetworkTopologyScreen({
 			<CenteredMessage
 				icon="point.topleft.down.curvedto.point.bottomright.up"
 				title="No Network Topology"
-				message="No network or container topology data is available for this environment."
+				message="No network or container topology data is available for this agent."
 			/>
 		);
 	} else if (layout) {

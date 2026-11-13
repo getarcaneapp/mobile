@@ -330,7 +330,6 @@ function ActivityEntryView({
 }
 
 function toolbarItems(model: ActivitiesScreenModel): ActivityToolbarItem[] {
-	if (!model.supportsActivities) return [];
 	const { state } = model;
 	const actions = model.store.getState();
 	const filterEntries = [
@@ -456,15 +455,7 @@ export function ActivitiesScreen({
 
 	let content: ReactNode;
 	let scrollable = false;
-	if (!model.supportsActivities) {
-		content = (
-			<EmptyState
-				icon="clock.arrow.circlepath"
-				title="Requires Arcane v2"
-				message="Activity Center is available when connected to an Arcane 2.0 server."
-			/>
-		);
-	} else if (state.isLoading && state.activities.length === 0) {
+	if (state.isLoading && state.activities.length === 0) {
 		content = (
 			<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
 				<ArcaneLoadingView label="Loading activities..." />
@@ -484,7 +475,7 @@ export function ActivitiesScreen({
 			<EmptyState
 				icon="clock.arrow.circlepath"
 				title="No Activities"
-				message="Background work from your environments will appear here."
+				message="Background work from your agents will appear here."
 			/>
 		);
 	} else if (state.runningItems.length === 0 && state.historyItems.length === 0) {

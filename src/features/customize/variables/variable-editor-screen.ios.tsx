@@ -101,25 +101,39 @@ export function VariableEditorScreen() {
 								)}
 							</Section>
 
+							{model.supportsInjection ? (
+								<Section
+									footer={
+										<Text>
+											When off, the variable is only used for substitution in Compose files.
+										</Text>
+									}
+								>
+									<Toggle
+										label="Inject into All Containers"
+										isOn={model.injectIntoContainers}
+										onIsOnChange={model.setInjectIntoContainers}
+									/>
+								</Section>
+							) : null}
+
 							<Section
 								title="Scope"
 								footer={
-									<Text>
-										Scoped variables are materialized only into the selected environments.
-									</Text>
+									<Text>Scoped variables are materialized only into the selected agents.</Text>
 								}
 							>
 								<Toggle
-									label="All Environments"
+									label="All Agents"
 									isOn={model.allEnvironments}
 									onIsOnChange={model.setAllEnvironments}
 								/>
 								{!model.allEnvironments ? (
 									model.environmentOptions.length === 0 ? (
 										<ContentUnavailableView
-											title="No Environments Available"
+											title="No Agents Available"
 											systemImage="server.rack"
-											description="Load environments or choose All Environments."
+											description="Load agents or choose All Agents."
 										/>
 									) : (
 										model.environmentOptions.map((environment) => (

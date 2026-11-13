@@ -23,6 +23,7 @@ export function AuthenticationDestination() {
 	const model = useAuthenticationSettings();
 	const { form, update, oidcEnvForced } = model;
 	const { lowerBound, upperBound } = AuthenticationSettingsValidation.sessionTimeoutMinutes;
+	const passwordLength = AuthenticationSettingsValidation.passwordMinLength;
 
 	return (
 		<View style={{ flex: 1 }}>
@@ -39,8 +40,9 @@ export function AuthenticationDestination() {
 						header={<Label title="Local Authentication" systemImage="person.badge.key" />}
 						footer={
 							<Text>
-								Session length in minutes (15–525600). Stronger policies require more complex local
-								passwords.
+								{form.granularPasswordPolicy
+									? 'Session length in minutes (15–525600). Minimum length is 8–128 characters.'
+									: 'Session length in minutes (15–525600). Stronger policies require more complex local passwords.'}
 							</Text>
 						}
 					>
@@ -57,12 +59,45 @@ export function AuthenticationDestination() {
 							minValue={lowerBound}
 							maxValue={upperBound}
 						/>
-						<FormPicker
-							title="Password Policy"
-							selection={form.authPasswordPolicy}
-							onSelectionChange={(value) => update('authPasswordPolicy', value)}
-							options={passwordPolicyOptions}
-						/>
+						{form.granularPasswordPolicy ? (
+							<>
+								<FormNumberField
+									title="Minimum Length"
+									placeholder="12"
+									text={form.authPasswordMinLength}
+									onChangeText={(text) => update('authPasswordMinLength', text)}
+									minValue={passwordLength.lowerBound}
+									maxValue={passwordLength.upperBound}
+								/>
+								<Toggle
+									label="Require Uppercase Letter"
+									isOn={form.authPasswordRequireUppercase}
+									onIsOnChange={(isOn) => update('authPasswordRequireUppercase', isOn)}
+								/>
+								<Toggle
+									label="Require Lowercase Letter"
+									isOn={form.authPasswordRequireLowercase}
+									onIsOnChange={(isOn) => update('authPasswordRequireLowercase', isOn)}
+								/>
+								<Toggle
+									label="Require Number"
+									isOn={form.authPasswordRequireNumber}
+									onIsOnChange={(isOn) => update('authPasswordRequireNumber', isOn)}
+								/>
+								<Toggle
+									label="Require Symbol"
+									isOn={form.authPasswordRequireSymbol}
+									onIsOnChange={(isOn) => update('authPasswordRequireSymbol', isOn)}
+								/>
+							</>
+						) : (
+							<FormPicker
+								title="Password Policy"
+								selection={form.authPasswordPolicy}
+								onSelectionChange={(value) => update('authPasswordPolicy', value)}
+								options={passwordPolicyOptions}
+							/>
+						)}
 					</Section>
 
 					<Section

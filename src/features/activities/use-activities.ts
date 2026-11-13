@@ -59,12 +59,11 @@ function transportKey(transport: object | undefined): number {
 
 function useActivitySession() {
 	const client = useClientManager((s) => s.client);
-	const supportsActivities = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
 	const currentUser = useClientManager((s) => s.currentUser);
 	useClientManager((s) => s.accessGeneration);
 	const notBackground = useIsNotBackground();
-	const taskID = `${supportsActivities}-${transportKey(client?.transport)}-${notBackground}`;
-	return { client, supportsActivities, currentUser, notBackground, taskID };
+	const taskID = `${transportKey(client?.transport)}-${notBackground}`;
+	return { client, currentUser, notBackground, taskID };
 }
 
 function withoutActivityDetails({
@@ -87,7 +86,7 @@ export function useActivitiesScreen(
 	confirmationHostID?: string
 ) {
 	const [store] = useState(() => createFilteredActivityCenterStore(initialStatusFilter));
-	const { client, supportsActivities, currentUser, notBackground, taskID } = useActivitySession();
+	const { client, currentUser, notBackground, taskID } = useActivitySession();
 	const recordClear = useActivityHistoryMutationStore((s) => s.recordClear);
 	const navigation = useActivityNavigation();
 
@@ -109,8 +108,8 @@ export function useActivitiesScreen(
 	const currentClient = useEffectEvent(() => client);
 	useEffect(() => {
 		const actions = store.getState();
-		actions.configure(supportsActivities ? currentClient() : undefined);
-		if (!supportsActivities || !notBackground) {
+		actions.configure(currentClient());
+		if (!notBackground) {
 			loadedTaskID.current = undefined;
 			actions.stopStream();
 			return;
@@ -118,7 +117,7 @@ export function useActivitiesScreen(
 		if (loadedTaskID.current === taskID) return;
 		loadedTaskID.current = taskID;
 		void actions.retryLiveUpdates();
-	}, [taskID, supportsActivities, notBackground, store]);
+	}, [taskID, notBackground, store]);
 
 	useEffect(() => () => store.getState().stopStream(), [store]);
 
@@ -147,7 +146,7 @@ export function useActivitiesScreen(
 					recordClear(result.clearedEnvironmentIDs);
 					let message = `Cleared ${result.deleted} completed activit${result.deleted === 1 ? 'y' : 'ies'}.`;
 					if (result.failed > 0) {
-						message += ` ${result.failed} environment${result.failed === 1 ? '' : 's'} could not be cleared.`;
+						message += ` ${result.failed} agent${result.failed === 1 ? '' : 's'} could not be cleared.`;
 					}
 					showToast(Toasts.success(message));
 					await store.getState().load({ refresh: true });
@@ -178,7 +177,6 @@ export function useActivitiesScreen(
 	return {
 		store,
 		state,
-		supportsActivities,
 		searchText,
 		setSearchText,
 		canClearHistory,
@@ -223,7 +221,7 @@ export function useActivityDetail(
 	const [ownStore] = useState(createActivityCenterStore);
 	const store = sharedStore ?? ownStore;
 	const isShared = sharedStore !== undefined;
-	const { client, supportsActivities, currentUser, notBackground, taskID } = useActivitySession();
+	const { client, currentUser, notBackground, taskID } = useActivitySession();
 
 	const detail = useActivityCenter(store, (s) => s.detail(initialActivity));
 	const streamErrorMessage = useActivityCenter(store, (s) => s.streamErrorMessage);
@@ -269,14 +267,14 @@ export function useActivityDetail(
 	const loadLatest = useEffectEvent(() => loadDetail());
 	useEffect(() => {
 		const actions = store.getState();
-		if (!isShared) actions.configure(supportsActivities ? currentClient() : undefined);
-		if (!supportsActivities || !notBackground) {
+		if (!isShared) actions.configure(currentClient());
+		if (!notBackground) {
 			if (!isShared) actions.stopStream();
 			return;
 		}
 		if (!isShared) actions.startStream();
 		void loadLatest();
-	}, [taskID, supportsActivities, notBackground, store, isShared]);
+	}, [taskID, notBackground, store, isShared]);
 
 	useFocusEffect(
 		useCallback(() => {

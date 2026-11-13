@@ -33,7 +33,7 @@ export function useDeleteVariable() {
 	};
 
 	return {
-		prompt: `Delete “${payload?.variable.key ?? ''}” and remove it from its environments?`,
+		prompt: `Delete “${payload?.variable.key ?? ''}” and remove it from its agents?`,
 		isDeleting,
 		errorMessage,
 		remove,

@@ -22,7 +22,7 @@ export const percent0 = (value: number) => `${value.toFixed(0)}%`;
 export const percent1 = (value: number) => `${value.toFixed(1)}%`;
 
 export function displayName(environment: Pick<Environment, 'id' | 'name'>): string {
-	return environment.name ? environment.name : `Environment ${environment.id}`;
+	return environment.name ? environment.name : `Agent ${environment.id}`;
 }
 
 export const nameOrID = (environment: Pick<Environment, 'id' | 'name'>) =>
@@ -138,7 +138,7 @@ export function liveStatsLimitMessage(
 	maximumStreams: number
 ): string | undefined {
 	if (maximumStreams <= 0 || enabledEnvironmentCount <= maximumStreams) return undefined;
-	return `Live CPU, memory, and disk metrics stream for the first ${maximumStreams} enabled environments. Change this in App Settings. Container and image counts still load for every environment.`;
+	return `Live CPU, memory, and disk metrics stream for the first ${maximumStreams} enabled agents. Change this in App Settings. Container and image counts still load for every agent.`;
 }
 
 export type DashboardCountIssue = { id: string; title: string; detail: string };
@@ -242,10 +242,10 @@ export function needsAttentionItems(input: {
 	if (first) {
 		items.push({
 			id: 'offline-environments',
-			detail: 'Live data is unavailable until the environment reconnects.',
+			detail: 'Live data is unavailable until the agent reconnects.',
 			severity: 'critical',
 			icon: 'wifi.exclamationmark',
-			title: erroring.length === 1 ? `${nameOrID(first)} unreachable` : 'Environments unreachable',
+			title: erroring.length === 1 ? `${nameOrID(first)} unreachable` : 'Agents unreachable',
 			count: erroring.length,
 			action: { kind: 'environment', id: first.id, name: nameOrID(first) },
 			presentsSheet: false
@@ -258,8 +258,8 @@ export function needsAttentionItems(input: {
 		items.push({
 			id: 'vulnerabilities',
 			detail: input.allEnvironmentsPreview
-				? 'Open vulnerability reports across all enabled environments.'
-				: 'Open the vulnerability report for the most affected environment.',
+				? 'Open vulnerability reports across all enabled agents.'
+				: 'Open the vulnerability report for the most affected agent.',
 			severity: attention.hasCriticalVulnerabilities ? 'critical' : 'warning',
 			icon: 'exclamationmark.shield.fill',
 			title: 'Actionable vulnerabilities',
@@ -426,7 +426,7 @@ export function usageHeadline(
 	stats: readonly SystemStats[]
 ): { value: string; detail: string } | undefined {
 	if (stats.length === 0) return undefined;
-	const hosts = stats.length === 1 ? '1 environment' : `${stats.length} environments`;
+	const hosts = stats.length === 1 ? '1 agent' : `${stats.length} agents`;
 	if (metric === 'CPU') {
 		const cores = stats.reduce((total, s) => total + Math.max(s.cpuCount, 1), 0);
 		const weighted = stats.reduce(

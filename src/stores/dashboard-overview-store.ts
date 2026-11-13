@@ -29,7 +29,6 @@ export type DashboardOverviewState = {
 		client: ArcaneClient;
 		environmentIDs: readonly string[];
 		supportsV3: boolean;
-		supportsActivities: boolean;
 	}) => Promise<void>;
 };
 
@@ -156,7 +155,7 @@ const loading = <T>(section: Section<T>): Section<T> =>
 export const useDashboardOverviewStore = create<DashboardOverviewState>((set, get) => ({
 	...initial,
 
-	load: async ({ client, environmentIDs, supportsV3, supportsActivities }) => {
+	load: async ({ client, environmentIDs, supportsV3 }) => {
 		const current = ++generation;
 		if (client !== loadedClient) {
 			loadedClient = client;
@@ -168,7 +167,7 @@ export const useDashboardOverviewStore = create<DashboardOverviewState>((set, ge
 			jobs: loading(previous.jobs),
 			risk: supportsV3 ? loading(previous.risk) : empty(undefined),
 			events: loading(previous.events),
-			activities: supportsActivities ? loading(previous.activities) : empty([]),
+			activities: loading(previous.activities),
 			loadedAt: Date.now()
 		});
 		const apply = (patch: Partial<DashboardOverviewState>) => {
@@ -192,9 +191,7 @@ export const useDashboardOverviewStore = create<DashboardOverviewState>((set, ge
 						apply({ risk: section, findings })
 					)
 				: undefined,
-			supportsActivities
-				? loadActivities(client, environmentIDs).then((activities) => apply({ activities }))
-				: undefined
+			loadActivities(client, environmentIDs).then((activities) => apply({ activities }))
 		]);
 	}
 }));

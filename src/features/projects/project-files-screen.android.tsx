@@ -62,6 +62,7 @@ import {
 	destinationTitle,
 	projectFilesConfirmationHost,
 	useProjectFilesWorkspace,
+	useProjectWorkspaceFolder,
 	type ProjectFilesWorkspaceModel
 } from './use-project-files-workspace';
 import { ToastHost } from '@/ui/toast';
@@ -390,7 +391,12 @@ function browserEntries(model: Model, folderPath: string): BrowserEntry[] {
 	)[] = [];
 	if (folderPath === '') {
 		rows.push({ key: 'compose', type: 'compose' }, { key: 'env', type: 'env' });
-	} else if (children.length === 0 && !model.filesLoading && model.filesError === undefined) {
+	} else if (
+		children.length === 0 &&
+		model.folderReady(folderPath) &&
+		!model.folderLoading(folderPath) &&
+		model.filesError === undefined
+	) {
 		rows.push({ key: 'empty', type: 'empty' });
 	}
 	for (const entry of children) rows.push({ key: `file:${entry.id}`, type: 'file', entry });
@@ -469,7 +475,15 @@ function BrowserEntryRow({
 	}
 }
 
-function FilesStatus({ model, isEmpty }: { model: Model; isEmpty: boolean }) {
+function FilesStatus({
+	model,
+	folderPath,
+	isEmpty
+}: {
+	model: Model;
+	folderPath: string;
+	isEmpty: boolean;
+}) {
 	if (model.filesError !== undefined) {
 		return (
 			<View
@@ -497,7 +511,7 @@ function FilesStatus({ model, isEmpty }: { model: Model; isEmpty: boolean }) {
 			</View>
 		);
 	}
-	if (model.filesLoading && isEmpty) {
+	if (model.folderLoading(folderPath) && isEmpty) {
 		return (
 			<View
 				style={{
@@ -544,6 +558,7 @@ function FilesBrowser({
 	push: (d: ProjectFilesDestination) => void;
 }) {
 	const [refreshing, setRefreshing] = useState(false);
+	useProjectWorkspaceFolder(model, folderPath);
 	const entries = browserEntries(model, folderPath);
 	return (
 		<GroupedFlashList
@@ -578,7 +593,11 @@ function FilesBrowser({
 			}
 			footer={
 				<>
-					<FilesStatus model={model} isEmpty={model.childEntries(folderPath).length === 0} />
+					<FilesStatus
+						model={model}
+						folderPath={folderPath}
+						isEmpty={model.childEntries(folderPath).length === 0}
+					/>
 					{model.hasChanges ? (
 						<View
 							style={{

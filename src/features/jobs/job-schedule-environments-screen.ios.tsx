@@ -13,7 +13,7 @@ export function JobScheduleEnvironmentsScreen() {
 			<Stack.Screen options={{ title: 'Schedules' }} />
 			<Host style={{ flex: 1 }}>
 				{model.showsEmpty ? (
-					<ContentUnavailableView title="No Environments" systemImage="server.rack" />
+					<ContentUnavailableView title="No Agents" systemImage="server.rack" />
 				) : (
 					<List modifiers={[listStyle('insetGrouped'), refreshable(model.refresh)]}>
 						<Section>

@@ -137,9 +137,9 @@ export function useAPIKeyDetail() {
 
 	let kindLabel = 'Standard';
 	if (apiKey?.isStatic) kindLabel = 'Static';
-	else if (metadata?.isBootstrap === true) kindLabel = 'Environment';
+	else if (metadata?.isBootstrap === true) kindLabel = 'Agent';
 	else if (metadata?.kind === 'personal') kindLabel = 'Personal';
-	else if (access.supportsRBAC) kindLabel = 'Scoped';
+	else kindLabel = 'Scoped';
 
 	const rotationUnavailableReason = ((): string | undefined => {
 		if (isProtected) return 'Environment-managed keys cannot be rotated here.';
@@ -149,16 +149,13 @@ export function useAPIKeyDetail() {
 		if (!(access.canCreate && access.canDelete)) {
 			return 'Creating and deleting API keys are both required to rotate this key.';
 		}
-		if (access.supportsRBAC) {
-			if (!metadataLoaded) return loadingAccessReason;
-			if (!metadata)
-				return "This key's access could not be loaded, so it cannot be rotated safely.";
-			if (
-				metadata.kind !== 'personal' &&
-				(metadata.permissions === undefined || metadata.permissions.length === 0)
-			) {
-				return 'This key has no reusable permission grants, so it cannot be rotated safely.';
-			}
+		if (!metadataLoaded) return loadingAccessReason;
+		if (!metadata) return "This key's access could not be loaded, so it cannot be rotated safely.";
+		if (
+			metadata.kind !== 'personal' &&
+			(metadata.permissions === undefined || metadata.permissions.length === 0)
+		) {
+			return 'This key has no reusable permission grants, so it cannot be rotated safely.';
 		}
 		return undefined;
 	})();
@@ -199,8 +196,8 @@ export function useAPIKeyDetail() {
 		const client = useClientManager.getState().client;
 		if (rotationUnavailableReason !== undefined || !client || !apiKey) return;
 		setRunningActionID('rotate');
-		const isPersonal = access.supportsRBAC && metadata?.kind === 'personal';
-		const permissions = access.supportsRBAC && !isPersonal ? metadata?.permissions : undefined;
+		const isPersonal = metadata?.kind === 'personal';
+		const permissions = !isPersonal ? metadata?.permissions : undefined;
 		const body: APIKeyMutationRequest = {
 			name: apiKey.name,
 			description: apiKey.description,

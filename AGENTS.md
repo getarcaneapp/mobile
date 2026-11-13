@@ -64,7 +64,7 @@ src/
 
 - Subscribe to stores with narrow selectors (`useStore((s) => s.field)`, or `useShallow` for derived arrays/objects); never call a store hook with no selector.
 - Persistence is MMKV via `src/core/storage.ts` (`useStoredString`, `useStoredBool`, `Keys`). Never rename an existing storage key. Secrets go in `expo-secure-store`.
-- Support both Arcane v1 and v2 backends; gate v2-only features on capability checks (e.g. `supportsActivities`).
+- Support Arcane v2 and v3 backends; gate v3-only features on `apiGeneration === 'v3'` and newer features on capability checks (e.g. `supportsMobilePush`). Arcane v1 is not supported.
 - Transient feedback uses `showToast(Toasts.*)` from `src/ui/toast`, never `Alert`.
 
 ### Copy

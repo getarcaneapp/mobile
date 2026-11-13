@@ -124,9 +124,7 @@ function sourcePage<Value extends Identifiable>(
 	});
 	const failures = (page.failedEnvironments ?? []).flatMap((failure) => {
 		const environment = byID.get(failure.environment.id);
-		return environment
-			? [{ environment, message: failure.message || 'Environment unavailable' }]
-			: [];
+		return environment ? [{ environment, message: failure.message || 'Agent unavailable' }] : [];
 	});
 	return { items, failures };
 }

@@ -8,7 +8,7 @@ import type { CreateUser } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
-import { collectAllRoles, useSupportsRoleManagement } from '../rbac/rbac-models';
+import { collectAllRoles } from '../rbac/rbac-models';
 import { settingsPayloads, useSettingsNavigation } from '../shared/settings-routes';
 
 export type CreateUserPayload = { onSuccess: () => Promise<void> };
@@ -17,27 +17,21 @@ export function useCreateUser() {
 	const nav = useSettingsNavigation();
 	const { token } = useLocalSearchParams<{ token?: string }>();
 	const [payload] = useState(() => settingsPayloads.get<CreateUserPayload>(token));
-	const supportsRoleManagement = useSupportsRoleManagement();
 
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 	const [email, setEmail] = useState('');
-	const [isAdmin, setIsAdmin] = useState(false);
 	const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
 	const [selectedRoleId, setSelectedRoleId] = useState('');
 	const [isLoadingRoles, setIsLoadingRoles] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>();
 
-	const canCreate =
-		username !== '' &&
-		password !== '' &&
-		!isLoading &&
-		(!supportsRoleManagement || selectedRoleId !== '');
+	const canCreate = username !== '' && password !== '' && !isLoading && selectedRoleId !== '';
 
 	useEffect(() => {
 		const client = useClientManager.getState().client;
-		if (!supportsRoleManagement || !client) return;
+		if (!client) return;
 		let cancelled = false;
 		setIsLoadingRoles(true);
 		collectAllRoles(client)
@@ -59,38 +53,34 @@ export function useCreateUser() {
 		return () => {
 			cancelled = true;
 		};
-	}, [supportsRoleManagement]);
+	}, []);
 
 	const createUser = async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		setIsLoading(true);
 		setErrorMessage(undefined);
-		const supportsRBAC = supportsRoleManagement;
 		const body: CreateUser = {
 			username,
 			password,
 			displayName: undefined,
-			email: email === '' ? undefined : email,
-			roles: supportsRBAC ? undefined : isAdmin ? ['admin'] : ['user']
+			email: email === '' ? undefined : email
 		};
 		await withCleanup(
 			async () => {
 				try {
 					const created = await client.users.create({ body });
-					if (supportsRBAC) {
-						try {
-							await client.users.setRoleAssignments({
-								userId: created.id,
-								assignments: [{ roleId: selectedRoleId }]
-							});
-						} catch (error) {
-							setErrorMessage(
-								`User created, but the role could not be assigned: ${friendlyErrorMessage(error)}`
-							);
-							if (payload) await payload.onSuccess();
-							return;
-						}
+					try {
+						await client.users.setRoleAssignments({
+							userId: created.id,
+							assignments: [{ roleId: selectedRoleId }]
+						});
+					} catch (error) {
+						setErrorMessage(
+							`User created, but the role could not be assigned: ${friendlyErrorMessage(error)}`
+						);
+						if (payload) await payload.onSuccess();
+						return;
 					}
 					showToast(Toasts.success('User created'));
 					if (payload) await payload.onSuccess();
@@ -104,15 +94,12 @@ export function useCreateUser() {
 	};
 
 	return {
-		supportsRoleManagement,
 		username,
 		setUsername,
 		password,
 		setPassword,
 		email,
 		setEmail,
-		isAdmin,
-		setIsAdmin,
 		availableRoles,
 		selectedRoleId,
 		setSelectedRoleId,

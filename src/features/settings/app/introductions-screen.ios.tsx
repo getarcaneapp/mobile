@@ -55,7 +55,7 @@ function allEnvironmentsIllustration(index: number) {
 		return (
 			<>
 				<Label
-					title="All Environments"
+					title="All Agents"
 					systemImage="server.rack"
 					modifiers={[font({ textStyle: 'headline' })]}
 				/>
@@ -118,7 +118,7 @@ function allEnvironmentsIllustration(index: number) {
 					foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 				]}
 			>
-				Across all enabled environments
+				Across all enabled agents
 			</Text>
 			<HStack spacing={16}>
 				<Image systemName="server.rack" modifiers={[foregroundStyle(systemColors.blue)]} />
@@ -189,7 +189,7 @@ function RefreshedDashboardIllustration({ index }: { index: number }) {
 							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 						]}
 					>
-						3 environments · 24 cores
+						3 agents · 24 cores
 					</Text>
 				</VStack>
 				<HStack modifiers={[frame({ maxWidth: Infinity, minHeight: 110, maxHeight: 110 })]}>

@@ -73,7 +73,7 @@ export function useEnvironmentRow(
 					await client.environments.sync({ id: environment.id });
 					ResponseCache.invalidateEnvironment(environment.id);
 					await onRefresh();
-					showToast(Toasts.success('Environment synced'));
+					showToast(Toasts.success('Agent synced'));
 				} catch {
 					showToast(Toasts.error('Sync failed'));
 				}

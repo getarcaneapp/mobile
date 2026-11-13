@@ -57,7 +57,6 @@ export function useAllEnvironmentsDashboard(
 	const serverURL = useClientManager((s) => s.serverURL);
 	const userID = useClientManager((s) => s.currentUser?.id);
 	const supportsV3 = useClientManager((s) => s.apiGeneration === 'v3');
-	const supportsActivities = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
 	const environmentColors = useEnvironmentColorStore((s) => s.colors);
 	const maxStreams = useMaxStatsStreams();
 	const layout = useDashboardLayout();
@@ -79,10 +78,9 @@ export function useAllEnvironmentsDashboard(
 		void useDashboardOverviewStore.getState().load({
 			client,
 			environmentIDs: onlineIDsKey.split(','),
-			supportsV3,
-			supportsActivities
+			supportsV3
 		});
-	}, [client, onlineIDsKey, supportsV3, supportsActivities]);
+	}, [client, onlineIDsKey, supportsV3]);
 
 	const [isActive, setIsActive] = useState(AppState.currentState === 'active');
 	useEffect(() => {

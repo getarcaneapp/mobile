@@ -374,7 +374,7 @@ function UsageCard({ model }: { model: AllEnvironmentsDashboardModel }) {
 							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 						]}
 					>
-						{`Live usage covers the first ${model.maxStreams} environments. Change this in App Settings.`}
+						{`Live usage covers the first ${model.maxStreams} agents. Change this in App Settings.`}
 					</Text>
 				) : null}
 			</VStack>
@@ -824,7 +824,7 @@ function ReclaimableStat() {
 			value={reclaimable.failed ? undefined : byteString(reclaimable.total)}
 			detail={
 				reclaimable.environmentCount > 1
-					? `Across ${reclaimable.environmentCount} environments`
+					? `Across ${reclaimable.environmentCount} agents`
 					: 'Unused data'
 			}
 			loading={reclaimable.loading}
@@ -1309,7 +1309,7 @@ function EnvironmentsWidget({
 		<VStack alignment="leading" spacing={14}>
 			<HStack>
 				<VStack alignment="leading" spacing={2}>
-					<DashboardSectionTitle title="Environments" />
+					<DashboardSectionTitle title="Agents" />
 					<Text
 						modifiers={[
 							font({ textStyle: 'caption' }),

@@ -43,7 +43,7 @@ export function environmentSubtitle({
 	active?: PickerEnvironment;
 	activeEnvironmentName: string;
 }) {
-	if (allEnvironmentsPreview) return 'All Environments · Preview';
+	if (allEnvironmentsPreview) return 'All Agents · Preview';
 	if (!active) return activeEnvironmentName;
 	const status = active.status.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 	return `${active.displayName}, ${status}`;

@@ -45,9 +45,7 @@ export function EnvironmentContextPicker({
 				>
 					<Icon name="xmark" size={24} color={colors.label} />
 				</Pressable>
-				<Text style={[m3Type.titleLarge, { color: colors.label, flex: 1 }]}>
-					Choose Environment
-				</Text>
+				<Text style={[m3Type.titleLarge, { color: colors.label, flex: 1 }]}>Choose Agent</Text>
 			</View>
 			<View
 				style={{
@@ -66,7 +64,7 @@ export function EnvironmentContextPicker({
 				<TextInput
 					value={search}
 					onChangeText={setSearch}
-					placeholder="Search environments"
+					placeholder="Search agents"
 					placeholderTextColor={m3.onSurfaceVariant as string}
 					autoCapitalize="none"
 					autoCorrect={false}

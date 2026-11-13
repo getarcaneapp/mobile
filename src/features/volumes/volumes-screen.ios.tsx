@@ -154,8 +154,8 @@ export function VolumesScreen(props: VolumesListProps) {
 				systemImage="externaldrive"
 				description={
 					props.allEnvironments
-						? 'No volumes found in any environment.'
-						: 'No volumes found in this environment.'
+						? 'No volumes found in any agent.'
+						: 'No volumes found in this agent.'
 				}
 			>
 				{props.allEnvironments ? (

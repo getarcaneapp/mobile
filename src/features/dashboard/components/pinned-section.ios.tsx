@@ -82,7 +82,7 @@ export function DashboardPinnedSection({
 							>
 								{isLoading
 									? 'Loading pinned items…'
-									: 'Pinned items are unavailable in this environment.'}
+									: 'Pinned items are unavailable in this agent.'}
 							</Text>
 						</HStack>
 					) : (

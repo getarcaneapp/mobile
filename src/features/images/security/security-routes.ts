@@ -5,7 +5,6 @@ import { useTabStackGroup } from '@/features/navigation/tab-stack-group';
 import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { routePayloads } from '@/features/containers/container-routes';
 import type { EnvironmentID } from '@/sdk/client/environment';
-import { useClientManager } from '@/stores/client-manager';
 
 import type {
 	IgnoredVulnerability,
@@ -41,15 +40,11 @@ export type IgnoreVulnerabilityPayload = {
 };
 
 export function useCanPatchImage(environmentID: EnvironmentID): boolean {
-	const permitted = usePermission('images:patch', environmentID);
-	const supportsActivities = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
-	return permitted && supportsActivities;
+	return usePermission('images:patch', environmentID);
 }
 
 export function canPatchImage(environmentID: EnvironmentID): boolean {
-	return (
-		hasPermission('images:patch', environmentID) && useClientManager.getState().supportsActivities()
-	);
+	return hasPermission('images:patch', environmentID);
 }
 
 export function openImageVulnerabilities(

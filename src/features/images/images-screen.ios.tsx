@@ -75,7 +75,7 @@ function ImagePreview({ row }: { row: ImageRowModel }) {
 		{ icon: 'number', label: 'ID', value: image.value.id, monospaced: true }
 	];
 	if (image.environmentName)
-		details.push({ icon: 'server.rack', label: 'Environment', value: image.environmentName });
+		details.push({ icon: 'server.rack', label: 'Agent', value: image.environmentName });
 	return (
 		<RowPreviewCard
 			icon="square.3.layers.3d.top.filled"
@@ -163,8 +163,8 @@ export function ImagesScreen(props: ImagesListProps) {
 				systemImage="square.3.layers.3d.top.filled"
 				description={
 					props.allEnvironments
-						? 'No images pulled to any environment yet.'
-						: 'No images pulled to this environment yet.'
+						? 'No images pulled to any agent yet.'
+						: 'No images pulled to this agent yet.'
 				}
 			>
 				{props.allEnvironments ? (

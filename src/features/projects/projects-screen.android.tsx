@@ -205,7 +205,7 @@ export function ProjectsScreen(props: ProjectsListProps) {
 				<CenteredMessage
 					icon="folder"
 					title="No Projects"
-					message="No Compose projects found in any environment."
+					message="No Compose projects found in any agent."
 				/>
 				{model.canCreateProject ? (
 					<MaterialListGroup>
@@ -222,7 +222,7 @@ export function ProjectsScreen(props: ProjectsListProps) {
 			<CenteredMessage
 				icon="folder"
 				title="No Projects"
-				message="No Compose projects found in this environment."
+				message="No Compose projects found in this agent."
 				action={
 					model.canCreateProject
 						? {

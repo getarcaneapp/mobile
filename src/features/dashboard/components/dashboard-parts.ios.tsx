@@ -229,12 +229,12 @@ export function UpdateAllButton({
 				...motionAwareAnimation(armed ? Motion.entrance : Motion.state, armed, reduceMotion),
 				accessibilityLabel(
 					isUpToDate
-						? 'All environments are up to date'
+						? 'All agents are up to date'
 						: armed
-							? 'Confirm update of all environments'
-							: `Update All${upgrades !== undefined ? `, ${upgrades} environments have upgrades` : ''}`
+							? 'Confirm update of all agents'
+							: `Update All${upgrades !== undefined ? `, ${upgrades} agents have upgrades` : ''}`
 				),
-				accessibilityHint(armed ? 'Starts updating every environment' : 'Tap again to confirm')
+				accessibilityHint(armed ? 'Starts updating every agent' : 'Tap again to confirm')
 			]}
 		>
 			<HStack
@@ -286,7 +286,7 @@ export function CountAvailabilityNote({
 						foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 					]}
 				>
-					Counts include all enabled environments.
+					Counts include all enabled agents.
 				</Text>
 			</HStack>
 		);
@@ -299,7 +299,7 @@ export function CountAvailabilityNote({
 					modifiers={[
 						buttonStyle('plain'),
 						padding({ horizontal: 4 }),
-						accessibilityHint('Shows which environment counts could not be loaded')
+						accessibilityHint('Shows which agent counts could not be loaded')
 					]}
 				>
 					<HStack spacing={4}>
@@ -316,7 +316,7 @@ export function CountAvailabilityNote({
 								foregroundStyle(systemColors.orange)
 							]}
 						>
-							Some environment counts are unavailable.
+							Some agent counts are unavailable.
 						</Text>
 					</HStack>
 				</Button>
@@ -338,7 +338,7 @@ export function CountAvailabilityNote({
 						<Text
 							modifiers={[font({ textStyle: 'headline' }), foregroundStyle(systemColors.orange)]}
 						>
-							Incomplete environment counts
+							Incomplete agent counts
 						</Text>
 					</HStack>
 					{issues.map((issue) => (
@@ -367,7 +367,7 @@ export function CountAvailabilityNote({
 							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
 						]}
 					>
-						Pull down on the Dashboard to retry unavailable environments.
+						Pull down on the Dashboard to retry unavailable agents.
 					</Text>
 				</VStack>
 			</Popover.Content>

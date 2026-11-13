@@ -53,7 +53,7 @@ type Entry =
 function entries(results: readonly EnvironmentUpdateResult[]): Entry[] {
 	if (results.length === 0) return [];
 	return [
-		{ key: 'header', type: 'header', title: `Environments (${results.length})` },
+		{ key: 'header', type: 'header', title: `Agents (${results.length})` },
 		...results.map((result, index): Entry => ({
 			key: result.environmentId,
 			type: 'environment',
@@ -117,7 +117,7 @@ function Content({
 			<Unavailable
 				icon="lock.shield"
 				title="Admins Only"
-				message="Updating all environments requires an administrator account."
+				message="Updating all agents requires an administrator account."
 			/>
 		);
 	}

@@ -83,6 +83,7 @@ import {
 	destinationTitle,
 	projectFilesConfirmationHost,
 	useProjectFilesWorkspace,
+	useProjectWorkspaceFolder,
 	type ProjectFilesWorkspaceModel
 } from './use-project-files-workspace';
 import { ToastHost } from '@/ui/toast';
@@ -546,7 +547,15 @@ function FileEntryRow({ model, entry }: { model: Model; entry: ManagedProjectFil
 	);
 }
 
-function FilesStatusSection({ model, isEmpty }: { model: Model; isEmpty: boolean }) {
+function FilesStatusSection({
+	model,
+	folderPath,
+	isEmpty
+}: {
+	model: Model;
+	folderPath: string;
+	isEmpty: boolean;
+}) {
 	if (model.filesError !== undefined) {
 		return (
 			<Section>
@@ -564,7 +573,7 @@ function FilesStatusSection({ model, isEmpty }: { model: Model; isEmpty: boolean
 			</Section>
 		);
 	}
-	if (model.filesLoading && isEmpty) {
+	if (model.folderLoading(folderPath) && isEmpty) {
 		return (
 			<Section>
 				<HStack spacing={8}>
@@ -599,6 +608,7 @@ function FilesStatusSection({ model, isEmpty }: { model: Model; isEmpty: boolean
 }
 
 function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string }) {
+	useProjectWorkspaceFolder(model, folderPath);
 	const children = model.childEntries(folderPath);
 	return (
 		<List modifiers={[listStyle('insetGrouped'), refreshable(model.refresh)]}>
@@ -641,7 +651,8 @@ function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string 
 
 				{children.length === 0 &&
 				folderPath !== '' &&
-				!model.filesLoading &&
+				model.folderReady(folderPath) &&
+				!model.folderLoading(folderPath) &&
 				model.filesError === undefined ? (
 					<VStack
 						spacing={12}
@@ -676,7 +687,7 @@ function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string 
 				)}
 			</Section>
 
-			<FilesStatusSection model={model} isEmpty={children.length === 0} />
+			<FilesStatusSection model={model} folderPath={folderPath} isEmpty={children.length === 0} />
 
 			{model.hasChanges ? (
 				<Section>

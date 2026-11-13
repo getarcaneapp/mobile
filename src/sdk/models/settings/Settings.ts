@@ -82,6 +82,11 @@ export interface UpdateSettings {
 	oidcMergeAccounts?: string;
 	authSessionTimeout?: string;
 	authPasswordPolicy?: string;
+	authPasswordMinLength?: string;
+	authPasswordRequireUppercase?: string;
+	authPasswordRequireLowercase?: string;
+	authPasswordRequireNumber?: string;
+	authPasswordRequireSymbol?: string;
 	trivyImage?: string;
 	trivyNetwork?: string;
 	trivySecurityOpts?: string;

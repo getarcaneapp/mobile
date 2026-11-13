@@ -129,7 +129,7 @@ function RootContent({ model }: { model: UpdateAllEnvironmentsModel }) {
 				<UnavailableView
 					title="Admins Only"
 					systemImage="lock.shield"
-					description="Updating all environments requires an administrator account."
+					description="Updating all agents requires an administrator account."
 				/>
 			</VStack>
 		);
@@ -166,7 +166,7 @@ function RootContent({ model }: { model: UpdateAllEnvironmentsModel }) {
 				{results.length > 0 ? <CountsRow counts={model.runCounts} /> : null}
 			</Section>
 			{results.length > 0 ? (
-				<Section title={`Environments (${results.length})`}>
+				<Section title={`Agents (${results.length})`}>
 					<List.ForEach
 						data={results}
 						keyExtractor={(result) => result.environmentId}

@@ -40,7 +40,7 @@ export function usePreviewFeatures() {
 export const PreviewFeaturesCopy = {
 	composeFooter: 'Edit Compose files with native forms. YAML editing remains available.',
 	dashboardFooter:
-		"Replace the dashboard's environment cards with configurable widgets: health, attention, updates, live usage, the busiest containers, and every environment.",
+		"Replace the dashboard's agent cards with configurable widgets: health, attention, updates, live usage, the busiest containers, and every agent.",
 	allEnvironmentsFooter:
-		'Show resources from all enabled environments together. Environment switching is unavailable while this preview is on.'
+		'Show resources from all enabled agents together. Agent switching is unavailable while this preview is on.'
 } as const;

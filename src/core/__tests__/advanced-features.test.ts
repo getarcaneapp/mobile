@@ -11,7 +11,7 @@ import { resolveTabs } from '../resolve-tabs';
 
 const context = (advancedFeatures: boolean): AccessContext => ({
 	currentUser: { id: 'u', username: 'u', roles: ['admin'] } as unknown as User,
-	serverCapabilities: ServerCapabilities.make('legacyRoles'),
+	serverCapabilities: ServerCapabilities.make(),
 	permissionsManifest: undefined,
 	activeEnvironmentID: '0',
 	allEnvironmentsPreview: false,

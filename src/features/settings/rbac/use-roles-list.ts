@@ -13,12 +13,7 @@ import { showToast, Toasts } from '@/ui/toast';
 import { settingsPayloads, useSettingsNavigation } from '../shared/settings-routes';
 import { useProgressiveList } from '../shared/use-progressive-list';
 
-import {
-	conflictMessage,
-	roleDisplayName,
-	useCanManageRoles,
-	useSupportsRoleManagement
-} from './rbac-models';
+import { conflictMessage, roleDisplayName, useCanManageRoles } from './rbac-models';
 import type { RoleDetailPayload } from './use-role-detail';
 
 const pageSize = 50;
@@ -26,7 +21,6 @@ const pageSize = 50;
 export function useRolesList() {
 	const nav = useSettingsNavigation();
 	const client = useClientManager((s) => s.client);
-	const rbacAvailable = useSupportsRoleManagement();
 	const canManageRoles = useCanManageRoles();
 	const canAccessOIDCMappings = useClientManager((s) => s.canAccess('oidcRoleMappings'));
 	useClientManager((s) => s.accessGeneration);
@@ -40,10 +34,9 @@ export function useRolesList() {
 	const list = useProgressiveList<Role>({
 		pageSize,
 		search: debouncedSearch,
-		fetchPage:
-			rbacAvailable && client
-				? (search, start, limit) => client.roles.listPaginated({ search, start, limit })
-				: undefined,
+		fetchPage: client
+			? (search, start, limit) => client.roles.listPaginated({ search, start, limit })
+			: undefined,
 		beforeFirstPage: client
 			? async () => {
 					setManifest(await client.roles.availablePermissions());
@@ -117,7 +110,6 @@ export function useRolesList() {
 		roles: list.items,
 		builtIns,
 		customs,
-		rbacAvailable,
 		canManageRoles,
 		canAccessOIDCMappings,
 		searchText,

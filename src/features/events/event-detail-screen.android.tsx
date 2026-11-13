@@ -74,7 +74,7 @@ export function EventDetailScreen() {
 						{event.username ? <ValueRow title="User" value={event.username} /> : null}
 						{event.userId ? <ValueRow title="User ID" value={event.userId} monospaced /> : null}
 						{model.environmentName !== undefined ? (
-							<ValueRow title="Environment" value={model.environmentName} />
+							<ValueRow title="Agent" value={model.environmentName} />
 						) : null}
 					</M3Section>
 				) : null}

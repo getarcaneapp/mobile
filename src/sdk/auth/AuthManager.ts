@@ -11,7 +11,6 @@ import {
 	type AuthenticationResult
 } from '../models/auth/Login';
 import { timeIntervalSinceNow } from '../models/base/date';
-import type { User } from '../models/user/User';
 import { ProxyRequestSupport, type PreparedRequest } from '../client/proxyRequestSupport';
 import { ServerCapabilities } from '../client/ServerCapabilities';
 import { appendingAPIPath } from '../client/url';
@@ -184,16 +183,14 @@ export class AuthManager {
 		this.checkAuthenticationOperation(generation);
 		this.cachedTokens = tokens;
 		this.credentialGeneration += 1;
-		this.recordCapabilities(response.user);
 	}
 
-	async saveTokensForUser(tokens: TokenPair, user: User, generation: number): Promise<void> {
+	async saveTokensForUser(tokens: TokenPair, generation: number): Promise<void> {
 		this.checkAuthenticationOperation(generation);
 		await this.persist(tokens, generation);
 		this.checkAuthenticationOperation(generation);
 		this.cachedTokens = tokens;
 		this.credentialGeneration += 1;
-		this.recordCapabilities(user);
 	}
 
 	async saveTokens(tokens: TokenPair): Promise<void> {
@@ -246,21 +243,11 @@ export class AuthManager {
 	}
 
 	currentCapabilities(): ServerCapabilities {
-		return {
-			mode: this.capabilities.mode,
-			enabledFeatures: new Set(this.capabilities.enabledFeatures)
-		};
-	}
-
-	recordCapabilities(user: User): void {
-		const detected = ServerCapabilities.detect(user);
-		if (detected === 'unknown') return;
-		this.capabilities = { mode: detected, enabledFeatures: this.capabilities.enabledFeatures };
+		return { enabledFeatures: new Set(this.capabilities.enabledFeatures) };
 	}
 
 	recordEnabledFeatures(features: readonly string[]): void {
 		this.capabilities = {
-			mode: this.capabilities.mode,
 			enabledFeatures: new Set(features.map((feature) => feature.toLowerCase()))
 		};
 	}

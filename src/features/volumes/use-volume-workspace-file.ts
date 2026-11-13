@@ -124,7 +124,7 @@ export function useVolumeWorkspaceFile(
 						envID: environmentID,
 						name: volumeName,
 						manifest: {
-							fileTreeRevision: revision,
+							fileTreeRevision: revision || undefined,
 							fileChanges: [
 								{ operation: 'update_file', relativePath, uploadIndex: 0, baselineIndex: 1 }
 							]
@@ -132,7 +132,7 @@ export function useVolumeWorkspaceFile(
 						files: [updated.uri, baseline.uri]
 					});
 					if (!isCurrent()) return;
-					setRevision(result.fileTreeRevision);
+					setRevision(result?.fileTreeRevision ?? '');
 					setDraft((d) => VolumeWorkspaceDraft.load(d.text));
 					setErrorMessage(undefined);
 					await WorkspaceStore.load(environmentID, volumeName);
@@ -160,14 +160,17 @@ export function useVolumeWorkspaceFile(
 		const key = fileIdentity();
 		const isCurrent = () => !unmounted.current && key === fileIdentity();
 		try {
-			const tree = await client.volumes.workspace({ envID: environmentID, name: volumeName });
+			const tree =
+				revision === ''
+					? undefined
+					: await client.volumes.workspace({ envID: environmentID, name: volumeName });
 			const latest = await client.volumes.workspaceFile({
 				envID: environmentID,
 				name: volumeName,
 				relativePath
 			});
 			if (!isCurrent()) return;
-			const latestRevision = tree.fileTreeRevision;
+			const latestRevision = tree?.fileTreeRevision ?? '';
 			const payload: WorkspaceReviewPayload = {
 				latest,
 				onKeep: () => {

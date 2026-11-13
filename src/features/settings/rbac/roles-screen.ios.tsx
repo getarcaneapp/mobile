@@ -106,15 +106,7 @@ export function RolesDestination() {
 	const count = { loadedCount: roles.length, totalCount: model.totalItems, hasMore: model.hasMore };
 
 	let content;
-	if (!model.rbacAvailable) {
-		content = (
-			<ContentUnavailableView
-				title="Roles Not Available"
-				systemImage="lock.slash"
-				description="Role-based access control requires Arcane v2 or newer."
-			/>
-		);
-	} else if (!model.canManageRoles) {
+	if (!model.canManageRoles) {
 		content = (
 			<ContentUnavailableView
 				title="Admin Required"
@@ -182,7 +174,7 @@ export function RolesDestination() {
 		);
 	}
 
-	const canCreate = model.rbacAvailable && model.canManageRoles;
+	const canCreate = model.canManageRoles;
 	return (
 		<>
 			<Stack.Screen

@@ -114,7 +114,6 @@ async function performPrune({
 	environments,
 	environmentID,
 	request,
-	supportsActivities,
 	onDismiss,
 	markChanged
 }: {
@@ -123,7 +122,6 @@ async function performPrune({
 	environments: Environment[] | undefined;
 	environmentID: EnvironmentID;
 	request: PruneAllRequest;
-	supportsActivities: boolean;
 	onDismiss: () => void;
 	markChanged: (id: EnvironmentID) => void;
 }) {
@@ -151,10 +149,9 @@ async function performPrune({
 			});
 			return;
 		}
-		const result = await client.system.prune({ options: request, envID: environmentID });
+		await client.system.prune({ options: request, envID: environmentID });
 		ResponseCache.invalidateEnvironment(environmentID);
 		markChanged(environmentID);
-		if (!supportsActivities) showToast(Toasts.success(formatPruneResult(result)));
 		onDismiss();
 	} catch (error) {
 		showToast(Toasts.error(friendlyErrorMessage(error)));
@@ -181,7 +178,6 @@ export function useSystemPrune({
 	const [buildCacheAge, setBuildCacheAge] = useState('24h');
 	const [isPruning, setIsPruning] = useState(false);
 	const operationRunning = useAllEnvironmentsOperationStore((s) => s.isRunning);
-	const supportsActivities = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
 
 	const isAll = environments !== undefined;
 	const selectedCount = [containerMode, imageMode, volumeMode, networkMode, buildCacheMode].filter(
@@ -253,7 +249,6 @@ export function useSystemPrune({
 					environments,
 					environmentID,
 					request,
-					supportsActivities,
 					onDismiss,
 					markChanged
 				}),
@@ -263,7 +258,7 @@ export function useSystemPrune({
 
 	return {
 		isAll,
-		title: isAll ? 'Prune All Environments' : 'System Prune',
+		title: isAll ? 'Prune All Agents' : 'System Prune',
 		confirmButtonTitle: isAll
 			? 'Prune All'
 			: selectedCount > 0
@@ -271,9 +266,9 @@ export function useSystemPrune({
 				: 'Prune',
 		confirmDisabled: selectedCount === 0 || operationRunning || environments?.length === 0,
 		confirmation: {
-			title: isAll ? 'Prune all environments?' : 'Prune resources?',
+			title: isAll ? 'Prune all agents?' : 'Prune resources?',
 			message: isAll
-				? 'Remove the selected resources across all enabled environments. Removed data cannot be recovered.'
+				? 'Remove the selected resources across all enabled agents. Removed data cannot be recovered.'
 				: 'Remove the selected resources. Removed data cannot be recovered.',
 			icon: 'trash',
 			confirmTitle: isAll ? 'Prune All' : 'Prune'

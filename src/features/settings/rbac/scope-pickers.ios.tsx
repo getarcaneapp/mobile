@@ -62,11 +62,7 @@ export function ScopeSection({
 				))}
 			</Picker>
 			{scope === 'environment' ? (
-				<Picker
-					label="Environment"
-					selection={environmentId}
-					onSelectionChange={onEnvironmentChange}
-				>
+				<Picker label="Agent" selection={environmentId} onSelectionChange={onEnvironmentChange}>
 					<Text modifiers={[tag('')]}>Choose…</Text>
 					{environments.map((environment) => (
 						<Text key={environment.id} modifiers={[tag(environment.id)]}>

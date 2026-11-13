@@ -82,9 +82,13 @@ const GLOBAL_RULES: readonly RouteRule[] = [
 	})),
 	rule(ANY, /^backups\/recovery-key$/, () => ({ path: 'backups/recovery/key' })),
 	rule(POST, /^backups\/([^/]+)\/(restore|restore-files)$/, (m) => ({
-		path: `backups/${g(m, 1)}`,
+		path: `environments/0/backups/${g(m, 1)}`,
 		action: actionName(g(m, 2))
 	})),
+	rule(POST, /^backups\/([^/]+)\/(files\/browse|upload)$/, (m) => ({
+		path: `environments/0/backups/${g(m, 1)}/${g(m, 2)}`
+	})),
+	rule(DELETE, /^backups\/([^/]+)$/, (m) => ({ path: `environments/0/backups/${g(m, 1)}` })),
 	rule(GET, /^container-registries\/pull-usage$/, () => ({ path: 'registries/usage' })),
 	rule(POST, /^container-registries\/([^/]+)\/test$/, (m) => ({
 		path: `registries/${g(m, 1)}`,

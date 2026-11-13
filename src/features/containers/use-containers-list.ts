@@ -363,7 +363,6 @@ export function useContainersList({
 	}, [containers]);
 
 	const can = usePermissionCheck();
-	const isRBAC = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
 	const listEnvironments: ListEnvironment[] = allEnvironments
 		? snapshot.environments
 		: [{ id: environmentID }];
@@ -584,7 +583,6 @@ export function useContainersList({
 		}
 		if (
 			advanced &&
-			isRBAC &&
 			selectionEnvironmentID !== undefined &&
 			can(Permission.Containers.read, selectionEnvironmentID)
 		) {
@@ -645,7 +643,7 @@ export function useContainersList({
 				case 'stopAll':
 					return {
 						title: 'Stop All Containers',
-						message: 'Stop every running container in this environment.',
+						message: 'Stop every running container in this agent.',
 						icon: 'stop.fill',
 						actions: [
 							{ title: 'Stop All', action: () => void runPowerAll('stopAll', environmentID) }

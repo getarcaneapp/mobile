@@ -7,7 +7,6 @@ import { User, type UpdateUser } from '@/sdk/models/user/User';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
-import { useSupportsRoleManagement } from '../rbac/rbac-models';
 import type { UserRoleAssignmentsPayload } from '../rbac/use-user-role-assignments';
 import { settingsPayloads, useSettingsNavigation } from '../shared/settings-routes';
 
@@ -18,11 +17,9 @@ export function useUserDetail() {
 	const params = useLocalSearchParams<{ id?: string; token?: string }>();
 	const [payload] = useState(() => settingsPayloads.get<UserDetailPayload>(params.token));
 	const [user, setUser] = useState<User | undefined>(payload?.user);
-	const supportsV2 = useSupportsRoleManagement();
 
 	const [email, setEmail] = useState(payload?.user.email ?? '');
 	const [displayName, setDisplayName] = useState(payload?.user.displayName ?? '');
-	const [isAdmin, setIsAdmin] = useState(payload ? User.isAdmin(payload.user) : false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>();
 
@@ -38,7 +35,6 @@ export function useUserDetail() {
 				setUser(loaded);
 				setEmail(loaded.email ?? '');
 				setDisplayName(loaded.displayName ?? '');
-				setIsAdmin(User.isAdmin(loaded));
 			})
 			.catch((error: unknown) => {
 				if (!cancelled) setErrorMessage(friendlyErrorMessage(error));
@@ -50,15 +46,12 @@ export function useUserDetail() {
 
 	const hasChanges =
 		user !== undefined &&
-		(email !== (user.email ?? '') ||
-			displayName !== (user.displayName ?? '') ||
-			(!supportsV2 && isAdmin !== User.isAdmin(user)));
+		(email !== (user.email ?? '') || displayName !== (user.displayName ?? ''));
 
 	const revertChanges = () => {
 		if (!user) return;
 		setEmail(user.email ?? '');
 		setDisplayName(user.displayName ?? '');
-		setIsAdmin(User.isAdmin(user));
 		setErrorMessage(undefined);
 	};
 
@@ -69,8 +62,7 @@ export function useUserDetail() {
 		setErrorMessage(undefined);
 		const body: UpdateUser = {
 			displayName: displayName === '' ? undefined : displayName,
-			email: email === '' ? undefined : email,
-			roles: supportsV2 ? undefined : isAdmin ? ['admin'] : []
+			email: email === '' ? undefined : email
 		};
 		const notifyUpdate = async () => {
 			await payload?.onUpdate();
@@ -102,13 +94,10 @@ export function useUserDetail() {
 	return {
 		user,
 		title: user ? (user.displayName ? user.displayName : user.username) : '',
-		supportsV2,
 		email,
 		setEmail,
 		displayName,
 		setDisplayName,
-		isAdmin,
-		setIsAdmin,
 		isSaving,
 		errorMessage,
 		hasChanges,

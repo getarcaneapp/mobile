@@ -216,7 +216,7 @@ describe('stats history', () => {
 		] as SystemStats[];
 		assert.deepEqual(usageHeadline('CPU', stats), {
 			value: '25.0%',
-			detail: '2 environments · 4 cores'
+			detail: '2 agents · 4 cores'
 		});
 		assert.equal(usageHeadline('Memory', [frame(0, 1, 4)])?.value, '25%');
 		assert.equal(usageHeadline('CPU', []), undefined);

@@ -138,15 +138,7 @@ export function OIDCRoleMappingsDestination() {
 	const { mappings } = model;
 
 	let content;
-	if (!model.rbacAvailable) {
-		content = (
-			<ContentUnavailableView
-				title="OIDC Role Mappings Not Available"
-				systemImage="lock.slash"
-				description="Requires Arcane v2 or newer."
-			/>
-		);
-	} else if (!model.canManage) {
+	if (!model.canManage) {
 		content = (
 			<ContentUnavailableView
 				title="Admin Required"
@@ -193,7 +185,7 @@ export function OIDCRoleMappingsDestination() {
 	return (
 		<>
 			<Stack.Screen options={{ title: 'OIDC Role Mappings' }} />
-			{model.rbacAvailable && model.canManage ? (
+			{model.canManage ? (
 				<AppToolbar placement="right" tintColor={accent}>
 					<Stack.Toolbar.Button
 						icon="plus"

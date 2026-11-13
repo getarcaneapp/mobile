@@ -22,7 +22,12 @@ import {
 	removeItem,
 	VolumeWorkspaceDraft
 } from './volume-support';
-import { useWorkspaceEntry, workspaceIdentity, WorkspaceStore } from './workspace-store';
+import {
+	useWorkspaceEntry,
+	workspaceFolderReady,
+	workspaceIdentity,
+	WorkspaceStore
+} from './workspace-store';
 import { pickedFileName } from '@/core/picked-file-name';
 
 const parentOf = (relativePath: string) => relativePath.split('/').slice(0, -1).join('/');
@@ -49,6 +54,12 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 		() => () => WorkspaceStore.remove(environmentID, volumeName),
 		[environmentID, volumeName]
 	);
+
+	const folderReady = workspaceFolderReady(state, directory);
+	const canLoadFolder = state.workspace !== undefined && !state.loading && !folderReady;
+	useEffect(() => {
+		if (canLoadFolder) void WorkspaceStore.loadFolder(environmentID, volumeName, directory);
+	}, [canLoadFolder, environmentID, volumeName, directory]);
 
 	const entries = useMemo(
 		() =>
@@ -91,6 +102,8 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 		directory,
 		entries,
 		title: directory === '' ? volumeName : directory,
+		folderLoading: state.loading || (!folderReady && state.loadingFolders.length > 0),
+		showsEmpty: folderReady && entries.length === 0,
 		canUpload,
 		canDelete,
 		showsAddMenu: advanced && canUpload && state.workspace !== undefined,

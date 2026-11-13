@@ -10,7 +10,7 @@ const user = (overrides: Partial<User> = {}): User =>
 
 const context = (overrides: Partial<AccessContext>): AccessContext => ({
 	currentUser: user(),
-	serverCapabilities: ServerCapabilities.make('legacyRoles'),
+	serverCapabilities: ServerCapabilities.make(),
 	permissionsManifest: undefined,
 	activeEnvironmentID: '0',
 	allEnvironmentsPreview: false,
@@ -39,8 +39,8 @@ describe('canAccessTab', () => {
 	it('denies everything without a user', () => {
 		assert.equal(canAccessTab('dashboard', context({ currentUser: undefined })), false);
 	});
-	it('v1: v2-only tabs are hidden, admin tabs need admin', () => {
-		assert.equal(canAccessTab('activities', context({})), false);
+	it('without a manifest, admin tabs need admin', () => {
+		assert.equal(canAccessTab('activities', context({})), true);
 		assert.equal(canAccessTab('containers', context({})), true);
 		assert.equal(canAccessTab('users', context({})), false);
 		assert.equal(

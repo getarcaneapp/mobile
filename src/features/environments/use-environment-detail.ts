@@ -165,7 +165,7 @@ export function useEnvironmentDetail(environmentID: string, environmentName: str
 					setVersionInfo(version);
 					setVersionError(undefined);
 				} else {
-					setVersionError('Arcane version unavailable for this environment.');
+					setVersionError('Arcane version unavailable for this agent.');
 				}
 			},
 			() => {

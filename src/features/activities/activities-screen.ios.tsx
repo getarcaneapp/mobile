@@ -333,7 +333,6 @@ function ActivitiesToolbar({ model }: { model: ActivitiesScreenModel }) {
 	const accent = useAccentColor();
 	const { state } = model;
 	const actions = model.store.getState();
-	if (!model.supportsActivities) return null;
 	return (
 		<AppToolbar placement="right" tintColor={accent}>
 			<Stack.Toolbar.Menu
@@ -430,15 +429,7 @@ export function ActivitiesScreen({
 	const { state } = model;
 
 	let content;
-	if (!model.supportsActivities) {
-		content = (
-			<ContentUnavailableView
-				title="Requires Arcane v2"
-				systemImage="clock.arrow.circlepath"
-				description="Activity Center is available when connected to an Arcane 2.0 server."
-			/>
-		);
-	} else if (state.isLoading && state.activities.length === 0) {
+	if (state.isLoading && state.activities.length === 0) {
 		content = (
 			<VStack modifiers={[frame({ maxWidth: Infinity, maxHeight: Infinity })]}>
 				<ArcaneLoadingViewSwiftUI label="Loading activities..." />
@@ -458,7 +449,7 @@ export function ActivitiesScreen({
 			<ContentUnavailableView
 				title="No Activities"
 				systemImage="clock.arrow.circlepath"
-				description="Background work from your environments will appear here."
+				description="Background work from your agents will appear here."
 			/>
 		);
 	} else {

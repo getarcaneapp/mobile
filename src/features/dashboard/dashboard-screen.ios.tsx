@@ -190,12 +190,12 @@ function OverviewSection({
 					</HStack>
 					{model.allEnvironmentsPreview ? (
 						<DisclosureGroup
-							label={expanded ? '' : 'By Environment'}
+							label={expanded ? '' : 'By Agent'}
 							isExpanded={expanded}
 							onIsExpandedChange={setExpanded}
 							modifiers={[
 								font({ textStyle: 'subheadline' }),
-								accessibilityLabel('Environment breakdown')
+								accessibilityLabel('Agent breakdown')
 							]}
 						>
 							<VStack alignment="leading" spacing={10}>
@@ -232,7 +232,7 @@ function EnvironmentsSection({ model }: { model: DashboardModel }) {
 	return (
 		<VStack alignment="leading" spacing={14}>
 			<HStack>
-				<DashboardSectionTitle title="Environments" />
+				<DashboardSectionTitle title="Agents" />
 				<Spacer />
 				{model.isAdmin ? (
 					<UpdateAllButton
@@ -294,7 +294,7 @@ function EnvironmentsSection({ model }: { model: DashboardModel }) {
 						onAppear(model.showNextEnvironmentBatch)
 					]}
 				>
-					<ArcaneLoadingViewSwiftUI label="Loading more environments…" variant="inline" />
+					<ArcaneLoadingViewSwiftUI label="Loading more agents…" variant="inline" />
 				</VStack>
 			) : null}
 		</VStack>
@@ -342,14 +342,14 @@ export function DashboardScreen() {
 				/>
 			) : null}
 			<AppToolbar placement="right">
-				{model.supportsActivities ? (
+				{
 					<Stack.Toolbar.Button
 						icon="clock.arrow.circlepath"
 						separateBackground
 						accessibilityLabel="Activity Center"
 						onPress={model.openActivityCenter}
 					/>
-				) : null}
+				}
 				{model.canPrune ? (
 					<Stack.Toolbar.Button
 						icon="trash"
@@ -381,9 +381,9 @@ export function DashboardScreen() {
 							<DashboardSkeleton />
 						) : model.showsEmptyState ? (
 							<ContentUnavailableView
-								title="No Environments"
+								title="No Agents"
 								systemImage="server.rack"
-								description="Connect an environment to see live container, image, and system stats here."
+								description="Connect an agent to see live container, image, and system stats here."
 								modifiers={[padding({ top: 48 })]}
 							/>
 						) : model.refreshedDashboardPreview ? (

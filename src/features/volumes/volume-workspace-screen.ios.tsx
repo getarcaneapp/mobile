@@ -114,9 +114,9 @@ export function VolumeWorkspaceScreen() {
 					{model.entries.map((file) => (
 						<WorkspaceRow key={file.relativePath} model={model} file={file} />
 					))}
-					{state.loading ? (
+					{model.folderLoading ? (
 						<ArcaneLoadingViewSwiftUI />
-					) : model.entries.length === 0 && state.workspace !== undefined ? (
+					) : model.showsEmpty ? (
 						<Text modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>
 							Empty folder
 						</Text>

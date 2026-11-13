@@ -36,12 +36,18 @@ import {
 	serverCacheIdentity
 } from '@/core/networking/server-identity';
 import { migrateAdvancedFeatures } from '@/core/advanced-features';
+import { requiresPasswordChangeGate } from '@/core/auth/password-change';
 import { defaults, Keys, storage } from '@/core/storage';
 import { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { APIGeneration } from '@/sdk/client/apiGeneration';
 import { EnvironmentID, RetryPolicy } from '@/sdk/client/environment';
 import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
-import { ArcaneError, CancellationError } from '@/sdk/errors/ArcaneError';
+import {
+	ArcaneError,
+	CancellationError,
+	isPasswordChangeRequiredError,
+	subscribeToArcaneResponseErrors
+} from '@/sdk/errors/ArcaneError';
 import {
 	MFARequiredError,
 	type AuthenticationResult,
@@ -59,7 +65,12 @@ import { CeremonyError } from '@/sdk/passkeys/CeremonyTypes';
 export { LoginCapabilities } from '@/core/auth/access';
 export { ArcaneMobileOIDC } from '@/core/auth/auth-session';
 
-export type AppAuthState = 'setup' | 'authenticating' | 'login' | 'authenticated';
+export type AppAuthState =
+	| 'setup'
+	| 'authenticating'
+	| 'login'
+	| 'passwordChange'
+	| 'authenticated';
 
 export type DemoEndReason = 'userInitiated' | 'expired';
 
@@ -107,7 +118,6 @@ type ClientManagerState = {
 	serverOrigin: () => string | undefined;
 	isOIDCAvailable: () => boolean;
 	isLocalAuthAvailable: () => boolean;
-	supportsActivities: () => boolean;
 	canAccess: (tab: AppTab) => boolean;
 	acceptsEnvironmentContext: (id: EnvironmentID) => boolean;
 	isCurrentAuthentication: (generation: number) => boolean;
@@ -128,6 +138,7 @@ type ClientManagerState = {
 	completePendingMFAWithRecoveryCode: (code: string) => Promise<void>;
 	cancelPendingMFA: () => void;
 	logout: () => Promise<void>;
+	completePasswordChange: () => Promise<void>;
 	startDemo: () => Promise<void>;
 	endDemo: (reason: DemoEndReason) => Promise<void>;
 	checkExistingAuth: () => Promise<void>;
@@ -136,6 +147,8 @@ type ClientManagerState = {
 };
 
 const bootstrapTimeoutMs = 20_000;
+const unsupportedServerMessage =
+	'This server runs Arcane v1. Update to Arcane v2 or later to sign in.';
 const newSessionIdentity = () => randomUUID().toUpperCase();
 
 export function shouldSuggestLocalDNSHint(
@@ -298,6 +311,21 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		bumpAccess();
 	};
 
+	const gatesPasswordChange = (user: User) =>
+		requiresPasswordChangeGate(user, isSameOrigin(get().parsedServerURL ?? '', demoBaseURL));
+
+	subscribeToArcaneResponseErrors((error) => {
+		if (!isPasswordChangeRequiredError(error)) return;
+		const state = get();
+		if (state.authState !== 'authenticated' || !state.currentUser) return;
+		if (isSameOrigin(state.parsedServerURL ?? '', demoBaseURL)) return;
+		set({
+			currentUser: { ...state.currentUser, requiresPasswordChange: true },
+			authState: 'passwordChange'
+		});
+		bumpAccess();
+	});
+
 	const usesV3Defaults = () =>
 		get().apiGeneration === 'v3' || rememberedAPIGeneration(get().parsedServerURL) === 'v3';
 
@@ -397,15 +425,22 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		generation: number
 	) => {
 		if (!isCurrentAuthentication(generation)) return;
+		if (!ServerCapabilities.isSupportedServer(user)) {
+			signOutLocally();
+			set({ errorMessage: unsupportedServerMessage });
+			await client.auth.logout().catch(() => undefined);
+			return;
+		}
 		setCacheSessionIdentity();
 		set({ currentUser: user, serverCapabilities: capabilities });
 		bumpAccess();
-		const loadsPermissions = capabilities.mode === 'rbac';
 		const bootstrap = await sessionBootstrapIfAvailable(client);
 		if (!isCurrentAuthentication(generation)) return;
 		if (bootstrap) {
 			const environments = bootstrap.environments;
+			const passwordChangePending = gatesPasswordChange(bootstrap.user);
 			bootstrapEnvironments =
+				!passwordChangePending &&
 				environments.pagination.totalItems >= 0 &&
 				environments.data.length >= environments.pagination.totalItems
 					? { session: get().cacheSessionIdentity, environments: environments.data }
@@ -414,24 +449,19 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			set({
 				...previewModes('v3'),
 				currentUser: bootstrap.user,
-				serverCapabilities: ServerCapabilities.make(
-					ServerCapabilities.detect(bootstrap.user),
-					bootstrap.version.enabledFeatures ?? []
-				),
+				serverCapabilities: ServerCapabilities.make(bootstrap.version.enabledFeatures ?? []),
 				permissionsManifest: bootstrap.permissionsManifest,
 				supportsPost26MobileFeatures: VersionInfo.supportsPost26MobileFeatures(bootstrap.version),
 				supportsMobilePush: VersionInfo.supportsMobilePush(bootstrap.version),
 				apiGeneration: 'v3',
 				pendingMFAChallenge: undefined,
-				authState: 'authenticated'
+				authState: passwordChangePending ? 'passwordChange' : 'authenticated'
 			});
 			bumpAccess();
 			return;
 		}
 		const [manifest, versionInfo, apiGeneration] = await Promise.all([
-			loadsPermissions
-				? client.roles.availablePermissions().catch(() => undefined)
-				: Promise.resolve(undefined),
+			client.roles.availablePermissions().catch(() => undefined),
 			client.version.appVersion().catch(() => undefined),
 			client.apiGeneration().then(() => client.currentAPIGeneration())
 		]);
@@ -439,14 +469,14 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		rememberAPIGeneration(get().parsedServerURL, apiGeneration);
 		set({
 			...previewModes(apiGeneration),
-			permissionsManifest: loadsPermissions ? manifest : undefined,
+			permissionsManifest: manifest,
 			supportsPost26MobileFeatures: versionInfo
 				? VersionInfo.supportsPost26MobileFeatures(versionInfo)
 				: false,
 			supportsMobilePush: versionInfo ? VersionInfo.supportsMobilePush(versionInfo) : false,
 			apiGeneration,
 			pendingMFAChallenge: undefined,
-			authState: 'authenticated'
+			authState: gatesPasswordChange(user) ? 'passwordChange' : 'authenticated'
 		});
 		bumpAccess();
 	};
@@ -462,7 +492,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				set({ pendingMFAChallenge: undefined });
 				await completeAuthenticatedBootstrap(
 					result.value.user,
-					ServerCapabilities.make(ServerCapabilities.detect(result.value.user)),
+					ServerCapabilities.unknown,
 					client,
 					generation
 				);
@@ -583,7 +613,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		},
 		isOIDCAvailable: () => get().loginCapabilities?.oidcEnabled === true,
 		isLocalAuthAvailable: () => get().loginCapabilities?.localAuthEnabled ?? true,
-		supportsActivities: () => get().serverCapabilities?.mode === 'rbac',
 		canAccess: (tab) => canAccessTab(tab, get()),
 		acceptsEnvironmentContext: (id) =>
 			get().allEnvironmentsPreview || get().activeEnvironmentID === id,
@@ -776,7 +805,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				set({ pendingMFAChallenge: undefined });
 				await completeAuthenticatedBootstrap(
 					response.user,
-					ServerCapabilities.make(ServerCapabilities.detect(response.user)),
+					ServerCapabilities.unknown,
 					client,
 					generation
 				);
@@ -873,6 +902,16 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			} finally {
 				if (isCurrentAuthentication(generation)) set({ isLoading: false });
 			}
+		},
+
+		completePasswordChange: async () => {
+			const client = get().client;
+			if (!client) return;
+			const generation = get().authenticationGeneration;
+			const user = await client.auth.me();
+			if (!isCurrentAuthentication(generation)) return;
+			ResponseCache.invalidateAll();
+			await completeAuthenticatedBootstrap(user, client.serverCapabilities(), client, generation);
 		},
 
 		startDemo: async () => {
@@ -999,7 +1038,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				const user = await withNetworkSessionRefreshRetry((bootstrap) => bootstrap.auth.me());
 				await completeAuthenticatedBootstrap(
 					user,
-					ServerCapabilities.make(ServerCapabilities.detect(user)),
+					ServerCapabilities.unknown,
 					get().client ?? client,
 					generation
 				);

@@ -1,3 +1,4 @@
+import type { QueryItem } from '../../client/url';
 import { D } from '../base/decoding';
 import type { ISODateString } from '../base/date';
 
@@ -50,10 +51,25 @@ export const ProjectWorkspace = {
 		const o = D.object(raw, 'ProjectWorkspace');
 		return {
 			files: D.array(o, 'files', D.cast<ProjectFile>),
-			fileTreeRevision: D.string(o, 'fileTreeRevision'),
+			fileTreeRevision: D.optString(o, 'fileTreeRevision') ?? '',
 			fileTreeTruncated: D.boolean(o, 'fileTreeTruncated'),
 			activityID: D.optString(o, 'activityId')
 		};
+	},
+
+	decodeUpdate(this: void, raw: unknown): ProjectWorkspace | undefined {
+		if (
+			typeof raw !== 'object' ||
+			raw === null ||
+			!Array.isArray((raw as { files?: unknown }).files)
+		)
+			return undefined;
+		return ProjectWorkspace.decode(raw);
+	},
+
+	folderQuery(this: void, path: string | undefined): QueryItem[] {
+		const folder = (path ?? '').replace(/^\/+|\/+$/g, '');
+		return folder === '' ? [] : [{ name: 'path', value: folder }];
 	},
 
 	encode(this: void, value: ProjectWorkspace): Record<string, unknown> {

@@ -62,7 +62,7 @@ export function ScopeSection({
 			/>
 			{scope === 'environment' ? (
 				<FormPicker
-					title="Environment"
+					title="Agent"
 					selection={environmentId}
 					onSelectionChange={onEnvironmentChange}
 					options={[

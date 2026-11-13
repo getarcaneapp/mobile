@@ -66,7 +66,7 @@ export function UpdatesScreen() {
 							>
 								<Section
 									footer={
-										<Text>{`Pick an environment to ${mode === 'runUpdater' ? 'run the updater on' : 'view history for'}.`}</Text>
+										<Text>{`Pick an agent to ${mode === 'runUpdater' ? 'run the updater on' : 'view history for'}.`}</Text>
 									}
 								>
 									{model.presentedEnvironments.map((environment) => (

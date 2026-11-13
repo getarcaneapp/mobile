@@ -312,7 +312,7 @@ export const ActivityBatch = {
 				.filter((name) => name !== '')
 		);
 		if (names.size === 1) return [...names][0];
-		if (names.size > 1) return `${names.size} environments`;
+		if (names.size > 1) return `${names.size} agents`;
 		return undefined;
 	}
 } as const;
