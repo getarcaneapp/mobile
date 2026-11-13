@@ -85,6 +85,7 @@ export const Keys = {
 	serverURL: 'arcane.serverURL',
 	activeEnvironmentID: 'arcane.activeEnvironmentID',
 	activeEnvironmentName: 'arcane.activeEnvironmentName',
+	activeEnvironmentByServer: 'arcane.activeEnvironmentByServer',
 	allEnvironmentsPreview: 'arcane.allEnvironmentsPreview',
 	refreshedDashboardPreview: 'arcane.refreshedDashboardPreview',
 	serverAPIGeneration: 'arcane.serverAPIGeneration',

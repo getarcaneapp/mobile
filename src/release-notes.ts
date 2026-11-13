@@ -109,6 +109,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Editing network options breaking compact compose files.'
 			},
 			{
+				text: 'Selected agent carrying over to a different server.'
+			},
+			{
 				text: 'Assorted visual, scrolling and tap target issues.'
 			}
 		]

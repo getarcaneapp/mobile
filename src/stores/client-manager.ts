@@ -225,6 +225,32 @@ async function endReplacedSession(client: ArcaneClient, origin: string) {
 	if (TokenPair.equals(current, stored)) await store.clearTokens().catch(() => undefined);
 }
 
+type RememberedEnvironment = { id: string; name: string };
+
+function rememberedEnvironments(): Record<string, RememberedEnvironment> {
+	const stored = storage.json<unknown>(Keys.activeEnvironmentByServer);
+	if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
+	const result: Record<string, RememberedEnvironment> = {};
+	for (const [origin, value] of Object.entries(stored)) {
+		if (
+			value &&
+			typeof value === 'object' &&
+			typeof (value as RememberedEnvironment).id === 'string' &&
+			typeof (value as RememberedEnvironment).name === 'string'
+		)
+			result[origin] = value as RememberedEnvironment;
+	}
+	return result;
+}
+
+function rememberEnvironment(origin: string | undefined, id: string, name: string) {
+	if (!origin) return;
+	storage.setJSON(Keys.activeEnvironmentByServer, {
+		...rememberedEnvironments(),
+		[origin]: { id, name }
+	});
+}
+
 function previewModes(generation: APIGeneration | undefined) {
 	if (generation === 'v3') return { allEnvironmentsPreview: true, refreshedDashboardPreview: true };
 	return {
@@ -667,6 +693,14 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				CredentialBinding.unbind(previousOrigin);
 				signOutLocally();
 			}
+			if (nextOrigin !== undefined && previousOrigin !== nextOrigin) {
+				const remembered = rememberedEnvironments()[nextOrigin];
+				const id = remembered?.id ?? EnvironmentID.localDocker;
+				const name = remembered?.name ?? 'Local Docker';
+				set({ activeEnvironmentID: id, activeEnvironmentName: name });
+				storage.set(Keys.activeEnvironmentID, id);
+				storage.set(Keys.activeEnvironmentName, name);
+			}
 			retireAuthentication();
 			credentialLease = new CredentialLease();
 			needsConnectionBootstrapRetry = false;
@@ -692,6 +726,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			set({ activeEnvironmentID: id, activeEnvironmentName: name });
 			storage.set(Keys.activeEnvironmentID, id);
 			storage.set(Keys.activeEnvironmentName, name);
+			rememberEnvironment(get().serverOrigin(), id, name);
 			mirrorToAppGroup();
 			bumpAccess();
 			if (previous !== id) ResponseCache.invalidateEnvironment(previous);
