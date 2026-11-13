@@ -13,7 +13,7 @@ import { cachedClient } from '@/core/networking/use-cached-client';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { DeployOptions } from '@/sdk/models/project/Project';
 import type { OperationStreamEvent } from '@/sdk/types/streaming/OperationStreamEvent';
-import { useClientManager } from '@/stores/client-manager';
+import { onSessionEnd, useClientManager } from '@/stores/client-manager';
 import { useContainerDeploymentStore } from '@/stores/container-deployment-store';
 import { useResourceMutationStore } from '@/stores/resource-mutation-store';
 import type { DeploymentOperation, InstallStreamLine } from '@/ui/components/install-stream.types';
@@ -64,6 +64,7 @@ type State = {
 		presentSheet?: () => void;
 	}) => boolean;
 	cancel: () => void;
+	abandon: () => void;
 	acknowledge: () => void;
 	setSheetPresented: (presented: boolean) => void;
 };
@@ -360,6 +361,20 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 			abort?.abort();
 		},
 
+		abandon: () => {
+			const operation = get().operation;
+			if (!operation) return;
+			if (autoClear) clearTimeout(autoClear);
+			autoClear = undefined;
+			presentSheet = undefined;
+			set({ operation: undefined, isSheetPresented: false });
+			if (operation.status.kind === 'running') {
+				abort?.abort();
+				LiveActivities.finish(operation.id, 'cancelled', operation.progressFraction);
+				finishActivityToast(operation.id, operation.title, 'cancelled');
+			}
+		},
+
 		acknowledge: () => {
 			if (get().operation?.status.kind === 'running') return;
 			if (autoClear) clearTimeout(autoClear);
@@ -377,4 +392,8 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 			}
 		}
 	};
+});
+
+onSessionEnd(async () => {
+	useProjectDeploymentStore.getState().abandon();
 });
