@@ -1280,6 +1280,10 @@ export class ComposeDocument {
 		}
 		const sequence = ComposeDocument.sequence(node);
 		if (!sequence) throw ComposeDocumentError.unsupported;
+		let owner: SyntaxNode | null = node;
+		while (owner && owner.type !== 'block_mapping_pair') owner = owner.parent;
+		if (!owner) throw ComposeDocumentError.unsupported;
+		const ownerColumn = this.column(owner);
 		const edits: Edit[] = [];
 		const entries = ComposeDocument.children(sequence).filter(
 			(child) => child.type === 'block_sequence_item'
@@ -1296,9 +1300,11 @@ export class ComposeDocument {
 			names.add(name);
 			const bounds = this.range(item);
 			const contentBounds = this.range(content);
+			const itemColumn = this.column(item);
+			const shift = itemColumn > ownerColumn ? '' : spaces(ownerColumn + 2 - itemColumn);
 			edits.push([
 				{ location: bounds.location, length: maxRange(contentBounds) - bounds.location },
-				ComposeDocument.quoted(name) + ': {}'
+				shift + ComposeDocument.quoted(name) + ': {}'
 			]);
 		}
 		let result = this.source;

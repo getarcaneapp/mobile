@@ -106,6 +106,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Backup actions, file saves and subfolders failing on Arcane v3.'
 			},
 			{
+				text: 'Editing network options breaking compact compose files.'
+			},
+			{
 				text: 'Assorted visual, scrolling and tap target issues.'
 			}
 		]
