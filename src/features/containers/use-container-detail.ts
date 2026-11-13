@@ -93,6 +93,13 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 	useLayoutEffect(() => {
 		containerRef.current = container;
 	});
+	const mounted = useRef(true);
+	useEffect(() => {
+		mounted.current = true;
+		return () => {
+			mounted.current = false;
+		};
+	}, []);
 
 	const showError = (error: unknown) => showToast(Toasts.error(friendlyErrorMessage(error)));
 
@@ -196,11 +203,14 @@ export function useContainerDetail(environmentID: EnvironmentID, initialID: stri
 		await withCleanup(
 			async () => {
 				try {
+					const deletedID = container.id;
 					await client.rest.deleteVoid(
-						client.rest.environmentPath(environmentID, `containers/${container.id}`)
+						client.rest.environmentPath(environmentID, `containers/${deletedID}`)
 					);
 					containersChanged(environmentID);
 					showToast(Toasts.success('Container removed'));
+					if (mounted.current && containerRef.current.id === deletedID && nav.router.canGoBack())
+						nav.router.back();
 				} catch (error) {
 					showError(error);
 				}

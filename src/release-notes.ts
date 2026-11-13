@@ -118,6 +118,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Container edits running twice after a gateway timeout.'
 			},
 			{
+				text: 'Deleted container staying open on its detail screen.'
+			},
+			{
 				text: 'Assorted visual, scrolling and tap target issues.'
 			}
 		]
