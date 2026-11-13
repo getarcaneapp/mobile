@@ -115,6 +115,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Expired sessions failing silently instead of showing an error.'
 			},
 			{
+				text: 'Container edits running twice after a gateway timeout.'
+			},
+			{
 				text: 'Assorted visual, scrolling and tap target issues.'
 			}
 		]

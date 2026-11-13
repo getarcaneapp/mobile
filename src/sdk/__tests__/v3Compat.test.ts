@@ -327,6 +327,22 @@ describe('multi-environment responses', () => {
 	});
 });
 
+describe('v3 retries', () => {
+	it('does not retry a POST that v3 rewrites to PUT', async () => {
+		const { requests, ...client } = makeClient((request) => {
+			if (request.url.endsWith('/api/app/version'))
+				return { status: 200, body: { currentVersion: '3.0.0', enabledFeatures: [] } };
+			return { status: 504, body: {} };
+		});
+
+		await expect(
+			client.containers.edit({ envID: '0', id: 'abc', body: {} as never })
+		).rejects.toThrow();
+		const edits = requests.filter((request) => request.url.endsWith('/containers/abc/config'));
+		expect(edits.map((request) => request.method)).toEqual(['PUT']);
+	});
+});
+
 describe('offline environments', () => {
 	it('does not retry a remote environment the server reports as unavailable', async () => {
 		const { requests, ...client } = makeClient((request) => {

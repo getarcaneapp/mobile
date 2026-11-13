@@ -329,7 +329,8 @@ export class ArcaneTransport {
 			accept?: string;
 		} = {}
 	): Promise<Uint8Array> {
-		const route = await this.route(path, init.method ?? 'PUT', init.query ?? []);
+		const requestedMethod = init.method ?? 'PUT';
+		const route = await this.route(path, requestedMethod, init.query ?? []);
 		const method = route.method;
 		const authorized = init.authorized ?? true;
 		const keepsCredentials = init.keepsCredentialsOnUnauthorized ?? false;
@@ -387,7 +388,7 @@ export class ArcaneTransport {
 					}
 
 					if (
-						this.shouldRetry(method, response.status, route.path) &&
+						this.shouldRetry(requestedMethod, response.status, route.path) &&
 						attempt < this.retryPolicy.maxAttempts
 					) {
 						await sleep(
@@ -411,7 +412,7 @@ export class ArcaneTransport {
 					if (error instanceof ArcaneError) throw error;
 					if (error instanceof CancellationError) throw new CancellationError();
 					if (
-						this.isIdempotent(method) &&
+						this.isIdempotent(requestedMethod) &&
 						isRetryableNetworkError(error) &&
 						attempt < this.retryPolicy.maxAttempts
 					) {
