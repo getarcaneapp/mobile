@@ -121,6 +121,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Edited saved sign-ins reverting after iCloud sync.'
 			},
 			{
+				text: 'Invalid swarm service ports saving without an error.'
+			},
+			{
 				text: 'Assorted visual, scrolling and tap target issues.'
 			}
 		]
