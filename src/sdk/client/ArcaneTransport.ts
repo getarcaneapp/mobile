@@ -215,12 +215,11 @@ export class ArcaneTransport {
 		try {
 			const delegate = await this.proxySupport.prepare(request);
 			const { response, info, release } = await send(this.fetchImpl, request, {
-				signal: this.defaultSignal,
 				timeoutMs: this.timeoutMs
 			});
 			let text: string;
 			try {
-				text = await readText(response, this.defaultSignal);
+				text = await readText(response, undefined);
 			} finally {
 				release();
 			}

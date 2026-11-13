@@ -59,6 +59,7 @@ export interface ArcaneClientConfiguration {
 	streamingFetch?: FetchLike;
 	webSocket?: WebSocketStreamConfig;
 	apiGeneration?: APIGeneration;
+	fallbackAPIGeneration?: APIGeneration;
 }
 
 interface ResolvedConfiguration extends ArcaneClientConfiguration {
@@ -152,7 +153,10 @@ export class ArcaneClient {
 				proxySession: resolved.proxySession,
 				timeoutMs: resolved.timeoutMs,
 				webSocket: resolved.webSocket,
-				apiGeneration: new APIGenerationState(resolved.apiGeneration)
+				apiGeneration: new APIGenerationState(
+					resolved.apiGeneration,
+					resolved.fallbackAPIGeneration
+				)
 			});
 		const rest = new RESTService(this.transport, resolved.defaultEnvironmentID);
 		this.rest = rest;

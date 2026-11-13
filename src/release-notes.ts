@@ -97,7 +97,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Interrupted deployments leaving their toast and Live Activity open.'
 			},
 			{
-				text: 'An offline agent stalling the app.'
+				text: 'An offline agent stalling the app and dropped connections breaking v3 requests.'
 			},
 			{
 				text: 'Volume browsing without manage permission and hidden server error messages.'

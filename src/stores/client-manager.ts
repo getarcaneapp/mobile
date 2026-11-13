@@ -303,6 +303,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			baseURL: url,
 			tokenStore: new OriginTokenStore(origin, credentialLease, credentialPersistence),
 			defaultEnvironmentID: EnvironmentID.localDocker,
+			fallbackAPIGeneration: rememberedAPIGeneration(url),
 			retryPolicy: bootstrap ? RetryPolicy.make(1, 300, 300) : RetryPolicy.make(3, 300, 3_000),
 			timeoutMs: bootstrap ? bootstrapTimeoutMs : undefined,
 			additionalHeaders: demoHeaders

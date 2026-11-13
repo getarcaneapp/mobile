@@ -10,6 +10,7 @@ import { SettingsService } from '../services/SettingsService';
 import { ItemEnvironment } from '../pagination/PaginatedResponse';
 import { normalizeV3Environment, v3ResponseNormalizer } from '../client/v3Responses';
 import { translateRouteForV3 } from '../client/v3Routes';
+import { APIGenerationState } from '../client/apiGeneration';
 import { InMemoryTokenStore } from '../auth/TokenStore';
 import { SessionBootstrap } from '../models/auth/SessionBootstrap';
 import { EnvironmentChangesEvent } from '../models/event/EnvironmentChanges';
@@ -206,6 +207,16 @@ describe('API generation detection', () => {
 
 		expect(client.transport.currentAPIGeneration()).toBe('legacy');
 		expect(requests[1]?.url).toBe(`${BASE}/api/environments/0/containers/abc/restart`);
+	});
+});
+
+describe('API generation fallback', () => {
+	it('uses the fallback generation when the probe is inconclusive', async () => {
+		const state = new APIGenerationState(undefined, 'v3');
+		expect(await state.resolve(async () => undefined)).toBe('v3');
+		expect(await state.resolve(() => Promise.reject(new Error('offline')))).toBe('v3');
+		expect(state.current).toBeUndefined();
+		expect(await state.resolve(async () => 'legacy')).toBe('legacy');
 	});
 });
 
