@@ -107,12 +107,9 @@ export function useBuildSettings(environmentID: EnvironmentID = EnvironmentID.lo
 
 	const save = async () => {
 		if (!client) return;
-		const timeout = Number(trimWhitespace(form.buildTimeout));
-		if (
-			trimWhitespace(form.buildTimeout) !== '' &&
-			Number.isInteger(timeout) &&
-			(timeout < 60 || timeout > 14400)
-		) {
+		const timeoutText = trimWhitespace(form.buildTimeout);
+		const timeout = Number(timeoutText);
+		if (timeoutText !== '' && (!/^\d+$/.test(timeoutText) || timeout < 60 || timeout > 14400)) {
 			setErrorMessage('Build Timeout must be between 60 and 14400 seconds.');
 			return;
 		}
@@ -125,13 +122,15 @@ export function useBuildSettings(environmentID: EnvironmentID = EnvironmentID.lo
 				try {
 					const body: Record<string, string> = {
 						buildProvider: snapshot.buildProvider,
-						buildTimeout: snapshot.buildTimeout
+						buildTimeout: timeoutText
 					};
 					const trimmedDir = trimWhitespace(snapshot.buildsDirectory);
-					if (trimmedDir !== '') body.buildsDirectory = trimmedDir;
+					if (trimmedDir !== '' || trimWhitespace(originalState?.buildsDirectory ?? '') !== '')
+						body.buildsDirectory = trimmedDir;
 					if (snapshot.buildProvider === 'depot') {
 						const trimmedProject = trimWhitespace(snapshot.depotProjectId);
-						if (trimmedProject !== '') body.depotProjectId = trimmedProject;
+						if (trimmedProject !== '' || trimWhitespace(originalState?.depotProjectId ?? '') !== '')
+							body.depotProjectId = trimmedProject;
 						if (snapshot.depotToken !== '') body.depotToken = snapshot.depotToken;
 					}
 					await client.rest.put<PublicSetting[]>(
