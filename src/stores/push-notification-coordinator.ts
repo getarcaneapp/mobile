@@ -16,7 +16,7 @@ import {
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import { CancellationError, isArcaneError } from '@/sdk/errors/ArcaneError';
 import type { MobilePushDevice, MobilePushStatus } from '@/sdk/models/mobilePush/MobilePush';
-import { useClientManager } from '@/stores/client-manager';
+import { onSessionEnd, useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
 export type PushAuthorizationStatus =
@@ -556,4 +556,10 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 			await client?.mobilePush.deleteDevice({ id: binding.deviceId }).catch(() => undefined);
 		}
 	};
+});
+
+onSessionEnd(async (client, origin) => {
+	const coordinator = usePushNotificationCoordinator.getState();
+	coordinator.sessionDidChange();
+	await coordinator.tearDown(client, origin);
 });

@@ -193,6 +193,26 @@ function rememberAPIGeneration(
 	storage.set(Keys.serverAPIGeneration, `${generation}@${origin}`);
 }
 
+type SessionEndListener = (
+	client: ArcaneClient | undefined,
+	origin: string | undefined
+) => Promise<void>;
+
+const sessionEndListeners = new Set<SessionEndListener>();
+
+export function onSessionEnd(listener: SessionEndListener): () => void {
+	sessionEndListeners.add(listener);
+	return () => {
+		sessionEndListeners.delete(listener);
+	};
+}
+
+async function notifySessionEnd(client: ArcaneClient | undefined, origin: string | undefined) {
+	await Promise.all(
+		[...sessionEndListeners].map((listener) => listener(client, origin).catch(() => undefined))
+	);
+}
+
 function previewModes(generation: APIGeneration | undefined) {
 	if (generation === 'v3') return { allEnvironmentsPreview: true, refreshedDashboardPreview: true };
 	return {
@@ -629,6 +649,9 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			const previousOrigin = previous ? canonicalServerOrigin(previous) : undefined;
 			const nextOrigin = canonicalServerOrigin(normalized);
 			if (previousOrigin !== undefined && previousOrigin !== nextOrigin) {
+				const replaced = get().client;
+				if (replaced && get().authState === 'authenticated' && !get().isDemoActive)
+					void notifySessionEnd(replaced, previousOrigin);
 				CredentialBinding.unbind(previousOrigin);
 				signOutLocally();
 			}
@@ -870,6 +893,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			const generation = get().authenticationGeneration;
 			set({ isLoading: true });
 			try {
+				await notifySessionEnd(client, get().serverOrigin());
 				let logoutError: unknown;
 				try {
 					await client.auth.logout();
@@ -1008,6 +1032,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			}));
 			CredentialBinding.unbind(endingOrigin);
 
+			await notifySessionEnd(endingClient, endingOrigin);
 			await DemoService.endSession();
 			await endingClient?.auth.logout().catch(() => undefined);
 			ResponseCache.invalidateAll();
