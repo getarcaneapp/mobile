@@ -108,8 +108,21 @@ const credentialPersistence = {
 		updateIDSet(credentialIndexKey, record.profileID, true);
 	},
 	delete(profileID: string) {
-		void SecureStore.deleteItemAsync(this.key(profileID), credentialOptions);
 		updateIDSet(credentialIndexKey, profileID, false);
+		void SecureStore.deleteItemAsync(this.key(profileID), credentialOptions).catch(
+			(error: unknown) => {
+				log('sign-in delete failed', error);
+				updateIDSet(credentialIndexKey, profileID, true);
+				const store = useConnectionProfileStore.getState();
+				if (
+					store.profiles.some((profile) => profile.id === profileID) &&
+					!store.credentialProfileIDs.has(profileID)
+				)
+					useConnectionProfileStore.setState({
+						credentialProfileIDs: new Set([...store.credentialProfileIDs, profileID])
+					});
+			}
+		);
 	}
 };
 

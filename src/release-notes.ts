@@ -118,7 +118,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Container edits running twice and deleted containers staying open.'
 			},
 			{
-				text: 'Edited saved sign-ins reverting after iCloud sync.'
+				text: 'Saved sign-ins reverting after iCloud sync or showing as removed when not.'
 			},
 			{
 				text: 'Invalid swarm ports and build settings saving without an error.'
