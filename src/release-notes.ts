@@ -82,7 +82,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Sign-in dropping proxy tokens in the URL and unreadable certificate errors.'
 			},
 			{
-				text: 'Signing out not revoking the session or push notifications.'
+				text: 'Signing out or switching servers not revoking the session or push.'
 			},
 			{
 				text: 'Stale dashboard, image update counts and background changes.'

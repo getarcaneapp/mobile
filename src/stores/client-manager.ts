@@ -15,7 +15,8 @@ import {
 	CredentialBinding,
 	CredentialLease,
 	CredentialPersistenceCoordinator,
-	OriginTokenStore
+	OriginTokenStore,
+	SecureStoreTokenStore
 } from '@/core/auth/token-store';
 import { friendlyErrorMessage, isCancellation, shouldRefreshNetworkSession } from '@/core/errors';
 import { ResponseCache } from '@/core/networking/response-cache';
@@ -38,6 +39,7 @@ import {
 import { migrateAdvancedFeatures } from '@/core/advanced-features';
 import { requiresPasswordChangeGate } from '@/core/auth/password-change';
 import { defaults, Keys, storage } from '@/core/storage';
+import { TokenPair } from '@/sdk/auth/TokenStore';
 import { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { APIGeneration } from '@/sdk/client/apiGeneration';
 import { EnvironmentID, RetryPolicy } from '@/sdk/client/environment';
@@ -211,6 +213,16 @@ async function notifySessionEnd(client: ArcaneClient | undefined, origin: string
 	await Promise.all(
 		[...sessionEndListeners].map((listener) => listener(client, origin).catch(() => undefined))
 	);
+}
+
+async function endReplacedSession(client: ArcaneClient, origin: string) {
+	await notifySessionEnd(client, origin);
+	const store = new SecureStoreTokenStore(origin);
+	const stored = await store.loadTokens().catch(() => undefined);
+	await client.auth.logout().catch(() => undefined);
+	if (stored === undefined || CredentialBinding.origin === origin) return;
+	const current = await store.loadTokens().catch(() => undefined);
+	if (TokenPair.equals(current, stored)) await store.clearTokens().catch(() => undefined);
 }
 
 function previewModes(generation: APIGeneration | undefined) {
@@ -651,7 +663,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			if (previousOrigin !== undefined && previousOrigin !== nextOrigin) {
 				const replaced = get().client;
 				if (replaced && get().authState === 'authenticated' && !get().isDemoActive)
-					void notifySessionEnd(replaced, previousOrigin);
+					void endReplacedSession(replaced, previousOrigin);
 				CredentialBinding.unbind(previousOrigin);
 				signOutLocally();
 			}
