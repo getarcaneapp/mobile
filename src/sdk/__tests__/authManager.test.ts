@@ -95,6 +95,20 @@ describe('AuthManager refresh', () => {
 		assert.equal(await store.loadTokens(), undefined);
 	});
 
+	it('reports a rejected proactive refresh as unauthorized, not cancelled', async () => {
+		const store = new InMemoryTokenStore(pair('a', 10));
+		const { fetch } = mockFetch(() => ({
+			status: 401,
+			body: { success: false, error: 'expired' }
+		}));
+		const auth = new AuthManager({ baseURL: BASE, tokenStore: store, fetch });
+
+		await assert.rejects(auth.authenticationHeaders(), (error) =>
+			isArcaneError(error, 'unauthorized')
+		);
+		assert.equal(await store.loadTokens(), undefined);
+	});
+
 	it('keeps credentials on transient refresh failures', async () => {
 		const store = new InMemoryTokenStore(pair('a'));
 		const { fetch } = mockFetch(() => ({ status: 503, body: { success: false, error: 'down' } }));

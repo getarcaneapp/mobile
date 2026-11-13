@@ -101,7 +101,12 @@ export class AuthManager {
 				this.checkAuthenticationOperation(generation);
 				this.cachedTokens = refreshed;
 				this.lastFailedProactiveRefresh = undefined;
-			} catch {
+			} catch (error) {
+				if (
+					(isArcaneError(error, 'unauthorized') || isArcaneError(error, 'forbidden')) &&
+					this.cachedTokens === undefined
+				)
+					throw error;
 				this.checkAuthenticationOperation(generation);
 				this.lastFailedProactiveRefresh = this.now();
 			}

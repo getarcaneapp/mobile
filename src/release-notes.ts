@@ -112,6 +112,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Selected agent carrying over to a different server.'
 			},
 			{
+				text: 'Expired sessions failing silently instead of showing an error.'
+			},
+			{
 				text: 'Assorted visual, scrolling and tap target issues.'
 			}
 		]
