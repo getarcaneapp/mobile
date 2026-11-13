@@ -92,7 +92,9 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 	const [isSaving, setIsSaving] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>();
 
-	const hasChanges = jobScheduleFields.some((field) => values[field.key] !== original[field.key]);
+	const hasChanges = jobScheduleFields.some(
+		(field) => (values[field.key] ?? '') !== (original[field.key] ?? '')
+	);
 	const valuesEmpty = Object.keys(values).length === 0;
 	const valuesEmptyRef = useRef(valuesEmpty);
 	useLayoutEffect(() => {
@@ -136,8 +138,13 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 			async () => {
 				const changed: Record<string, string> = {};
 				for (const field of jobScheduleFields) {
-					const value = values[field.key] ?? '';
-					if (value !== original[field.key]) changed[field.key] = value;
+					const value = (values[field.key] ?? '').trim();
+					if (value === (original[field.key] ?? '')) continue;
+					if (value === '') {
+						setErrorMessage(`${field.label} can't be empty.`);
+						return;
+					}
+					changed[field.key] = value;
 				}
 				if (Object.keys(changed).length === 0) return;
 
@@ -148,6 +155,7 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 				try {
 					await client.jobs.updateSchedules({ body: update, envID: environmentID });
 					setOriginal((current) => ({ ...current, ...changed }));
+					setValues((current) => ({ ...current, ...changed }));
 					showToast(Toasts.success('Schedules saved'));
 				} catch (error) {
 					setErrorMessage(friendlyErrorMessage(error));
@@ -170,7 +178,7 @@ export function useJobScheduleConfig(environmentID: EnvironmentID) {
 		discardChanges: () =>
 			setValues((current) => {
 				const next: Record<string, string | undefined> = { ...current };
-				for (const field of jobScheduleFields) next[field.key] = original[field.key] ?? '';
+				for (const field of jobScheduleFields) next[field.key] = original[field.key];
 				return next;
 			}),
 		load,
