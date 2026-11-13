@@ -8,7 +8,7 @@ import type {
 	EnvironmentFinding,
 	EnvironmentJob
 } from '@/features/dashboard/dashboard-overview-logic';
-import { flattenJobs } from '@/features/dashboard/dashboard-overview-logic';
+import { flattenJobs, mergeRiskOverviews } from '@/features/dashboard/dashboard-overview-logic';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { Activity } from '@/sdk/models/activity/Activity';
 import type { VulnerabilityRiskOverview } from '@/sdk/types/VulnerabilityRiskOverview';
@@ -93,18 +93,26 @@ async function loadEvents(client: ArcaneClient, environmentIDs: readonly string[
 }
 
 async function loadRisk(client: ArcaneClient, environmentIDs: readonly string[]) {
-	const [source] = await environmentSources(
+	const sources = await environmentSources(
 		client,
 		environmentIDs.map((id) => ({ id }))
 	);
-	if (!source) return { section: empty(undefined), findings: [] };
+	if (sources.length === 0) return { section: empty(undefined), findings: [] };
 	try {
-		const overview = await client.vulnerabilities.riskOverview({ envID: source.key });
-		const single = source.environments.length === 1 ? source.key : undefined;
-		const findings = (overview.riskiestFindings ?? []).flatMap((finding) => {
-			const environmentID = single ?? finding.environmentId;
-			return environmentID ? [{ environmentID, finding }] : [];
-		});
+		const loaded = await Promise.all(
+			sources.map(async (source) => {
+				const overview = await client.vulnerabilities.riskOverview({ envID: source.key });
+				const single = source.environments.length === 1 ? source.key : undefined;
+				const findings = (overview.riskiestFindings ?? []).flatMap((finding) => {
+					const environmentID = single ?? finding.environmentId;
+					return environmentID ? [{ environmentID, finding }] : [];
+				});
+				return { overview, findings };
+			})
+		);
+		const overview = mergeRiskOverviews(loaded.map((entry) => entry.overview));
+		const findings = loaded.flatMap((entry) => entry.findings);
+		if (loaded.length > 1) findings.sort((a, b) => b.finding.risk - a.finding.risk);
 		return { section: { status: 'ready', value: overview } as const, findings };
 	} catch {
 		return { section: { status: 'failed', value: undefined } as const, findings: [] };

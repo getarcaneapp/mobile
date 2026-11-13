@@ -8,7 +8,11 @@ import type { JobRunStatus, JobStatus } from '@/sdk/models/jobSchedule/JobSchedu
 import { SystemDiskUsage } from '@/sdk/models/system/SystemDiskUsage';
 import type { VersionInfo } from '@/sdk/models/version/VersionInfo';
 import type { JSONValue } from '@/sdk/types/json';
-import type { VulnerabilityRiskFinding } from '@/sdk/types/VulnerabilityRiskOverview';
+import type {
+	VulnerabilityRiskDrivers,
+	VulnerabilityRiskFinding,
+	VulnerabilityRiskOverview
+} from '@/sdk/types/VulnerabilityRiskOverview';
 import { environmentIsOnline } from '@/stores/dashboard-stream-logic';
 
 export type OverviewAttentionSeverity = 'critical' | 'warning' | 'info';
@@ -481,4 +485,77 @@ export function sortOverviewAttention(
 			? rank(a) - rank(b) || time(b) - time(a)
 			: time(b) - time(a) || rank(a) - rank(b)
 	);
+}
+
+function sumDrivers(
+	a: VulnerabilityRiskDrivers,
+	b: VulnerabilityRiskDrivers
+): VulnerabilityRiskDrivers {
+	return {
+		knownExploited: a.knownExploited + b.knownExploited,
+		overdueKnownExploited: a.overdueKnownExploited + b.overdueKnownExploited,
+		highEpss: a.highEpss + b.highEpss,
+		exposedCriticalHigh: a.exposedCriticalHigh + b.exposedCriticalHigh,
+		fixable: a.fixable + b.fixable,
+		findings: a.findings + b.findings,
+		imagesScanned: a.imagesScanned + b.imagesScanned,
+		imagesTotal: a.imagesTotal + b.imagesTotal,
+		scoredImages: a.scoredImages + b.scoredImages
+	};
+}
+
+export function mergeRiskOverviews(
+	overviews: readonly VulnerabilityRiskOverview[]
+): VulnerabilityRiskOverview | undefined {
+	const [first, ...rest] = overviews;
+	if (!first) return undefined;
+	if (rest.length === 0) return first;
+	const headline = overviews.reduce((top, next) => (next.riskScore > top.riskScore ? next : top));
+	const merged = rest.reduce<VulnerabilityRiskOverview>(
+		(total, next) => ({
+			...total,
+			drivers: sumDrivers(total.drivers, next.drivers),
+			drivers7dAgo:
+				total.drivers7dAgo && next.drivers7dAgo
+					? sumDrivers(total.drivers7dAgo, next.drivers7dAgo)
+					: undefined,
+			summary: {
+				critical: total.summary.critical + next.summary.critical,
+				high: total.summary.high + next.summary.high,
+				medium: total.summary.medium + next.summary.medium,
+				low: total.summary.low + next.summary.low,
+				unknown: total.summary.unknown + next.summary.unknown,
+				total: total.summary.total + next.summary.total
+			},
+			exposure: {
+				running: total.exposure.running + next.exposure.running,
+				stopped: total.exposure.stopped + next.exposure.stopped,
+				unused: total.exposure.unused + next.exposure.unused,
+				unknown: total.exposure.unknown + next.exposure.unknown
+			},
+			riskiestImages: [...total.riskiestImages, ...next.riskiestImages],
+			riskiestFindings: [...total.riskiestFindings, ...next.riskiestFindings],
+			prevalentFindings: [...total.prevalentFindings, ...next.prevalentFindings]
+		}),
+		first
+	);
+	return {
+		...merged,
+		riskScore: headline.riskScore,
+		riskBand: headline.riskBand,
+		scoreStatus: headline.scoreStatus,
+		delta7d: headline.delta7d,
+		trend: headline.trend,
+		scoreDriver: headline.scoreDriver,
+		threatIntel: headline.threatIntel,
+		riskiestImages: [...merged.riskiestImages]
+			.sort((a, b) => b.riskScore - a.riskScore)
+			.slice(0, Math.max(...overviews.map((overview) => overview.riskiestImages.length))),
+		riskiestFindings: [...merged.riskiestFindings]
+			.sort((a, b) => b.risk - a.risk)
+			.slice(0, Math.max(...overviews.map((overview) => overview.riskiestFindings.length))),
+		prevalentFindings: [...merged.prevalentFindings]
+			.sort((a, b) => b.imagesAffected - a.imagesAffected)
+			.slice(0, Math.max(...overviews.map((overview) => overview.prevalentFindings.length)))
+	};
 }
