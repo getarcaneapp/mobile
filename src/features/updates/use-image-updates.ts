@@ -177,8 +177,10 @@ export function useImageUpdates({
 
 	const publishUpdateCount = useCallback((current: EnvUpdateBucket[]) => {
 		const counts: Record<string, number> = {};
-		for (const bucket of current)
+		for (const bucket of current) {
+			if (bucket.error !== undefined) continue;
 			counts[bucket.id] = saturatingAdd(counts[bucket.id] ?? 0, updateCount(bucket));
+		}
 		useImageUpdateCountStore
 			.getState()
 			.setCounts(

@@ -85,7 +85,7 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Signing out or switching servers not revoking the session or push.'
 			},
 			{
-				text: 'Stale dashboard, image update counts and background changes.'
+				text: 'Stale dashboard, wrong image update counts and missed background changes.'
 			},
 			{
 				text: 'Container stats showing zeros and terminal size mismatches.'
