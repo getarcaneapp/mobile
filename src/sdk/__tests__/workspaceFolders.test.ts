@@ -112,6 +112,22 @@ describe('workspace folders on Arcane v3', () => {
 			fileChanges: [{ operation: 'create_folder', relativePath: 'conf' }]
 		});
 	});
+
+	it('reports a missing project instead of falling back to the legacy save', async () => {
+		const { projects, requests } = makeServices('v3', () => ({
+			status: 404,
+			body: { title: 'Not Found', status: 404, detail: 'project not found' }
+		}));
+		await expect(
+			projects.updateWorkspace({
+				envID: '0',
+				projectID: 'p1',
+				fileTreeRevision: '',
+				changes: [{ operation: 'create_folder', relativePath: 'conf' }]
+			})
+		).rejects.toThrow();
+		expect(requests).toHaveLength(1);
+	});
 });
 
 describe('workspace folders on Arcane v2', () => {

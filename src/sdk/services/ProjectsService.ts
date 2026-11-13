@@ -131,7 +131,7 @@ export class ProjectsService {
 				{ query: ProjectWorkspace.folderQuery(args.path), decode: ProjectWorkspace.decode }
 			);
 		} catch (error) {
-			if (!isArcaneError(error, 'notFound')) throw error;
+			if (!(await this.usesLegacyFallback(error))) throw error;
 			const legacy = await this.files({ envID: args.envID, projectID: args.projectID });
 			return ProjectWorkspace.make({
 				files: legacy.projectFiles ?? [],
@@ -179,7 +179,7 @@ export class ProjectsService {
 				{ query: [q('relativePath', args.relativePath)] }
 			);
 		} catch (error) {
-			if (!isArcaneError(error, 'notFound')) throw error;
+			if (!(await this.usesLegacyFallback(error))) throw error;
 			const legacy = await this.file(args);
 			return {
 				path: legacy.path,
@@ -206,7 +206,7 @@ export class ProjectsService {
 				changes: args.changes
 			});
 		} catch (error) {
-			if (!isArcaneError(error, 'notFound')) throw error;
+			if (!(await this.usesLegacyFallback(error))) throw error;
 			const legacy = await this.update({
 				envID: args.envID,
 				projectID: args.projectID,
@@ -300,6 +300,11 @@ export class ProjectsService {
 				decode: ProjectDetails.decode
 			}
 		);
+	}
+
+	private async usesLegacyFallback(error: unknown): Promise<boolean> {
+		if (!isArcaneError(error, 'notFound')) return false;
+		return (await this.rest.transport.apiGeneration()) !== 'v3';
 	}
 
 	private updateCurrentWorkspace(args: {
