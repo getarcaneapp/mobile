@@ -20,7 +20,7 @@ For setup instructions, configuration details, and development guides, visit the
 
 ## Requirements
 
-- iOS 18 or later (the Liquid Glass interface is used on iOS 26+; iOS 18 falls back to materials)
+- iOS 26 or later
 - Android 8.0 (API 26) or later
 - An Arcane server reachable over HTTPS
 
