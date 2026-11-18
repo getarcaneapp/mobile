@@ -10,6 +10,14 @@ export type ReleaseNote = {
 
 export const releaseNotes: ReleaseNote[] = [
 	{
+		version: '0.12.1',
+		fixed: [
+			{
+				text: 'Push notifications failing to enable on Android.'
+			}
+		]
+	},
+	{
 		version: '0.12.0',
 		new: [
 			{
@@ -74,9 +82,6 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Agent cards cut off at larger text sizes.'
-			},
-			{
-				text: 'Push notifications failing to enable on Android.'
 			},
 			{
 				text: 'Sign-in dropping proxy tokens in the URL and unreadable certificate errors.'
