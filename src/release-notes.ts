@@ -11,6 +11,11 @@ export type ReleaseNote = {
 export const releaseNotes: ReleaseNote[] = [
 	{
 		version: '0.12.1',
+		new: [
+			{
+				text: 'Light, dark or system theme in Appearance settings.'
+			}
+		],
 		fixed: [
 			{
 				text: 'Push notifications failing to enable on Android.'

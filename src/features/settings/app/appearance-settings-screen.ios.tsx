@@ -3,6 +3,7 @@ import {
 	Button,
 	Form,
 	HStack,
+	Picker,
 	RNHostView,
 	Section,
 	Spacer,
@@ -10,11 +11,12 @@ import {
 	Toggle,
 	ZStack
 } from '@expo/ui/swift-ui';
-import { foregroundStyle, frame } from '@expo/ui/swift-ui/modifiers';
+import { foregroundStyle, frame, pickerStyle, tag } from '@expo/ui/swift-ui/modifiers';
 import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
+import { ColorSchemeOptions, colorSchemeModeFrom } from '@/theme/color-scheme';
 import { systemColors } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
 import { AccentColorMenu } from '@/ui/components/accent-color-menu';
@@ -45,6 +47,24 @@ export function AppearanceSettingsScreen() {
 								onSelectionChange={model.setAccentColorHex}
 							/>
 						</HStack>
+						<Picker<string>
+							label={
+								<SettingsRow
+									title="Theme"
+									systemImage="circle.lefthalf.filled"
+									color={systemColors.gray}
+								/>
+							}
+							selection={model.colorSchemeMode}
+							onSelectionChange={(value) => model.setColorSchemeMode(colorSchemeModeFrom(value))}
+							modifiers={[pickerStyle('menu')]}
+						>
+							{ColorSchemeOptions.map((option) => (
+								<Text key={option.value} modifiers={[tag(option.value)]}>
+									{option.title}
+								</Text>
+							))}
+						</Picker>
 					</Section>
 
 					<Section header={<Text>Motion</Text>}>

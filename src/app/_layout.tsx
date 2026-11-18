@@ -13,12 +13,14 @@ import { useClientManager } from '@/stores/client-manager';
 import { useLaunchSplash } from '@/stores/launch-splash-store';
 import { usePushNotificationCoordinator } from '@/stores/push-notification-coordinator';
 import { useAccentColor } from '@/theme/accent';
+import { applyStoredColorScheme } from '@/theme/color-scheme';
 import { useAppearanceRemountKey } from '@/theme/use-appearance-remount';
 import { ArcaneLaunchSplash } from '@/ui/components/arcane-launch-splash';
 import { DeleteConfirmationHost } from '@/ui/components/delete-confirmation';
 import { ToastHost } from '@/ui/toast';
 
 void SplashScreen.preventAutoHideAsync();
+applyStoredColorScheme();
 
 export default function RootLayout() {
 	const scheme = useColorScheme();

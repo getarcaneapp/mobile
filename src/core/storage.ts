@@ -90,6 +90,7 @@ export const Keys = {
 	refreshedDashboardPreview: 'arcane.refreshedDashboardPreview',
 	serverAPIGeneration: 'arcane.serverAPIGeneration',
 	accentColorHex: 'accentColorHex',
+	colorScheme: 'arcane.colorScheme',
 	launchAnimationEnabled: 'arcane.launchAnimationEnabled',
 	rememberLastTab: 'arcane.rememberLastTab',
 	lastSelectedTabID: 'arcane.lastSelectedTabID',

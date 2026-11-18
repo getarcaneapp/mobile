@@ -1,5 +1,6 @@
 import { Keys, useStoredBool } from '@/core/storage';
 import { AccentColorOptions, useAccentColorHex } from '@/theme/accent';
+import { useColorSchemeMode } from '@/theme/color-scheme';
 import { parseHex, systemColors } from '@/theme/colors';
 
 import { useSettingsNavigation } from '../shared/settings-routes';
@@ -17,6 +18,7 @@ export function useAppearanceSettings() {
 	);
 	const [showTabLabels, setShowTabLabels] = useStoredBool(Keys.showTabLabels, false);
 	const icon = useAppIconState();
+	const [colorSchemeMode, setColorSchemeMode] = useColorSchemeMode();
 
 	const selectedOption =
 		accentColorHex === ''
@@ -29,6 +31,8 @@ export function useAppearanceSettings() {
 		selectedAccentColor: selectedOption?.hex ?? parseHex(accentColorHex) ?? systemColors.purple,
 		accentPickerSelection: selectedOption?.hex ?? purpleHex,
 		setAccentColorHex,
+		colorSchemeMode,
+		setColorSchemeMode,
 		resetAccentColor: () => setAccentColorHex(''),
 		launchAnimationEnabled,
 		setLaunchAnimationEnabled,
