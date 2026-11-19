@@ -1,0 +1,90 @@
+name: GitHub Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Mark the release as a pre-release
+        type: boolean
+        default: false
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: 26
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  EAS_LOCAL_BUILD_WORKINGDIR: ${{ github.workspace }}/../eas-build
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  android:
+    runs-on: depot-ubuntu-24.04-8
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: voidzero-dev/setup-vp@68f39c78aaf39be468cabd2afb09c162574c84af # v1.21.2
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: true
+      - name: Version and release notes
+        run: |
+          version="$(node scripts/release-notes.mts version)"
+          tag="v$version"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "$tag" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match MARKETING_VERSION $version."
+            exit 1
+          fi
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release $tag already exists. Bump MARKETING_VERSION in app.config.ts."
+            exit 1
+          fi
+          node scripts/release-notes.mts > "$RUNNER_TEMP/notes.md"
+          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-read-only: true
+      - name: Build number
+        run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
+      - name: Firebase config
+        env:
+          GOOGLE_SERVICES_JSON_CONTENT: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          file="$RUNNER_TEMP/google-services.json"
+          printf '%s' "$GOOGLE_SERVICES_JSON_CONTENT" > "$file"
+          if ! jq -e '.client[] | select(.client_info.android_client_info.package_name == "app.getarcane.android")' "$file" >/dev/null; then
+            echo "::error::The GOOGLE_SERVICES_JSON secret is missing or has no client for app.getarcane.android."
+            exit 1
+          fi
+          echo "GOOGLE_SERVICES_JSON=$file" >> "$GITHUB_ENV"
+      - name: Build
+        env:
+          GRADLE_OPTS: -Dorg.gradle.caching=true
+        run: vpx eas-cli@latest build --local --platform android --profile github --non-interactive --output "$RUNNER_TEMP/Arcane-$RELEASE_VERSION.apk"
+      - name: Checksum
+        working-directory: ${{ runner.temp }}
+        run: sha256sum "Arcane-$RELEASE_VERSION.apk" > "Arcane-$RELEASE_VERSION.apk.sha256"
+      - name: Publish release
+        env:
+          PRERELEASE: ${{ inputs.prerelease && '--prerelease' || '' }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            "$RUNNER_TEMP/Arcane-$RELEASE_VERSION.apk" \
+            "$RUNNER_TEMP/Arcane-$RELEASE_VERSION.apk.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$RELEASE_TAG" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            $PRERELEASE

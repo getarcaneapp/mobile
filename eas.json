@@ -16,6 +16,12 @@
 			"android": {
 				"buildType": "app-bundle"
 			}
+		},
+		"github": {
+			"extends": "beta",
+			"android": {
+				"buildType": "apk"
+			}
 		}
 	},
 	"submit": {
