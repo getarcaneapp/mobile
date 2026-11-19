@@ -1,10 +1,5 @@
-import {
-	accessSurfaceIDs,
-	isEnvironmentScoped,
-	requiresAdmin,
-	requiresV2,
-	type AppTab
-} from '@/core/app-tab';
+import { accessSurfaceIDs, isEnvironmentScoped, requiresAdmin, type AppTab } from '@/core/app-tab';
+import { isAdvancedTab } from '@/core/advanced-tabs';
 import type { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import { PermissionsManifest } from '@/sdk/models/role/PermissionsManifest';
 import type { PublicSetting } from '@/sdk/models/settings/Settings';
@@ -37,12 +32,13 @@ export interface AccessContext {
 	permissionsManifest: PermissionsManifest | undefined;
 	activeEnvironmentID: string;
 	allEnvironmentsPreview: boolean;
+	advancedFeatures: boolean;
 }
 
 export function canAccessTab(tab: AppTab, context: AccessContext): boolean {
-	const supportsV2 = context.serverCapabilities?.mode === 'rbac';
 	const user = context.currentUser;
-	if ((!supportsV2 && requiresV2(tab)) || !user) return false;
+	if (!user) return false;
+	if (!context.advancedFeatures && isAdvancedTab(tab)) return false;
 
 	switch (tab) {
 		case 'federatedCredentials':
@@ -57,7 +53,7 @@ export function canAccessTab(tab: AppTab, context: AccessContext): boolean {
 	const surfaces = accessSurfaceIDs(tab).filter((id) =>
 		manifest?.accessSurfaces.some((surface) => surface.id === id)
 	);
-	if (supportsV2 && manifest && surfaces.length > 0) {
+	if (manifest && surfaces.length > 0) {
 		const scopes =
 			context.allEnvironmentsPreview && isEnvironmentScoped(tab)
 				? [...new Set([context.activeEnvironmentID, ...Object.keys(user.permissionsByEnv ?? {})])]

@@ -136,7 +136,7 @@ function OverviewContent({ model }: { model: AllVulnerabilitiesModel }) {
 		);
 	}
 	return (
-		<M3Section title="Environment summary">
+		<M3Section title="Agent summary">
 			<SummaryCard model={model} />
 			{model.overviewError ? (
 				<Text
@@ -317,7 +317,7 @@ function SecurityToolbar({ model }: { model: AllVulnerabilitiesModel }) {
 			kind: 'menu',
 			id: 'environment',
 			icon: 'server.rack',
-			label: 'Environment',
+			label: 'Agent',
 			items: model.enabledEnvironments.map((environment) => ({
 				id: environment.id,
 				title: environmentDisplayName(environment),

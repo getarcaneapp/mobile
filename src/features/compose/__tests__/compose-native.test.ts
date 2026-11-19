@@ -307,6 +307,16 @@ describe('Compose native fields', () => {
 		}
 	});
 
+	it('compact short networks stay nested when converted', () => {
+		const path = ['services', 'web', 'networks'];
+		const source = 'services:\n  web:\n    image: nginx\n    networks:\n    - front\n    - back\n';
+		const converted = doc(source).convertingNetworkAttachments(path);
+		assert.deepEqual(doc(converted).keys(path), ['front', 'back']);
+		assert.deepEqual(doc(converted).keys(['services', 'web']), ['image', 'networks']);
+		const changed = doc(converted).setting("'172.20.0.2'", [...path, 'front', 'ipv4_address']);
+		assert.equal(doc(changed).scalar([...path, 'front', 'ipv4_address']), '172.20.0.2');
+	});
+
 	it('duplicate networks do not convert', () => {
 		assert.throws(() =>
 			doc('services:\n  web:\n    networks: [front, front]\n').convertingNetworkAttachments([

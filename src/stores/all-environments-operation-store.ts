@@ -103,7 +103,7 @@ export const useAllEnvironmentsOperationStore = create<AllEnvironmentsOperationS
 					return;
 				}
 				if (!environments.some((e) => e.enabled)) {
-					showToast(Toasts.info('No enabled environments.'));
+					showToast(Toasts.info('No enabled agents.'));
 					return;
 				}
 				set({ results: [] });

@@ -27,7 +27,7 @@ export function PreviewFeaturesScreen() {
 				{model.usesV3Defaults ? (
 					<M3Section>
 						<MaterialListItem headline="Edit Dashboard" onPress={model.openDashboardEditor} />
-						<MaterialListItem headline="Environment Colors" onPress={model.openEnvironmentColors} />
+						<MaterialListItem headline="Agent Colors" onPress={model.openEnvironmentColors} />
 					</M3Section>
 				) : (
 					<>
@@ -44,15 +44,12 @@ export function PreviewFeaturesScreen() {
 						</M3Section>
 						<M3Section footer={PreviewFeaturesCopy.allEnvironmentsFooter}>
 							<SwitchRow
-								title="All Environments"
+								title="All Agents"
 								value={model.allEnvironmentsPreview}
 								onValueChange={model.setAllEnvironmentsPreview}
 							/>
 							<TextButtonRow title="Replay Walkthrough" onPress={model.showIntroduction} />
-							<MaterialListItem
-								headline="Environment Colors"
-								onPress={model.openEnvironmentColors}
-							/>
+							<MaterialListItem headline="Agent Colors" onPress={model.openEnvironmentColors} />
 						</M3Section>
 					</>
 				)}

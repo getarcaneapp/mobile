@@ -182,8 +182,8 @@ export class VariablesStore {
 	}
 
 	scopeLabel(variable: GlobalVariable): string {
-		if (variable.allEnvironments) return 'All environments';
-		if (variable.environmentIDs.length === 0) return 'No environments';
+		if (variable.allEnvironments) return 'All agents';
+		if (variable.environmentIDs.length === 0) return 'No agents';
 		return variable.environmentIDs.map((id) => this.environmentNamesByID.get(id) ?? id).join(', ');
 	}
 
@@ -222,26 +222,26 @@ export function syncSummary(statuses: EnvironmentSyncStatus[]) {
 	const plural = (count: number) => (count === 1 ? '' : 's');
 	if (failures > 0) {
 		return {
-			text: `${failures} environment${plural(failures)} failed to sync`,
+			text: `${failures} agent${plural(failures)} failed to sync`,
 			icon: 'exclamationmark.triangle.fill',
 			color: systemColors.red
 		};
 	}
 	if (pending > 0)
 		return {
-			text: `${pending} environment${plural(pending)} pending`,
+			text: `${pending} agent${plural(pending)} pending`,
 			icon: 'clock.fill',
 			color: systemColors.orange
 		};
 	if (unknown > 0) {
 		return {
-			text: `${unknown} environment${plural(unknown)} has unknown status`,
+			text: `${unknown} agent${plural(unknown)} has unknown status`,
 			icon: 'questionmark.circle.fill',
 			color: undefined
 		};
 	}
 	return {
-		text: 'All environments synced',
+		text: 'All agents synced',
 		icon: 'checkmark.circle.fill',
 		color: systemColors.green
 	};

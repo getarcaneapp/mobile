@@ -97,9 +97,9 @@ export function UpdaterRunSheet({
 			{environments.length === 0 ? (
 				<View style={{ alignItems: 'center', padding: 32, gap: 8 }}>
 					<Icon name="server.rack" size={44} color={colors.secondaryLabel} />
-					<Text style={[m3Type.titleLarge, { color: colors.label }]}>No Environments</Text>
+					<Text style={[m3Type.titleLarge, { color: colors.label }]}>No Agents</Text>
 					<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel, textAlign: 'center' }]}>
-						Add an environment before running the updater.
+						Add an agent before running the updater.
 					</Text>
 				</View>
 			) : (
@@ -119,7 +119,7 @@ export function UpdaterRunSheet({
 							{ color: colors.secondaryLabel, paddingHorizontal: 32, paddingTop: 6 }
 						]}
 					>
-						Pick an environment to run the container updater on.
+						Pick an agent to run the container updater on.
 					</Text>
 				</View>
 			)}

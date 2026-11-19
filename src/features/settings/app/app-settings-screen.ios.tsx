@@ -74,6 +74,13 @@ function GeneralSection({ model }: { model: AppSettingsModel }) {
 					color={systemColors.indigo}
 				/>
 			</Toggle>
+			<Toggle isOn={model.advancedFeatures} onIsOnChange={model.setAdvancedFeatures}>
+				<SettingsRow
+					title="Show Advanced Features"
+					systemImage="slider.horizontal.3"
+					color={systemColors.gray}
+				/>
+			</Toggle>
 		</Section>
 	);
 }
@@ -84,7 +91,7 @@ function DashboardSection({ model }: { model: AppSettingsModel }) {
 			header={<Text>Dashboard</Text>}
 			footer={
 				<Text>
-					How many environments stream live CPU, memory, and disk on the dashboard. Each keeps a
+					How many agents stream live CPU, memory, and disk on the dashboard. Each keeps a
 					connection open, using more data and battery.
 				</Text>
 			}
@@ -92,7 +99,7 @@ function DashboardSection({ model }: { model: AppSettingsModel }) {
 			<Picker<number>
 				label={
 					<SettingsRow
-						title="Live Stats Environments"
+						title="Live Stats Agents"
 						systemImage="waveform.path.ecg"
 						color={systemColors.green}
 					/>

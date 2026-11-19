@@ -40,7 +40,7 @@ export function JobScheduleEnvironmentsScreen() {
 				}
 			>
 				{model.showsEmpty ? (
-					<CenteredMessage icon="server.rack" title="No Environments" message="" />
+					<CenteredMessage icon="server.rack" title="No Agents" message="" />
 				) : (
 					<>
 						<View style={{ height: 12 }} />

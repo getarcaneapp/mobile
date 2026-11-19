@@ -82,9 +82,13 @@ const GLOBAL_RULES: readonly RouteRule[] = [
 	})),
 	rule(ANY, /^backups\/recovery-key$/, () => ({ path: 'backups/recovery/key' })),
 	rule(POST, /^backups\/([^/]+)\/(restore|restore-files)$/, (m) => ({
-		path: `backups/${g(m, 1)}`,
+		path: `environments/0/backups/${g(m, 1)}`,
 		action: actionName(g(m, 2))
 	})),
+	rule(POST, /^backups\/([^/]+)\/(files\/browse|upload)$/, (m) => ({
+		path: `environments/0/backups/${g(m, 1)}/${g(m, 2)}`
+	})),
+	rule(DELETE, /^backups\/([^/]+)$/, (m) => ({ path: `environments/0/backups/${g(m, 1)}` })),
 	rule(GET, /^container-registries\/pull-usage$/, () => ({ path: 'registries/usage' })),
 	rule(POST, /^container-registries\/([^/]+)\/test$/, (m) => ({
 		path: `registries/${g(m, 1)}`,
@@ -228,7 +232,7 @@ const ENVIRONMENT_RULES: readonly RouteRule[] = [
 		path: 'swarm/join/tokens',
 		action: 'rotate'
 	})),
-	rule(POST, /^swarm\/join-environments$/, () => ({ path: 'swarm/join/environments' })),
+	rule(POST, /^swarm\/join-environments$/, () => ({ path: 'swarm/join/agents' })),
 	rule(GET, /^swarm\/unlock-key$/, () => ({ path: 'swarm/unlock/key' })),
 	rule(POST, /^swarm\/nodes\/([^/]+)\/(promote|demote)$/, (m) => ({
 		path: `swarm/nodes/${g(m, 1)}`,
@@ -336,6 +340,13 @@ function translateRoute(route: APIRoute): APIRoute {
 	};
 }
 
+function withAgentPaths(route: APIRoute): APIRoute {
+	const path = route.path
+		.replace(/^(\/*)environments(?=\/|$)/, '$1agents')
+		.replace(/^(\/*)events\/environment\//, '$1events/agent/');
+	return path === route.path ? route : { ...route, path };
+}
+
 export function translateRouteForV3(route: APIRoute): APIRoute {
-	return withTotals(translateRoute(route));
+	return withAgentPaths(withTotals(translateRoute(route)));
 }

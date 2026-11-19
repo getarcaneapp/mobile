@@ -317,9 +317,7 @@ function TabContent({ model }: { model: EnvironmentDetailModel }) {
 			);
 		case 'GitOps':
 			return (
-				<Section
-					footer={<Text>Projects kept in sync with Git repositories in this environment.</Text>}
-				>
+				<Section footer={<Text>Projects kept in sync with Git repositories in this agent.</Text>}>
 					<NavigationRow
 						title="GitOps Syncs"
 						systemImage="arrow.triangle.merge"
@@ -369,7 +367,7 @@ export function EnvironmentDetailScreen(props: { id?: string; name?: string }) {
 												selection={model.selectedTab}
 												onSelectionChange={model.setSelectedTab}
 												options={model.tabOptions}
-												accessibilityLabel="Environment detail sections"
+												accessibilityLabel="Agent detail sections"
 											/>
 										</View>
 									</RNHostView>

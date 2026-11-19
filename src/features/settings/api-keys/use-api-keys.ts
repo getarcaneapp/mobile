@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -85,7 +86,9 @@ export function useSecretPresentation(onDismissed?: () => void) {
 
 export function useAPIKeys() {
 	const navigation = useSettingsNavigation();
-	const access = useAPIKeyAccess();
+	const baseAccess = useAPIKeyAccess();
+	const [advanced] = useAdvancedFeatures();
+	const access = { ...baseAccess, canCreate: baseAccess.canCreate && advanced };
 	const client = useClientManager((s) => s.client);
 	const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
 	const [assignedUsers, setAssignedUsers] = useState<Map<string, User>>(new Map());

@@ -107,11 +107,11 @@ export function VolumeWorkspaceScreen() {
 					{model.entries.map((file) => (
 						<WorkspaceRow key={file.relativePath} model={model} file={file} />
 					))}
-					{state.loading ? (
+					{model.folderLoading ? (
 						<View style={{ padding: 16, alignItems: 'center' }}>
 							<ArcaneLoadingView />
 						</View>
-					) : model.entries.length === 0 && state.workspace !== undefined ? (
+					) : model.showsEmpty ? (
 						<TextRow text="Empty folder" color={colors.secondaryLabel} />
 					) : null}
 				</M3Section>

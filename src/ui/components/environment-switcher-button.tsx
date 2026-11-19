@@ -32,9 +32,9 @@ export function EnvironmentSwitcherToolbarButton({
 				<Pressable
 					onPress={onPress}
 					accessibilityRole="button"
-					accessibilityLabel="Switch Environment"
+					accessibilityLabel="Switch Agent"
 					accessibilityValue={{ text: active?.displayName ?? activeEnvironmentName }}
-					accessibilityHint="Shows all available environments"
+					accessibilityHint="Shows all available agents"
 					hitSlop={10}
 				>
 					<View>

@@ -26,7 +26,7 @@ export const ResourcePruneAction = {
 	title: (action: ResourcePruneAction) => titles[action],
 	message: (action: ResourcePruneAction) => messages[action],
 	allEnvironmentsMessage: (action: ResourcePruneAction) =>
-		`${messages[action]} This runs on every enabled environment.`,
+		`${messages[action]} This runs on every enabled agent.`,
 	permission(action: ResourcePruneAction): string {
 		switch (action) {
 			case 'containers':

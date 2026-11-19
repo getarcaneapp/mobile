@@ -1,6 +1,5 @@
 import { PaginationLoader } from '@/core/networking/pagination-loader';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
-import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import { ArcaneConflictError, ArcaneValidationError } from '@/sdk/errors/ArcaneError';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { Permission } from '@/sdk/models/role/Permission';
@@ -64,12 +63,12 @@ export function displayScopeLabel(
 ): string {
 	if (environmentId === undefined) return 'Global';
 	const environment = environments.find((env) => env.id === environmentId);
-	if (environment) return environment.name ?? `Environment ${environmentId}`;
-	return `Environment ${environmentId}`;
+	if (environment) return environment.name ?? `Agent ${environmentId}`;
+	return `Agent ${environmentId}`;
 }
 
 export function environmentPickerName(environment: Environment): string {
-	return environment.name ?? `Environment ${environment.id}`;
+	return environment.name ?? `Agent ${environment.id}`;
 }
 
 export function formatValidationFields(fields: Record<string, string[]>): string {
@@ -87,24 +86,15 @@ export function conflictMessage(error: unknown): { message: string | undefined }
 	return error instanceof ArcaneConflictError ? { message: error.conflictMessage } : undefined;
 }
 
-export function useSupportsRoleManagement(): boolean {
-	const capabilities = useClientManager((s) => s.serverCapabilities);
-	return capabilities !== undefined && ServerCapabilities.supportsRoleManagement(capabilities);
-}
-
 export function useCanManageRoles(): boolean {
 	const user = useClientManager((s) => s.currentUser);
-	const supportsRBAC = useSupportsRoleManagement();
 	if (!user) return false;
-	if (!supportsRBAC) return User.isAdmin(user);
 	return User.isGlobalAdmin(user) || User.hasPermission(user, Permission.Roles.list);
 }
 
 export function useCanManageOIDCMappings(): boolean {
 	const user = useClientManager((s) => s.currentUser);
-	const supportsRBAC = useSupportsRoleManagement();
 	if (!user) return false;
-	if (!supportsRBAC) return User.isAdmin(user);
 	return User.isGlobalAdmin(user);
 }
 
@@ -128,5 +118,5 @@ export type AssignmentScope = 'global' | 'environment';
 
 export const assignmentScopeOptions: { value: AssignmentScope; label: string }[] = [
 	{ value: 'global', label: 'Global' },
-	{ value: 'environment', label: 'Specific Environment' }
+	{ value: 'environment', label: 'Specific Agent' }
 ];

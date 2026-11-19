@@ -319,21 +319,6 @@ export function requiresAdmin(tab: AppTab): boolean {
 	}
 }
 
-export function requiresV2(tab: AppTab): boolean {
-	switch (tab) {
-		case 'activities':
-		case 'activityHistory':
-		case 'variables':
-		case 'roles':
-		case 'oidcRoleMappings':
-		case 'systemBackups':
-		case 'federatedCredentials':
-			return true;
-		default:
-			return false;
-	}
-}
-
 export function isEnvironmentScoped(tab: AppTab): boolean {
 	switch (tab) {
 		case 'containers':
@@ -409,7 +394,7 @@ export function accessSurfaceIDs(tab: AppTab): string[] {
 		case 'gitRepositories':
 			return ['customize.category.git-repositories'];
 		case 'gitOps':
-			return ['route.environments.gitops'];
+			return ['route.gitops', 'route.environments.gitops'];
 		case 'apiKeys':
 			return ['settings.category.apikeys'];
 		case 'webhooks':

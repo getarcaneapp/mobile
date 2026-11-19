@@ -299,7 +299,7 @@ function UsageCard({ model }: { model: AllEnvironmentsDashboardModel }) {
 			) : null}
 			{model.showsStreamCapNote ? (
 				<Text style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>
-					{`Live usage covers the first ${model.maxStreams} environments. Change this in App Settings.`}
+					{`Live usage covers the first ${model.maxStreams} agents. Change this in App Settings.`}
 				</Text>
 			) : null}
 		</GlassCard>
@@ -712,7 +712,7 @@ function ReclaimableStat() {
 			value={reclaimable.failed ? undefined : byteString(reclaimable.total)}
 			detail={
 				reclaimable.environmentCount > 1
-					? `Across ${reclaimable.environmentCount} environments`
+					? `Across ${reclaimable.environmentCount} agents`
 					: 'Unused data'
 			}
 			loading={reclaimable.loading}
@@ -1095,7 +1095,7 @@ function EnvironmentsWidget({
 		<View style={{ gap: 14 }}>
 			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
 				<View style={{ flex: 1, gap: 2 }}>
-					<DashboardSectionTitle title="Environments" />
+					<DashboardSectionTitle title="Agents" />
 					<Text
 						style={[m3Type.bodySmall, { color: colors.secondaryLabel }]}
 					>{`${model.onlineCount} of ${model.environments.length} online`}</Text>

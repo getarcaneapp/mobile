@@ -5,7 +5,7 @@ import { colors, systemColors } from '@/theme/colors';
 import { FormTextField, FormValueRow } from '@/ui/components/form-fields';
 import { MaterialListItem } from '@/ui/material/list';
 
-import { M3Section, SwitchRow } from '../shared/android-material';
+import { M3Section } from '../shared/android-material';
 import { FormErrorSection } from '../shared/form-error-section';
 import { SettingsSaveBar, settingsSaveBarHeight } from '../shared/settings-save-bar';
 
@@ -43,21 +43,15 @@ export function UserDetailScreen() {
 					/>
 				</M3Section>
 				<M3Section title="Access">
-					{model.supportsV2 ? (
+					{
 						<MaterialListItem
 							headline="Role Assignments"
-							supporting="Manage global and per-environment roles"
+							supporting="Manage global and per-agent roles"
 							icon="person.crop.rectangle.stack"
 							iconColor={systemColors.indigo}
 							onPress={model.openRoleAssignments}
 						/>
-					) : (
-						<SwitchRow
-							title="Administrator"
-							value={model.isAdmin}
-							onValueChange={model.setIsAdmin}
-						/>
-					)}
+					}
 				</M3Section>
 				<FormErrorSection message={model.errorMessage} />
 			</ScrollView>

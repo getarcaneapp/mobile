@@ -2,6 +2,7 @@ import { Directory, File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
@@ -63,7 +64,9 @@ export function useVolumeWorkspaceFile(
 	const canUpload = usePermission(Permission.Volumes.upload, environmentID);
 
 	const fileIdentity = () => `${workspaceIdentity(environmentID, volumeName)}|${relativePath}`;
-	const canEdit = content?.editable === true && content.readOnlyReason === undefined && canUpload;
+	const [advanced] = useAdvancedFeatures();
+	const canEdit =
+		advanced && content?.editable === true && content.readOnlyReason === undefined && canUpload;
 	const hasChanges = VolumeWorkspaceDraft.hasChanges(draft);
 
 	const load = useCallback(async () => {
@@ -121,7 +124,7 @@ export function useVolumeWorkspaceFile(
 						envID: environmentID,
 						name: volumeName,
 						manifest: {
-							fileTreeRevision: revision,
+							fileTreeRevision: revision || undefined,
 							fileChanges: [
 								{ operation: 'update_file', relativePath, uploadIndex: 0, baselineIndex: 1 }
 							]
@@ -129,7 +132,7 @@ export function useVolumeWorkspaceFile(
 						files: [updated.uri, baseline.uri]
 					});
 					if (!isCurrent()) return;
-					setRevision(result.fileTreeRevision);
+					setRevision(result?.fileTreeRevision ?? '');
 					setDraft((d) => VolumeWorkspaceDraft.load(d.text));
 					setErrorMessage(undefined);
 					await WorkspaceStore.load(environmentID, volumeName);
@@ -157,14 +160,17 @@ export function useVolumeWorkspaceFile(
 		const key = fileIdentity();
 		const isCurrent = () => !unmounted.current && key === fileIdentity();
 		try {
-			const tree = await client.volumes.workspace({ envID: environmentID, name: volumeName });
+			const tree =
+				revision === ''
+					? undefined
+					: await client.volumes.workspace({ envID: environmentID, name: volumeName });
 			const latest = await client.volumes.workspaceFile({
 				envID: environmentID,
 				name: volumeName,
 				relativePath
 			});
 			if (!isCurrent()) return;
-			const latestRevision = tree.fileTreeRevision;
+			const latestRevision = tree?.fileTreeRevision ?? '';
 			const payload: WorkspaceReviewPayload = {
 				latest,
 				onKeep: () => {

@@ -22,6 +22,7 @@ export function AuthenticationDestination() {
 	const model = useAuthenticationSettings();
 	const { form, update, oidcEnvForced } = model;
 	const { lowerBound, upperBound } = AuthenticationSettingsValidation.sessionTimeoutMinutes;
+	const passwordLength = AuthenticationSettingsValidation.passwordMinLength;
 
 	return (
 		<View style={{ flex: 1, backgroundColor: colors.systemGroupedBackground }}>
@@ -32,7 +33,11 @@ export function AuthenticationDestination() {
 			>
 				<M3Section
 					title="Local Authentication"
-					footer="Session length in minutes (15–525600). Stronger policies require more complex local passwords."
+					footer={
+						form.granularPasswordPolicy
+							? 'Session length in minutes (15–525600). Minimum length is 8–128 characters.'
+							: 'Session length in minutes (15–525600). Stronger policies require more complex local passwords.'
+					}
 				>
 					<SwitchRow
 						title="Local Auth Enabled"
@@ -47,12 +52,45 @@ export function AuthenticationDestination() {
 						minValue={lowerBound}
 						maxValue={upperBound}
 					/>
-					<FormPicker
-						title="Password Policy"
-						selection={form.authPasswordPolicy}
-						onSelectionChange={(value) => update('authPasswordPolicy', value)}
-						options={passwordPolicyOptions}
-					/>
+					{form.granularPasswordPolicy ? (
+						<>
+							<FormNumberField
+								title="Minimum Length"
+								placeholder="12"
+								text={form.authPasswordMinLength}
+								onChangeText={(text) => update('authPasswordMinLength', text)}
+								minValue={passwordLength.lowerBound}
+								maxValue={passwordLength.upperBound}
+							/>
+							<SwitchRow
+								title="Require Uppercase Letter"
+								value={form.authPasswordRequireUppercase}
+								onValueChange={(isOn) => update('authPasswordRequireUppercase', isOn)}
+							/>
+							<SwitchRow
+								title="Require Lowercase Letter"
+								value={form.authPasswordRequireLowercase}
+								onValueChange={(isOn) => update('authPasswordRequireLowercase', isOn)}
+							/>
+							<SwitchRow
+								title="Require Number"
+								value={form.authPasswordRequireNumber}
+								onValueChange={(isOn) => update('authPasswordRequireNumber', isOn)}
+							/>
+							<SwitchRow
+								title="Require Symbol"
+								value={form.authPasswordRequireSymbol}
+								onValueChange={(isOn) => update('authPasswordRequireSymbol', isOn)}
+							/>
+						</>
+					) : (
+						<FormPicker
+							title="Password Policy"
+							selection={form.authPasswordPolicy}
+							onSelectionChange={(value) => update('authPasswordPolicy', value)}
+							options={passwordPolicyOptions}
+						/>
+					)}
 				</M3Section>
 
 				<M3Section

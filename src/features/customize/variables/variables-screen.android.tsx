@@ -190,7 +190,7 @@ export function VariablesScreen() {
 			<CenteredMessage
 				icon="curlybraces"
 				title="No Variables"
-				message="Create a variable and choose which environments receive it."
+				message="Create a variable and choose which agents receive it."
 				action={
 					model.canCreate
 						? { title: 'Create Variable', onPress: () => model.openEditor() }

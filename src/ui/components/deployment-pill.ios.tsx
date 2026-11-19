@@ -34,8 +34,7 @@ import {
 	pillCaption,
 	type DeploymentPillProps
 } from './install-stream.types';
-import { floatingSurfaceShadowStyle } from './surfaces';
-import { glassEffectCompat, isIOS26 } from './swiftui-surfaces';
+import { glassEffectCompat } from './swiftui-surfaces';
 
 export function DeploymentPill({ operation, onTap, onDismiss }: DeploymentPillProps) {
 	const accent = useAccentColor();
@@ -94,9 +93,7 @@ export function DeploymentPill({ operation, onTap, onDismiss }: DeploymentPillPr
 				accessibilityLabel={pillAccessibilityText(operation)}
 				accessibilityHint="Opens the full log"
 			>
-				<View
-					style={[{ height: 50, borderRadius: 25 }, isIOS26 ? null : floatingSurfaceShadowStyle]}
-				>
+				<View style={{ height: 50, borderRadius: 25 }}>
 					<Host style={{ height: 50 }}>
 						<Button
 							onPress={onTap}

@@ -298,7 +298,9 @@ export function useLoginModel() {
 	};
 
 	const signIn = () => {
-		if (!useClientManager.getState().isLocalAuthAvailable()) return;
+		if (!username || !password || isUsingSavedSignIn) return;
+		const state = useClientManager.getState();
+		if (state.isLoading || !state.isLocalAuthAvailable()) return;
 		focus(null);
 		const pending = { serverURL: manager.serverURL, username, password };
 		pendingPasswordCredentialChange.current = pending;

@@ -10,6 +10,7 @@ import { SettingsService } from '../services/SettingsService';
 import { ItemEnvironment } from '../pagination/PaginatedResponse';
 import { normalizeV3Environment, v3ResponseNormalizer } from '../client/v3Responses';
 import { translateRouteForV3 } from '../client/v3Routes';
+import { APIGenerationState } from '../client/apiGeneration';
 import { InMemoryTokenStore } from '../auth/TokenStore';
 import { SessionBootstrap } from '../models/auth/SessionBootstrap';
 import { EnvironmentChangesEvent } from '../models/event/EnvironmentChanges';
@@ -27,22 +28,22 @@ function route(method: string, path: string, query: { name: string; value?: stri
 describe('translateRouteForV3', () => {
 	it('turns legacy verb endpoints into action queries', () => {
 		expect(route('POST', 'environments/0/containers/abc/restart')).toBe(
-			'POST environments/0/containers/abc?action=restart'
+			'POST agents/0/containers/abc?action=restart'
 		);
 		expect(route('POST', 'environments/e1/projects/p1/up')).toBe(
-			'POST environments/e1/projects/p1/deploy?action=up'
+			'POST agents/e1/projects/p1/deploy?action=up'
 		);
 		expect(
 			route('POST', 'environments/e1/projects/p1/restart', [{ name: 'services', value: 'web' }])
-		).toBe('POST environments/e1/projects/p1?action=restart&services=web');
+		).toBe('POST agents/e1/projects/p1?action=restart&services=web');
 		expect(route('POST', 'environments/0/system/containers/start-stopped')).toBe(
-			'POST environments/0/system/containers?action=startstopped'
+			'POST agents/0/system/containers?action=startstopped'
 		);
 		expect(route('POST', 'environments/0/volumes/data/backups/b1/restore-files')).toBe(
-			'POST environments/0/volumes/data/backups/b1?action=restorefiles'
+			'POST agents/0/volumes/data/backups/b1?action=restorefiles'
 		);
 		expect(route('POST', 'environments/0/image-updates/check-all')).toBe(
-			'POST environments/0/images/updates/check?action=all'
+			'POST agents/0/images/updates/check?action=all'
 		);
 	});
 
@@ -50,11 +51,11 @@ describe('translateRouteForV3', () => {
 		expect(route('GET', 'api-keys')).toBe('GET apikeys');
 		expect(route('PUT', 'api-keys/k1')).toBe('PATCH apikeys/k1');
 		expect(route('GET', 'container-registries/pull-usage')).toBe('GET registries/usage');
-		expect(route('PUT', 'environments/e1')).toBe('PATCH environments/e1');
-		expect(route('PUT', 'environments/0/settings')).toBe('PATCH environments/0/settings');
-		expect(route('GET', 'environments/0/job-schedules')).toBe('GET environments/0/jobs/schedules');
+		expect(route('PUT', 'environments/e1')).toBe('PATCH agents/e1');
+		expect(route('PUT', 'environments/0/settings')).toBe('PATCH agents/0/settings');
+		expect(route('GET', 'environments/0/job-schedules')).toBe('GET agents/0/jobs/schedules');
 		expect(route('POST', 'environments/0/swarm/services/s1/scale')).toBe(
-			'PATCH environments/0/swarm/services/s1'
+			'PATCH agents/0/swarm/services/s1'
 		);
 		expect(route('GET', 'app-version')).toBe('GET app/version');
 	});
@@ -69,12 +70,39 @@ describe('translateRouteForV3', () => {
 	});
 
 	it('leaves unchanged routes alone', () => {
-		expect(route('GET', 'environments/0/containers')).toBe('GET environments/0/containers');
-		expect(route('PUT', 'environments/0/swarm/services/s1')).toBe(
-			'PUT environments/0/swarm/services/s1'
-		);
+		expect(route('GET', 'environments/0/containers')).toBe('GET agents/0/containers');
+		expect(route('PUT', 'environments/0/swarm/services/s1')).toBe('PUT agents/0/swarm/services/s1');
 		expect(route('PUT', 'users/u1/role-assignments')).toBe('PUT users/u1/roles');
 		expect(route('PUT', 'backups/recovery-key')).toBe('PUT backups/recovery/key');
+	});
+
+	it('routes system backup actions through the local agent', () => {
+		expect(route('POST', 'backups/b1/restore')).toBe('POST agents/0/backups/b1?action=restore');
+		expect(route('POST', 'backups/b1/restore-files')).toBe(
+			'POST agents/0/backups/b1?action=restorefiles'
+		);
+		expect(route('POST', 'backups/b1/files/browse', [{ name: 'path', value: '/' }])).toBe(
+			'POST agents/0/backups/b1/files/browse?path=/'
+		);
+		expect(route('POST', 'backups/b1/upload')).toBe('POST agents/0/backups/b1/upload');
+		expect(route('DELETE', 'backups/b1')).toBe('DELETE agents/0/backups/b1');
+		expect(route('POST', 'backups/discover')).toBe('POST backups/discover');
+		expect(route('GET', 'backups/history')).toBe('GET backups/history?includeTotal=true');
+	});
+
+	it('renames environment routes to agents', () => {
+		expect(route('GET', 'environments')).toBe('GET agents');
+		expect(route('GET', '/environments/e1/')).toBe('GET /agents/e1/');
+		expect(route('GET', 'environments/0/ws/containers/abc/logs')).toBe(
+			'GET agents/0/ws/containers/abc/logs'
+		);
+		expect(route('POST', 'environments/0/swarm/join-environments')).toBe(
+			'POST agents/0/swarm/join/agents'
+		);
+		expect(route('GET', 'events/environment/e1')).toBe('GET events/agent/e1?includeTotal=true');
+		expect(route('GET', 'environments/0/volumes/data/backups')).toBe(
+			'GET agents/0/volumes/data/backups?includeTotal=true'
+		);
 	});
 });
 
@@ -144,7 +172,7 @@ describe('API generation detection', () => {
 		const { requests, ...client } = makeClient((request) => {
 			if (request.url.endsWith('/api/app/version'))
 				return { status: 200, body: { currentVersion: '3.0.0', enabledFeatures: [] } };
-			if (request.url.includes('/api/environments/0/settings'))
+			if (request.url.includes('/api/agents/0/settings'))
 				return {
 					status: 200,
 					body: {
@@ -162,8 +190,8 @@ describe('API generation detection', () => {
 		expect(client.transport.currentAPIGeneration()).toBe('v3');
 		expect(requests.map((request) => `${request.method} ${request.url}`)).toEqual([
 			`GET ${BASE}/api/app/version`,
-			`POST ${BASE}/api/environments/0/containers/abc?action=restart`,
-			`GET ${BASE}/api/environments/0/settings`
+			`POST ${BASE}/api/agents/0/containers/abc?action=restart`,
+			`GET ${BASE}/api/agents/0/settings`
 		]);
 		expect(settings).toEqual([{ key: 'a', value: '1', type: 'string' }]);
 	});
@@ -182,16 +210,26 @@ describe('API generation detection', () => {
 	});
 });
 
+describe('API generation fallback', () => {
+	it('uses the fallback generation when the probe is inconclusive', async () => {
+		const state = new APIGenerationState(undefined, 'v3');
+		expect(await state.resolve(async () => undefined)).toBe('v3');
+		expect(await state.resolve(() => Promise.reject(new Error('offline')))).toBe('v3');
+		expect(state.current).toBeUndefined();
+		expect(await state.resolve(async () => 'legacy')).toBe('legacy');
+	});
+});
+
 describe('v3 list totals', () => {
 	it('requests exact totals from endpoints that skip counting by default', () => {
 		expect(route('GET', 'environments/0/activities', [{ name: 'start', value: '0' }])).toBe(
-			'GET environments/0/activities?start=0&includeTotal=true'
+			'GET agents/0/activities?start=0&includeTotal=true'
 		);
 		expect(route('GET', 'environments/a,b/activities')).toBe(
-			'GET environments/a,b/activities?includeTotal=true'
+			'GET agents/a,b/activities?includeTotal=true'
 		);
 		expect(route('GET', 'events')).toBe('GET events?includeTotal=true');
-		expect(route('GET', 'environments/0/containers')).toBe('GET environments/0/containers');
+		expect(route('GET', 'environments/0/containers')).toBe('GET agents/0/containers');
 	});
 });
 
@@ -291,12 +329,28 @@ describe('multi-environment responses', () => {
 		expect(failures.get('b')).toBe('Agent is not connected');
 		expect(requests.slice(1).map((request) => request.url.replace(BASE, ''))).toEqual(
 			expect.arrayContaining([
-				'/api/environments/a,b/containers/counts',
-				'/api/environments/a,b/images/counts',
-				'/api/environments/a,b/version'
+				'/api/agents/a,b/containers/counts',
+				'/api/agents/a,b/images/counts',
+				'/api/agents/a,b/version'
 			])
 		);
 		expect(requests).toHaveLength(6);
+	});
+});
+
+describe('v3 retries', () => {
+	it('does not retry a POST that v3 rewrites to PUT', async () => {
+		const { requests, ...client } = makeClient((request) => {
+			if (request.url.endsWith('/api/app/version'))
+				return { status: 200, body: { currentVersion: '3.0.0', enabledFeatures: [] } };
+			return { status: 504, body: {} };
+		});
+
+		await expect(
+			client.containers.edit({ envID: '0', id: 'abc', body: {} as never })
+		).rejects.toThrow();
+		const edits = requests.filter((request) => request.url.endsWith('/containers/abc/config'));
+		expect(edits.map((request) => request.method)).toEqual(['PUT']);
 	});
 });
 
@@ -311,6 +365,8 @@ describe('offline environments', () => {
 		expect(requests.filter((request) => request.url.includes('/remote/'))).toHaveLength(1);
 		expect(client.transport.shouldRetry('GET', 503, 'environments/0/containers')).toBe(true);
 		expect(client.transport.shouldRetry('GET', 503, 'environments/e1/containers')).toBe(false);
+		expect(client.transport.shouldRetry('GET', 503, 'agents/e1/containers')).toBe(false);
+		expect(client.transport.shouldRetry('GET', 503, 'agents/0/containers')).toBe(true);
 		expect(client.transport.shouldRetry('GET', 502, 'environments/e1/containers')).toBe(true);
 	});
 });

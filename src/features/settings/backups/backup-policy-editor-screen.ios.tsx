@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Button, Section, Stepper, Toggle } from '@expo/ui/swift-ui';
 
 import { FormPicker, FormTextField } from '@/ui/components/form-fields';
@@ -8,7 +9,7 @@ import { usePolicyEditorParam } from './backup-routes';
 import { RedText } from './backup-rows';
 import { policyVolumeSelectionOptions, useBackupPolicyEditor } from './use-backup-policy-editor';
 
-export function BackupPolicyEditorScreen() {
+function BackupPolicyEditorScreenContent() {
 	const model = useBackupPolicyEditor(usePolicyEditorParam());
 	return (
 		<BackupFormChrome
@@ -107,5 +108,13 @@ export function BackupPolicyEditorScreen() {
 			})}
 			{model.loaded ? <Button label="Add policy" onPress={model.add} /> : null}
 		</BackupFormChrome>
+	);
+}
+
+export function BackupPolicyEditorScreen() {
+	return (
+		<AdvancedGate>
+			<BackupPolicyEditorScreenContent />
+		</AdvancedGate>
 	);
 }

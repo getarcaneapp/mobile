@@ -24,7 +24,7 @@ export const maintenanceActionInfo: Record<
 		completionTitle: 'Updates complete',
 		systemImage: 'arrow.triangle.2.circlepath',
 		explanation:
-			'Run the configured container and project updater on every enabled environment. Containers may restart during updates.'
+			'Run the configured container and project updater on every enabled agent. Containers may restart during updates.'
 	},
 	checkImages: {
 		title: 'Check for Updates',
@@ -33,7 +33,7 @@ export const maintenanceActionInfo: Record<
 		completionTitle: 'Updates checked',
 		systemImage: 'arrow.clockwise',
 		explanation:
-			'Check images in every enabled environment for available updates. This does not install updates.'
+			'Check images in every enabled agent for available updates. This does not install updates.'
 	}
 };
 

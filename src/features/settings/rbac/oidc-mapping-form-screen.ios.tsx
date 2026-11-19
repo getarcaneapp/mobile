@@ -56,8 +56,8 @@ export function OIDCMappingFormScreen() {
 								environments={model.availableEnvironments}
 								environmentId={model.environmentId}
 								onEnvironmentChange={model.setEnvironmentId}
-								globalFooter="Global mappings apply across every environment."
-								environmentFooter="Environment mappings only apply inside the selected environment."
+								globalFooter="Global mappings apply across every agent."
+								environmentFooter="Agent mappings only apply inside the selected agent."
 							/>
 							<FormErrorSection message={model.errorMessage} />
 							<SettingsSaveBarSpacer />

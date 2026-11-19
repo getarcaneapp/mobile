@@ -6,7 +6,7 @@ import { ArcaneLoadingView } from '@/ui/components/arcane-loading-view';
 import { FormPicker, FormSecureField, FormTextField } from '@/ui/components/form-fields';
 
 import { roleDisplayName } from '../rbac/rbac-models';
-import { M3Section, SwitchRow } from '../shared/android-material';
+import { M3Section } from '../shared/android-material';
 import { AndroidToolbar } from '../shared/android-toolbar';
 import { FormErrorSection } from '../shared/form-error-section';
 
@@ -64,35 +64,25 @@ export function CreateUserScreen() {
 				<M3Section
 					title="Roles"
 					footer={
-						model.supportsRoleManagement
-							? 'The selected role is assigned globally. Per-environment assignments can be edited after creation.'
-							: undefined
+						'The selected role is assigned globally. Per-agent assignments can be edited after creation.'
 					}
 				>
-					{model.supportsRoleManagement ? (
-						model.isLoadingRoles && model.availableRoles.length === 0 ? (
-							<View style={{ padding: 16, alignItems: 'center' }}>
-								<ArcaneLoadingView label="Loading roles…" variant="inline" />
-							</View>
-						) : (
-							<FormPicker
-								title="Role"
-								selection={model.selectedRoleId}
-								onSelectionChange={model.setSelectedRoleId}
-								options={[
-									{ label: 'Choose…', value: '' },
-									...model.availableRoles.map((role) => ({
-										label: roleDisplayName(role),
-										value: role.id
-									}))
-								]}
-							/>
-						)
+					{model.isLoadingRoles && model.availableRoles.length === 0 ? (
+						<View style={{ padding: 16, alignItems: 'center' }}>
+							<ArcaneLoadingView label="Loading roles…" variant="inline" />
+						</View>
 					) : (
-						<SwitchRow
-							title="Administrator"
-							value={model.isAdmin}
-							onValueChange={model.setIsAdmin}
+						<FormPicker
+							title="Role"
+							selection={model.selectedRoleId}
+							onSelectionChange={model.setSelectedRoleId}
+							options={[
+								{ label: 'Choose…', value: '' },
+								...model.availableRoles.map((role) => ({
+									label: roleDisplayName(role),
+									value: role.id
+								}))
+							]}
 						/>
 					)}
 				</M3Section>

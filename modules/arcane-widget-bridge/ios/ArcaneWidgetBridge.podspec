@@ -6,7 +6,7 @@ Pod::Spec.new do |s|
   s.license        = 'MIT'
   s.author         = 'Arcane'
   s.homepage       = 'https://getarcane.app'
-  s.platforms      = { :ios => '18.0' }
+  s.platforms      = { :ios => '26.0' }
   s.swift_version  = '5.9'
   s.source         = { git: '' }
   s.static_framework = true

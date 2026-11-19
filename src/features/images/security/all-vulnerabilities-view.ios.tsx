@@ -143,7 +143,7 @@ function OverviewContent({ model }: { model: AllVulnerabilitiesModel }) {
 		);
 	}
 	return (
-		<Section title="Environment summary">
+		<Section title="Agent summary">
 			<SummaryCard model={model} />
 			{model.overviewError ? (
 				<Text
@@ -270,7 +270,7 @@ function SecurityToolbar({ model }: { model: AllVulnerabilitiesModel }) {
 				/>
 			) : null}
 			{toolbar.showsOverviewEnvironmentPicker ? (
-				<Stack.Toolbar.Menu icon="server.rack" accessibilityLabel="Environment">
+				<Stack.Toolbar.Menu icon="server.rack" accessibilityLabel="Agent">
 					{model.enabledEnvironments.map((environment) => (
 						<Stack.Toolbar.MenuAction
 							key={environment.id}

@@ -150,7 +150,7 @@ export function VolumesScreen(props: VolumesListProps) {
 				<CenteredMessage
 					icon="externaldrive"
 					title="No Volumes"
-					message="No volumes found in any environment."
+					message="No volumes found in any agent."
 				/>
 				<EnvironmentActionButton
 					title="Create Volume"
@@ -163,7 +163,7 @@ export function VolumesScreen(props: VolumesListProps) {
 			<CenteredMessage
 				icon="externaldrive"
 				title="No Volumes"
-				message="No volumes found in this environment."
+				message="No volumes found in this agent."
 				action={{ title: 'Create Volume', onPress: () => model.presentCreate(props.environmentID) }}
 			/>
 		);

@@ -122,7 +122,7 @@ export function volumePreviewDetails(item: VolumeItem, size: number | undefined)
 	if (volume.mountpoint !== '')
 		details.push({ icon: 'folder', label: 'Mount Point', value: volume.mountpoint });
 	if (item.environmentName)
-		details.push({ icon: 'server.rack', label: 'Environment', value: item.environmentName });
+		details.push({ icon: 'server.rack', label: 'Agent', value: item.environmentName });
 	return details;
 }
 

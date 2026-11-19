@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -134,6 +135,7 @@ export function useSwarmKeyValues() {
 		);
 	}, [kind, environmentID]);
 	const canManage = can(KeyValueKind.permission(kind));
+	const [advanced] = useAdvancedFeatures();
 
 	useEffect(() => {
 		void load();
@@ -177,6 +179,7 @@ export function useSwarmKeyValues() {
 		load,
 		setSearchText,
 		canManage,
+		canCreate: canManage && advanced,
 		headerText: `${items.length} ${items.length === 1 ? KeyValueKind.singular(kind).toLowerCase() : KeyValueKind.title(kind).toLowerCase()}`,
 		updatedText: (item: SwarmKeyValueItem) => `Updated ${swarmDate(item.updatedAt)}`,
 		openDetail: (item: SwarmKeyValueItem) => swarm.openKeyValue(environmentID, kind, item),

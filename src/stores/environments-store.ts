@@ -13,7 +13,7 @@ import { useClientManager } from '@/stores/client-manager';
 import { useEnvironmentColorStore } from '@/stores/environment-color-store';
 
 export function environmentDisplayName(environment: Pick<Environment, 'id' | 'name'>): string {
-	return environment.name ? environment.name : `Environment ${environment.id}`;
+	return environment.name ? environment.name : `Agent ${environment.id}`;
 }
 
 export interface ListEnvironment {
@@ -60,7 +60,7 @@ type EnvironmentsState = {
 	errorMessage: string | undefined;
 
 	configure: (client: ArcaneClient | undefined) => void;
-	setVisible: (visible: boolean, consumer: string, supportsDashboardStream: boolean) => void;
+	setVisible: (visible: boolean, consumer: string) => void;
 	load: (options?: { refresh?: boolean; loadsEnvironmentDetails?: boolean }) => Promise<void>;
 	refreshDockerInformationFor: (
 		environmentID: string,
@@ -238,11 +238,10 @@ export const useEnvironmentsStore = create<EnvironmentsState>((set, get) => {
 			updateStreams();
 		},
 
-		setVisible: (visible, consumer, supportsDashboardStream) => {
+		setVisible: (visible, consumer) => {
 			if (visible) {
 				visibleConsumers.add(consumer);
-				if (supportsDashboardStream) dashboardStreamConsumers.add(consumer);
-				else dashboardStreamConsumers.delete(consumer);
+				dashboardStreamConsumers.add(consumer);
 			} else {
 				visibleConsumers.delete(consumer);
 				dashboardStreamConsumers.delete(consumer);

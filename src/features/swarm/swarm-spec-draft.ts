@@ -203,10 +203,22 @@ function objectFromPairs(pairs: DraftPair[]): JSONValue {
 const arrayValue = (strings: string[]): JSONValue | undefined =>
 	strings.length === 0 ? undefined : strings;
 
-function uint32(value: string): number | undefined {
+function portNumber(value: string): number | undefined {
 	if (!/^\+?\d+$/.test(value)) return undefined;
 	const parsed = Number(value);
-	return parsed <= 0xffffffff ? parsed : undefined;
+	return parsed >= 1 && parsed <= 65535 ? parsed : undefined;
+}
+
+export function draftPortsError(draft: SwarmServiceSpecDraft): string | undefined {
+	for (const port of draft.ports) {
+		const target = trimmed(port.target);
+		const published = trimmed(port.published);
+		if (target === '' && published === '') continue;
+		if (portNumber(target) === undefined) return `Invalid target port "${target}".`;
+		if (published !== '' && portNumber(published) === undefined)
+			return `Invalid published port "${published}".`;
+	}
+	return undefined;
 }
 
 export function applyDraft(
@@ -263,7 +275,7 @@ export function applyDraft(
 	const originalPorts = swarmArray(endpoint.Ports) ?? [];
 	const portValues: JSONValue[] = [];
 	for (const port of draft.ports) {
-		const target = uint32(trimmed(port.target));
+		const target = portNumber(trimmed(port.target));
 		if (target === undefined) continue;
 		const match = originalPorts.find(
 			(p) =>
@@ -273,7 +285,7 @@ export function applyDraft(
 		const entry: JSONObject = { ...swarmObject(match) };
 		entry.Protocol = port.proto;
 		entry.TargetPort = target;
-		const published = uint32(trimmed(port.published));
+		const published = portNumber(trimmed(port.published));
 		if (published !== undefined) entry.PublishedPort = published;
 		else delete entry.PublishedPort;
 		portValues.push(entry);

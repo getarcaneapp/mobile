@@ -136,7 +136,7 @@ function ContainerPreview({ item }: { item: ContainerItem }) {
 				{ icon: 'info.circle', label: 'Status', value: item.value.status },
 				...(firstName !== '' ? [{ icon: 'tag', label: 'Name', value: firstName }] : []),
 				...(item.environmentName
-					? [{ icon: 'server.rack', label: 'Environment', value: item.environmentName }]
+					? [{ icon: 'server.rack', label: 'Agent', value: item.environmentName }]
 					: [])
 			]}
 		/>
@@ -250,8 +250,8 @@ export function ContainersScreen(props: ContainersListProps) {
 				systemImage="cube.box"
 				description={
 					props.allEnvironments
-						? 'No containers found in any environment.'
-						: 'No containers found in this environment.'
+						? 'No containers found in any agent.'
+						: 'No containers found in this agent.'
 				}
 				actions={[{ title: 'Refresh', onPress: () => void model.loadContainers() }]}
 			/>

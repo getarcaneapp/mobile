@@ -112,7 +112,7 @@ export function useDynamicResourceList(config: DynamicResourceListConfig) {
 			);
 			return async (environment, start, limit) => {
 				const target = paths.get(environment);
-				if (target === undefined) throw new Error('Unknown environment');
+				if (target === undefined) throw new Error('Unknown agent');
 				const { path: bare, query } = splitPath(target);
 				if (debouncedSearch !== '') query.push({ name: 'search', value: debouncedSearch });
 				const response = await current.rest.paginated(bare, {

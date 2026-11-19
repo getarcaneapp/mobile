@@ -10,7 +10,10 @@ export class APIGenerationState {
 	private value: APIGeneration | undefined;
 	private pending: Promise<APIGeneration> | undefined;
 
-	constructor(initial?: APIGeneration) {
+	constructor(
+		initial?: APIGeneration,
+		private readonly fallback?: APIGeneration
+	) {
 		this.value = initial;
 	}
 
@@ -33,13 +36,13 @@ export class APIGenerationState {
 		const pending = probe().then(
 			(detected) => {
 				if (this.pending === pending) this.pending = undefined;
-				if (detected === undefined) return 'legacy' as const;
+				if (detected === undefined) return this.fallback ?? 'legacy';
 				this.record(detected);
 				return detected;
 			},
 			() => {
 				if (this.pending === pending) this.pending = undefined;
-				return 'legacy' as const;
+				return this.fallback ?? 'legacy';
 			}
 		);
 		this.pending = pending;

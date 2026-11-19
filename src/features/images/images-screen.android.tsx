@@ -145,8 +145,8 @@ export function ImagesScreen(props: ImagesListProps) {
 					title="No Images"
 					message={
 						props.allEnvironments
-							? 'No images pulled to any environment yet.'
-							: 'No images pulled to this environment yet.'
+							? 'No images pulled to any agent yet.'
+							: 'No images pulled to this agent yet.'
 					}
 					action={
 						props.allEnvironments

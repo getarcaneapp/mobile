@@ -122,9 +122,9 @@ export function UpdaterRunSheet({
 					<Toolbar>
 						{environments.length === 0 ? (
 							<ContentUnavailableView
-								title="No Environments"
+								title="No Agents"
 								systemImage="server.rack"
-								description="Add an environment before running the updater."
+								description="Add an agent before running the updater."
 								modifiers={[
 									navigationTitle('Run Updater'),
 									navigationBarTitleDisplayMode('inline')
@@ -138,7 +138,7 @@ export function UpdaterRunSheet({
 									navigationBarTitleDisplayMode('inline')
 								]}
 							>
-								<Section footer={<Text>Pick an environment to run the container updater on.</Text>}>
+								<Section footer={<Text>Pick an agent to run the container updater on.</Text>}>
 									{environments.map((environment) => (
 										<EnvironmentPickerRow
 											key={environment.id}

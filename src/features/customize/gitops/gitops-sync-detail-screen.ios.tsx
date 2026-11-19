@@ -383,7 +383,7 @@ function DetailsSection({ model }: { model: GitOpsSyncDetailModel }) {
 	return (
 		<DetailSection title="Details" systemImage="info.circle">
 			{model.environmentName !== undefined ? (
-				<ValueRow label="Environment" value={model.environmentName} />
+				<ValueRow label="Agent" value={model.environmentName} />
 			) : null}
 			{sync.maxSyncFiles > 0 ? (
 				<ValueRow label="File Limit" value={String(sync.maxSyncFiles)} />

@@ -2,6 +2,7 @@ import { File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { localizedStandardCompare } from '@/core/list-sort-order';
@@ -21,7 +22,12 @@ import {
 	removeItem,
 	VolumeWorkspaceDraft
 } from './volume-support';
-import { useWorkspaceEntry, workspaceIdentity, WorkspaceStore } from './workspace-store';
+import {
+	useWorkspaceEntry,
+	workspaceFolderReady,
+	workspaceIdentity,
+	WorkspaceStore
+} from './workspace-store';
 import { pickedFileName } from '@/core/picked-file-name';
 
 const parentOf = (relativePath: string) => relativePath.split('/').slice(0, -1).join('/');
@@ -36,6 +42,7 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 	const userID = useClientManager((s) => s.currentUser?.id);
 	const canUpload = usePermission(Permission.Volumes.upload, environmentID);
 	const canDelete = usePermission(Permission.Volumes.delete, environmentID);
+	const [advanced] = useAdvancedFeatures();
 
 	const identity = `${generation}|${userID ?? ''}|${environmentID}|${volumeName}`;
 	useEffect(() => {
@@ -47,6 +54,12 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 		() => () => WorkspaceStore.remove(environmentID, volumeName),
 		[environmentID, volumeName]
 	);
+
+	const folderReady = workspaceFolderReady(state, directory);
+	const canLoadFolder = state.workspace !== undefined && !state.loading && !folderReady;
+	useEffect(() => {
+		if (canLoadFolder) void WorkspaceStore.loadFolder(environmentID, volumeName, directory);
+	}, [canLoadFolder, environmentID, volumeName, directory]);
 
 	const entries = useMemo(
 		() =>
@@ -89,9 +102,11 @@ export function useVolumeWorkspace(environmentID: EnvironmentID, volumeName: str
 		directory,
 		entries,
 		title: directory === '' ? volumeName : directory,
+		folderLoading: state.loading || (!folderReady && state.loadingFolders.length > 0),
+		showsEmpty: folderReady && entries.length === 0,
 		canUpload,
 		canDelete,
-		showsAddMenu: canUpload && state.workspace !== undefined,
+		showsAddMenu: advanced && canUpload && state.workspace !== undefined,
 		canRenameOrMove: (file: ProjectFile) => canUpload && canDelete && file.isSymlink !== true,
 		load: () => WorkspaceStore.load(environmentID, volumeName),
 		goToParent: () => setDirectory((d) => parentOf(d)),

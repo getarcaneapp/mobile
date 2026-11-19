@@ -161,7 +161,7 @@ export function sceneModel(phase: UpdateAllPhase): EnvironmentUpdateSceneModel |
 				return makeEnvironmentUpdateSceneModel({
 					kind: 'restarting',
 					title: 'Restarting the manager',
-					subtitle: 'The environment updates are complete',
+					subtitle: 'The agent updates are complete',
 					progress,
 					completedCount: done,
 					totalCount: results.length,
@@ -171,10 +171,10 @@ export function sceneModel(phase: UpdateAllPhase): EnvironmentUpdateSceneModel |
 			}
 			return makeEnvironmentUpdateSceneModel({
 				kind: 'updating',
-				title: 'Updating environments',
+				title: 'Updating agents',
 				subtitle:
 					results.length === 0
-						? 'Preparing environments'
+						? 'Preparing agents'
 						: `${done} of ${results.length} complete${activeStageSuffix(results, active)}`,
 				progress,
 				completedCount: done,
@@ -218,7 +218,7 @@ export function sceneModel(phase: UpdateAllPhase): EnvironmentUpdateSceneModel |
 				subtitle:
 					note ??
 					(job.status === 'failed'
-						? (job.error ?? 'The environment update failed.')
+						? (job.error ?? 'The agent update failed.')
 						: lastRunSummary(job)),
 				progress,
 				completedCount: done,
@@ -247,10 +247,13 @@ export function useUpdateAllEnvironments() {
 		setPhase({ kind: 'finished', job, note });
 		if (note == null) {
 			const failedCount = failedEnvironmentIDs(job).length;
-			if (job.status === 'completed' && failedCount === 0) {
-				showToast(Toasts.success('All environments updated'));
+			const skippedCount = resultCounts(job.results ?? []).skipped;
+			if (job.status === 'completed' && failedCount === 0 && skippedCount === 0) {
+				showToast(Toasts.success('All agents updated'));
+			} else if (job.status === 'completed' && failedCount === 0) {
+				showToast(Toasts.info(lastRunSummary(job)));
 			} else if (job.status === 'failed') {
-				showToast(Toasts.error(job.error ?? 'Environment update failed'));
+				showToast(Toasts.error(job.error ?? 'Agent update failed'));
 			}
 		}
 		cachedClient()?.invalidateGlobal(['environments']);
@@ -313,7 +316,7 @@ export function useUpdateAllEnvironments() {
 					setPhase({
 						kind: 'unsupported',
 						message:
-							"This Arcane server doesn't support updating all environments. Update the server first."
+							"This Arcane server doesn't support updating all agents. Update the server first."
 					});
 					return;
 				}

@@ -36,7 +36,7 @@ export function PreviewFeaturesScreen() {
 					{model.usesV3Defaults ? (
 						<Section>
 							<LinkRow title="Edit Dashboard" onPress={model.openDashboardEditor} />
-							<LinkRow title="Environment Colors" onPress={model.openEnvironmentColors} />
+							<LinkRow title="Agent Colors" onPress={model.openEnvironmentColors} />
 						</Section>
 					) : (
 						<>
@@ -53,12 +53,12 @@ export function PreviewFeaturesScreen() {
 							</Section>
 							<Section footer={<Text>{PreviewFeaturesCopy.allEnvironmentsFooter}</Text>}>
 								<Toggle
-									label="All Environments"
+									label="All Agents"
 									isOn={model.allEnvironmentsPreview}
 									onIsOnChange={model.setAllEnvironmentsPreview}
 								/>
 								<Button label="Replay Walkthrough" onPress={model.showIntroduction} />
-								<LinkRow title="Environment Colors" onPress={model.openEnvironmentColors} />
+								<LinkRow title="Agent Colors" onPress={model.openEnvironmentColors} />
 							</Section>
 						</>
 					)}

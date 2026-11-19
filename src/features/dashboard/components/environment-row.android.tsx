@@ -223,7 +223,7 @@ export function EnvironmentRow(props: EnvironmentRowProps) {
 								{
 									kind: 'item' as const,
 									id: 'color',
-									title: 'Environment Color',
+									title: 'Agent Color',
 									onPress: props.onColor
 								}
 							]
@@ -233,7 +233,7 @@ export function EnvironmentRow(props: EnvironmentRowProps) {
 								{
 									kind: 'item' as const,
 									id: 'use',
-									title: 'Use Environment',
+									title: 'Use Agent',
 									onPress: props.onUseEnvironment
 								}
 							]

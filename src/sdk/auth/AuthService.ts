@@ -62,14 +62,12 @@ export class AuthService {
 		const bootstrap = await this.transport.request('auth/bootstrap', {
 			decode: SessionBootstrap.decode
 		});
-		this.authManager.recordCapabilities(bootstrap.user);
 		this.authManager.recordEnabledFeatures(bootstrap.version.enabledFeatures ?? []);
 		return bootstrap;
 	}
 
 	async me(): Promise<User> {
 		const user = await this.transport.request('auth/me', { decode: User.decode });
-		this.authManager.recordCapabilities(user);
 		return user;
 	}
 
@@ -81,6 +79,7 @@ export class AuthService {
 		await this.transport.request('auth/password', {
 			method: 'POST',
 			body: { currentPassword: args.currentPassword, newPassword: args.newPassword },
+			keepsCredentialsOnUnauthorized: true,
 			decode: MessageResponse.decode
 		});
 	}
@@ -162,7 +161,6 @@ export class AuthService {
 				refreshToken: response.refreshToken,
 				expiresAt: response.expiresAt
 			},
-			response.user,
 			generation
 		);
 		return response;

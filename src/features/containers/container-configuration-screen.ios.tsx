@@ -38,6 +38,7 @@ import {
 	useContainerConfiguration,
 	type ContainerConfigurationModel
 } from './use-container-configuration';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
 const multilineModifiers = [lineLimit(8), font({ textStyle: 'body', design: 'monospaced' })];
 
@@ -371,7 +372,7 @@ function ConfigurationSections({ model }: { model: ContainerConfigurationModel }
 	);
 }
 
-export function ContainerConfigurationScreen() {
+function ContainerConfigurationScreenContent() {
 	const toolbarAccent = useAppAccentToolbarSymbol();
 	const model = useContainerConfiguration();
 	return (
@@ -445,5 +446,13 @@ export function ContainerConfigurationScreen() {
 			</Host>
 			<ToastHost reservesTabBarSpace={false} />
 		</View>
+	);
+}
+
+export function ContainerConfigurationScreen() {
+	return (
+		<AdvancedGate>
+			<ContainerConfigurationScreenContent />
+		</AdvancedGate>
 	);
 }

@@ -4,25 +4,13 @@ import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useAccentColor } from '@/theme/accent';
 import { colors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
-import { GlassSurface, canUseLiquidGlass } from '@/ui/glass';
+import { GlassSurface } from '@/ui/glass';
 
 import { groupedHex, useIsDark, useReduceTransparency } from './accessibility';
-
-export const floatingSurfaceShadowStyle: ViewStyle = Platform.select({
-	ios: {
-		shadowColor: '#000',
-		shadowOpacity: 0.18,
-		shadowRadius: 12,
-		shadowOffset: { width: 0, height: 4 }
-	},
-	default: { elevation: 6 }
-});
 
 type SurfaceProps = { cornerRadius?: number; style?: StyleProp<ViewStyle>; children?: ReactNode };
 
 export function DashboardCard({ cornerRadius = Radius.card, style, children }: SurfaceProps) {
-	const isDark = useIsDark();
-	const legacyIOS = Platform.OS === 'ios' && !canUseLiquidGlass;
 	return (
 		<View
 			style={[
@@ -30,14 +18,6 @@ export function DashboardCard({ cornerRadius = Radius.card, style, children }: S
 					borderRadius: cornerRadius,
 					borderCurve: 'continuous',
 					backgroundColor: colors.secondarySystemGroupedBackground
-				},
-				legacyIOS && {
-					shadowColor: '#000',
-					shadowOpacity: 0.06,
-					shadowRadius: 8,
-					shadowOffset: { width: 0, height: 3 },
-					borderTopWidth: 1,
-					borderTopColor: isDark ? '#FFFFFF12' : '#FFFFFF59'
 				},
 				style
 			]}
@@ -58,7 +38,7 @@ export function GlassCard({
 	const accent = useAccentColor();
 	const rim = isHighlighted ? { borderWidth: 1.5, borderColor: withOpacity(accent, 0.45) } : null;
 
-	if (canUseLiquidGlass && !reduceTransparency) {
+	if (Platform.OS === 'ios' && !reduceTransparency) {
 		const wash = withOpacity(
 			isDark
 				? groupedHex.dark.secondarySystemGroupedBackground

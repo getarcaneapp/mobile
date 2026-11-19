@@ -95,7 +95,7 @@ export class DashboardService {
 		for (const envID of args.envIDs) {
 			const counts = containerCounts.data.get(envID);
 			if (counts === undefined) {
-				failures.set(envID, containerCounts.failures.get(envID) ?? 'Environment unavailable');
+				failures.set(envID, containerCounts.failures.get(envID) ?? 'Agent unavailable');
 				continue;
 			}
 			snapshots.set(
@@ -178,7 +178,7 @@ function decodeEnvironmentResults<T>(raw: unknown): EnvironmentResults<T> {
 				id,
 				typeof failure?.message === 'string' && failure.message !== ''
 					? failure.message
-					: 'Environment unavailable'
+					: 'Agent unavailable'
 			);
 	}
 	return results;

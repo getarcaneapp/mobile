@@ -3,7 +3,7 @@ import SwiftUI
 import WidgetKit
 
 struct EnvironmentEntity: AppEntity {
-    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Environment"
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Agent"
     static let defaultQuery = EnvironmentEntityQuery()
 
     var id: String
@@ -33,9 +33,9 @@ struct EnvironmentEntityQuery: EntityQuery {
 
 struct StatusWidgetConfigurationIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Arcane Status"
-    static let description = IntentDescription("Choose an environment, or leave empty for all environments.")
+    static let description = IntentDescription("Choose an agent, or leave empty for all agents.")
 
-    @Parameter(title: "Environment")
+    @Parameter(title: "Agent")
     var environment: EnvironmentEntity?
 }
 
@@ -101,7 +101,7 @@ struct StatusWidget: Widget {
             StatusWidgetView(entry: entry)
         }
         .configurationDisplayName("Status")
-        .description("Container status for one environment or all environments.")
+        .description("Container status for one agent or all agents.")
         .supportedFamilies([.systemSmall, .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }
@@ -117,7 +117,7 @@ struct StatusWidgetView: View {
         return entry.snapshot?.environments.first(where: { $0.id == id })
     }
 
-    private var title: String { scoped?.name ?? "All Environments" }
+    private var title: String { scoped?.name ?? "All Agents" }
     private var running: Int { scoped?.running ?? entry.snapshot?.totalRunning ?? 0 }
     private var total: Int { scoped?.total ?? entry.snapshot?.totalContainers ?? 0 }
     private var updates: Int { scoped?.updatesAvailable ?? entry.snapshot?.totalUpdates ?? 0 }

@@ -12,7 +12,6 @@ import {
 	type DynamicNavigationRowProps,
 	type RunEndpointButtonProps
 } from './rows.types';
-import { isIOS26 } from './swiftui-surfaces';
 import { symbolRenderingMode } from '../../../modules/arcane-swiftui-extras';
 
 async function runEndpoint(
@@ -52,10 +51,7 @@ export function RunEndpointButton({
 			<Button
 				role={destructive ? 'destructive' : undefined}
 				onPress={() => void onPress()}
-				modifiers={[
-					disabled(isRunning),
-					buttonStyle(isIOS26 ? 'glassProminent' : 'borderedProminent')
-				]}
+				modifiers={[disabled(isRunning), buttonStyle('glassProminent')]}
 			>
 				<Label title={isRunning ? 'Running...' : title} systemImage={systemImage as SFSymbol} />
 			</Button>

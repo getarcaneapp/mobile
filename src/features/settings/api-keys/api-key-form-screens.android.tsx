@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -91,7 +92,7 @@ function PermissionsBlock({
 	);
 }
 
-export function CreateAPIKeyScreen() {
+function CreateAPIKeyScreenContent() {
 	const model = useCreateAPIKey();
 	return (
 		<>
@@ -147,39 +148,37 @@ export function CreateAPIKeyScreen() {
 						/>
 					) : null}
 				</M3Section>
-				{model.supportsRBAC ? (
-					model.manifest ? (
-						<PermissionsBlock search={model.permissionSearch} setSearch={model.setPermissionSearch}>
-							<PermissionPicker
-								manifest={model.manifest}
-								selected={model.selectedPermissions}
-								onSelectedChange={model.setSelectedPermissions}
-								search={model.permissionSearch}
-							/>
-						</PermissionsBlock>
-					) : (
-						<M3Section>
-							<View style={{ padding: 16, alignItems: 'center' }}>
-								{model.isLoadingPermissions ? (
-									<ArcaneLoadingView label="Loading permissions…" />
-								) : (
-									<InlineNotice
-										icon="exclamationmark.triangle"
-										color={colors.secondaryLabel as string}
-										text="Permissions unavailable"
-									/>
-								)}
-							</View>
-						</M3Section>
-					)
-				) : null}
+				{model.manifest ? (
+					<PermissionsBlock search={model.permissionSearch} setSearch={model.setPermissionSearch}>
+						<PermissionPicker
+							manifest={model.manifest}
+							selected={model.selectedPermissions}
+							onSelectedChange={model.setSelectedPermissions}
+							search={model.permissionSearch}
+						/>
+					</PermissionsBlock>
+				) : (
+					<M3Section>
+						<View style={{ padding: 16, alignItems: 'center' }}>
+							{model.isLoadingPermissions ? (
+								<ArcaneLoadingView label="Loading permissions…" />
+							) : (
+								<InlineNotice
+									icon="exclamationmark.triangle"
+									color={colors.secondaryLabel as string}
+									text="Permissions unavailable"
+								/>
+							)}
+						</View>
+					</M3Section>
+				)}
 				<ErrorSection message={model.errorMessage} />
 			</ScrollView>
 		</>
 	);
 }
 
-export function EditAPIKeyScreen() {
+function EditAPIKeyScreenContent() {
 	const model = useEditAPIKey();
 	return (
 		<View style={{ flex: 1 }}>
@@ -223,36 +222,34 @@ export function EditAPIKeyScreen() {
 						<ValueRow title="Expiration" value="Never" />
 					)}
 				</M3Section>
-				{model.supportsRBAC ? (
-					model.isPersonal ? (
-						<M3Section title="Permissions">
-							<InlineNotice
-								icon="person.badge.key.fill"
-								color={colors.secondaryLabel as string}
-								text="Personal keys inherit the assigned user's role permissions."
-							/>
-						</M3Section>
-					) : model.manifest && model.metadata?.permissions !== undefined ? (
-						<PermissionsBlock search={model.permissionSearch} setSearch={model.setPermissionSearch}>
-							<PermissionPicker
-								manifest={model.manifest}
-								selected={model.selectedPermissions}
-								onSelectedChange={model.setSelectedPermissions}
-								search={model.permissionSearch}
-							/>
-						</PermissionsBlock>
-					) : (
-						<M3Section title="Permissions">
-							{model.isLoadingPermissions ? (
-								<View style={{ padding: 16, alignItems: 'center' }}>
-									<ArcaneLoadingView label="Loading permissions…" />
-								</View>
-							) : (
-								<PartialDataNotice message="Existing permissions will be preserved because they could not be loaded." />
-							)}
-						</M3Section>
-					)
-				) : null}
+				{model.isPersonal ? (
+					<M3Section title="Permissions">
+						<InlineNotice
+							icon="person.badge.key.fill"
+							color={colors.secondaryLabel as string}
+							text="Personal keys inherit the assigned user's role permissions."
+						/>
+					</M3Section>
+				) : model.manifest && model.metadata?.permissions !== undefined ? (
+					<PermissionsBlock search={model.permissionSearch} setSearch={model.setPermissionSearch}>
+						<PermissionPicker
+							manifest={model.manifest}
+							selected={model.selectedPermissions}
+							onSelectedChange={model.setSelectedPermissions}
+							search={model.permissionSearch}
+						/>
+					</PermissionsBlock>
+				) : (
+					<M3Section title="Permissions">
+						{model.isLoadingPermissions ? (
+							<View style={{ padding: 16, alignItems: 'center' }}>
+								<ArcaneLoadingView label="Loading permissions…" />
+							</View>
+						) : (
+							<PartialDataNotice message="Existing permissions will be preserved because they could not be loaded." />
+						)}
+					</M3Section>
+				)}
 				<ErrorSection message={model.errorMessage} />
 			</ScrollView>
 			<SettingsSaveBar
@@ -264,5 +261,21 @@ export function EditAPIKeyScreen() {
 				reservesTabBarSpace={false}
 			/>
 		</View>
+	);
+}
+
+export function CreateAPIKeyScreen() {
+	return (
+		<AdvancedGate>
+			<CreateAPIKeyScreenContent />
+		</AdvancedGate>
+	);
+}
+
+export function EditAPIKeyScreen() {
+	return (
+		<AdvancedGate>
+			<EditAPIKeyScreenContent />
+		</AdvancedGate>
 	);
 }

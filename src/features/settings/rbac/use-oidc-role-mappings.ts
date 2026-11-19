@@ -11,12 +11,7 @@ import { showToast, Toasts } from '@/ui/toast';
 
 import { settingsPayloads, useSettingsNavigation } from '../shared/settings-routes';
 
-import {
-	collectAllEnvironments,
-	collectAllRoles,
-	useCanManageOIDCMappings,
-	useSupportsRoleManagement
-} from './rbac-models';
+import { collectAllEnvironments, collectAllRoles, useCanManageOIDCMappings } from './rbac-models';
 import type { OIDCMappingFormPayload } from './use-oidc-mapping-form';
 
 export const isManualMapping = (mapping: OidcRoleMapping) =>
@@ -24,7 +19,6 @@ export const isManualMapping = (mapping: OidcRoleMapping) =>
 
 export function useOIDCRoleMappings() {
 	const nav = useSettingsNavigation();
-	const rbacAvailable = useSupportsRoleManagement();
 	const canManage = useCanManageOIDCMappings();
 
 	const [mappings, setMappings] = useState<OidcRoleMapping[]>([]);
@@ -41,7 +35,7 @@ export function useOIDCRoleMappings() {
 
 	const load = useCallback(async () => {
 		const client = useClientManager.getState().client;
-		if (!rbacAvailable || !client) return;
+		if (!client) return;
 		if (mappingsRef.current.length === 0) setIsLoading(true);
 		setErrorMessage(undefined);
 		await withCleanup(
@@ -61,7 +55,7 @@ export function useOIDCRoleMappings() {
 			},
 			() => setIsLoading(false)
 		);
-	}, [rbacAvailable]);
+	}, []);
 
 	useEffect(() => {
 		void load();
@@ -101,7 +95,6 @@ export function useOIDCRoleMappings() {
 	};
 
 	return {
-		rbacAvailable,
 		canManage,
 		mappings,
 		availableRoles,

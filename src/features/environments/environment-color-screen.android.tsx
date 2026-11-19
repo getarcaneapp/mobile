@@ -18,7 +18,7 @@ export function EnvironmentColorScreen() {
 	const picker = useEnvironmentColorPicker(route.environmentID);
 	return (
 		<View style={{ flex: 1, backgroundColor: colors.systemGroupedBackground }}>
-			<Stack.Screen options={{ title: 'Environment Color', headerShown: true }} />
+			<Stack.Screen options={{ title: 'Agent Color', headerShown: true }} />
 			<Stack.Toolbar placement="right">
 				<Stack.Toolbar.View>
 					<Pressable
@@ -44,7 +44,7 @@ export function EnvironmentColorScreen() {
 						{ color: colors.secondaryLabel, paddingHorizontal: 32, paddingTop: 6 }
 					]}
 				>
-					Applies to this environment's name and icon in resource lists.
+					Applies to this agent's name and icon in resource lists.
 				</Text>
 			</ScrollView>
 			<ToastHost reservesTabBarSpace={false} />

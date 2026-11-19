@@ -83,6 +83,7 @@ import {
 	destinationTitle,
 	projectFilesConfirmationHost,
 	useProjectFilesWorkspace,
+	useProjectWorkspaceFolder,
 	type ProjectFilesWorkspaceModel
 } from './use-project-files-workspace';
 import { ToastHost } from '@/ui/toast';
@@ -204,6 +205,8 @@ function useProjectFileMenuActions(model: Model, folderPath: string): ComposeMen
 	const {
 		previewEnabled,
 		canDeploy,
+		advanced,
+		canWrite,
 		canEdit,
 		hasChanges,
 		isSaving,
@@ -219,38 +222,41 @@ function useProjectFileMenuActions(model: Model, folderPath: string): ComposeMen
 				id: 'deploy',
 				title: 'Deploy Saved Project',
 				systemImage: 'play',
-				disabled: !canEdit || hasChanges || isSaving,
+				disabled: !canWrite || hasChanges || isSaving,
 				onPress: deploySaved
 			});
 		}
-		actions.push(
-			{
-				id: 'new-file',
-				title: 'New File',
-				systemImage: 'doc.badge.plus',
-				disabled: !canEdit,
-				dividerBefore: actions.length > 0,
-				onPress: () => newFile(folderPath)
-			},
-			{
-				id: 'new-folder',
-				title: 'New Folder',
-				systemImage: 'folder.badge.plus',
-				disabled: !canEdit,
-				onPress: () => newFolder(folderPath)
-			},
-			{
-				id: 'reload',
-				title: 'Reload',
-				systemImage: 'arrow.clockwise',
-				dividerBefore: true,
-				onPress: reload
-			}
-		);
+		if (advanced)
+			actions.push(
+				{
+					id: 'new-file',
+					title: 'New File',
+					systemImage: 'doc.badge.plus',
+					disabled: !canEdit,
+					dividerBefore: actions.length > 0,
+					onPress: () => newFile(folderPath)
+				},
+				{
+					id: 'new-folder',
+					title: 'New Folder',
+					systemImage: 'folder.badge.plus',
+					disabled: !canEdit,
+					onPress: () => newFolder(folderPath)
+				}
+			);
+		actions.push({
+			id: 'reload',
+			title: 'Reload',
+			systemImage: 'arrow.clockwise',
+			dividerBefore: actions.length > 0,
+			onPress: reload
+		});
 		return actions;
 	}, [
 		previewEnabled,
 		canDeploy,
+		advanced,
+		canWrite,
 		canEdit,
 		hasChanges,
 		isSaving,
@@ -271,24 +277,28 @@ function ProjectFileActions({ model, folderPath }: { model: Model; folderPath: s
 						label="Deploy Saved Project"
 						systemImage="play"
 						onPress={model.deploySaved}
-						modifiers={[disabled(!model.canEdit || model.hasChanges || model.isSaving)]}
+						modifiers={[disabled(!model.canWrite || model.hasChanges || model.isSaving)]}
 					/>
 					<Divider />
 				</>
 			) : null}
-			<Button
-				label="New File"
-				systemImage="doc.badge.plus"
-				onPress={() => model.newFile(folderPath)}
-				modifiers={[disabled(!model.canEdit)]}
-			/>
-			<Button
-				label="New Folder"
-				systemImage="folder.badge.plus"
-				onPress={() => model.newFolder(folderPath)}
-				modifiers={[disabled(!model.canEdit)]}
-			/>
-			<Divider />
+			{model.advanced ? (
+				<>
+					<Button
+						label="New File"
+						systemImage="doc.badge.plus"
+						onPress={() => model.newFile(folderPath)}
+						modifiers={[disabled(!model.canEdit)]}
+					/>
+					<Button
+						label="New Folder"
+						systemImage="folder.badge.plus"
+						onPress={() => model.newFolder(folderPath)}
+						modifiers={[disabled(!model.canEdit)]}
+					/>
+					<Divider />
+				</>
+			) : null}
 			<Button label="Reload" systemImage="arrow.clockwise" onPress={model.reload} />
 		</>
 	);
@@ -335,10 +345,14 @@ function WorkspaceToolbar({
 				(model.previewEnabled || destination.kind === 'files' || destination.kind === 'folder') ? (
 					<ToolbarItem placement="topBarTrailing">
 						<Menu
-							label={<Image systemName={model.previewEnabled ? 'ellipsis' : 'plus'} />}
+							label={
+								<Image systemName={model.previewEnabled || !model.advanced ? 'ellipsis' : 'plus'} />
+							}
 							modifiers={[
 								accessibilityLabel(
-									model.previewEnabled ? 'Project file actions' : 'Add file or folder'
+									model.previewEnabled || !model.advanced
+										? 'Project file actions'
+										: 'Add file or folder'
 								),
 								...toolbarSymbol
 							]}
@@ -533,7 +547,15 @@ function FileEntryRow({ model, entry }: { model: Model; entry: ManagedProjectFil
 	);
 }
 
-function FilesStatusSection({ model, isEmpty }: { model: Model; isEmpty: boolean }) {
+function FilesStatusSection({
+	model,
+	folderPath,
+	isEmpty
+}: {
+	model: Model;
+	folderPath: string;
+	isEmpty: boolean;
+}) {
 	if (model.filesError !== undefined) {
 		return (
 			<Section>
@@ -551,7 +573,7 @@ function FilesStatusSection({ model, isEmpty }: { model: Model; isEmpty: boolean
 			</Section>
 		);
 	}
-	if (model.filesLoading && isEmpty) {
+	if (model.folderLoading(folderPath) && isEmpty) {
 		return (
 			<Section>
 				<HStack spacing={8}>
@@ -586,6 +608,7 @@ function FilesStatusSection({ model, isEmpty }: { model: Model; isEmpty: boolean
 }
 
 function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string }) {
+	useProjectWorkspaceFolder(model, folderPath);
 	const children = model.childEntries(folderPath);
 	return (
 		<List modifiers={[listStyle('insetGrouped'), refreshable(model.refresh)]}>
@@ -628,7 +651,8 @@ function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string 
 
 				{children.length === 0 &&
 				folderPath !== '' &&
-				!model.filesLoading &&
+				model.folderReady(folderPath) &&
+				!model.folderLoading(folderPath) &&
 				model.filesError === undefined ? (
 					<VStack
 						spacing={12}
@@ -663,7 +687,7 @@ function FilesBrowser({ model, folderPath }: { model: Model; folderPath: string 
 				)}
 			</Section>
 
-			<FilesStatusSection model={model} isEmpty={children.length === 0} />
+			<FilesStatusSection model={model} folderPath={folderPath} isEmpty={children.length === 0} />
 
 			{model.hasChanges ? (
 				<Section>

@@ -12,8 +12,8 @@ const client = new ArcaneClient({ baseURL: 'https://arcane.example.com', tokenSt
 
 await client.auth.login({ username: 'admin', password: '…' });
 const caps = client.serverCapabilities();
-if (ServerCapabilities.supportsActivities(caps)) {
-	/* v2-only UI */
+if (ServerCapabilities.supportsMobilePush(caps)) {
+	/* feature-gated UI */
 }
 
 const page = await client.containers.list({ envID: '0', query: { search: 'web', limit: 20 } });
@@ -50,7 +50,6 @@ Everything public is re-exported from `src/sdk/index.ts`.
    `init(from:)` and custom `encode(to:)` lives on a `const` with the same name as the type:
    - `user.isGlobalAdmin` → `User.isGlobalAdmin(user)`
    - `user.hasPermission(p, environmentID: env)` → `User.hasPermission(user, p, env)`
-   - `ServerCapabilities.detect(from: user)` → `ServerCapabilities.detect(user)`
    - `try decoder.decode(User.self, from: data)` → `User.decode(raw)`
    - Swift initialisers with meaningful defaults → `X.make({...})` where provided.
 4. **String-raw enums** → a string-literal union plus a companion mapping Swift case names to raw

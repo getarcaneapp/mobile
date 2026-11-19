@@ -58,7 +58,7 @@ export function UpdatesScreen() {
 							{ color: colors.secondaryLabel, paddingHorizontal: 32, paddingTop: 6 }
 						]}
 					>
-						{`Pick an environment to ${mode === 'runUpdater' ? 'run the updater on' : 'view history for'}.`}
+						{`Pick an agent to ${mode === 'runUpdater' ? 'run the updater on' : 'view history for'}.`}
 					</Text>
 				</View>
 			</MaterialSheet>

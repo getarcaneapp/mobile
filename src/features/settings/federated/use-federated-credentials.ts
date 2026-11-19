@@ -3,7 +3,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
-import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import { isArcaneError } from '@/sdk/errors/ArcaneError';
 import { SortOrder } from '@/sdk/models/base/pagination';
 import type { FederatedCredential } from '@/sdk/models/federated/FederatedCredential';
@@ -52,14 +51,7 @@ export function useFederatedCredentials() {
 	const load = async (reset: boolean) => {
 		const manager = useClientManager.getState();
 		const client = manager.client;
-		const caps = manager.serverCapabilities;
-		if (
-			!caps ||
-			!ServerCapabilities.supportsRoleManagement(caps) ||
-			!hasPermission('federated:list', null) ||
-			!client
-		)
-			return;
+		if (!hasPermission('federated:list', null) || !client) return;
 		const key = live.current.identity;
 		if (loadingIdentity.current === key) return;
 		const request = ++requestID.current;

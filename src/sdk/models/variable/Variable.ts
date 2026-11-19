@@ -8,6 +8,7 @@ export interface GlobalVariable {
 	isSecret: boolean;
 	allEnvironments: boolean;
 	environmentIDs: string[];
+	injectIntoContainers?: boolean;
 	createdAt: ISODateString;
 	updatedAt?: ISODateString;
 }
@@ -47,6 +48,7 @@ export const GlobalVariable = {
 			isSecret: D.optBoolean(o, 'isSecret') ?? false,
 			allEnvironments: D.optBoolean(o, 'allEnvironments') ?? false,
 			environmentIDs: D.optArray(o, 'environmentIds', D.str) ?? [],
+			injectIntoContainers: D.optBoolean(o, 'injectIntoContainers'),
 			createdAt: D.string(o, 'createdAt'),
 			updatedAt: D.optString(o, 'updatedAt')
 		};
@@ -59,6 +61,7 @@ export const GlobalVariable = {
 			value: value.value,
 			isSecret: value.isSecret,
 			allEnvironments: value.allEnvironments,
+			injectIntoContainers: value.injectIntoContainers,
 			createdAt: value.createdAt,
 			updatedAt: value.updatedAt,
 			environmentIds: value.environmentIDs
@@ -72,6 +75,7 @@ export interface CreateGlobalVariableRequest {
 	isSecret: boolean;
 	allEnvironments: boolean;
 	environmentIDs: string[];
+	injectIntoContainers?: boolean;
 }
 
 export const CreateGlobalVariableRequest = {
@@ -98,7 +102,8 @@ export const CreateGlobalVariableRequest = {
 			value: D.string(o, 'value'),
 			isSecret: D.boolean(o, 'isSecret'),
 			allEnvironments: D.boolean(o, 'allEnvironments'),
-			environmentIDs: D.array(o, 'environmentIds', D.str)
+			environmentIDs: D.array(o, 'environmentIds', D.str),
+			injectIntoContainers: D.optBoolean(o, 'injectIntoContainers')
 		};
 	},
 
@@ -108,7 +113,8 @@ export const CreateGlobalVariableRequest = {
 			value: value.value,
 			isSecret: value.isSecret,
 			allEnvironments: value.allEnvironments,
-			environmentIds: value.environmentIDs
+			environmentIds: value.environmentIDs,
+			injectIntoContainers: value.injectIntoContainers
 		};
 	}
 } as const;
@@ -119,6 +125,7 @@ export interface UpdateGlobalVariableRequest {
 	isSecret?: boolean;
 	allEnvironments?: boolean;
 	environmentIDs?: string[];
+	injectIntoContainers?: boolean;
 }
 
 export const UpdateGlobalVariableRequest = {
@@ -129,7 +136,8 @@ export const UpdateGlobalVariableRequest = {
 			value: D.optString(o, 'value'),
 			isSecret: D.optBoolean(o, 'isSecret'),
 			allEnvironments: D.optBoolean(o, 'allEnvironments'),
-			environmentIDs: D.optArray(o, 'environmentIds', D.str)
+			environmentIDs: D.optArray(o, 'environmentIds', D.str),
+			injectIntoContainers: D.optBoolean(o, 'injectIntoContainers')
 		};
 	},
 
@@ -139,7 +147,8 @@ export const UpdateGlobalVariableRequest = {
 			value: value.value,
 			isSecret: value.isSecret,
 			allEnvironments: value.allEnvironments,
-			environmentIds: value.environmentIDs
+			environmentIds: value.environmentIDs,
+			injectIntoContainers: value.injectIntoContainers
 		};
 	}
 } as const;

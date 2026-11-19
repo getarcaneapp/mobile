@@ -13,12 +13,22 @@ import { swiftInt } from '@/ui/components/settings-form.types';
 
 export const AuthenticationSettingsValidation = {
 	sessionTimeoutMinutes: { lowerBound: 15, upperBound: 525_600 },
+	passwordMinLength: { lowerBound: 8, upperBound: 128 },
 
 	sessionTimeoutError(rawValue: string): string | undefined {
 		const minutes = swiftInt(rawValue.trim());
 		const { lowerBound, upperBound } = AuthenticationSettingsValidation.sessionTimeoutMinutes;
 		if (minutes === undefined || minutes < lowerBound || minutes > upperBound) {
 			return 'Session Timeout must be a whole number between 15 and 525600 minutes.';
+		}
+		return undefined;
+	},
+
+	passwordMinLengthError(rawValue: string): string | undefined {
+		const length = swiftInt(rawValue.trim());
+		const { lowerBound, upperBound } = AuthenticationSettingsValidation.passwordMinLength;
+		if (length === undefined || length < lowerBound || length > upperBound) {
+			return 'Minimum Length must be a whole number from 8 to 128.';
 		}
 		return undefined;
 	}
@@ -34,6 +44,12 @@ export type AuthenticationForm = {
 	authLocalEnabled: boolean;
 	authSessionTimeout: string;
 	authPasswordPolicy: string;
+	granularPasswordPolicy: boolean;
+	authPasswordMinLength: string;
+	authPasswordRequireUppercase: boolean;
+	authPasswordRequireLowercase: boolean;
+	authPasswordRequireNumber: boolean;
+	authPasswordRequireSymbol: boolean;
 	oidcEnabled: boolean;
 	oidcProviderName: string;
 	oidcIssuerUrl: string;
@@ -51,6 +67,12 @@ const initialForm: AuthenticationForm = {
 	authLocalEnabled: true,
 	authSessionTimeout: '1440',
 	authPasswordPolicy: 'strong',
+	granularPasswordPolicy: false,
+	authPasswordMinLength: '12',
+	authPasswordRequireUppercase: true,
+	authPasswordRequireLowercase: true,
+	authPasswordRequireNumber: true,
+	authPasswordRequireSymbol: true,
 	oidcEnabled: false,
 	oidcProviderName: '',
 	oidcIssuerUrl: '',
@@ -66,10 +88,17 @@ const initialForm: AuthenticationForm = {
 
 function formFromSettings(dict: Record<string, string>): AuthenticationForm {
 	const isTrue = (key: string) => dict[key]?.toLowerCase() === 'true';
+	const notFalse = (key: string) => dict[key]?.toLowerCase() !== 'false';
 	return {
 		authLocalEnabled: isTrue('authLocalEnabled'),
 		authSessionTimeout: dict.authSessionTimeout ?? '1440',
 		authPasswordPolicy: dict.authPasswordPolicy ?? 'strong',
+		granularPasswordPolicy: dict.authPasswordMinLength !== undefined,
+		authPasswordMinLength: dict.authPasswordMinLength ?? '12',
+		authPasswordRequireUppercase: notFalse('authPasswordRequireUppercase'),
+		authPasswordRequireLowercase: notFalse('authPasswordRequireLowercase'),
+		authPasswordRequireNumber: notFalse('authPasswordRequireNumber'),
+		authPasswordRequireSymbol: notFalse('authPasswordRequireSymbol'),
 		oidcEnabled: isTrue('oidcEnabled'),
 		oidcProviderName: dict.oidcProviderName ?? '',
 		oidcIssuerUrl: dict.oidcIssuerUrl ?? '',
@@ -167,9 +196,11 @@ export function useAuthenticationSettings() {
 	const save = useCallback(async () => {
 		if (!client) return;
 		const current = latestForm.current;
-		const validationError = AuthenticationSettingsValidation.sessionTimeoutError(
-			current.authSessionTimeout
-		);
+		const validationError =
+			AuthenticationSettingsValidation.sessionTimeoutError(current.authSessionTimeout) ??
+			(current.granularPasswordPolicy
+				? AuthenticationSettingsValidation.passwordMinLengthError(current.authPasswordMinLength)
+				: undefined);
 		if (validationError) {
 			setErrorMessage(validationError);
 			showToast(Toasts.error(validationError));
@@ -183,7 +214,15 @@ export function useAuthenticationSettings() {
 				try {
 					const body: Record<string, string> = {
 						authLocalEnabled: String(current.authLocalEnabled),
-						authPasswordPolicy: current.authPasswordPolicy,
+						...(current.granularPasswordPolicy
+							? {
+									authPasswordMinLength: current.authPasswordMinLength.trim(),
+									authPasswordRequireUppercase: String(current.authPasswordRequireUppercase),
+									authPasswordRequireLowercase: String(current.authPasswordRequireLowercase),
+									authPasswordRequireNumber: String(current.authPasswordRequireNumber),
+									authPasswordRequireSymbol: String(current.authPasswordRequireSymbol)
+								}
+							: { authPasswordPolicy: current.authPasswordPolicy }),
 						authSessionTimeout: current.authSessionTimeout,
 						oidcEnabled: String(current.oidcEnabled),
 						oidcMergeAccounts: String(current.oidcMergeAccounts),

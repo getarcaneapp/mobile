@@ -344,7 +344,7 @@ function TabContent({ model }: { model: EnvironmentDetailModel }) {
 				<NavigationRow
 					title="GitOps Syncs"
 					icon="arrow.triangle.merge"
-					footer="Projects kept in sync with Git repositories in this environment."
+					footer="Projects kept in sync with Git repositories in this agent."
 					onPress={model.openGitOps}
 				/>
 			);
@@ -395,7 +395,7 @@ export function EnvironmentDetailScreen(props: { id?: string; name?: string }) {
 						selection={model.selectedTab}
 						onSelectionChange={model.setSelectedTab}
 						options={model.tabOptions}
-						accessibilityLabel="Environment detail sections"
+						accessibilityLabel="Agent detail sections"
 					/>
 					<TabContent model={model} />
 					{model.showsSaveBar ? <SaveBarClearanceSection /> : null}

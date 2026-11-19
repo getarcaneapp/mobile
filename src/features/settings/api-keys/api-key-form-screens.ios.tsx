@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Host } from '@/ui/host';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import {
@@ -103,10 +104,10 @@ function Sheet({ children }: { children: ReactNode }) {
 	);
 }
 
-export function CreateAPIKeyScreen() {
+function CreateAPIKeyScreenContent() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const model = useCreateAPIKey();
-	const search = usePermissionSearchModifier(model.supportsRBAC, model.setPermissionSearch);
+	const search = usePermissionSearchModifier(true, model.setPermissionSearch);
 	return (
 		<Sheet>
 			<Host style={{ flex: 1 }}>
@@ -156,37 +157,33 @@ export function CreateAPIKeyScreen() {
 									/>
 								) : null}
 							</Section>
-							{model.supportsRBAC ? (
-								model.manifest ? (
-									<>
-										<PermissionPicker
-											manifest={model.manifest}
-											selected={model.selectedPermissions}
-											onSelectedChange={model.setSelectedPermissions}
-											search={model.permissionSearch}
-										/>
-										<Section footer={<Text>{permissionsFooter}</Text>}>{null}</Section>
-									</>
-								) : (
-									<Section>
-										<HStack>
-											<Spacer />
-											{model.isLoadingPermissions ? (
-												<ArcaneLoadingViewSwiftUI label="Loading permissions…" />
-											) : (
-												<Label
-													title="Permissions unavailable"
-													systemImage="exclamationmark.triangle"
-													modifiers={[
-														foregroundStyle({ type: 'hierarchical', style: 'secondary' })
-													]}
-												/>
-											)}
-											<Spacer />
-										</HStack>
-									</Section>
-								)
-							) : null}
+							{model.manifest ? (
+								<>
+									<PermissionPicker
+										manifest={model.manifest}
+										selected={model.selectedPermissions}
+										onSelectedChange={model.setSelectedPermissions}
+										search={model.permissionSearch}
+									/>
+									<Section footer={<Text>{permissionsFooter}</Text>}>{null}</Section>
+								</>
+							) : (
+								<Section>
+									<HStack>
+										<Spacer />
+										{model.isLoadingPermissions ? (
+											<ArcaneLoadingViewSwiftUI label="Loading permissions…" />
+										) : (
+											<Label
+												title="Permissions unavailable"
+												systemImage="exclamationmark.triangle"
+												modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}
+											/>
+										)}
+										<Spacer />
+									</HStack>
+								</Section>
+							)}
 							<ErrorSection message={model.errorMessage} />
 						</Form>
 						<Toolbar.Content>
@@ -212,7 +209,7 @@ export function CreateAPIKeyScreen() {
 	);
 }
 
-export function EditAPIKeyScreen() {
+function EditAPIKeyScreenContent() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const model = useEditAPIKey();
 	const search = usePermissionSearchModifier(
@@ -270,35 +267,33 @@ export function EditAPIKeyScreen() {
 									</LabeledContent>
 								)}
 							</Section>
-							{model.supportsRBAC ? (
-								model.isPersonal ? (
-									<Section header={<Text>Permissions</Text>}>
-										<Label
-											title="Personal keys inherit the assigned user's role permissions."
-											systemImage="person.badge.key.fill"
-											modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}
-										/>
-									</Section>
-								) : model.manifest && model.metadata?.permissions !== undefined ? (
-									<>
-										<PermissionPicker
-											manifest={model.manifest}
-											selected={model.selectedPermissions}
-											onSelectedChange={model.setSelectedPermissions}
-											search={model.permissionSearch}
-										/>
-										<Section footer={<Text>{permissionsFooter}</Text>}>{null}</Section>
-									</>
-								) : (
-									<Section header={<Text>Permissions</Text>}>
-										{model.isLoadingPermissions ? (
-											<ArcaneLoadingViewSwiftUI label="Loading permissions…" />
-										) : (
-											<PartialDataNotice message="Existing permissions will be preserved because they could not be loaded." />
-										)}
-									</Section>
-								)
-							) : null}
+							{model.isPersonal ? (
+								<Section header={<Text>Permissions</Text>}>
+									<Label
+										title="Personal keys inherit the assigned user's role permissions."
+										systemImage="person.badge.key.fill"
+										modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}
+									/>
+								</Section>
+							) : model.manifest && model.metadata?.permissions !== undefined ? (
+								<>
+									<PermissionPicker
+										manifest={model.manifest}
+										selected={model.selectedPermissions}
+										onSelectedChange={model.setSelectedPermissions}
+										search={model.permissionSearch}
+									/>
+									<Section footer={<Text>{permissionsFooter}</Text>}>{null}</Section>
+								</>
+							) : (
+								<Section header={<Text>Permissions</Text>}>
+									{model.isLoadingPermissions ? (
+										<ArcaneLoadingViewSwiftUI label="Loading permissions…" />
+									) : (
+										<PartialDataNotice message="Existing permissions will be preserved because they could not be loaded." />
+									)}
+								</Section>
+							)}
 							<ErrorSection message={model.errorMessage} />
 							<SettingsSaveBarSpacer />
 						</Form>
@@ -323,5 +318,21 @@ export function EditAPIKeyScreen() {
 				reservesTabBarSpace={false}
 			/>
 		</Sheet>
+	);
+}
+
+export function CreateAPIKeyScreen() {
+	return (
+		<AdvancedGate>
+			<CreateAPIKeyScreenContent />
+		</AdvancedGate>
+	);
+}
+
+export function EditAPIKeyScreen() {
+	return (
+		<AdvancedGate>
+			<EditAPIKeyScreenContent />
+		</AdvancedGate>
 	);
 }

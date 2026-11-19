@@ -133,7 +133,7 @@ function OverviewSection({ model }: { model: DashboardModel }) {
 						<Pressable
 							onPress={() => setExpanded(!expanded)}
 							accessibilityRole="button"
-							accessibilityLabel="Environment breakdown"
+							accessibilityLabel="Agent breakdown"
 							accessibilityState={{ expanded }}
 							style={{
 								flexDirection: 'row',
@@ -143,7 +143,7 @@ function OverviewSection({ model }: { model: DashboardModel }) {
 							}}
 						>
 							<Text style={[m3Type.bodyMedium, { color: m3.primary }]}>
-								{expanded ? '' : 'By Environment'}
+								{expanded ? '' : 'By Agent'}
 							</Text>
 							<Icon name={expanded ? 'chevron.up' : 'chevron.down'} size={18} color={m3.primary} />
 						</Pressable>
@@ -177,7 +177,7 @@ function EnvironmentsSection({ model }: { model: DashboardModel }) {
 		<View style={{ gap: 14 }}>
 			<View style={{ flexDirection: 'row', alignItems: 'center' }}>
 				<View style={{ flex: 1 }}>
-					<DashboardSectionTitle title="Environments" />
+					<DashboardSectionTitle title="Agents" />
 				</View>
 				{model.isAdmin ? (
 					<UpdateAllButton
@@ -223,7 +223,7 @@ function EnvironmentsSection({ model }: { model: DashboardModel }) {
 					onLayout={model.showNextEnvironmentBatch}
 					style={{ alignItems: 'center', paddingVertical: 8 }}
 				>
-					<ArcaneLoadingView label="Loading more environments…" variant="inline" />
+					<ArcaneLoadingView label="Loading more agents…" variant="inline" />
 				</View>
 			) : null}
 		</View>
@@ -296,14 +296,14 @@ export function DashboardScreen() {
 			<Stack.Toolbar placement="right">
 				<Stack.Toolbar.View>
 					<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-						{model.supportsActivities ? (
+						{
 							<ToolbarIconButton
 								icon="clock.arrow.circlepath"
 								label="Activity Center"
 								color={m3.onSurfaceVariant}
 								onPress={model.openActivityCenter}
 							/>
-						) : null}
+						}
 						{model.canPrune ? (
 							<ToolbarIconButton
 								icon="trash"
@@ -345,11 +345,11 @@ export function DashboardScreen() {
 				) : model.showsEmptyState ? (
 					<View style={{ alignItems: 'center', gap: 8, paddingTop: 48 }}>
 						<Icon name="server.rack" size={44} color={colors.secondaryLabel} />
-						<Text style={[m3Type.titleLarge, { color: colors.label }]}>No Environments</Text>
+						<Text style={[m3Type.titleLarge, { color: colors.label }]}>No Agents</Text>
 						<Text
 							style={[m3Type.bodyMedium, { color: colors.secondaryLabel, textAlign: 'center' }]}
 						>
-							Connect an environment to see live container, image, and system stats here.
+							Connect an agent to see live container, image, and system stats here.
 						</Text>
 					</View>
 				) : model.refreshedDashboardPreview ? (

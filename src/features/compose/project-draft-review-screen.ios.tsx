@@ -17,8 +17,9 @@ import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 import { Host } from '@/ui/host';
 
 import { useProjectDraftReview } from './use-project-draft-review';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
-export function ProjectDraftReviewScreen() {
+function ProjectDraftReviewScreenContent() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const model = useProjectDraftReview();
 	const [diffExpanded, setDiffExpanded] = useState(false);
@@ -89,5 +90,13 @@ export function ProjectDraftReviewScreen() {
 				</Toolbar>
 			</NavigationStack>
 		</Host>
+	);
+}
+
+export function ProjectDraftReviewScreen() {
+	return (
+		<AdvancedGate>
+			<ProjectDraftReviewScreenContent />
+		</AdvancedGate>
 	);
 }

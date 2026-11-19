@@ -8,7 +8,7 @@ export function BackupSettingsScreen() {
 	const model = useBackupSettings();
 	return (
 		<BackupFormChrome title="Backup Settings" presentation="push">
-			{model.canManage ? (
+			{model.showsPolicies ? (
 				<Section title="Schedules">
 					<NavigationLabelRow
 						title="System Backup Policies"

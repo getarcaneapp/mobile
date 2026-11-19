@@ -11,6 +11,7 @@ import { Icon } from '@/ui/Icon';
 
 import { ripple, TextAction } from './compose-android-kit';
 import { useProjectDraftReview } from './use-project-draft-review';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
 function ChangeRow({ icon, text }: { icon?: string; text: string }) {
 	return (
@@ -32,7 +33,7 @@ function ChangeRow({ icon, text }: { icon?: string; text: string }) {
 	);
 }
 
-export function ProjectDraftReviewScreen() {
+function ProjectDraftReviewScreenContent() {
 	const model = useProjectDraftReview();
 	const [diffExpanded, setDiffExpanded] = useState(false);
 	return (
@@ -108,5 +109,13 @@ export function ProjectDraftReviewScreen() {
 				</M3Section>
 			</ScrollView>
 		</>
+	);
+}
+
+export function ProjectDraftReviewScreen() {
+	return (
+		<AdvancedGate>
+			<ProjectDraftReviewScreenContent />
+		</AdvancedGate>
 	);
 }

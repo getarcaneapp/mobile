@@ -6,7 +6,7 @@ export function BackupSettingsScreen() {
 	const model = useBackupSettings();
 	return (
 		<AndroidFormScreen title="Backup Settings">
-			{model.canManage ? (
+			{model.showsPolicies ? (
 				<M3Section title="Schedules">
 					<NavItem
 						title="System Backup Policies"

@@ -28,10 +28,10 @@ struct EnvironmentsProvider: TimelineProvider {
 }
 
 struct EnvironmentsWidgetConfigurationIntent: WidgetConfigurationIntent {
-    static let title: LocalizedStringResource = "Environments"
-    static let description = IntentDescription("Pick up to 4 environments to show; leave empty for the first 4.")
+    static let title: LocalizedStringResource = "Agents"
+    static let description = IntentDescription("Pick up to 4 agents to show; leave empty for the first 4.")
 
-    @Parameter(title: "Environments", size: 4)
+    @Parameter(title: "Agents", size: 4)
     var environments: [EnvironmentEntity]?
 }
 
@@ -71,8 +71,8 @@ struct EnvironmentsWidget: Widget {
         ) { entry in
             EnvironmentsWidgetView(entry: entry)
         }
-        .configurationDisplayName("Environments")
-        .description("Container counts across your environments.")
+        .configurationDisplayName("Agents")
+        .description("Container counts across your agents.")
         .supportedFamilies([.systemMedium])
     }
 }
@@ -92,7 +92,7 @@ struct EnvironmentsWidgetView: View {
         Group {
             if entry.snapshot?.serverConfigured == true {
                 if environments.isEmpty {
-                    Text("No environments")
+                    Text("No agents")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {

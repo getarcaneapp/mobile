@@ -104,7 +104,7 @@ export function APIKeyDetailScreen() {
 						value={APIKeyDateText.detail(apiKey.expiresAt, 'Never')}
 						valueColor={model.isExpired ? systemColors.red : undefined}
 					/>
-					{model.access.supportsRBAC && model.metadata?.permissions ? (
+					{model.metadata?.permissions ? (
 						<ValueRow
 							title="Permissions"
 							value={`${model.metadata.permissions.length} ${model.metadata.kind === 'personal' ? 'inherited' : 'granted'}`}
@@ -132,7 +132,7 @@ export function APIKeyDetailScreen() {
 							text={
 								apiKey.isStatic
 									? 'This static key is managed by Arcane and cannot be edited, rotated, or deleted.'
-									: 'This key is paired with an environment and cannot be edited, rotated, or deleted.'
+									: 'This key is paired with an agent and cannot be edited, rotated, or deleted.'
 							}
 						/>
 					</M3Section>

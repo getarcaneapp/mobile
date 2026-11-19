@@ -21,7 +21,7 @@ function TopologyToolbar({ model }: { model: NetworkTopologyModel }) {
 	return (
 		<AppToolbar placement="right" tintColor={accent}>
 			{model.allEnvironments ? (
-				<Stack.Toolbar.Menu icon={icon('server.rack')} accessibilityLabel="Environment">
+				<Stack.Toolbar.Menu icon={icon('server.rack')} accessibilityLabel="Agent">
 					{model.enabledEnvironments.map((environment) => (
 						<Stack.Toolbar.MenuAction
 							key={environment.id}
@@ -99,7 +99,7 @@ export function NetworkTopologyScreen({
 				<ContentUnavailableView
 					title="No Network Topology"
 					systemImage="point.topleft.down.curvedto.point.bottomright.up"
-					description="No network or container topology data is available for this environment."
+					description="No network or container topology data is available for this agent."
 				/>
 			</Host>
 		);

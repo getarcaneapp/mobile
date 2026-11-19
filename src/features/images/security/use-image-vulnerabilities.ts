@@ -130,7 +130,6 @@ export function useImageVulnerabilities({
 	const nav = useSecurityNavigation();
 	const currentUser = useClientManager((s) => s.currentUser);
 	useClientManager((s) => s.accessGeneration);
-	const supportsActivities = useClientManager((s) => s.supportsActivities());
 	const isAdmin = currentUser ? User.isAdmin(currentUser) : false;
 
 	const [loadMoreError, setLoadMoreError] = useState<string>();
@@ -302,7 +301,7 @@ export function useImageVulnerabilities({
 		ignoredById[ignoreKey(vulnerability)];
 
 	const hasPatchPermission = useClientManager(() => hasPermission('images:patch', environmentID));
-	const canPatch = hasPatchPermission && supportsActivities;
+	const canPatch = hasPatchPermission;
 
 	const emptyState =
 		summary === undefined

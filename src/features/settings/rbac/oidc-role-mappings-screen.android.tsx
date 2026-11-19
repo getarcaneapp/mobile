@@ -92,15 +92,7 @@ export function OIDCRoleMappingsDestination() {
 	const { mappings } = model;
 
 	let content;
-	if (!model.rbacAvailable) {
-		content = (
-			<CenteredMessage
-				icon="lock.slash"
-				title="OIDC Role Mappings Not Available"
-				message="Requires Arcane v2 or newer."
-			/>
-		);
-	} else if (!model.canManage) {
+	if (!model.canManage) {
 		content = (
 			<CenteredMessage
 				icon="lock.fill"
@@ -147,7 +139,7 @@ export function OIDCRoleMappingsDestination() {
 	return (
 		<>
 			<Stack.Screen options={{ title: 'OIDC Role Mappings' }} />
-			{model.rbacAvailable && model.canManage ? (
+			{model.canManage ? (
 				<AndroidToolbar
 					items={[
 						{

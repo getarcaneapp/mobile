@@ -13,7 +13,6 @@ import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { localizedStandardCompare } from '@/core/list-sort-order';
 import { withCleanup } from '@/core/with-cleanup';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
-import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { FileEntry } from '@/sdk/models/volume/Browse';
 import { Permission } from '@/sdk/models/role/Permission';
@@ -72,7 +71,6 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 	const debouncedSearchText = useDebounced(searchText, 200);
 	const loadGeneration = useRef(0);
 	const entriesRef = useRef(entries);
-	const capabilities = useClientManager((s) => s.serverCapabilities);
 	const canReadVolumes = usePermission(Permission.Volumes.read, environmentID);
 	const usesWorkspace = useClientManager((s) => s.apiGeneration === 'v3') && canReadVolumes;
 
@@ -134,10 +132,7 @@ export function useVolumeBrowser(environmentID: EnvironmentID, volumeName: strin
 		[]
 	);
 
-	const canManageFiles =
-		capabilities !== undefined &&
-		ServerCapabilities.supportsRoleManagement(capabilities) &&
-		canReadVolumes;
+	const canManageFiles = canReadVolumes;
 
 	const redirectToWorkspace = useEffectEvent(() =>
 		nav.replaceWithWorkspace(environmentID, volumeName)

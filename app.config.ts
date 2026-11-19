@@ -7,7 +7,7 @@ import withAppIcons from './plugins/with-app-icons.ts';
 import withMaterial3Theme from './plugins/with-material3-theme.ts';
 import withReleaseScheme from './plugins/with-release-scheme.ts';
 
-const MARKETING_VERSION = '0.12.0';
+const MARKETING_VERSION = '0.12.1';
 
 const buildEpochMs = Date.UTC(2020, 0, 1);
 const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
@@ -89,9 +89,10 @@ const config: ExpoConfig = {
 		[
 			'expo-build-properties',
 			{
-				ios: { deploymentTarget: '18.0' },
+				ios: { deploymentTarget: '26.0', ccacheEnabled: true },
 				android: {
 					minSdkVersion: 26,
+					buildArchs: ['arm64-v8a', 'armeabi-v7a'],
 					usesCleartextTraffic: true
 				}
 			}

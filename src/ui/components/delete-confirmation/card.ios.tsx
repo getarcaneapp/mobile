@@ -28,13 +28,13 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import type { SFSymbol } from 'sf-symbols-typescript';
 
 import { useAccentColor } from '@/theme/accent';
-import { colorGradient, colors, systemColors } from '@/theme/colors';
+import { colors, systemColors } from '@/theme/colors';
 import { Motion } from '@/theme/tokens';
 
 import { useReduceMotion } from '../accessibility';
 import { animateTo } from '../motion-views';
 import { swiftAnimation } from '../swiftui-motion';
-import { floatingSurfaceShadow, isIOS26 } from '../swiftui-surfaces';
+import { floatingSurfaceShadow } from '../swiftui-surfaces';
 import { exitDelay, type DeleteConfirmationCardProps } from './card.types';
 import type { DeleteConfirmationAction } from './presenter';
 import { symbolRenderingMode } from '../../../../modules/arcane-swiftui-extras';
@@ -68,7 +68,6 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 	const entrance = reduceMotion
 		? swiftAnimation(Motion.reducedFallback)
 		: swiftAnimation(Motion.overlay);
-	const capsule = shapes.capsule();
 
 	const label = (title: string, color?: string) => (
 		<Text
@@ -78,8 +77,7 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 				minimumScaleFactor(0.75),
 				...(color ? [foregroundStyle(color)] : []),
 				frame({ maxWidth: Infinity }),
-				padding({ vertical: isIOS26 ? 4 : 12 }),
-				...(isIOS26 ? [] : [background('#8E8E9340', capsule)])
+				padding({ vertical: 4 })
 			]}
 		>
 			{title}
@@ -90,9 +88,9 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 		<Button
 			key="cancel"
 			onPress={() => resolve(undefined)}
-			modifiers={isIOS26 ? [buttonStyle('glass'), controlSize('large')] : [buttonStyle('plain')]}
+			modifiers={[buttonStyle('glass'), controlSize('large')]}
 		>
-			{label(config.cancelTitle ?? 'Cancel', isIOS26 ? undefined : 'primary')}
+			{label(config.cancelTitle ?? 'Cancel')}
 		</Button>
 	);
 
@@ -103,28 +101,9 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 			<Button
 				key={`action-${index}`}
 				onPress={() => resolve(action.action)}
-				modifiers={
-					isIOS26
-						? [buttonStyle('glassProminent'), controlSize('large'), tint(fill)]
-						: [buttonStyle('plain'), background(colorGradient(fill), capsule)]
-				}
+				modifiers={[buttonStyle('glassProminent'), controlSize('large'), tint(fill)]}
 			>
-				{isIOS26 ? (
-					label(action.title)
-				) : (
-					<Text
-						modifiers={[
-							font({ weight: 'semibold' }),
-							lineLimit(1),
-							minimumScaleFactor(0.75),
-							foregroundStyle('white'),
-							frame({ maxWidth: Infinity }),
-							padding({ vertical: 12 })
-						]}
-					>
-						{action.title}
-					</Text>
-				)}
+				{label(action.title)}
 			</Button>
 		);
 	};

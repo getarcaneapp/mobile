@@ -64,8 +64,6 @@ export function useDashboardModel() {
 	const activeEnvironmentID = useClientManager((s) => s.activeEnvironmentID);
 	const allEnvironmentsPreview = useClientManager((s) => s.allEnvironmentsPreview);
 	const refreshedDashboardPreview = useClientManager((s) => s.refreshedDashboardPreview);
-	const serverCapabilities = useClientManager((s) => s.serverCapabilities);
-	const supportsActivities = serverCapabilities?.mode === 'rbac';
 	useClientManager((s) => s.accessGeneration);
 
 	const catalogRevision = useEnvironmentsStore((s) => s.environmentCatalogRevision);
@@ -96,17 +94,13 @@ export function useDashboardModel() {
 
 	const acquireStreams = useCallback(() => {
 		holdsStreamsRef.current = true;
-		useEnvironmentsStore
-			.getState()
-			.setVisible(true, consumerID, useClientManager.getState().supportsActivities());
+		useEnvironmentsStore.getState().setVisible(true, consumerID);
 	}, [consumerID]);
 
 	const releaseStreams = useCallback(() => {
 		if (!holdsStreamsRef.current) return;
 		holdsStreamsRef.current = false;
-		useEnvironmentsStore
-			.getState()
-			.setVisible(false, consumerID, useClientManager.getState().supportsActivities());
+		useEnvironmentsStore.getState().setVisible(false, consumerID);
 	}, [consumerID]);
 
 	useEffect(() => {
@@ -115,7 +109,7 @@ export function useDashboardModel() {
 			setUnmounted(true);
 			if (holdsStreamsRef.current) {
 				holdsStreamsRef.current = false;
-				useEnvironmentsStore.getState().setVisible(false, consumerID, false);
+				useEnvironmentsStore.getState().setVisible(false, consumerID);
 			}
 		};
 	}, [consumerID, setUnmounted]);
@@ -181,12 +175,6 @@ export function useDashboardModel() {
 		});
 		return () => subscription.remove();
 	}, [acquireStreams, releaseStreams, store]);
-
-	useEffect(() => {
-		if (supportsActivities && holdsStreamsRef.current) {
-			useEnvironmentsStore.getState().setVisible(true, consumerID, true);
-		}
-	}, [supportsActivities, consumerID]);
 
 	const firstActive = useRef(true);
 	useEffect(() => {
@@ -296,10 +284,11 @@ export function useDashboardModel() {
 
 	const pinned = useNavTabsStore((s) => s.pinnedTabs);
 	const canAccess = useClientManager((s) => s.canAccess);
-	const visibleTabs = useMemo(
-		() => new Set<AppTab>(resolveTabs(pinned, new Set(AppTabIDs.filter(canAccess)))),
-		[pinned, canAccess]
-	);
+	const accessGeneration = useClientManager((s) => s.accessGeneration);
+	const visibleTabs = useMemo(() => {
+		void accessGeneration;
+		return new Set<AppTab>(resolveTabs(pinned, new Set(AppTabIDs.filter(canAccess))));
+	}, [pinned, canAccess, accessGeneration]);
 
 	const selectTab = (tab: AppTab, params?: Record<string, string>) => {
 		if (visibleTabs.has(tab))
@@ -454,7 +443,6 @@ export function useDashboardModel() {
 		activeEnvironmentID,
 		allEnvironmentsPreview,
 		refreshedDashboardPreview,
-		supportsActivities,
 		isAdmin,
 		canPrune,
 		enabledEnvironments,

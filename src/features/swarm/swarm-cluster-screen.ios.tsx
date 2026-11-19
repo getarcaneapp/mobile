@@ -183,7 +183,7 @@ export function SwarmClusterScreen() {
 						</>
 					) : null}
 					{model.canLeave ? (
-						<Section footer={<Text>This environment's Docker host leaves the swarm.</Text>}>
+						<Section footer={<Text>This agent's Docker host leaves the swarm.</Text>}>
 							<Button
 								role="destructive"
 								onPress={model.requestLeave}

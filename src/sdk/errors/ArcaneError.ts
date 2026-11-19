@@ -35,8 +35,8 @@ export abstract class ArcaneError extends Error {
 	static unauthorized(): ArcaneUnauthorizedError {
 		return new ArcaneUnauthorizedError();
 	}
-	static forbidden(detail?: string): ArcaneForbiddenError {
-		return new ArcaneForbiddenError(detail);
+	static forbidden(detail?: string, code?: string): ArcaneForbiddenError {
+		return new ArcaneForbiddenError(detail, code);
 	}
 	static notFound(detail?: string): ArcaneNotFoundError {
 		return new ArcaneNotFoundError(detail);
@@ -91,10 +91,12 @@ export class ArcaneUnauthorizedError extends ArcaneError {
 export class ArcaneForbiddenError extends ArcaneError {
 	readonly kind = 'forbidden' as const;
 	readonly detail: string | undefined;
-	constructor(detail?: string) {
+	readonly code: string | undefined;
+	constructor(detail?: string, code?: string) {
 		super(detail ?? 'Forbidden');
 		this.name = 'ArcaneError.forbidden';
 		this.detail = detail;
+		this.code = code;
 	}
 }
 
@@ -227,6 +229,84 @@ export function isArcaneError(error: unknown, kind?: ArcaneErrorKind): boolean {
 	return error instanceof ArcaneError && (kind === undefined || error.kind === kind);
 }
 
+export const passwordChangeRequiredCode = 'PASSWORD_CHANGE_REQUIRED';
+export const passwordPolicyCode = 'PASSWORD_POLICY';
+export const passwordPolicyProblemType = 'urn:arcane:problem:password-policy';
+
+export function isPasswordChangeRequiredError(error: unknown): boolean {
+	if (!isArcaneError(error, 'forbidden')) return false;
+	if (error.code === passwordChangeRequiredCode) return true;
+	return error.detail?.trim().toLowerCase() === 'password change required';
+}
+
+export type PasswordPolicy = {
+	minLength: number;
+	requireUppercase: boolean;
+	requireLowercase: boolean;
+	requireNumber: boolean;
+	requireSymbol: boolean;
+};
+
+export function decodePasswordPolicy(value: unknown): PasswordPolicy | undefined {
+	if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
+	const o = value as Record<string, unknown>;
+	if (
+		typeof o.minLength !== 'number' ||
+		typeof o.requireUppercase !== 'boolean' ||
+		typeof o.requireLowercase !== 'boolean' ||
+		typeof o.requireNumber !== 'boolean' ||
+		typeof o.requireSymbol !== 'boolean'
+	) {
+		return undefined;
+	}
+	return {
+		minLength: o.minLength,
+		requireUppercase: o.requireUppercase,
+		requireLowercase: o.requireLowercase,
+		requireNumber: o.requireNumber,
+		requireSymbol: o.requireSymbol
+	};
+}
+
+export function passwordPolicyMessage(policy: PasswordPolicy): string {
+	const rules = [
+		policy.requireUppercase ? 'an uppercase letter' : undefined,
+		policy.requireLowercase ? 'a lowercase letter' : undefined,
+		policy.requireNumber ? 'a number' : undefined,
+		policy.requireSymbol ? 'a symbol' : undefined
+	].filter((rule): rule is string => rule !== undefined);
+	const base = `Password must be at least ${policy.minLength} characters`;
+	if (rules.length === 0) return `${base}.`;
+	if (rules.length <= 2) return `${base} and include ${rules.join(' and ')}.`;
+	return `${base} and include ${rules.slice(0, -1).join(', ')}, and ${rules[rules.length - 1]}.`;
+}
+
+function passwordPolicyError(json: Record<string, unknown>): ArcaneServerError | undefined {
+	const type = optionalString(json.type);
+	if (type === undefined || !type.startsWith(passwordPolicyProblemType)) return undefined;
+	const details = json.details;
+	const policy =
+		typeof details === 'object' && details !== null && !Array.isArray(details)
+			? decodePasswordPolicy((details as Record<string, unknown>).policy)
+			: undefined;
+	if (policy) return ArcaneError.server(passwordPolicyCode, passwordPolicyMessage(policy));
+	const detail = optionalString(json.detail)?.trim();
+	if (!detail) return undefined;
+	const separator = detail.indexOf(': ');
+	const message = separator >= 0 ? detail.slice(separator + 2) : detail;
+	return ArcaneError.server(passwordPolicyCode, message.charAt(0).toUpperCase() + message.slice(1));
+}
+
+type ArcaneResponseErrorListener = (error: ArcaneError) => void;
+const responseErrorListeners = new Set<ArcaneResponseErrorListener>();
+
+export function subscribeToArcaneResponseErrors(listener: ArcaneResponseErrorListener): () => void {
+	responseErrorListeners.add(listener);
+	return () => {
+		responseErrorListeners.delete(listener);
+	};
+}
+
 export class CancellationError extends Error {
 	constructor(message = 'The operation was cancelled.') {
 		super(message);
@@ -351,6 +431,16 @@ export function arcaneErrorFrom(
 	body: string,
 	headers?: { get(name: string): string | null }
 ): ArcaneError {
+	const error = parseArcaneError(statusCode, body, headers);
+	for (const listener of responseErrorListeners) listener(error);
+	return error;
+}
+
+function parseArcaneError(
+	statusCode: number,
+	body: string,
+	headers?: { get(name: string): string | null }
+): ArcaneError {
 	const json = parseJSONObject(body);
 	const arcaneError: APIErrorResponse | undefined = json
 		? {
@@ -393,7 +483,11 @@ export function arcaneErrorFrom(
 	if (statusCode === 401) return ArcaneError.unauthorized();
 	const detail = arcaneError?.error ?? arcaneError?.message ?? humaMessage;
 	const serverDetail = detail === undefined || detail.trim() === '' ? undefined : detail;
-	if (statusCode === 403) return ArcaneError.forbidden(serverDetail);
+	if (statusCode === 403) return ArcaneError.forbidden(serverDetail, arcaneError?.code);
+	if (statusCode === 400 && json) {
+		const policyError = passwordPolicyError(json);
+		if (policyError) return policyError;
+	}
 	if (statusCode === 404) return ArcaneError.notFound(serverDetail);
 	if (statusCode === 409) return ArcaneError.conflict(message === '' ? undefined : message);
 	if (statusCode === 400 && code === 'VALIDATION_ERROR') {

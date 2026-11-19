@@ -125,7 +125,7 @@ export function VolumeBackupsScreen() {
 								onPress={model.openCreate}
 								disabled={model.busy}
 							/>
-							{model.supportsPolicies ? (
+							{model.showsPolicies ? (
 								<LinkItem title="Backup policies" onPress={model.openPolicies} />
 							) : null}
 							{model.canUpload ? (

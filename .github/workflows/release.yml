@@ -1,0 +1,105 @@
+name: GitHub Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Mark the release as a pre-release
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 26
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+jobs:
+  android:
+    runs-on: depot-ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Require the main branch
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main ]]; then
+            echo "::error::Releases must be triggered from main."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@68f39c78aaf39be468cabd2afb09c162574c84af # v1.21.2
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: true
+      - name: Version and release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node scripts/release-notes.mts version)"
+          tag="v$version"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release $tag already exists. Bump MARKETING_VERSION in app.config.ts."
+            exit 1
+          fi
+          node scripts/release-notes.mts > "$RUNNER_TEMP/notes.md"
+          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+      - name: Build on EAS
+        run: |
+          vpx eas-cli@latest build --platform android --profile github --non-interactive --wait --json > "$RUNNER_TEMP/build.json"
+          status=$(jq -r '.[0].status' "$RUNNER_TEMP/build.json")
+          url=$(jq -r '.[0].artifacts.applicationArchiveUrl // .[0].artifacts.buildUrl // empty' "$RUNNER_TEMP/build.json")
+          if [[ "$status" != FINISHED || -z "$url" ]]; then
+            echo "::error::EAS build ended as $status without an APK."
+            exit 1
+          fi
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/Arcane-$RELEASE_VERSION.apk" "$url"
+      - name: Checksum
+        working-directory: ${{ runner.temp }}
+        run: sha256sum "Arcane-$RELEASE_VERSION.apk" > "Arcane-$RELEASE_VERSION.apk.sha256"
+      - name: Request App Token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.ARCANE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.ARCANE_APP_PRIVATE_KEY }}
+          owner: getarcaneapp
+          repositories: mobile
+          permission-contents: write
+      - name: Tag and publish release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          PRERELEASE: ${{ inputs.prerelease && '--prerelease' || '' }}
+        run: |
+          bot_name="$APP_SLUG[bot]"
+          bot_id=$(gh api "users/$bot_name" --jq .id)
+          git config user.name "$bot_name"
+          git config user.email "$bot_id+$bot_name@users.noreply.github.com"
+          gh auth setup-git
+
+          if tagged=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha 2>/dev/null); then
+            if [[ "$tagged" != "$GITHUB_SHA" ]]; then
+              echo "::error::Tag $RELEASE_TAG already points at $tagged, not $GITHUB_SHA."
+              exit 1
+            fi
+          else
+            git tag -a "$RELEASE_TAG" -m "$RELEASE_VERSION" "$GITHUB_SHA"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
+
+          gh release create "$RELEASE_TAG" \
+            "$RUNNER_TEMP/Arcane-$RELEASE_VERSION.apk" \
+            "$RUNNER_TEMP/Arcane-$RELEASE_VERSION.apk.sha256" \
+            --verify-tag \
+            --title "$RELEASE_TAG" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            $PRERELEASE
+          echo "Published [$RELEASE_TAG](https://github.com/$GH_REPO/releases/tag/$RELEASE_TAG)." >> "$GITHUB_STEP_SUMMARY"

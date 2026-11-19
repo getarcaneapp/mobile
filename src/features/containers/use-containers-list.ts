@@ -13,6 +13,7 @@ import {
 	performAllEnvironmentsMaintenance,
 	performAllEnvironmentsPrune
 } from '@/core/all-environments-actions';
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { usePermissionCheck } from '@/core/auth/permissions';
 import { BulkActionRunner, type BulkResult } from '@/core/bulk-action-runner';
 import { friendlyErrorMessage } from '@/core/errors';
@@ -362,13 +363,13 @@ export function useContainersList({
 	}, [containers]);
 
 	const can = usePermissionCheck();
-	const isRBAC = useClientManager((s) => s.serverCapabilities?.mode === 'rbac');
 	const listEnvironments: ListEnvironment[] = allEnvironments
 		? snapshot.environments
 		: [{ id: environmentID }];
-	const createEnvironments = listEnvironments.filter((e) =>
-		can(Permission.Containers.create, e.id)
-	);
+	const [advanced] = useAdvancedFeatures();
+	const createEnvironments = advanced
+		? listEnvironments.filter((e) => can(Permission.Containers.create, e.id))
+		: [];
 	const canStartAll = can(Permission.Containers.start, environmentID);
 	const canStopAll = can(Permission.Containers.stop, environmentID);
 	const enabledEnvironments = environmentsStoreEnabled.filter((e) => e.enabled);
@@ -581,7 +582,7 @@ export function useContainersList({
 			});
 		}
 		if (
-			isRBAC &&
+			advanced &&
 			selectionEnvironmentID !== undefined &&
 			can(Permission.Containers.read, selectionEnvironmentID)
 		) {
@@ -642,7 +643,7 @@ export function useContainersList({
 				case 'stopAll':
 					return {
 						title: 'Stop All Containers',
-						message: 'Stop every running container in this environment.',
+						message: 'Stop every running container in this agent.',
 						icon: 'stop.fill',
 						actions: [
 							{ title: 'Stop All', action: () => void runPowerAll('stopAll', environmentID) }

@@ -239,7 +239,7 @@ function EnvironmentMenu({
 			<View
 				accessible
 				accessibilityRole="button"
-				accessibilityLabel="Environment actions"
+				accessibilityLabel="Agent actions"
 				style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
 			>
 				<Icon name="ellipsis.circle" size={22} color={colors.secondaryLabel} />
@@ -364,7 +364,7 @@ function AllEnvironmentsUpdatesList({ model }: { model: ImageUpdatesModel }) {
 			<CenteredState
 				icon="checkmark.circle"
 				title="No Available Updates"
-				message="No pending image updates in the selected environments."
+				message="No pending image updates in the selected agents."
 			/>
 		);
 	}
@@ -792,7 +792,7 @@ export function ImageUpdatesView({
 		content = (
 			<CenteredState
 				icon="exclamationmark.triangle"
-				title="Couldn't Load Environments"
+				title="Couldn't Load Agents"
 				message={model.environmentLoadError}
 				action={{ title: 'Try Again', onPress: () => void model.loadAll() }}
 			/>
@@ -801,8 +801,8 @@ export function ImageUpdatesView({
 		content = (
 			<CenteredState
 				icon="bolt.slash"
-				title="No Environments"
-				message="Add an environment to see image updates."
+				title="No Agents"
+				message="Add an agent to see image updates."
 			/>
 		);
 	} else if (model.allEnvironmentsPreview) {
@@ -832,7 +832,7 @@ export function ImageUpdatesView({
 					title: 'Updates',
 					headerSearchBarOptions: model.allEnvironmentsPreview
 						? {
-								placeholder: 'Search images or environments',
+								placeholder: 'Search images or agents',
 								onChangeText: (event) => model.setSearch(event.nativeEvent.text),
 								onClose: () => model.setSearch('')
 							}

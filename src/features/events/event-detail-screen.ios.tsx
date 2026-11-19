@@ -90,7 +90,7 @@ export function EventDetailScreen() {
 							{event.username ? <Value label="User" value={event.username} /> : null}
 							{event.userId ? <Value label="User ID" value={event.userId} mono /> : null}
 							{model.environmentName !== undefined ? (
-								<Value label="Environment" value={model.environmentName} />
+								<Value label="Agent" value={model.environmentName} />
 							) : null}
 						</Section>
 					) : null}

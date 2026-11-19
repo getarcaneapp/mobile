@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 
 import { useProjectNavigation } from '@/features/projects/project-routes';
 import { CenteredMessage } from '@/features/containers/android-material';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
 import { decodeComposeDestination, encodeComposeDestination } from './compose-destinations';
 import { ComposeDestinationScreen, ComposeNavigationContext } from './compose-screens-android';
@@ -32,9 +33,10 @@ export function ComposeEditorRouteScreen() {
 			/>
 		);
 	}
-	return (
+	const screen = (
 		<ComposeNavigationContext.Provider value={context}>
 			<ComposeDestinationScreen destination={destination} />
 		</ComposeNavigationContext.Provider>
 	);
+	return destination.readOnly ? screen : <AdvancedGate>{screen}</AdvancedGate>;
 }

@@ -10,14 +10,28 @@ export type ReleaseNote = {
 
 export const releaseNotes: ReleaseNote[] = [
 	{
+		version: '0.12.1',
+		new: [
+      {
+				text: 'On Android, Firebase settings are entered at runtime under App Settings > Firebase.'
+			},
+			{
+				text: 'Light, dark or system theme in Appearance settings.'
+			}
+		],
+		fixed: [
+			{
+				text: 'Push notifications failing to enable on Android.'
+			}
+		]
+	},
+	{
 		version: '0.12.0',
 		new: [
 			{
 				text: 'Arcane v3 server support.'
 			},
-			{
-				text: 'On Android, Firebase settings are entered at runtime under App Settings > Firebase.'
-			},
+
 			{
 				text: 'Live upgrade progress and per-environment logs, with Update All and Retry Failed.'
 			},
@@ -26,20 +40,44 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Live list refresh and environment variable setting locks on Arcane v3.'
+			},
+			{
+				text: 'Show Advanced Features setting.'
+			},
+			{
+				text: 'Password rule and variable container injection settings on Arcane v3.'
+			},
+			{
+				text: 'Required password change prompt after sign-in.'
 			}
 		],
 		changed: [
 			{
+				text: 'Environments renamed to Agents.'
+			},
+			{
 				text: 'Local server addresses without a scheme use http://.'
 			},
 			{
-				text: 'All Environments and the refreshed dashboard are always on with Arcane v3.'
+				text: 'All Agents and the refreshed dashboard are always on with Arcane v3.'
 			},
 			{
 				text: 'Faster loading and scrolling.'
+			},
+			{
+				text: 'More grouped into Monitor, Resources, Operations and Setup.'
+			},
+			{
+				text: 'Editing and setup screens hidden unless Show Advanced Features is on.'
+			},
+			{
+				text: 'Requires iOS 26.'
 			}
 		],
 		removed: [
+			{
+				text: 'Arcane v1 server support.'
+			},
 			{
 				text: 'Container rename, GitOps Sync job schedule and Dashboard totals tiles.'
 			}
@@ -52,34 +90,52 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Project files hanging on large folders and .env locked in GitOps projects.'
 			},
 			{
-				text: 'Environment cards cut off at larger text sizes.'
-			},
-			{
-				text: 'Push notifications failing to enable on Android.'
+				text: 'Agent cards cut off at larger text sizes.'
 			},
 			{
 				text: 'Sign-in dropping proxy tokens in the URL and unreadable certificate errors.'
 			},
 			{
-				text: 'Signing out not revoking the session.'
+				text: 'Signing out or switching servers not revoking the session or push.'
 			},
 			{
-				text: 'Stale dashboard, image update counts and background changes.'
+				text: 'Stale dashboard, wrong update and risk counts, and missed background changes.'
 			},
 			{
 				text: 'Container stats showing zeros and terminal size mismatches.'
 			},
 			{
-				text: 'Event Cleanup schedule not saving and Update All looping.'
+				text: 'Job schedules saving blank intervals and Update All looping or misreporting.'
 			},
 			{
 				text: 'Interrupted deployments leaving their toast and Live Activity open.'
 			},
 			{
-				text: 'An offline environment stalling the app.'
+				text: 'An offline agent stalling the app and dropped connections breaking v3 requests.'
 			},
 			{
 				text: 'Volume browsing without manage permission and hidden server error messages.'
+			},
+			{
+				text: 'Backup actions, file saves and subfolders failing on Arcane v3.'
+			},
+			{
+				text: 'Editing network options breaking compact compose files.'
+			},
+			{
+				text: 'Selected agent, pins and running deployments carrying over to another server.'
+			},
+			{
+				text: 'Expired sessions failing silently instead of showing an error.'
+			},
+			{
+				text: 'Container edits running twice and deleted containers staying open.'
+			},
+			{
+				text: 'Saved sign-ins reverting after iCloud sync or showing as removed when not.'
+			},
+			{
+				text: 'Invalid swarm ports and build settings saving without an error.'
 			},
 			{
 				text: 'Assorted visual, scrolling and tap target issues.'

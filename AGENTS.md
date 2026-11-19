@@ -64,7 +64,7 @@ src/
 
 - Subscribe to stores with narrow selectors (`useStore((s) => s.field)`, or `useShallow` for derived arrays/objects); never call a store hook with no selector.
 - Persistence is MMKV via `src/core/storage.ts` (`useStoredString`, `useStoredBool`, `Keys`). Never rename an existing storage key. Secrets go in `expo-secure-store`.
-- Support both Arcane v1 and v2 backends; gate v2-only features on capability checks (e.g. `supportsActivities`).
+- Support Arcane v2 and v3 backends; gate v3-only features on `apiGeneration === 'v3'` and newer features on capability checks (e.g. `supportsMobilePush`). Arcane v1 is not supported.
 - Transient feedback uses `showToast(Toasts.*)` from `src/ui/toast`, never `Alert`.
 
 ### Copy
@@ -101,9 +101,10 @@ src/
 
 ### Beta releases
 
-- `.github/workflows/beta.yml` builds with `eas build --local` (iOS on GitHub's `macos-26` runner, Android on a Depot Linux runner); builds never run on EAS servers. Pushes to `main` submit with the `internal` profile (TestFlight internal testers, Play internal testing). Public TestFlight and Play closed or production releases are done by hand.
+- `.github/workflows/beta.yml` builds with `eas build --local` (iOS on GitHub's `xcode-27` runner, which builds against the iOS 27 SDK, Android on a Depot Linux runner); beta builds never run on EAS servers. Pushes to `main` that touch app sources (the workflow's `paths` list: `src`, `assets`, `modules`, `targets`, `plugins`, `patches`, app and dependency config) submit with the `internal` profile (TestFlight internal testers, Play internal testing). Public TestFlight and Play closed or production releases are done by hand.
+- `.github/workflows/release.yml` publishes a GitHub release with a signed APK, built on EAS servers with the `github` profile (the only build that runs there; it reads `GOOGLE_SERVICES_JSON` from the EAS production environment), for sideloading and Obtainium. Run it by hand from `main`; the Arcane bot pushes the `v<MARKETING_VERSION>` tag (never push release tags yourself), and the release body comes from that version's entry in `src/release-notes.ts` via `scripts/release-notes.mts`. One release per `MARKETING_VERSION`.
 - Build numbers are automatic: `app.config.ts` sets iOS `buildNumber` and Android `versionCode` to minutes since 2020-01-01 UTC (CI pins one value per job via `ARCANE_BUILD_NUMBER`). Never set them by hand.
-- Signing credentials and store API keys live in EAS; CI only needs `EXPO_TOKEN`.
+- Signing credentials and store API keys live in EAS. CI needs `EXPO_TOKEN` and `GOOGLE_SERVICES_JSON` (the contents of the Firebase `google-services.json`; local EAS builds cannot read EAS secret variables).
 
 ### Versioning
 

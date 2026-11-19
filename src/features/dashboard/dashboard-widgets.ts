@@ -107,7 +107,7 @@ export const DashboardWidget = {
 			requiresV3: true
 		},
 		environments: {
-			title: 'Environments',
+			title: 'Agents',
 			systemImage: 'square.stack.3d.up.fill',
 			tint: 'blue',
 			isStat: false,

@@ -4,6 +4,7 @@ import { Directory, Paths } from 'expo-file-system';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { AvatarDiskCache } from '@/core/auth/avatar-disk-cache';
 import { formatFileBytes } from '@/core/networking/remote-data-limits';
 import { ResponseCache } from '@/core/networking/response-cache';
@@ -82,6 +83,7 @@ type PendingDestructive = 'clearCache';
 
 export function useAppSettings() {
 	const [rememberLastTab, setRememberLastTab] = useStoredBool(Keys.rememberLastTab, true);
+	const [advancedFeatures, setAdvancedFeatures] = useAdvancedFeatures();
 	const [liveStatsLimit, storeLiveStatsLimit] = useLiveStatsLimit();
 	const [activityToastScopeRawValue, setActivityToastScopeRawValue] = useStoredString(
 		ActivityToastScope.preferenceKey,
@@ -171,6 +173,8 @@ export function useAppSettings() {
 	return {
 		rememberLastTab,
 		setRememberLastTab,
+		advancedFeatures,
+		setAdvancedFeatures,
 		liveStatsLimit,
 		setLiveStatsLimit,
 		activityToastScope,

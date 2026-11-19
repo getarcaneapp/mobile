@@ -23,9 +23,7 @@ export function useEnvironmentColorPicker(environmentID: string) {
 		save: (hex: string) => {
 			if (!useEnvironmentColorStore.getState().set(hex, server, environmentID)) {
 				showToast(
-					Toasts.info(
-						'That color is already used by another environment. Choose a different color.'
-					)
+					Toasts.info('That color is already used by another agent. Choose a different color.')
 				);
 			}
 		},

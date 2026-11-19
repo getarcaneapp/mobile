@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Stack } from 'expo-router';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -175,7 +176,7 @@ function PairsSection({
 	);
 }
 
-export function SwarmServiceEditorScreen() {
+function SwarmServiceEditorScreenContent() {
 	const model = useSwarmServiceEditor();
 	const { draft } = model;
 	return (
@@ -414,5 +415,13 @@ export function SwarmServiceEditorScreen() {
 				<SheetError message={model.errorMessage} />
 			</ScrollView>
 		</>
+	);
+}
+
+export function SwarmServiceEditorScreen() {
+	return (
+		<AdvancedGate>
+			<SwarmServiceEditorScreenContent />
+		</AdvancedGate>
 	);
 }

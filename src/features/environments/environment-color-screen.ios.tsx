@@ -34,13 +34,10 @@ export function EnvironmentColorScreen() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[
-								navigationTitle('Environment Color'),
-								navigationBarTitleDisplayMode('inline')
-							]}
+							modifiers={[navigationTitle('Agent Color'), navigationBarTitleDisplayMode('inline')]}
 						>
 							<Section
-								footer={<Text>Applies to this environment's name and icon in resource lists.</Text>}
+								footer={<Text>Applies to this agent's name and icon in resource lists.</Text>}
 							>
 								<EnvironmentColorPicker
 									environmentID={route.environmentID}

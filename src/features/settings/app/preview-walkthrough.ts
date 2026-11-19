@@ -23,24 +23,24 @@ export const RefreshedDashboardIntroduction = {
 export const allEnvironmentsWalkthrough: WalkthroughContent = {
 	pages: [
 		{
-			title: 'All your environments.\nOne view.',
+			title: 'All your agents.\nOne view.',
 			message:
-				'See containers, projects, images and more from all enabled environments together. Your dashboard brings their totals into one place.'
+				'See containers, projects, images and more from all enabled agents together. Your dashboard brings their totals into one place.'
 		},
 		{
 			title: 'Know what belongs where.',
 			message:
-				'Environment names and colors identify every resource. Use filters to focus on one environment without leaving the list.'
+				'Agent names and colors identify every resource. Use filters to focus on one agent without leaving the list.'
 		},
 		{
 			title: 'Manage them together.',
 			message:
-				'Update checks, updates and pruning apply to all enabled environments, even when a list is filtered. Review the confirmation before running an action.'
+				'Update checks, updates and pruning apply to all enabled agents, even when a list is filtered. Review the confirmation before running an action.'
 		}
 	],
 	seenKey: AllEnvironmentsIntroduction.seenKey,
 	footnote:
-		'Optional preview. Turn it off anytime in More → Preview Features. Environment switching is hidden while it’s on.'
+		'Optional preview. Turn it off anytime in More → Preview Features. Agent switching is hidden while it’s on.'
 };
 
 export const refreshedDashboardWalkthrough: WalkthroughContent = {
@@ -48,17 +48,17 @@ export const refreshedDashboardWalkthrough: WalkthroughContent = {
 		{
 			title: 'Your hosts, live.',
 			message:
-				'A live graph follows CPU and memory on every environment, with the total across all of them up top.'
+				'A live graph follows CPU and memory on every agent, with the total across all of them up top.'
 		},
 		{
 			title: "Find what's busy.",
 			message:
-				'The busiest containers across all environments, ranked by CPU or memory. Tap one to open it.'
+				'The busiest containers across all agents, ranked by CPU or memory. Tap one to open it.'
 		},
 		{
 			title: 'Make it yours.',
 			message:
-				'Edit Dashboard reorders and hides widgets. Each environment lists its containers, images, volumes and disk.'
+				'Edit Dashboard reorders and hides widgets. Each agent lists its containers, images, volumes and disk.'
 		}
 	],
 	seenKey: RefreshedDashboardIntroduction.seenKey,

@@ -15,7 +15,8 @@ import {
 	CredentialBinding,
 	CredentialLease,
 	CredentialPersistenceCoordinator,
-	OriginTokenStore
+	OriginTokenStore,
+	SecureStoreTokenStore
 } from '@/core/auth/token-store';
 import { friendlyErrorMessage, isCancellation, shouldRefreshNetworkSession } from '@/core/errors';
 import { ResponseCache } from '@/core/networking/response-cache';
@@ -35,12 +36,20 @@ import {
 	normalizeServerURLInput,
 	serverCacheIdentity
 } from '@/core/networking/server-identity';
-import { Keys, storage } from '@/core/storage';
+import { migrateAdvancedFeatures } from '@/core/advanced-features';
+import { requiresPasswordChangeGate } from '@/core/auth/password-change';
+import { defaults, Keys, storage } from '@/core/storage';
+import { TokenPair } from '@/sdk/auth/TokenStore';
 import { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { APIGeneration } from '@/sdk/client/apiGeneration';
 import { EnvironmentID, RetryPolicy } from '@/sdk/client/environment';
 import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
-import { ArcaneError, CancellationError } from '@/sdk/errors/ArcaneError';
+import {
+	ArcaneError,
+	CancellationError,
+	isPasswordChangeRequiredError,
+	subscribeToArcaneResponseErrors
+} from '@/sdk/errors/ArcaneError';
 import {
 	MFARequiredError,
 	type AuthenticationResult,
@@ -58,7 +67,12 @@ import { CeremonyError } from '@/sdk/passkeys/CeremonyTypes';
 export { LoginCapabilities } from '@/core/auth/access';
 export { ArcaneMobileOIDC } from '@/core/auth/auth-session';
 
-export type AppAuthState = 'setup' | 'authenticating' | 'login' | 'authenticated';
+export type AppAuthState =
+	| 'setup'
+	| 'authenticating'
+	| 'login'
+	| 'passwordChange'
+	| 'authenticated';
 
 export type DemoEndReason = 'userInitiated' | 'expired';
 
@@ -99,13 +113,13 @@ type ClientManagerState = {
 	authenticationGeneration: number;
 	cacheSessionIdentity: string;
 	accessGeneration: number;
+	advancedFeatures: boolean;
 
 	currentUserAvatarURI: string | undefined;
 
 	serverOrigin: () => string | undefined;
 	isOIDCAvailable: () => boolean;
 	isLocalAuthAvailable: () => boolean;
-	supportsActivities: () => boolean;
 	canAccess: (tab: AppTab) => boolean;
 	acceptsEnvironmentContext: (id: EnvironmentID) => boolean;
 	isCurrentAuthentication: (generation: number) => boolean;
@@ -126,6 +140,7 @@ type ClientManagerState = {
 	completePendingMFAWithRecoveryCode: (code: string) => Promise<void>;
 	cancelPendingMFA: () => void;
 	logout: () => Promise<void>;
+	completePasswordChange: () => Promise<void>;
 	startDemo: () => Promise<void>;
 	endDemo: (reason: DemoEndReason) => Promise<void>;
 	checkExistingAuth: () => Promise<void>;
@@ -134,6 +149,8 @@ type ClientManagerState = {
 };
 
 const bootstrapTimeoutMs = 20_000;
+const unsupportedServerMessage =
+	'This server runs Arcane v1. Update to Arcane v2 or later to sign in.';
 const newSessionIdentity = () => randomUUID().toUpperCase();
 
 export function shouldSuggestLocalDNSHint(
@@ -178,6 +195,62 @@ function rememberAPIGeneration(
 	storage.set(Keys.serverAPIGeneration, `${generation}@${origin}`);
 }
 
+type SessionEndListener = (
+	client: ArcaneClient | undefined,
+	origin: string | undefined
+) => Promise<void>;
+
+const sessionEndListeners = new Set<SessionEndListener>();
+
+export function onSessionEnd(listener: SessionEndListener): () => void {
+	sessionEndListeners.add(listener);
+	return () => {
+		sessionEndListeners.delete(listener);
+	};
+}
+
+async function notifySessionEnd(client: ArcaneClient | undefined, origin: string | undefined) {
+	await Promise.all(
+		[...sessionEndListeners].map((listener) => listener(client, origin).catch(() => undefined))
+	);
+}
+
+async function endReplacedSession(client: ArcaneClient, origin: string) {
+	await notifySessionEnd(client, origin);
+	const store = new SecureStoreTokenStore(origin);
+	const stored = await store.loadTokens().catch(() => undefined);
+	await client.auth.logout().catch(() => undefined);
+	if (stored === undefined || CredentialBinding.origin === origin) return;
+	const current = await store.loadTokens().catch(() => undefined);
+	if (TokenPair.equals(current, stored)) await store.clearTokens().catch(() => undefined);
+}
+
+type RememberedEnvironment = { id: string; name: string };
+
+function rememberedEnvironments(): Record<string, RememberedEnvironment> {
+	const stored = storage.json<unknown>(Keys.activeEnvironmentByServer);
+	if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
+	const result: Record<string, RememberedEnvironment> = {};
+	for (const [origin, value] of Object.entries(stored)) {
+		if (
+			value &&
+			typeof value === 'object' &&
+			typeof (value as RememberedEnvironment).id === 'string' &&
+			typeof (value as RememberedEnvironment).name === 'string'
+		)
+			result[origin] = value as RememberedEnvironment;
+	}
+	return result;
+}
+
+function rememberEnvironment(origin: string | undefined, id: string, name: string) {
+	if (!origin) return;
+	storage.setJSON(Keys.activeEnvironmentByServer, {
+		...rememberedEnvironments(),
+		[origin]: { id, name }
+	});
+}
+
 function previewModes(generation: APIGeneration | undefined) {
 	if (generation === 'v3') return { allEnvironmentsPreview: true, refreshedDashboardPreview: true };
 	return {
@@ -203,6 +276,12 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 
 	const bumpAccess = () => set((s) => ({ accessGeneration: s.accessGeneration + 1 }));
 
+	storage.subscribe(Keys.advancedFeatures, () => {
+		const next = defaults.getBoolean(Keys.advancedFeatures) ?? false;
+		if (next === get().advancedFeatures) return;
+		set((s) => ({ advancedFeatures: next, accessGeneration: s.accessGeneration + 1 }));
+	});
+
 	const isCurrentAuthentication = (generation: number) =>
 		generation === get().authenticationGeneration;
 
@@ -224,6 +303,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			baseURL: url,
 			tokenStore: new OriginTokenStore(origin, credentialLease, credentialPersistence),
 			defaultEnvironmentID: EnvironmentID.localDocker,
+			fallbackAPIGeneration: rememberedAPIGeneration(url),
 			retryPolicy: bootstrap ? RetryPolicy.make(1, 300, 300) : RetryPolicy.make(3, 300, 3_000),
 			timeoutMs: bootstrap ? bootstrapTimeoutMs : undefined,
 			additionalHeaders: demoHeaders
@@ -289,6 +369,21 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		});
 		bumpAccess();
 	};
+
+	const gatesPasswordChange = (user: User) =>
+		requiresPasswordChangeGate(user, isSameOrigin(get().parsedServerURL ?? '', demoBaseURL));
+
+	subscribeToArcaneResponseErrors((error) => {
+		if (!isPasswordChangeRequiredError(error)) return;
+		const state = get();
+		if (state.authState !== 'authenticated' || !state.currentUser) return;
+		if (isSameOrigin(state.parsedServerURL ?? '', demoBaseURL)) return;
+		set({
+			currentUser: { ...state.currentUser, requiresPasswordChange: true },
+			authState: 'passwordChange'
+		});
+		bumpAccess();
+	});
 
 	const usesV3Defaults = () =>
 		get().apiGeneration === 'v3' || rememberedAPIGeneration(get().parsedServerURL) === 'v3';
@@ -389,15 +484,22 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		generation: number
 	) => {
 		if (!isCurrentAuthentication(generation)) return;
+		if (!ServerCapabilities.isSupportedServer(user)) {
+			signOutLocally();
+			set({ errorMessage: unsupportedServerMessage });
+			await client.auth.logout().catch(() => undefined);
+			return;
+		}
 		setCacheSessionIdentity();
 		set({ currentUser: user, serverCapabilities: capabilities });
 		bumpAccess();
-		const loadsPermissions = capabilities.mode === 'rbac';
 		const bootstrap = await sessionBootstrapIfAvailable(client);
 		if (!isCurrentAuthentication(generation)) return;
 		if (bootstrap) {
 			const environments = bootstrap.environments;
+			const passwordChangePending = gatesPasswordChange(bootstrap.user);
 			bootstrapEnvironments =
+				!passwordChangePending &&
 				environments.pagination.totalItems >= 0 &&
 				environments.data.length >= environments.pagination.totalItems
 					? { session: get().cacheSessionIdentity, environments: environments.data }
@@ -406,24 +508,19 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			set({
 				...previewModes('v3'),
 				currentUser: bootstrap.user,
-				serverCapabilities: ServerCapabilities.make(
-					ServerCapabilities.detect(bootstrap.user),
-					bootstrap.version.enabledFeatures ?? []
-				),
+				serverCapabilities: ServerCapabilities.make(bootstrap.version.enabledFeatures ?? []),
 				permissionsManifest: bootstrap.permissionsManifest,
 				supportsPost26MobileFeatures: VersionInfo.supportsPost26MobileFeatures(bootstrap.version),
 				supportsMobilePush: VersionInfo.supportsMobilePush(bootstrap.version),
 				apiGeneration: 'v3',
 				pendingMFAChallenge: undefined,
-				authState: 'authenticated'
+				authState: passwordChangePending ? 'passwordChange' : 'authenticated'
 			});
 			bumpAccess();
 			return;
 		}
 		const [manifest, versionInfo, apiGeneration] = await Promise.all([
-			loadsPermissions
-				? client.roles.availablePermissions().catch(() => undefined)
-				: Promise.resolve(undefined),
+			client.roles.availablePermissions().catch(() => undefined),
 			client.version.appVersion().catch(() => undefined),
 			client.apiGeneration().then(() => client.currentAPIGeneration())
 		]);
@@ -431,14 +528,14 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		rememberAPIGeneration(get().parsedServerURL, apiGeneration);
 		set({
 			...previewModes(apiGeneration),
-			permissionsManifest: loadsPermissions ? manifest : undefined,
+			permissionsManifest: manifest,
 			supportsPost26MobileFeatures: versionInfo
 				? VersionInfo.supportsPost26MobileFeatures(versionInfo)
 				: false,
 			supportsMobilePush: versionInfo ? VersionInfo.supportsMobilePush(versionInfo) : false,
 			apiGeneration,
 			pendingMFAChallenge: undefined,
-			authState: 'authenticated'
+			authState: gatesPasswordChange(user) ? 'passwordChange' : 'authenticated'
 		});
 		bumpAccess();
 	};
@@ -454,7 +551,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				set({ pendingMFAChallenge: undefined });
 				await completeAuthenticatedBootstrap(
 					result.value.user,
-					ServerCapabilities.make(ServerCapabilities.detect(result.value.user)),
+					ServerCapabilities.unknown,
 					client,
 					generation
 				);
@@ -566,6 +663,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		authenticationGeneration: 0,
 		cacheSessionIdentity: newSessionIdentity(),
 		accessGeneration: 0,
+		advancedFeatures: migrateAdvancedFeatures(),
 		currentUserAvatarURI: undefined,
 
 		serverOrigin: () => {
@@ -574,7 +672,6 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		},
 		isOIDCAvailable: () => get().loginCapabilities?.oidcEnabled === true,
 		isLocalAuthAvailable: () => get().loginCapabilities?.localAuthEnabled ?? true,
-		supportsActivities: () => get().serverCapabilities?.mode === 'rbac',
 		canAccess: (tab) => canAccessTab(tab, get()),
 		acceptsEnvironmentContext: (id) =>
 			get().allEnvironmentsPreview || get().activeEnvironmentID === id,
@@ -591,8 +688,19 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			const previousOrigin = previous ? canonicalServerOrigin(previous) : undefined;
 			const nextOrigin = canonicalServerOrigin(normalized);
 			if (previousOrigin !== undefined && previousOrigin !== nextOrigin) {
+				const replaced = get().client;
+				if (replaced && get().authState === 'authenticated' && !get().isDemoActive)
+					void endReplacedSession(replaced, previousOrigin);
 				CredentialBinding.unbind(previousOrigin);
 				signOutLocally();
+			}
+			if (nextOrigin !== undefined && previousOrigin !== nextOrigin) {
+				const remembered = rememberedEnvironments()[nextOrigin];
+				const id = remembered?.id ?? EnvironmentID.localDocker;
+				const name = remembered?.name ?? 'Local Docker';
+				set({ activeEnvironmentID: id, activeEnvironmentName: name });
+				storage.set(Keys.activeEnvironmentID, id);
+				storage.set(Keys.activeEnvironmentName, name);
 			}
 			retireAuthentication();
 			credentialLease = new CredentialLease();
@@ -619,6 +727,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			set({ activeEnvironmentID: id, activeEnvironmentName: name });
 			storage.set(Keys.activeEnvironmentID, id);
 			storage.set(Keys.activeEnvironmentName, name);
+			rememberEnvironment(get().serverOrigin(), id, name);
 			mirrorToAppGroup();
 			bumpAccess();
 			if (previous !== id) ResponseCache.invalidateEnvironment(previous);
@@ -767,7 +876,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				set({ pendingMFAChallenge: undefined });
 				await completeAuthenticatedBootstrap(
 					response.user,
-					ServerCapabilities.make(ServerCapabilities.detect(response.user)),
+					ServerCapabilities.unknown,
 					client,
 					generation
 				);
@@ -832,6 +941,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			const generation = get().authenticationGeneration;
 			set({ isLoading: true });
 			try {
+				await notifySessionEnd(client, get().serverOrigin());
 				let logoutError: unknown;
 				try {
 					await client.auth.logout();
@@ -864,6 +974,16 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			} finally {
 				if (isCurrentAuthentication(generation)) set({ isLoading: false });
 			}
+		},
+
+		completePasswordChange: async () => {
+			const client = get().client;
+			if (!client) return;
+			const generation = get().authenticationGeneration;
+			const user = await client.auth.me();
+			if (!isCurrentAuthentication(generation)) return;
+			ResponseCache.invalidateAll();
+			await completeAuthenticatedBootstrap(user, client.serverCapabilities(), client, generation);
 		},
 
 		startDemo: async () => {
@@ -960,6 +1080,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			}));
 			CredentialBinding.unbind(endingOrigin);
 
+			await notifySessionEnd(endingClient, endingOrigin);
 			await DemoService.endSession();
 			await endingClient?.auth.logout().catch(() => undefined);
 			ResponseCache.invalidateAll();
@@ -990,7 +1111,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 				const user = await withNetworkSessionRefreshRetry((bootstrap) => bootstrap.auth.me());
 				await completeAuthenticatedBootstrap(
 					user,
-					ServerCapabilities.make(ServerCapabilities.detect(user)),
+					ServerCapabilities.unknown,
 					get().client ?? client,
 					generation
 				);

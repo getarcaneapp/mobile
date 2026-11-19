@@ -61,6 +61,7 @@ export interface TransportRequestOptions {
 	method?: string;
 	query?: QueryItem[];
 	authorized?: boolean;
+	keepsCredentialsOnUnauthorized?: boolean;
 	options?: ArcaneRequestOptions;
 	signal?: AbortSignal;
 }
@@ -214,12 +215,11 @@ export class ArcaneTransport {
 		try {
 			const delegate = await this.proxySupport.prepare(request);
 			const { response, info, release } = await send(this.fetchImpl, request, {
-				signal: this.defaultSignal,
 				timeoutMs: this.timeoutMs
 			});
 			let text: string;
 			try {
-				text = await readText(response, this.defaultSignal);
+				text = await readText(response, undefined);
 			} finally {
 				release();
 			}
@@ -309,6 +309,7 @@ export class ArcaneTransport {
 			body: init.body === undefined ? undefined : encodeArcaneJSON(init.body),
 			contentType: 'application/json',
 			authorized: init.authorized,
+			keepsCredentialsOnUnauthorized: init.keepsCredentialsOnUnauthorized,
 			options: init.options,
 			signal: init.signal,
 			expectsJSONResponse: true
@@ -327,9 +328,11 @@ export class ArcaneTransport {
 			accept?: string;
 		} = {}
 	): Promise<Uint8Array> {
-		const route = await this.route(path, init.method ?? 'PUT', init.query ?? []);
+		const requestedMethod = init.method ?? 'PUT';
+		const route = await this.route(path, requestedMethod, init.query ?? []);
 		const method = route.method;
 		const authorized = init.authorized ?? true;
+		const keepsCredentials = init.keepsCredentialsOnUnauthorized ?? false;
 		const requestOptions = this.resolvedRequestOptions(init.options);
 		const linked = linkAbort([this.defaultSignal, init.signal]);
 		let didRefresh = false;
@@ -384,7 +387,7 @@ export class ArcaneTransport {
 					}
 
 					if (
-						this.shouldRetry(method, response.status, route.path) &&
+						this.shouldRetry(requestedMethod, response.status, route.path) &&
 						attempt < this.retryPolicy.maxAttempts
 					) {
 						await sleep(
@@ -396,7 +399,7 @@ export class ArcaneTransport {
 					}
 
 					if (response.status < 200 || response.status >= 300) {
-						if (response.status === 401 && generation !== undefined) {
+						if (response.status === 401 && generation !== undefined && !keepsCredentials) {
 							await this.authManager
 								.clearIfCredentialGenerationMatches(generation)
 								.catch(() => undefined);
@@ -408,7 +411,7 @@ export class ArcaneTransport {
 					if (error instanceof ArcaneError) throw error;
 					if (error instanceof CancellationError) throw new CancellationError();
 					if (
-						this.isIdempotent(method) &&
+						this.isIdempotent(requestedMethod) &&
 						isRetryableNetworkError(error) &&
 						attempt < this.retryPolicy.maxAttempts
 					) {
@@ -853,7 +856,7 @@ export function retryAfterMs(value: string | null, now = Date.now()): number | u
 }
 
 function isRemoteEnvironmentPath(path: string): boolean {
-	const match = /^\/?(?:api\/)?environments\/([^/?]+)\//.exec(path);
+	const match = /^\/?(?:api\/)?(?:environments|agents)\/([^/?]+)\//.exec(path);
 	return match !== null && match[1] !== '0';
 }
 

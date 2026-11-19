@@ -87,7 +87,7 @@ export function useProfile() {
 						savedSomething = true;
 					}
 					if (changesPassword) {
-						await client.users.changePassword({ body: { currentPassword, newPassword } });
+						await client.auth.changePassword({ currentPassword, newPassword });
 						setCurrentPassword('');
 						setNewPassword('');
 						setConfirmPassword('');

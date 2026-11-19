@@ -203,8 +203,8 @@ export function ContainersScreen(props: ContainersListProps) {
 				title="No Containers"
 				message={
 					props.allEnvironments
-						? 'No containers found in any environment.'
-						: 'No containers found in this environment.'
+						? 'No containers found in any agent.'
+						: 'No containers found in this agent.'
 				}
 				action={{ title: 'Refresh', onPress: () => void model.loadContainers() }}
 			/>

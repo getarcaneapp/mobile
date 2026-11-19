@@ -44,8 +44,8 @@ export function AddRoleAssignmentScreen() {
 					environments={model.availableEnvironments}
 					environmentId={model.selectedEnvironmentId}
 					onEnvironmentChange={model.setSelectedEnvironmentId}
-					globalFooter="Global assignments apply across every environment."
-					environmentFooter="Environment assignments only apply inside the selected environment."
+					globalFooter="Global assignments apply across every agent."
+					environmentFooter="Agent assignments only apply inside the selected agent."
 				/>
 				<FormErrorSection message={model.errorMessage} />
 			</ScrollView>

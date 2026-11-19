@@ -34,7 +34,7 @@ export function useEventDetail() {
 			environment !== undefined
 				? environmentDisplayName(environment)
 				: event.environmentId
-					? `Environment ${event.environmentId}`
+					? `Agent ${event.environmentId}`
 					: undefined,
 		occurred: formattedEventDate(event.timestamp),
 		recorded: datesDiffer(event.createdAt, event.timestamp)

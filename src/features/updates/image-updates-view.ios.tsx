@@ -386,7 +386,7 @@ function AllEnvironmentsUpdatesList({ model }: { model: ImageUpdatesModel }) {
 				<ContentUnavailableView
 					title="No Available Updates"
 					systemImage="checkmark.circle"
-					description="No pending image updates in the selected environments."
+					description="No pending image updates in the selected agents."
 				/>
 			);
 		}
@@ -871,7 +871,7 @@ export function ImageUpdatesView({
 	} else if (model.environmentLoadError !== undefined && model.buckets.length === 0) {
 		content = (
 			<UnavailableView
-				title="Couldn't Load Environments"
+				title="Couldn't Load Agents"
 				systemImage="exclamationmark.triangle"
 				description={model.environmentLoadError}
 				actions={[{ title: 'Try Again', onPress: () => void model.loadAll() }]}
@@ -880,9 +880,9 @@ export function ImageUpdatesView({
 	} else if (model.hasLoadedOnce && model.buckets.length === 0) {
 		content = (
 			<ContentUnavailableView
-				title="No Environments"
+				title="No Agents"
 				systemImage="bolt.slash"
-				description="Add an environment to see image updates."
+				description="Add an agent to see image updates."
 			/>
 		);
 	} else if (model.allEnvironmentsPreview) {
@@ -920,7 +920,7 @@ export function ImageUpdatesView({
 					headerLargeTitleEnabled: false,
 					headerSearchBarOptions: model.allEnvironmentsPreview
 						? {
-								placeholder: 'Search images or environments',
+								placeholder: 'Search images or agents',
 								hideWhenScrolling: false,
 								onChangeText: (event) => model.setSearch(event.nativeEvent.text),
 								onCancelButtonPress: () => model.setSearch('')

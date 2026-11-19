@@ -39,5 +39,6 @@ export default function Index() {
 		);
 	}
 	if (authState === 'authenticated') return <Redirect href={initialTabHref()} />;
+	if (authState === 'passwordChange') return <Redirect href={'/change-password' as Href} />;
 	return <Redirect href="/login" />;
 }

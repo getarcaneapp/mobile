@@ -311,7 +311,7 @@ export function SwarmNodeDetailScreen() {
 						<SwarmStateBadge state={node.agent.state} />
 					</LabeledRow>
 					{node.agent.environmentName ? (
-						<ValueRow title="Environment" value={node.agent.environmentName} />
+						<ValueRow title="Agent" value={node.agent.environmentName} />
 					) : null}
 					{node.agent.bindingKind ? (
 						<ValueRow title="Binding" value={capitalized(node.agent.bindingKind)} />

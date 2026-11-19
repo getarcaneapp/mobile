@@ -50,6 +50,7 @@ import {
 	useCreateProject,
 	type CreateProjectModel
 } from './use-create-project';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
 function EditorRow({
 	text,
@@ -159,7 +160,7 @@ function DockerRunSheet({ model }: { model: CreateProjectModel }) {
 	);
 }
 
-export function CreateProjectScreen() {
+function CreateProjectScreenContent() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
 	const model = useCreateProject();
 	const [path, setPath] = useState<string[]>([]);
@@ -336,5 +337,13 @@ export function CreateProjectScreen() {
 			</Host>
 			<DeleteConfirmationHost hostID={createProjectConfirmationHost} />
 		</View>
+	);
+}
+
+export function CreateProjectScreen() {
+	return (
+		<AdvancedGate>
+			<CreateProjectScreenContent />
+		</AdvancedGate>
 	);
 }

@@ -270,8 +270,8 @@ export function NetworksScreen(props: NetworksListProps) {
 				title="No Networks"
 				message={
 					props.allEnvironments
-						? 'No networks found in any environment.'
-						: 'No networks found in this environment.'
+						? 'No networks found in any agent.'
+						: 'No networks found in this agent.'
 				}
 				action={
 					!props.allEnvironments || (model.listEnvironments.length === 1 && first)

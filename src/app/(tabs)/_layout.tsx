@@ -36,12 +36,13 @@ export default function TabsLayout() {
 	const [showTabLabels] = useStoredBool(Keys.showTabLabels, false);
 	const pinned = useNavTabsStore((s) => s.pinnedTabs);
 	const canAccess = useClientManager((s) => s.canAccess);
-	useClientManager((s) => s.accessGeneration);
+	const accessGeneration = useClientManager((s) => s.accessGeneration);
 
 	const visible = useMemo(() => {
+		void accessGeneration;
 		const available = new Set<AppTab>(AppTabIDs.filter(canAccess));
 		return resolveTabs(pinned, available);
-	}, [pinned, canAccess]);
+	}, [pinned, canAccess, accessGeneration]);
 
 	return (
 		<>

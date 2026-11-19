@@ -141,7 +141,7 @@ export function ImageUpdatesScreen() {
 						</Text>
 					)}
 				</M3Section>
-				<M3Section footer="Contacts each image's registry. Can take a while for large environments.">
+				<M3Section footer="Contacts each image's registry. Can take a while for large agents.">
 					<Pressable
 						onPress={model.scanAll}
 						disabled={model.isScanning}

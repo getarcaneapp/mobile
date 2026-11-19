@@ -34,6 +34,6 @@ export interface VolumeWorkspaceFileChange {
 }
 
 export interface VolumeWorkspaceUpdateManifest {
-	fileTreeRevision: string;
+	fileTreeRevision?: string;
 	fileChanges: VolumeWorkspaceFileChange[];
 }

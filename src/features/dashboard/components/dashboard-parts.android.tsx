@@ -130,12 +130,12 @@ export function UpdateAllButton({
 			accessibilityRole="button"
 			accessibilityLabel={
 				isUpToDate
-					? 'All environments are up to date'
+					? 'All agents are up to date'
 					: armed
-						? 'Confirm update of all environments'
-						: `Update All${upgrades !== undefined ? `, ${upgrades} environments have upgrades` : ''}`
+						? 'Confirm update of all agents'
+						: `Update All${upgrades !== undefined ? `, ${upgrades} agents have upgrades` : ''}`
 			}
-			accessibilityHint={armed ? 'Starts updating every environment' : 'Tap again to confirm'}
+			accessibilityHint={armed ? 'Starts updating every agent' : 'Tap again to confirm'}
 			android_ripple={{ color: withOpacity('#FFFFFF', 0.3) }}
 			style={{
 				flexDirection: 'row',
@@ -186,7 +186,7 @@ export function CountAvailabilityNote({
 			<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 4 }}>
 				<Icon name="server.rack" size={12} color={colors.secondaryLabel} />
 				<Text style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>
-					Counts include all enabled environments.
+					Counts include all enabled agents.
 				</Text>
 			</View>
 		);
@@ -196,7 +196,7 @@ export function CountAvailabilityNote({
 			<Pressable
 				onPress={() => setPresented(true)}
 				accessibilityRole="button"
-				accessibilityHint="Shows which environment counts could not be loaded"
+				accessibilityHint="Shows which agent counts could not be loaded"
 				style={{
 					flexDirection: 'row',
 					alignItems: 'center',
@@ -207,7 +207,7 @@ export function CountAvailabilityNote({
 			>
 				<Icon name="exclamationmark.triangle.fill" size={12} color={systemColors.orange} />
 				<Text style={[m3Type.labelSmall, { color: systemColors.orange }]}>
-					Some environment counts are unavailable.
+					Some agent counts are unavailable.
 				</Text>
 			</Pressable>
 			<MaterialSheet isPresented={isPresented} onDismiss={() => setPresented(false)}>
@@ -215,7 +215,7 @@ export function CountAvailabilityNote({
 					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
 						<Icon name="exclamationmark.triangle.fill" size={20} color={systemColors.orange} />
 						<Text style={[m3Type.titleMedium, { color: systemColors.orange }]}>
-							Incomplete environment counts
+							Incomplete agent counts
 						</Text>
 					</View>
 					{issues.map((issue) => (
@@ -227,7 +227,7 @@ export function CountAvailabilityNote({
 						</View>
 					))}
 					<Text style={[m3Type.labelSmall, { color: colors.secondaryLabel }]}>
-						Pull down on the Dashboard to retry unavailable environments.
+						Pull down on the Dashboard to retry unavailable agents.
 					</Text>
 				</View>
 			</MaterialSheet>

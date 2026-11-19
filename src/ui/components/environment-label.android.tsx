@@ -74,10 +74,10 @@ export function EnvironmentFilterSection({
 	if (!showsEnvironmentFilter(environments)) return null;
 	return (
 		<View>
-			<MaterialSectionHeader title="Environment" />
+			<MaterialSectionHeader title="Agent" />
 			<MaterialListGroup>
 				<RadioRow
-					title="All Environments"
+					title="All Agents"
 					selected={selection === undefined}
 					onPress={() => onSelectionChange(undefined)}
 				/>

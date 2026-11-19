@@ -85,13 +85,16 @@ export const Keys = {
 	serverURL: 'arcane.serverURL',
 	activeEnvironmentID: 'arcane.activeEnvironmentID',
 	activeEnvironmentName: 'arcane.activeEnvironmentName',
+	activeEnvironmentByServer: 'arcane.activeEnvironmentByServer',
 	allEnvironmentsPreview: 'arcane.allEnvironmentsPreview',
 	refreshedDashboardPreview: 'arcane.refreshedDashboardPreview',
 	serverAPIGeneration: 'arcane.serverAPIGeneration',
 	accentColorHex: 'accentColorHex',
+	colorScheme: 'arcane.colorScheme',
 	launchAnimationEnabled: 'arcane.launchAnimationEnabled',
 	rememberLastTab: 'arcane.rememberLastTab',
 	lastSelectedTabID: 'arcane.lastSelectedTabID',
 	showTabLabels: 'arcane.showTabLabels',
-	navBarTabs: 'arcane.navBarTabs'
+	navBarTabs: 'arcane.navBarTabs',
+	advancedFeatures: 'arcane.advancedFeatures'
 } as const;

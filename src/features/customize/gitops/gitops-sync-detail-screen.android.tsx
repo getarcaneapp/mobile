@@ -417,7 +417,7 @@ export function GitOpsSyncDetailScreen() {
 
 				<DetailSection title="Details" systemImage="info.circle">
 					{model.environmentName !== undefined ? (
-						<ValueRow title="Environment" value={model.environmentName} />
+						<ValueRow title="Agent" value={model.environmentName} />
 					) : null}
 					{sync.maxSyncFiles > 0 ? (
 						<ValueRow title="File Limit" value={String(sync.maxSyncFiles)} />

@@ -1,3 +1,4 @@
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 import { Host } from '@/ui/host';
 import {
 	Button,
@@ -94,7 +95,7 @@ function PairsSection({
 	);
 }
 
-export function SwarmServiceEditorScreen() {
+function SwarmServiceEditorScreenContent() {
 	const model = useSwarmServiceEditor();
 	const { draft } = model;
 	const numberField = [keyboardType('numeric'), font({ textStyle: 'body' }), monospacedDigit()];
@@ -335,5 +336,13 @@ export function SwarmServiceEditorScreen() {
 				</NavigationStack>
 			</Host>
 		</>
+	);
+}
+
+export function SwarmServiceEditorScreen() {
+	return (
+		<AdvancedGate>
+			<SwarmServiceEditorScreenContent />
+		</AdvancedGate>
 	);
 }

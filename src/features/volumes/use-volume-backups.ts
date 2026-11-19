@@ -1,3 +1,4 @@
+import { useAdvancedFeatures } from '@/core/advanced-features';
 import { File, Paths } from 'expo-file-system';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createStore, type StoreApi } from 'zustand/vanilla';
@@ -6,7 +7,6 @@ import { hasPermission, usePermission } from '@/core/auth/permissions';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
-import { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { CancellationError, isArcaneError } from '@/sdk/errors/ArcaneError';
 import type { S3Destination } from '@/sdk/models/backup/S3Destination';
@@ -164,6 +164,7 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 
 	const canBackup = usePermission('volumes:backup', environmentID);
 	const canUpload = usePermission('volumes:upload', environmentID);
+	const [advanced] = useAdvancedFeatures();
 
 	const createActionRef = useRef<() => Promise<boolean>>(async () => false);
 	const [createState] = useState<BackupCreateStore>(() =>
@@ -379,33 +380,24 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 		if (!client || !canUpload) return;
 		await perform(async () => {
 			const startGeneration = useClientManager.getState().clientGeneration;
-			const capabilities = useClientManager.getState().serverCapabilities;
-			if (capabilities && ServerCapabilities.supportsRoleManagement(capabilities)) {
-				const id = await client.uploads.uploadFile({
-					envID: environmentID,
-					kind: 'volume-backup',
-					file: fileUploadSource(file, pickedFileName(file))
-				});
-				scope.check(() => unmounted.current);
-				const state = useClientManager.getState();
-				if (
-					state.clientGeneration !== startGeneration ||
-					!state.acceptsEnvironmentContext(environmentID)
-				) {
-					throw new CancellationError();
-				}
-				await client.volumes.uploadAndRestoreBackup({
-					envID: environmentID,
-					name: volumeName,
-					uploadID: id
-				});
-			} else {
-				await client.volumes.uploadAndRestoreBackupFile({
-					envID: environmentID,
-					name: volumeName,
-					fileURL: file.uri
-				});
+			const id = await client.uploads.uploadFile({
+				envID: environmentID,
+				kind: 'volume-backup',
+				file: fileUploadSource(file, pickedFileName(file))
+			});
+			scope.check(() => unmounted.current);
+			const state = useClientManager.getState();
+			if (
+				state.clientGeneration !== startGeneration ||
+				!state.acceptsEnvironmentContext(environmentID)
+			) {
+				throw new CancellationError();
 			}
+			await client.volumes.uploadAndRestoreBackup({
+				envID: environmentID,
+				name: volumeName,
+				uploadID: id
+			});
 		});
 	};
 
@@ -437,6 +429,7 @@ export function useVolumeBackups(environmentID: EnvironmentID, volumeName: strin
 		canBackup,
 		canUpload,
 		supportsPolicies,
+		showsPolicies: supportsPolicies && advanced,
 		destinations,
 		downloadFile,
 		discoverID,

@@ -124,7 +124,7 @@ export function FederatedCredentialFormScreen() {
 						]}
 					/>
 					<FormPicker
-						title="Environment"
+						title="Agent"
 						selection={form.environmentId}
 						onSelectionChange={(environmentId) => update({ environmentId })}
 						options={[

@@ -17,6 +17,7 @@ import {
 	applyDraft,
 	draftFromSpec,
 	draftIsValid,
+	draftPortsError,
 	draftsEqual,
 	emptyDraft,
 	newMount,
@@ -97,6 +98,11 @@ export function useSwarmServiceEditor() {
 	const save = async () => {
 		const client = useClientManager.getState().client;
 		if (!client) return;
+		const portsError = draftPortsError(draft);
+		if (portsError) {
+			setErrorMessage(portsError);
+			return;
+		}
 		setIsSaving(true);
 		setErrorMessage(undefined);
 		const successMessage = isEditing ? 'Service updated' : 'Service created';

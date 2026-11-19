@@ -136,9 +136,7 @@ export const EnvironmentUpdateSceneModelHelpers = {
 
 	accessibilityValue(m: EnvironmentUpdateSceneModel): string {
 		const progressDescription =
-			m.totalCount > 0
-				? `${m.completedCount} of ${m.totalCount} environments complete`
-				: m.subtitle;
+			m.totalCount > 0 ? `${m.completedCount} of ${m.totalCount} agents complete` : m.subtitle;
 		const active = m.activeEnvironment;
 		if (!active) return progressDescription;
 		if (m.kind === 'reconnecting') {

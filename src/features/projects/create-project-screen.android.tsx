@@ -26,6 +26,7 @@ import {
 	useCreateProject,
 	type CreateProjectModel
 } from './use-create-project';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
 function ComposePreviewSection({ model }: { model: CreateProjectModel }) {
 	const nav = useProjectNavigation();
@@ -121,7 +122,7 @@ function DockerRunDialog({ model }: { model: CreateProjectModel }) {
 	);
 }
 
-export function CreateProjectScreen() {
+function CreateProjectScreenContent() {
 	const model = useCreateProject();
 	return (
 		<>
@@ -272,5 +273,13 @@ export function CreateProjectScreen() {
 			<DockerRunDialog model={model} />
 			<DeleteConfirmationHost hostID={createProjectConfirmationHost} />
 		</>
+	);
+}
+
+export function CreateProjectScreen() {
+	return (
+		<AdvancedGate>
+			<CreateProjectScreenContent />
+		</AdvancedGate>
 	);
 }

@@ -108,8 +108,21 @@ const credentialPersistence = {
 		updateIDSet(credentialIndexKey, record.profileID, true);
 	},
 	delete(profileID: string) {
-		void SecureStore.deleteItemAsync(this.key(profileID), credentialOptions);
 		updateIDSet(credentialIndexKey, profileID, false);
+		void SecureStore.deleteItemAsync(this.key(profileID), credentialOptions).catch(
+			(error: unknown) => {
+				log('sign-in delete failed', error);
+				updateIDSet(credentialIndexKey, profileID, true);
+				const store = useConnectionProfileStore.getState();
+				if (
+					store.profiles.some((profile) => profile.id === profileID) &&
+					!store.credentialProfileIDs.has(profileID)
+				)
+					useConnectionProfileStore.setState({
+						credentialProfileIDs: new Set([...store.credentialProfileIDs, profileID])
+					});
+			}
+		);
 	}
 };
 
@@ -155,6 +168,17 @@ const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
 export const useConnectionProfileStore = create<ConnectionProfileStoreState>((set, get) => {
 	let payload: ConnectionProfilePayload = ConnectionProfilePayload.empty;
 	let cloudQueue: Promise<void> = Promise.resolve();
+	const pendingCredentialChanges = new Map<string, number>();
+
+	const beginCredentialChange = (profileID: string) => {
+		pendingCredentialChanges.set(profileID, (pendingCredentialChanges.get(profileID) ?? 0) + 1);
+	};
+
+	const endCredentialChange = (profileID: string) => {
+		const remaining = (pendingCredentialChanges.get(profileID) ?? 1) - 1;
+		if (remaining > 0) pendingCredentialChanges.set(profileID, remaining);
+		else pendingCredentialChanges.delete(profileID);
+	};
 
 	const enqueue = (label: string, operation: () => Promise<void>): Promise<void> => {
 		cloudQueue = cloudQueue.then(operation).catch((error: unknown) => {
@@ -221,6 +245,7 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 		const cloudIDs = await credentialCloud.profileIDs();
 		const confirmed = idSet(credentialCloudIndexKey);
 		for (const profile of get().profiles) {
+			if (pendingCredentialChanges.has(profile.id)) continue;
 			let local: ConnectionCredentialRecord | undefined;
 			try {
 				local = credentialPersistence.load(profile.id);
@@ -438,10 +463,15 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 			const record = ConnectionCredentialRecord.make(profile, username, password);
 			const changed = storeCredentialLocally(record);
 			if (credentialCloud.isSupported) {
+				beginCredentialChange(record.profileID);
 				void enqueue('sign-in upload', async () => {
-					await credentialCloud.save(record);
-					updateIDSet(credentialCloudIndexKey, record.profileID, true);
-					set({ syncState: 'iCloudKeychain' });
+					try {
+						await credentialCloud.save(record);
+						updateIDSet(credentialCloudIndexKey, record.profileID, true);
+						set({ syncState: 'iCloudKeychain' });
+					} finally {
+						endCredentialChange(record.profileID);
+					}
 				});
 			} else if (changed && passwordManager.isSupported) {
 				void passwordManager
@@ -462,9 +492,14 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 			next.delete(profile.id);
 			set({ credentialProfileIDs: next });
 			if (credentialCloud.isSupported) {
+				beginCredentialChange(profile.id);
 				void enqueue('sign-in delete', async () => {
-					await credentialCloud.delete(profile.id);
-					updateIDSet(credentialCloudIndexKey, profile.id, false);
+					try {
+						await credentialCloud.delete(profile.id);
+						updateIDSet(credentialCloudIndexKey, profile.id, false);
+					} finally {
+						endCredentialChange(profile.id);
+					}
 				});
 			}
 		},

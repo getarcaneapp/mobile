@@ -33,6 +33,7 @@ import { ToastHost } from '@/ui/toast';
 
 import { BoundTextField } from './swiftui-text-field';
 import { useContainerCommit, useContainerCompose } from './use-container-sheets';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
 type Params = { id?: string; envID?: string; name?: string };
 
@@ -106,7 +107,7 @@ export function ContainerCommitScreen() {
 	);
 }
 
-export function ContainerComposeScreen() {
+function ContainerComposeScreenContent() {
 	const toolbarAccent = useAppAccentToolbarSymbol();
 	const { envID = '0', ids = '' } = useLocalSearchParams<{ envID?: string; ids?: string }>();
 	const model = useContainerCompose(envID, ids.split(','));
@@ -173,5 +174,13 @@ export function ContainerComposeScreen() {
 			</Host>
 			<ToastHost reservesTabBarSpace={false} />
 		</View>
+	);
+}
+
+export function ContainerComposeScreen() {
+	return (
+		<AdvancedGate>
+			<ContainerComposeScreenContent />
+		</AdvancedGate>
 	);
 }

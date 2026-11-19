@@ -35,7 +35,7 @@ import { useAccentColor } from '@/theme/accent';
 import { systemColors } from '@/theme/colors';
 import { Motion } from '@/theme/tokens';
 import { useReduceMotion } from '@/ui/components/accessibility';
-import { glassChipCompat, glassEffectCompat, isIOS26 } from '@/ui/components/swiftui-surfaces';
+import { glassChipCompat, glassEffectCompat } from '@/ui/components/swiftui-surfaces';
 import { motionAwareAnimation } from '@/ui/components/swiftui-motion';
 
 import {
@@ -81,7 +81,7 @@ export function SettingsSaveBar(props: SettingsSaveBarProps) {
 						frame({ width: 52, height: 52 }),
 						contentShape(shapes.circle()),
 						glassEffectCompat({ tint: systemColors.orange, interactive: true, shape: 'circle' }),
-						...(isIOS26 ? [glassEffectId('settings-revert', namespace)] : []),
+						glassEffectId('settings-revert', namespace),
 						accessibilityLabel('Revert Changes'),
 						disabled(revertDisabled),
 						opacity(revertDisabled ? 0.6 : 1),
@@ -104,7 +104,7 @@ export function SettingsSaveBar(props: SettingsSaveBarProps) {
 					frame({ width: 52, height: 52 }),
 					contentShape(shapes.circle()),
 					glassChipCompat({ tint: accent, interactive: true, shape: 'circle' }),
-					...(isIOS26 ? [glassEffectId('settings-save', namespace)] : []),
+					glassEffectId('settings-save', namespace),
 					accessibilityLabel(saveAccessibilityLabel),
 					disabled(saveDisabled),
 					opacity(saveDisabled && !isSaving ? 0.6 : 1),
@@ -142,7 +142,7 @@ export function SettingsSaveBar(props: SettingsSaveBarProps) {
 		>
 			<Host style={{ flex: 1 }} alignment="topTrailing">
 				<Namespace id={namespace}>
-					{isIOS26 ? <GlassEffectContainer spacing={10}>{buttons}</GlassEffectContainer> : buttons}
+					<GlassEffectContainer spacing={10}>{buttons}</GlassEffectContainer>
 				</Namespace>
 			</Host>
 		</View>

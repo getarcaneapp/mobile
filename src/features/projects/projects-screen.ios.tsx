@@ -74,7 +74,7 @@ function ProjectPreview({ item }: { item: ProjectItem }) {
 		details.push({ icon: 'doc.text', label: 'Compose Version', value: version });
 	details.push({ icon: 'calendar', label: 'Created', value: project.createdAt });
 	if (item.environmentName)
-		details.push({ icon: 'server.rack', label: 'Environment', value: item.environmentName });
+		details.push({ icon: 'server.rack', label: 'Agent', value: item.environmentName });
 	return (
 		<RowPreviewCard
 			icon="folder.fill"
@@ -201,7 +201,7 @@ function ProjectsToolbar({ model }: { model: ProjectsListModel }) {
 						</Stack.Toolbar.MenuAction>
 					)}
 				</Stack.Toolbar.Menu>
-				{!model.allEnvironments ? (
+				{!model.canCreateProject ? null : !model.allEnvironments ? (
 					<Stack.Toolbar.Button
 						icon="plus"
 						separateBackground
@@ -261,11 +261,11 @@ export function ProjectsScreen(props: ProjectsListProps) {
 				systemImage="folder"
 				description={
 					props.allEnvironments
-						? 'No Compose projects found in any environment.'
-						: 'No Compose projects found in this environment.'
+						? 'No Compose projects found in any agent.'
+						: 'No Compose projects found in this agent.'
 				}
 			>
-				{props.allEnvironments ? (
+				{!model.canCreateProject ? null : props.allEnvironments ? (
 					<EnvironmentActionButton
 						title="Create Project"
 						systemImage="plus"

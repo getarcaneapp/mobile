@@ -16,12 +16,13 @@ import {
 } from './android-material';
 import type { ContainerConfigurationDraft } from './container-configuration-draft';
 import { useContainerConfiguration } from './use-container-configuration';
+import { AdvancedGate } from '@/features/navigation/advanced-gate';
 
 const Divider = () => (
 	<View style={{ height: 0.5, marginHorizontal: 16, backgroundColor: colors.separator }} />
 );
 
-export function ContainerConfigurationScreen() {
+function ContainerConfigurationScreenContent() {
 	const model = useContainerConfiguration();
 	const { draft, update } = model;
 	const set = (key: keyof ContainerConfigurationDraft) => (text: string) =>
@@ -328,5 +329,13 @@ export function ContainerConfigurationScreen() {
 				) : null}
 			</ScrollView>
 		</>
+	);
+}
+
+export function ContainerConfigurationScreen() {
+	return (
+		<AdvancedGate>
+			<ContainerConfigurationScreenContent />
+		</AdvancedGate>
 	);
 }

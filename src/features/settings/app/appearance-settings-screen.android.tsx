@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
+import { ColorSchemeOptions } from '@/theme/color-scheme';
 import { colors, systemColors } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
 import { AccentColorMenu } from '@/ui/components/accent-color-menu';
@@ -10,7 +11,7 @@ import { Icon } from '@/ui/Icon';
 import { MaterialListItem } from '@/ui/material/list';
 
 import { M3Section, TextButtonRow } from '../shared/android-material';
-import { IconSwitchRow } from './android-rows';
+import { IconSwitchRow, MenuValueRow } from './android-rows';
 import { AppearanceCopy, useAppearanceSettings } from './use-appearance-settings';
 
 export function AppearanceSettingsScreen() {
@@ -40,6 +41,14 @@ export function AppearanceSettingsScreen() {
 							onSelectionChange={model.setAccentColorHex}
 						/>
 					</View>
+					<MenuValueRow
+						title="Theme"
+						icon="circle.lefthalf.filled"
+						iconColor={systemColors.gray}
+						options={ColorSchemeOptions}
+						selection={model.colorSchemeMode}
+						onSelect={model.setColorSchemeMode}
+					/>
 				</M3Section>
 
 				<M3Section title="Motion">

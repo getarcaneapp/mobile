@@ -7,7 +7,6 @@ import {
 	Picker,
 	Section,
 	Text,
-	Toggle,
 	Toolbar,
 	ToolbarItem
 } from '@expo/ui/swift-ui';
@@ -33,33 +32,27 @@ function RolesSection({ model }: { model: CreateUserModel }) {
 		<Section
 			header={<Text>Roles</Text>}
 			footer={
-				model.supportsRoleManagement ? (
-					<Text>
-						The selected role is assigned globally. Per-environment assignments can be edited after
-						creation.
-					</Text>
-				) : undefined
+				<Text>
+					The selected role is assigned globally. Per-agent assignments can be edited after
+					creation.
+				</Text>
 			}
 		>
-			{model.supportsRoleManagement ? (
-				model.isLoadingRoles && model.availableRoles.length === 0 ? (
-					<ArcaneLoadingViewSwiftUI label="Loading roles…" />
-				) : (
-					<Picker
-						label="Role"
-						selection={model.selectedRoleId}
-						onSelectionChange={model.setSelectedRoleId}
-					>
-						<Text modifiers={[tag('')]}>Choose…</Text>
-						{model.availableRoles.map((role) => (
-							<Text key={role.id} modifiers={[tag(role.id)]}>
-								{roleDisplayName(role)}
-							</Text>
-						))}
-					</Picker>
-				)
+			{model.isLoadingRoles && model.availableRoles.length === 0 ? (
+				<ArcaneLoadingViewSwiftUI label="Loading roles…" />
 			) : (
-				<Toggle label="Administrator" isOn={model.isAdmin} onIsOnChange={model.setIsAdmin} />
+				<Picker
+					label="Role"
+					selection={model.selectedRoleId}
+					onSelectionChange={model.setSelectedRoleId}
+				>
+					<Text modifiers={[tag('')]}>Choose…</Text>
+					{model.availableRoles.map((role) => (
+						<Text key={role.id} modifiers={[tag(role.id)]}>
+							{roleDisplayName(role)}
+						</Text>
+					))}
+				</Picker>
 			)}
 		</Section>
 	);

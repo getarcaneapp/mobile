@@ -329,7 +329,7 @@ export function VariablesScreen() {
 			<UnavailableView
 				title="No Variables"
 				systemImage="curlybraces"
-				description="Create a variable and choose which environments receive it."
+				description="Create a variable and choose which agents receive it."
 				actions={
 					model.canCreate ? [{ title: 'Create Variable', onPress: () => model.openEditor() }] : []
 				}
