@@ -37,47 +37,57 @@ env:
 jobs:
   ios:
     if: github.event_name == 'push' || inputs.platform != 'android'
-    runs-on: depot-ubuntu-24.04
+    runs-on: xcode-27
     timeout-minutes: 60
+    env:
+      USE_CCACHE: 1
+      CCACHE_CPP2: 1
+      CCACHE_BINARY: /opt/homebrew/bin/ccache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: voidzero-dev/setup-vp@68f39c78aaf39be468cabd2afb09c162574c84af # v1.21.2
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: true
-      - name: Start build on EAS
+      - name: Build tools
         run: |
-          vpx eas-cli@latest build --platform ios --profile cloud --non-interactive --no-wait --json > "$RUNNER_TEMP/build.json"
-          id=$(jq -r '.[0].id // empty' "$RUNNER_TEMP/build.json")
-          if [[ -z "$id" ]]; then
-            echo "::error::EAS did not return a build ID."
+          command -v pod >/dev/null || brew install cocoapods
+          command -v fastlane >/dev/null || brew install fastlane
+          command -v ccache >/dev/null || brew install ccache
+          if [[ "$(command -v ccache)" != "$CCACHE_BINARY" ]]; then
+            echo "::error::ccache is at $(command -v ccache), not $CCACHE_BINARY."
             exit 1
           fi
-          echo "EAS_BUILD_ID=$id" >> "$GITHUB_ENV"
-          echo "[EAS build](https://expo.dev/accounts/getarcaneapp/projects/arcane-mobile/builds/$id)" >> "$GITHUB_STEP_SUMMARY"
-      - name: Wait for build
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods/repos
+          key: cocoapods-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: cocoapods-${{ runner.os }}-
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/ccache
+          key: ios-device-ccache-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ios-device-ccache-
+      - name: Build number
+        run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
+      - name: Build
+        run: vpx eas-cli@latest build --local --platform ios --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.ipa"
+      - name: Compiler cache stats
+        if: always()
         run: |
-          while true; do
-            status=$(vpx eas-cli@latest build:view "$EAS_BUILD_ID" --json | jq -r .status)
-            case "$status" in
-              FINISHED) break ;;
-              ERRORED | CANCELED)
-                echo "::error::EAS build ended as $status."
-                exit 1
-                ;;
-            esac
-            sleep 30
-          done
+          ccache --show-stats
+          ccache --cleanup
       - name: Submit to TestFlight
-        run: vpx eas-cli@latest submit --platform ios --profile internal --non-interactive --id "$EAS_BUILD_ID"
-      - name: Cancel build on EAS
-        if: cancelled() && env.EAS_BUILD_ID != ''
-        run: vpx eas-cli@latest build:cancel "$EAS_BUILD_ID" --non-interactive || true
+        run: vpx eas-cli@latest submit --platform ios --profile internal --non-interactive --path "$RUNNER_TEMP/Arcane.ipa"
 
   android:
     if: github.event_name == 'push' || inputs.platform != 'ios'
     runs-on: depot-ubuntu-24.04-8
     timeout-minutes: 60
+    env:
+      ANDROID_CCACHE: /usr/bin/ccache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: voidzero-dev/setup-vp@68f39c78aaf39be468cabd2afb09c162574c84af # v1.21.2
@@ -92,6 +102,18 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-read-only: false
+      - name: Build tools
+        run: |
+          command -v ccache >/dev/null || (sudo apt-get update && sudo apt-get install --yes ccache)
+          if [[ "$(command -v ccache)" != "$ANDROID_CCACHE" ]]; then
+            echo "::error::ccache is at $(command -v ccache), not $ANDROID_CCACHE."
+            exit 1
+          fi
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ccache
+          key: android-ccache-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: android-ccache-
       - name: Build number
         run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
       - name: Firebase config
@@ -109,6 +131,11 @@ jobs:
         env:
           GRADLE_OPTS: -Dorg.gradle.caching=true
         run: vpx eas-cli@latest build --local --platform android --profile beta --non-interactive --output "$RUNNER_TEMP/Arcane.aab"
+      - name: Compiler cache stats
+        if: always()
+        run: |
+          ccache --show-stats
+          ccache --cleanup
       - name: Verify Firebase config in bundle
         run: |
           if ! unzip -p "$RUNNER_TEMP/Arcane.aab" base/resources.pb | grep -aq google_app_id; then
