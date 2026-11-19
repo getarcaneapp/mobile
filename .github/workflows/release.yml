@@ -18,12 +18,11 @@ permissions:
 env:
   NODE_VERSION: 26
   EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-  EAS_LOCAL_BUILD_WORKINGDIR: ${{ github.workspace }}/../eas-build
 
 jobs:
   android:
-    runs-on: depot-ubuntu-24.04-8
-    timeout-minutes: 60
+    runs-on: depot-ubuntu-24.04
+    timeout-minutes: 90
     steps:
       - name: Require the main branch
         run: |
@@ -51,31 +50,16 @@ jobs:
           node scripts/release-notes.mts > "$RUNNER_TEMP/notes.md"
           echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
           echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          distribution: temurin
-          java-version: 17
-      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-        with:
-          cache-read-only: true
-      - name: Build number
-        run: echo "ARCANE_BUILD_NUMBER=$(( ($(date +%s) - 1577836800) / 60 ))" >> "$GITHUB_ENV"
-      - name: Firebase config
-        env:
-          GOOGLE_SERVICES_JSON_CONTENT: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      - name: Build on EAS
         run: |
-          file="$RUNNER_TEMP/google-services.json"
-          printf '%s' "$GOOGLE_SERVICES_JSON_CONTENT" > "$file"
-          if ! jq -e '.client[] | select(.client_info.android_client_info.package_name == "app.getarcane.android")' "$file" >/dev/null; then
-            echo "::error::The GOOGLE_SERVICES_JSON secret is missing or has no client for app.getarcane.android."
+          vpx eas-cli@latest build --platform android --profile github --non-interactive --wait --json > "$RUNNER_TEMP/build.json"
+          status=$(jq -r '.[0].status' "$RUNNER_TEMP/build.json")
+          url=$(jq -r '.[0].artifacts.applicationArchiveUrl // .[0].artifacts.buildUrl // empty' "$RUNNER_TEMP/build.json")
+          if [[ "$status" != FINISHED || -z "$url" ]]; then
+            echo "::error::EAS build ended as $status without an APK."
             exit 1
           fi
-          echo "GOOGLE_SERVICES_JSON=$file" >> "$GITHUB_ENV"
-      - name: Build
-        env:
-          GRADLE_OPTS: -Dorg.gradle.caching=true
-        run: vpx eas-cli@latest build --local --platform android --profile github --non-interactive --output "$RUNNER_TEMP/Arcane-$RELEASE_VERSION.apk"
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/Arcane-$RELEASE_VERSION.apk" "$url"
       - name: Checksum
         working-directory: ${{ runner.temp }}
         run: sha256sum "Arcane-$RELEASE_VERSION.apk" > "Arcane-$RELEASE_VERSION.apk.sha256"
