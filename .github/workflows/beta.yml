@@ -10,7 +10,20 @@ on:
         options: [all, ios, android]
   push:
     branches: [main]
-    paths-ignore: ['**.md', '.github/assets/**']
+    paths:
+      - src/**
+      - assets/**
+      - modules/**
+      - targets/**
+      - plugins/**
+      - patches/**
+      - app.config.ts
+      - eas.json
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - '!**.md'
+      - '!src/**/__tests__/**'
 
 concurrency:
   group: beta-${{ github.ref }}

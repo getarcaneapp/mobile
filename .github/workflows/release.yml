@@ -15,13 +15,12 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   NODE_VERSION: 26
   EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
   EAS_LOCAL_BUILD_WORKINGDIR: ${{ github.workspace }}/../eas-build
-  GH_TOKEN: ${{ github.token }}
 
 jobs:
   android:
@@ -34,6 +33,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: true
       - name: Version and release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           version="$(node scripts/release-notes.mts version)"
           tag="v$version"
@@ -76,8 +77,18 @@ jobs:
       - name: Checksum
         working-directory: ${{ runner.temp }}
         run: sha256sum "Arcane-$RELEASE_VERSION.apk" > "Arcane-$RELEASE_VERSION.apk.sha256"
+      - name: Request App Token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.ARCANE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.ARCANE_APP_PRIVATE_KEY }}
+          owner: getarcaneapp
+          repositories: mobile
+          permission-contents: write
       - name: Publish release
         env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PRERELEASE: ${{ inputs.prerelease && '--prerelease' || '' }}
         run: |
           gh release create "$RELEASE_TAG" \
