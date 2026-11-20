@@ -12,6 +12,9 @@ export const releaseNotes: ReleaseNote[] = [
 	{
 		version: '0.12.1',
 		new: [
+      {
+				text: 'On Android, Firebase settings are entered at runtime under App Settings > Firebase.'
+			},
 			{
 				text: 'Light, dark or system theme in Appearance settings.'
 			}
@@ -80,8 +83,9 @@ export const releaseNotes: ReleaseNote[] = [
 			{
 				text: 'Arcane v3 server support.'
 			},
+
 			{
-				text: 'Live upgrade progress and per-agent logs, with Update All and Retry Failed.'
+				text: 'Live upgrade progress and per-environment logs, with Update All and Retry Failed.'
 			},
 			{
 				text: 'Dashboard widgets and Edit Dashboard on Arcane v3.'
