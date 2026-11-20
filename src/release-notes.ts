@@ -24,10 +24,13 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'More is a separate button beside the tab bar on iOS.'
 			},
 			{
+				text: 'Network Topology fits the phone, with containers stacked under each network.'
+			},
+			{
 				text: 'Show Advanced Features renamed Editing and Setup, with a description.'
 			},
 			{
-				text: 'Compact API key rows.'
+				text: 'Compact API key and event rows, with a severity filter menu for events on iOS.'
 			},
 			{
 				text: 'Activity Center button on the left of the dashboard toolbar.'

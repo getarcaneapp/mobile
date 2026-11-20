@@ -34,6 +34,7 @@ import {
 	useEvents,
 	type EventsModel
 } from './use-events';
+import { eventRedundantDescription, readableEventText } from './event-text';
 
 function SeverityChip({
 	title,
@@ -178,12 +179,14 @@ function EventListRow({ model, event }: { model: EventsModel; event: Event }) {
 		>
 			<RowIcon systemImage={severityIcon(event.severity)} tint={severityTint(event.severity)} />
 			<View style={eventBodyStyle}>
-				<Text style={[m3Type.bodyLarge, { color: colors.label }]}>{event.title}</Text>
-				{event.description ? (
-					<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]}>
-						{event.description}
+				<Text style={[m3Type.bodyLarge, { color: colors.label }]} numberOfLines={2}>
+					{readableEventText(event.title)}
+				</Text>
+				{eventRedundantDescription(event) ? null : (
+					<Text style={[m3Type.bodyMedium, { color: colors.secondaryLabel }]} numberOfLines={2}>
+						{readableEventText(event.description ?? '')}
 					</Text>
-				) : null}
+				)}
 				<View style={eventMetaStyle}>
 					<Text style={[m3Type.bodySmall, { color: colors.tertiaryLabel }]}>
 						{relativeNamed(event.timestamp)}
