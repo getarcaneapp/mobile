@@ -7,7 +7,7 @@ import { colors } from '@/theme/colors';
 
 type StackScreenOptions = NonNullable<ComponentProps<typeof Stack>['screenOptions']>;
 
-export function useStackScreenOptions(): StackScreenOptions {
+export function useStackScreenOptions(sheet = false): StackScreenOptions {
 	const accent = useAccentColor();
 	return {
 		headerLargeTitleEnabled: Platform.OS === 'ios',
@@ -19,7 +19,15 @@ export function useStackScreenOptions(): StackScreenOptions {
 			Platform.OS === 'android' ? { backgroundColor: colors.systemBackground } : undefined,
 		headerShadowVisible: Platform.OS === 'ios' ? undefined : false,
 		contentStyle:
-			Platform.OS === 'android' ? { backgroundColor: colors.systemBackground } : undefined,
+			Platform.OS === 'android'
+				? { backgroundColor: colors.systemBackground }
+				: sheet
+					? { backgroundColor: 'transparent' }
+					: undefined,
 		headerBackButtonDisplayMode: 'minimal'
 	} as StackScreenOptions;
+}
+
+export function useSheetStackScreenOptions(): StackScreenOptions {
+	return useStackScreenOptions(true);
 }

@@ -65,6 +65,11 @@ const RESPONSE_RULES: readonly ResponseRule[] = [
 		normalize: normalizeV3Settings
 	},
 	{
+		methods: ['GET'],
+		pattern: /^settings(\/authentication)?$/,
+		normalize: normalizeV3Settings
+	},
+	{
 		methods: ['PUT', 'PATCH'],
 		pattern: /^environments\/[^/]+\/settings$/,
 		normalize: settingsEnvelope

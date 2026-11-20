@@ -31,6 +31,7 @@ import { ToastHost } from '@/ui/toast';
 
 import { BoundTextField } from '../shared/swiftui-text-field';
 import { useFederatedCredentialFormModel } from './use-federated-credential-form';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 const plain = { autocapitalization: 'never', autocorrectionDisabled: true } as const;
 
@@ -44,7 +45,13 @@ export function FederatedCredentialFormScreen() {
 			<Host style={{ flex: 1 }}>
 				<NavigationStack>
 					<Toolbar>
-						<Form modifiers={[navigationTitle(model.title), disabled(model.saving)]}>
+						<Form
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle(model.title),
+								disabled(model.saving)
+							]}
+						>
 							<Section title="Credential">
 								<FormTextField
 									title="Name"

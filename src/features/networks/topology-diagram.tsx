@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import {
 	memo,
 	useEffect,
@@ -35,6 +34,7 @@ import {
 	type TopologyGraphLayout,
 	TopologyScale
 } from './topology-layout';
+import { GlassSurface } from '@/ui/glass';
 
 const minimumScale = TopologyScale.minimum;
 const maximumScale = TopologyScale.maximum;
@@ -46,11 +46,7 @@ function useSecondary(opacity: number) {
 
 function Material({ style, children }: { style: object; children: ReactNode }) {
 	if (Platform.OS === 'ios') {
-		return (
-			<BlurView tint="systemMaterial" intensity={100} style={[style, { overflow: 'hidden' }]}>
-				{children}
-			</BlurView>
-		);
+		return <GlassSurface style={[style, { overflow: 'hidden' }]}>{children}</GlassSurface>;
 	}
 	return <View style={[style, { backgroundColor: m3.surfaceContainerHigh }]}>{children}</View>;
 }

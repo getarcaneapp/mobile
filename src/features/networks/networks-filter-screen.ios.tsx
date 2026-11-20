@@ -30,6 +30,7 @@ import {
 	useNetworksFilterStore,
 	type NetworksFilterState
 } from './networks-filter-store';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function NetworksFilterScreen() {
 	const router = useRouter();
@@ -43,7 +44,13 @@ export function NetworksFilterScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<Form modifiers={[navigationTitle('Filter'), navigationBarTitleDisplayMode('inline')]}>
+					<Form
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Filter'),
+							navigationBarTitleDisplayMode('inline')
+						]}
+					>
 						<Section title="Sort">
 							<Picker
 								label="Sort"

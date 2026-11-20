@@ -118,6 +118,16 @@ export const APIKeyDateText = {
 	}
 } as const;
 
+export function apiKeySummary(apiKey: APIKey, assignedUser: User | undefined): string {
+	const used = parseArcaneDate(apiKey.lastUsedAt)
+		? `Used ${APIKeyDateText.lastUsed(apiKey.lastUsedAt)}`
+		: 'Never used';
+	const parts = [APIKeyOwnerText.title(assignedUser, apiKey.userId), used];
+	if (parseArcaneDate(apiKey.expiresAt) && !apiKeyIsExpired(apiKey))
+		parts.push(APIKeyDateText.expiration(apiKey.expiresAt));
+	return parts.join(' · ');
+}
+
 export function invalidateAPIKeyCache() {
 	cachedClient()?.invalidateGlobal(['api-keys', 'api-keys/*']);
 }

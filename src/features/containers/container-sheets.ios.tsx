@@ -34,6 +34,7 @@ import { ToastHost } from '@/ui/toast';
 import { BoundTextField } from './swiftui-text-field';
 import { useContainerCommit, useContainerCompose } from './use-container-sheets';
 import { AdvancedGate } from '@/features/navigation/advanced-gate';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 type Params = { id?: string; envID?: string; name?: string };
 
@@ -56,6 +57,7 @@ export function ContainerCommitScreen() {
 				<Toolbar>
 					<Form
 						modifiers={[
+							...sheetGlassModifiers(),
 							navigationTitle('Commit to Image'),
 							textInputAutocapitalization('never'),
 							autocorrectionDisabled()
@@ -155,7 +157,7 @@ function ContainerComposeScreenContent() {
 		<View style={{ flex: 1 }}>
 			<Host style={{ flex: 1 }}>
 				<NavigationStack>
-					<Toolbar>
+					<Toolbar modifiers={sheetGlassModifiers()}>
 						{body}
 						<Toolbar.Content>
 							<ToolbarItem placement="cancellationAction">

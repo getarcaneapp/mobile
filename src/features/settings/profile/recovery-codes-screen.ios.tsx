@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastHost } from '@/ui/toast';
 
 import { useRecoveryCodes } from './use-recovery-codes';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function RecoveryCodesScreen() {
 	const model = useRecoveryCodes();
@@ -29,6 +30,7 @@ export function RecoveryCodesScreen() {
 				<NavigationStack>
 					<List
 						modifiers={[
+							...sheetGlassModifiers(),
 							listStyle('insetGrouped'),
 							navigationTitle('Save Recovery Codes'),
 							navigationBarTitleDisplayMode('inline')

@@ -24,6 +24,7 @@ import { ToastHost } from '@/ui/toast';
 
 import { useDynamicForm, type DynamicFormModel } from './use-dynamic-form';
 import { choiceLabel, type BackendFormField } from './dynamic-resource';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function FieldView({ model, field }: { model: DynamicFormModel; field: BackendFormField }) {
 	const text = model.value(field.id);
@@ -106,7 +107,11 @@ export function DynamicFormScreen() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[navigationTitle(model.title), navigationBarTitleDisplayMode('inline')]}
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle(model.title),
+								navigationBarTitleDisplayMode('inline')
+							]}
 						>
 							<Section>
 								{model.fields.map((field) => (

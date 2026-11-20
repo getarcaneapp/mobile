@@ -111,22 +111,22 @@ export function CapsuleProgressBorder({
 					) : (
 						<>
 							<AnimatedPath
-								d={`${ring.d} ${ring.d}`}
+								d={ring.d}
 								stroke={tint}
 								strokeOpacity={0.3}
 								strokeWidth={2}
 								strokeLinecap="round"
 								fill="none"
-								strokeDasharray={[arcLength * 2 * length, length * 3]}
+								strokeDasharray={[arcLength * 2 * length, (1 - arcLength * 2) * length]}
 								animatedProps={tailProps}
 							/>
 							<AnimatedPath
-								d={`${ring.d} ${ring.d}`}
+								d={ring.d}
 								stroke={tint}
 								strokeWidth={2}
 								strokeLinecap="round"
 								fill="none"
-								strokeDasharray={[arcLength * length, length * 3]}
+								strokeDasharray={[arcLength * length, (1 - arcLength) * length]}
 								animatedProps={headProps}
 							/>
 						</>

@@ -35,6 +35,7 @@ import {
 	type WebhookActionType,
 	type WebhookTargetType
 } from './webhook-models';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function SelectPicker({
 	label,
@@ -104,6 +105,7 @@ export function CreateWebhookScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Create Webhook'),
 								navigationBarTitleDisplayMode('inline')
 							]}

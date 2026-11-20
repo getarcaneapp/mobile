@@ -26,6 +26,7 @@ import {
 	shapes,
 	tag
 } from '@expo/ui/swift-ui/modifiers';
+import { advancedFeaturesDescription, advancedFeaturesTitle } from '@/core/advanced-tabs';
 import { Stack } from 'expo-router';
 
 import { LiveStatsLimit } from '@/stores/dashboard-stream-logic';
@@ -46,6 +47,7 @@ export function AppSettingsScreen() {
 			<Host style={{ flex: 1 }}>
 				<List modifiers={[listStyle('insetGrouped')]}>
 					<GeneralSection model={model} />
+					<AdvancedSection model={model} />
 					<DashboardSection model={model} />
 					<NotificationsSection model={model} />
 					<SupportSection />
@@ -74,9 +76,16 @@ function GeneralSection({ model }: { model: AppSettingsModel }) {
 					color={systemColors.indigo}
 				/>
 			</Toggle>
+		</Section>
+	);
+}
+
+function AdvancedSection({ model }: { model: AppSettingsModel }) {
+	return (
+		<Section footer={<Text>{advancedFeaturesDescription}</Text>}>
 			<Toggle isOn={model.advancedFeatures} onIsOnChange={model.setAdvancedFeatures}>
 				<SettingsRow
-					title="Show Advanced Features"
+					title={advancedFeaturesTitle}
 					systemImage="slider.horizontal.3"
 					color={systemColors.gray}
 				/>

@@ -18,6 +18,7 @@ import { Host } from '@/ui/host';
 
 import { useProjectDraftReview } from './use-project-draft-review';
 import { AdvancedGate } from '@/features/navigation/advanced-gate';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function ProjectDraftReviewScreenContent() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -28,7 +29,7 @@ function ProjectDraftReviewScreenContent() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<Form modifiers={[navigationTitle('Review Changes')]}>
+					<Form modifiers={[...sheetGlassModifiers(), navigationTitle('Review Changes')]}>
 						<Section title="Changes">
 							{model.composeChanged ? (
 								<Label title="Compose configuration changed" systemImage="doc.text" />

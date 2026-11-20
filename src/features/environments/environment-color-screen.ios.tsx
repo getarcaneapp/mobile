@@ -22,6 +22,7 @@ import { useEnvironmentColorPicker } from '@/ui/components/environment-color-pic
 import { ToastHost } from '@/ui/toast';
 
 import { useEnvironmentColorRoute } from './environment-color-model';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function EnvironmentColorScreen() {
 	const router = useRouter();
@@ -34,7 +35,11 @@ export function EnvironmentColorScreen() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[navigationTitle('Agent Color'), navigationBarTitleDisplayMode('inline')]}
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle('Agent Color'),
+								navigationBarTitleDisplayMode('inline')
+							]}
 						>
 							<Section
 								footer={<Text>Applies to this agent's name and icon in resource lists.</Text>}

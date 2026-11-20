@@ -56,6 +56,7 @@ import {
 	Sheet,
 	TitleLink
 } from './compose-ui.ios';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function ComposeResourceDefinitionList({
 	destination
@@ -165,6 +166,7 @@ function AddResourceSheet({
 				<Toolbar>
 					<Form
 						modifiers={[
+							...sheetGlassModifiers(),
 							navigationTitle(kind === 'networks' ? 'Add network' : 'Add volume'),
 							...plainTextInput
 						]}
@@ -450,6 +452,7 @@ export function ComposeResourcePicker({
 			<Toolbar>
 				<List
 					modifiers={[
+						...sheetGlassModifiers(),
 						navigationTitle(isVolume ? 'Choose Volume' : 'Choose Network'),
 						navigationBarTitleDisplayMode('inline'),
 						searchable(searchText, { prompt: 'Search names', onChange: setSearch })

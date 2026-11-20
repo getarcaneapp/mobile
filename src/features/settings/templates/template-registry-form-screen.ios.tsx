@@ -23,6 +23,7 @@ import { ToastHost } from '@/ui/toast';
 import { SettingsSaveBar, SettingsSaveBarSpacer } from '../shared/settings-save-bar';
 
 import { useTemplateRegistryForm } from './use-template-registry-form';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function TemplateRegistryFormScreen() {
 	const model = useTemplateRegistryForm();
@@ -34,7 +35,11 @@ export function TemplateRegistryFormScreen() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[navigationTitle(model.title), navigationBarTitleDisplayMode('inline')]}
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle(model.title),
+								navigationBarTitleDisplayMode('inline')
+							]}
 						>
 							<Section title="Template Registry">
 								<FormTextField

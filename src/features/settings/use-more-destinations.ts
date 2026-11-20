@@ -5,7 +5,7 @@ import { AppTabIDs, type AppTab } from '@/core/app-tab';
 import { useClientManager } from '@/stores/client-manager';
 import { resolveTabs, useNavTabsStore } from '@/stores/nav-tabs-store';
 
-import { filterMoreGroups, moreGroups } from './more-groups';
+import { filterMoreGroups, moreGroups, moreTiles, resourcesTitle } from './more-groups';
 
 export type { MoreDestinationGroup } from './more-groups';
 
@@ -24,9 +24,24 @@ export function useMoreDestinations(search: string) {
 		[pinned, available]
 	);
 
+	const isSearching = search.trim() !== '';
+	const listed = useMemo(
+		() =>
+			isSearching ? available : new Set([...available].filter((tab) => !visibleTabs.has(tab))),
+		[isSearching, available, visibleTabs]
+	);
+	const tiles = useMemo(
+		() => (isSearching ? [] : moreTiles.filter((tab) => listed.has(tab))),
+		[isSearching, listed]
+	);
 	const filteredGroups = useMemo(
-		() => filterMoreGroups(moreGroups, available, search),
-		[search, available]
+		() =>
+			filterMoreGroups(
+				isSearching ? [{ title: resourcesTitle, tabs: moreTiles }, ...moreGroups] : moreGroups,
+				listed,
+				search
+			),
+		[isSearching, search, listed]
 	);
 
 	const open = (tab: AppTab) => {
@@ -38,5 +53,5 @@ export function useMoreDestinations(search: string) {
 		}
 	};
 
-	return { filteredGroups, visibleTabs, open };
+	return { isSearching, tiles, filteredGroups, visibleTabs, open };
 }

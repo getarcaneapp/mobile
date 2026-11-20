@@ -31,6 +31,7 @@ import { FormTextField } from '@/ui/components/form-fields';
 
 import { useRenderCompose } from './use-render-compose';
 import { AdvancedGate } from '@/features/navigation/advanced-gate';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function RenderComposeScreenContent() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -123,7 +124,7 @@ function RenderComposeScreenContent() {
 	return (
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
-				<Toolbar>
+				<Toolbar modifiers={sheetGlassModifiers()}>
 					{body}
 					<Toolbar.Content>
 						<ToolbarItem placement="cancellationAction">

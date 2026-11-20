@@ -64,6 +64,7 @@ import {
 	upgradeResultTint
 } from './upgrade-job-display';
 import { resultLogs } from './upgrade-job-follow';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 const secondary = { type: 'hierarchical', style: 'secondary' } as const;
 
@@ -119,7 +120,11 @@ export function UpdateAllEnvironmentsScreen() {
 	);
 }
 
-const rootTitle = [navigationTitle('Update All'), navigationBarTitleDisplayMode('inline')];
+const rootTitle = [
+	...sheetGlassModifiers(),
+	navigationTitle('Update All'),
+	navigationBarTitleDisplayMode('inline')
+];
 
 function RootContent({ model }: { model: UpdateAllEnvironmentsModel }) {
 	const { phase, sceneModel } = model;

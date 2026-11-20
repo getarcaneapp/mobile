@@ -17,6 +17,7 @@ import { ToastHost } from '@/ui/toast';
 
 import { BackupDestinationPicker } from './backup-destination-picker';
 import { useBackupCreate } from './use-backup-create';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function VolumeBackupCreateScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -30,7 +31,7 @@ export function VolumeBackupCreateScreen() {
 			<Host style={{ flex: 1 }}>
 				<NavigationStack>
 					<Toolbar>
-						<Form modifiers={[navigationTitle('Create Backup')]}>
+						<Form modifiers={[...sheetGlassModifiers(), navigationTitle('Create Backup')]}>
 							<Picker
 								label="Storage"
 								selection={state.destination}

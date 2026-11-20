@@ -75,6 +75,7 @@ import {
 	secondaryStyle,
 	Sheet
 } from './compose-ui.ios';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 type NativeFieldsDestination = Extract<ComposeDestination, { screen: 'nativeFields' }>;
 
@@ -367,6 +368,7 @@ function ComposeNativeValueSheet({
 			<Toolbar>
 				<Form
 					modifiers={[
+						...sheetGlassModifiers(),
 						navigationTitle(ComposeDisplayText.title(title)),
 						navigationBarTitleDisplayMode('inline'),
 						...plainTextInput
@@ -495,7 +497,7 @@ function AddFieldsContent({
 			/>
 		) : (
 			<NavigationStack>
-				<Form>
+				<Form modifiers={sheetGlassModifiers()}>
 					<Text />
 				</Form>
 			</NavigationStack>
@@ -534,7 +536,7 @@ function AddFieldsContent({
 
 	return (
 		<NavigationStack>
-			<VStack spacing={0}>
+			<VStack modifiers={sheetGlassModifiers()} spacing={0}>
 				<Toolbar>
 					<List
 						modifiers={[
@@ -638,6 +640,7 @@ export function ComposeSettingEditor({
 			<Toolbar>
 				<Form
 					modifiers={[
+						...sheetGlassModifiers(),
 						textFieldStyle('plain'),
 						navigationTitle(needsName ? 'New setting' : ComposeDisplayText.title(draft.name)),
 						navigationBarTitleDisplayMode('inline'),

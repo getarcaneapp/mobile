@@ -4,6 +4,13 @@ import type { SettingCategory } from '../models/category/Category';
 import type { SettingsSearchResponse } from '../models/search/Search';
 import type { PublicSetting, SettingDto, UpdateSettings } from '../models/settings/Settings';
 
+export type GlobalSettingsScope = 'manager' | 'authentication';
+
+const GLOBAL_SETTINGS_PATHS: Record<GlobalSettingsScope, string> = {
+	manager: 'settings',
+	authentication: 'settings/authentication'
+};
+
 export class SettingsService {
 	private readonly rest: RESTService;
 
@@ -25,6 +32,21 @@ export class SettingsService {
 
 	updateSettings(args: { body: UpdateSettings; envID?: EnvironmentID }): Promise<SettingDto[]> {
 		return this.rest.put(this.rest.environmentPath(args.envID, 'settings'), { body: args.body });
+	}
+
+	async getGlobalSettings(args: { scope: GlobalSettingsScope }): Promise<PublicSetting[]> {
+		const text = await this.rest.transport.rawRequest(GLOBAL_SETTINGS_PATHS[args.scope]);
+		return this.rest.transport.decode<PublicSetting[]>(text);
+	}
+
+	async updateGlobalSettings(args: {
+		scope: GlobalSettingsScope;
+		body: Record<string, string>;
+	}): Promise<void> {
+		await this.rest.transport.rawRequest(GLOBAL_SETTINGS_PATHS[args.scope], {
+			method: 'PATCH',
+			body: args.body
+		});
 	}
 
 	async search(args: { query: string }): Promise<SettingsSearchResponse> {

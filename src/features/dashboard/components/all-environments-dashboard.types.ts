@@ -18,6 +18,7 @@ export type AllEnvironmentsDashboardProps = {
 	onOpenContainer: (container: ContainerSummary, environmentID: string) => void;
 	onOpenUpdates: () => void;
 	onOpenSecurity: () => void;
+	onOpenAttention: () => void;
 	onAttention: (action: OverviewAttentionAction) => void;
 	onOpenActivity: (status?: 'failed') => void;
 	onOpenJobs: (environmentID: string) => void;

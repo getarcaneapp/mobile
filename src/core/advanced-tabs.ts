@@ -15,6 +15,10 @@ export const advancedTabs: ReadonlySet<AppTab> = new Set<AppTab>([
 	'jobs'
 ]);
 
+export const advancedFeaturesTitle = 'Editing and Setup';
+export const advancedFeaturesDescription =
+	'Shows actions to create and edit containers, project and volume files, Swarm resources, GitOps syncs, API keys and backup policies, and the Templates, Registries, Git Repositories, Builds, Webhooks, Jobs, Authentication, Roles and Timeouts screens.';
+
 export const isAdvancedTab = (tab: AppTab) => advancedTabs.has(tab);
 
 export function initialAdvancedFeatures(stored: boolean | undefined, hasSavedServer: boolean) {

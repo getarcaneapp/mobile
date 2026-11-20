@@ -31,10 +31,10 @@ import { useAccentColor } from '@/theme/accent';
 import { colors, systemColors } from '@/theme/colors';
 import { Motion } from '@/theme/tokens';
 
-import { useReduceMotion } from '../accessibility';
+import { useReduceMotion, useReduceTransparency } from '../accessibility';
 import { animateTo } from '../motion-views';
 import { swiftAnimation } from '../swiftui-motion';
-import { floatingSurfaceShadow } from '../swiftui-surfaces';
+import { floatingSurfaceShadow, glassEffectCompat } from '../swiftui-surfaces';
 import { exitDelay, type DeleteConfirmationCardProps } from './card.types';
 import type { DeleteConfirmationAction } from './presenter';
 import { symbolRenderingMode } from '../../../../modules/arcane-swiftui-extras';
@@ -43,6 +43,7 @@ const cornerRadius = 40;
 
 export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmationCardProps) {
 	const reduceMotion = useReduceMotion();
+	const reduceTransparency = useReduceTransparency();
 	const accent = useAccentColor();
 	const [shown, setShown] = useState(false);
 	const isDismissing = useRef(false);
@@ -144,17 +145,21 @@ export function DeleteConfirmationCard({ config, onResolved }: DeleteConfirmatio
 							spacing={16}
 							modifiers={[
 								padding({ all: 20 }),
-								background(
-									colors.systemBackground,
-									shapes.roundedRectangle({ cornerRadius, roundedCornerStyle: 'continuous' })
-								),
-								strokeBorder({
-									color: '#8080800F',
-									style: { lineWidth: 0.5 },
-									shape: 'roundedRectangle',
-									cornerRadius
-								}),
-								floatingSurfaceShadow(),
+								...(reduceTransparency
+									? [
+											background(
+												colors.systemBackground,
+												shapes.roundedRectangle({ cornerRadius, roundedCornerStyle: 'continuous' })
+											),
+											strokeBorder({
+												color: '#8080800F',
+												style: { lineWidth: 0.5 },
+												shape: 'roundedRectangle',
+												cornerRadius
+											}),
+											floatingSurfaceShadow()
+										]
+									: [glassEffectCompat({ shape: 'roundedRectangle', cornerRadius })]),
 								scaleEffect(shown || reduceMotion ? 1 : 0.94),
 								opacity(shown ? 1 : 0),
 								blur(shown || reduceMotion ? 0 : 12),

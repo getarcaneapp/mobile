@@ -6,7 +6,7 @@ import { colors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
 import { GlassSurface } from '@/ui/glass';
 
-import { groupedHex, useIsDark, useReduceTransparency } from './accessibility';
+import { useIsDark, useReduceTransparency } from './accessibility';
 
 type SurfaceProps = { cornerRadius?: number; style?: StyleProp<ViewStyle>; children?: ReactNode };
 
@@ -39,12 +39,6 @@ export function GlassCard({
 	const rim = isHighlighted ? { borderWidth: 1.5, borderColor: withOpacity(accent, 0.45) } : null;
 
 	if (Platform.OS === 'ios' && !reduceTransparency) {
-		const wash = withOpacity(
-			isDark
-				? groupedHex.dark.secondarySystemGroupedBackground
-				: groupedHex.light.secondarySystemGroupedBackground,
-			0.78
-		);
 		return (
 			<GlassSurface
 				style={[
@@ -57,7 +51,6 @@ export function GlassCard({
 						flexGrow: 1,
 						borderRadius: cornerRadius,
 						borderCurve: 'continuous',
-						backgroundColor: wash,
 						borderWidth: rim ? rim.borderWidth : 1,
 						borderColor: rim ? rim.borderColor : isDark ? '#FFFFFF14' : '#FFFFFF80'
 					}}

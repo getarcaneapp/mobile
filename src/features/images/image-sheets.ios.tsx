@@ -42,6 +42,7 @@ import {
 	type ImagePruneMode
 } from './image-model';
 import { useImagePrune, useImageTag, usePullImage, useUploadImage } from './use-image-sheets';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 type Params = { envID?: string; id?: string };
 
@@ -63,7 +64,11 @@ export function PullImageScreen() {
 			<NavigationStack>
 				<Toolbar>
 					<Form
-						modifiers={[navigationTitle('Pull Image'), navigationBarTitleDisplayMode('inline')]}
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Pull Image'),
+							navigationBarTitleDisplayMode('inline')
+						]}
 					>
 						<Section title="Pull Image">
 							<FormTextField
@@ -137,7 +142,11 @@ export function UploadImageScreen() {
 			<NavigationStack>
 				<Toolbar>
 					<Form
-						modifiers={[navigationTitle('Upload Image'), navigationBarTitleDisplayMode('inline')]}
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Upload Image'),
+							navigationBarTitleDisplayMode('inline')
+						]}
 					>
 						<Section
 							header={<Text>File</Text>}
@@ -264,7 +273,11 @@ export function ImagePruneScreen() {
 			<NavigationStack>
 				<Toolbar>
 					<Form
-						modifiers={[navigationTitle('Prune Images'), navigationBarTitleDisplayMode('inline')]}
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Prune Images'),
+							navigationBarTitleDisplayMode('inline')
+						]}
 					>
 						<Section footer={<Text>{imagePruneModeDescription(model.mode)}</Text>}>
 							<FormPicker<ImagePruneMode>
@@ -324,6 +337,7 @@ export function ImageTagScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Tag Image'),
 								textInputAutocapitalization('never'),
 								autocorrectionDisabled()

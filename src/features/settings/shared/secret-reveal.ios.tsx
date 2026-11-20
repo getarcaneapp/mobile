@@ -30,7 +30,7 @@ import type { SFSymbol } from 'sf-symbols-typescript';
 
 import { systemColors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
-import { glassEffectCompat } from '@/ui/components/swiftui-surfaces';
+import { glassEffectCompat, sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 import { showToast, ToastHost, Toasts } from '@/ui/toast';
 
 import type { SecretRevealProps } from './secret-reveal.types';
@@ -65,6 +65,7 @@ export function SecretRevealScreen(props: SecretRevealProps) {
 					<Toolbar>
 						<ScrollView
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle(props.navigationTitle),
 								navigationBarTitleDisplayMode('inline')
 							]}

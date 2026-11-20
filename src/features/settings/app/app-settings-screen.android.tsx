@@ -1,3 +1,4 @@
+import { advancedFeaturesDescription, advancedFeaturesTitle } from '@/core/advanced-tabs';
 import { Stack } from 'expo-router';
 import { Linking, Pressable, ScrollView, Text } from 'react-native';
 
@@ -49,8 +50,11 @@ export function AppSettingsScreen() {
 						value={model.rememberLastTab}
 						onValueChange={model.setRememberLastTab}
 					/>
+				</M3Section>
+
+				<M3Section footer={advancedFeaturesDescription}>
 					<IconSwitchRow
-						title="Show Advanced Features"
+						title={advancedFeaturesTitle}
 						icon="slider.horizontal.3"
 						iconColor={systemColors.gray}
 						value={model.advancedFeatures}

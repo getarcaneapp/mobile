@@ -22,6 +22,7 @@ import {
 
 import { pullPolicyOptions } from './project-model';
 import { deployOptionsConfirmationHost, useDeployOptions } from './use-deploy-options';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function DeployOptionsScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -47,6 +48,7 @@ export function DeployOptionsScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Deploy Options'),
 								navigationBarTitleDisplayMode('inline')
 							]}

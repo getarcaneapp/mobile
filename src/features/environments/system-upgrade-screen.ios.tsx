@@ -49,7 +49,7 @@ import {
 	singleActionConfig,
 	useDeleteConfirmation
 } from '@/ui/components/delete-confirmation';
-import { glassEffectCompat } from '@/ui/components/swiftui-surfaces';
+import { glassEffectCompat, sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 import { ToastHost } from '@/ui/toast';
 
 import {
@@ -490,7 +490,7 @@ export function SystemUpgradeScreen() {
 		<View style={{ flex: 1 }}>
 			<Host style={{ flex: 1 }}>
 				<NavigationStack>
-					<Toolbar>
+					<Toolbar modifiers={sheetGlassModifiers()}>
 						{scroll([navigationTitle('Upgrade Arcane'), navigationBarTitleDisplayMode('inline')])}
 						<Toolbar.Content>
 							<ToolbarItem placement="cancellationAction">

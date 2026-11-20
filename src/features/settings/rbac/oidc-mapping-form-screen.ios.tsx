@@ -19,6 +19,7 @@ import { SettingsSaveBar, SettingsSaveBarSpacer } from '../shared/settings-save-
 
 import { RolePicker, ScopeSection } from './scope-pickers';
 import { useOIDCMappingForm } from './use-oidc-mapping-form';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function OIDCMappingFormScreen() {
 	const model = useOIDCMappingForm();
@@ -28,7 +29,11 @@ export function OIDCMappingFormScreen() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[navigationTitle(model.title), navigationBarTitleDisplayMode('inline')]}
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle(model.title),
+								navigationBarTitleDisplayMode('inline')
+							]}
 						>
 							<Section
 								header={<Text>Claim Value</Text>}

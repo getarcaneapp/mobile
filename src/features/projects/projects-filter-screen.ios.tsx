@@ -41,6 +41,7 @@ import {
 	type ProjectStatusFilter
 } from './project-model';
 import { useProjectsFilterScreen } from './use-projects-filter-screen';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function ProjectsFilterScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -53,7 +54,13 @@ export function ProjectsFilterScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<Form modifiers={[navigationTitle('Filter'), navigationBarTitleDisplayMode('inline')]}>
+					<Form
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Filter'),
+							navigationBarTitleDisplayMode('inline')
+						]}
+					>
 						<Section title="Sort">
 							<Picker
 								label="Sort"

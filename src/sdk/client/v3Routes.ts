@@ -100,15 +100,15 @@ const GLOBAL_RULES: readonly RouteRule[] = [
 	})),
 	rule(ANY, /^container-registries(\/.*)?$/, (m) => ({ path: `registries${g(m, 1)}` })),
 	rule(POST, /^customize\/git-repositories\/([^/]+)\/test$/, (m) => ({
-		path: `customize/git/repositories/${g(m, 1)}`,
+		path: `gitops/repositories/${g(m, 1)}`,
 		action: 'test'
 	})),
 	rule(PUT, /^customize\/git-repositories\/([^/]+)$/, (m) => ({
 		method: 'PATCH',
-		path: `customize/git/repositories/${g(m, 1)}`
+		path: `gitops/repositories/${g(m, 1)}`
 	})),
 	rule(ANY, /^customize\/git-repositories(\/.*)?$/, (m) => ({
-		path: `customize/git/repositories${g(m, 1)}`
+		path: `gitops/repositories${g(m, 1)}`
 	})),
 	rule(POST, /^git-repositories\/sync$/, () => ({ path: 'git/repositories/sync' })),
 	rule(PUT, /^federated-credentials\/([^/]+)$/, (m) => ({

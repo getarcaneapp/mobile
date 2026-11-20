@@ -14,6 +14,7 @@ import { FormErrorSection } from '../shared/form-error-section';
 
 import { RolePicker, ScopeSection } from './scope-pickers';
 import { useAddRoleAssignment } from './use-add-role-assignment';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function AddRoleAssignmentScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -25,6 +26,7 @@ export function AddRoleAssignmentScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Add Assignment'),
 								navigationBarTitleDisplayMode('inline')
 							]}

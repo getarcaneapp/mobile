@@ -25,6 +25,7 @@ import {
 	useEnvironmentColor,
 	useEnvironmentColors
 } from './use-environment-colors';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function EnvironmentColorPicker({
 	environment,
@@ -50,7 +51,7 @@ function EnvironmentColorPicker({
 				/>
 				<BottomSheet isPresented={showCustomColor} onIsPresentedChange={setShowCustomColor}>
 					<NavigationStack modifiers={[presentationDetents(['medium', 'large'])]}>
-						<Form>
+						<Form modifiers={sheetGlassModifiers()}>
 							<CustomAccentColorPicker
 								selection={model.selectedHex}
 								onSelectionChange={model.save}

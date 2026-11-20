@@ -71,7 +71,7 @@ import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-sw
 import { EnvironmentFilterSection, EnvironmentLabel } from '@/ui/components/environment-label';
 import { ResourceCountSectionHeader } from '@/ui/components/labels';
 import { RowIcon } from '@/ui/components/row-icon';
-import { DashboardCardBackground } from '@/ui/components/swiftui-surfaces';
+import { DashboardCardBackground, sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 import type { ActionButtonItem } from '@/ui/components/toolbar';
 import { useToolbarIcons } from '@/ui/toolbar-icon';
 
@@ -800,7 +800,13 @@ function FilterSheet({ model }: { model: ImageUpdatesModel }) {
 	const accent = useAccentColor();
 	return (
 		<Toolbar>
-			<Form modifiers={[navigationTitle('Filter'), navigationBarTitleDisplayMode('inline')]}>
+			<Form
+				modifiers={[
+					...sheetGlassModifiers(),
+					navigationTitle('Filter'),
+					navigationBarTitleDisplayMode('inline')
+				]}
+			>
 				<Section title="Sort">
 					<Picker
 						label="Sort"

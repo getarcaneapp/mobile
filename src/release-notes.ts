@@ -16,9 +16,55 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'Light, dark or system theme in Appearance settings.'
 			}
 		],
+		changed: [
+			{
+				text: 'More shows resources as tiles, grouped by purpose, without pinned tabs.'
+			},
+			{
+				text: 'Show Advanced Features renamed Editing and Setup, with a description.'
+			},
+			{
+				text: 'Compact API key rows.'
+			},
+			{
+				text: 'Activity Center button on the left of the dashboard toolbar.'
+			},
+			{
+				text: 'Needs Attention tile opens the Attention Center.'
+			},
+			{
+				text: 'Liquid Glass on half-height sheets, dashboard cards and confirmations.'
+			}
+		],
+		removed: [
+			{
+				text: 'Activities row in More.'
+			},
+			{
+				text: 'Needs Attention button in the dashboard toolbar.'
+			}
+		],
 		fixed: [
 			{
 				text: 'Push notifications failing to enable on Android.'
+			},
+			{
+				text: 'Container Registries rows tinted in the accent color.'
+			},
+			{
+				text: 'Toasts sliding in from above and their progress ring breaking at the top.'
+			},
+			{
+				text: 'Prune All Agents and image prune ignoring the server prune settings.'
+			},
+			{
+				text: 'Git Repositories not loading on Arcane v3.'
+			},
+			{
+				text: 'Authentication and avatar upload settings not loading or saving on Arcane v3.'
+			},
+			{
+				text: 'Templates, registries, variables and Git Repositories hidden for scoped roles.'
 			}
 		]
 	},

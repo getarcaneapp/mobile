@@ -22,6 +22,7 @@ import { systemColors } from '@/theme/colors';
 import { ToastHost } from '@/ui/toast';
 
 import { useDeleteVariable } from './use-delete-variable';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function DeleteVariableScreen() {
 	const model = useDeleteVariable();
@@ -33,6 +34,7 @@ export function DeleteVariableScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Delete Variable'),
 								navigationBarTitleDisplayMode('inline')
 							]}
