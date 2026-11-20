@@ -7,6 +7,7 @@ import {
 	Section,
 	Spacer,
 	Text,
+	TextField,
 	VStack,
 	ZStack
 } from '@expo/ui/swift-ui';
@@ -14,6 +15,7 @@ import { Host } from '@/ui/host';
 import { Image } from '@/ui/components/swiftui-image';
 import {
 	accessibilityHint,
+	autocorrectionDisabled,
 	buttonStyle,
 	contentShape,
 	font,
@@ -25,7 +27,8 @@ import {
 	listSectionSpacing,
 	listStyle,
 	padding,
-	shapes
+	shapes,
+	submitLabel
 } from '@expo/ui/swift-ui/modifiers';
 import type { SFSymbol } from 'sf-symbols-typescript';
 import { Stack, useRouter } from 'expo-router';
@@ -103,20 +106,23 @@ export function MoreScreen() {
 
 	return (
 		<>
-			<Stack.Screen
-				options={{
-					title: 'More',
-					headerSearchBarOptions: {
-						placeholder: 'Search destinations',
-						hideWhenScrolling: false,
-						onChangeText: (event) => setSearch(event.nativeEvent.text),
-						onCancelButtonPress: () => setSearch('')
-					}
-				}}
-			/>
+			<Stack.Screen options={{ title: 'More' }} />
 			<Host style={{ flex: 1 }}>
 				<ZStack>
 					<List modifiers={[listStyle('insetGrouped'), listSectionSpacing(20)]}>
+						<Section>
+							<HStack spacing={8}>
+								<Image
+									systemName="magnifyingglass"
+									modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}
+								/>
+								<TextField
+									placeholder="Search destinations"
+									onTextChange={setSearch}
+									modifiers={[autocorrectionDisabled(true), submitLabel('search')]}
+								/>
+							</HStack>
+						</Section>
 						{isSearching ? null : (
 							<Section>
 								<Button

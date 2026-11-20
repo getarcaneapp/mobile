@@ -21,6 +21,9 @@ export const releaseNotes: ReleaseNote[] = [
 				text: 'More shows resources as tiles, grouped by purpose, without pinned tabs.'
 			},
 			{
+				text: 'More is a separate button beside the tab bar on iOS.'
+			},
+			{
 				text: 'Show Advanced Features renamed Editing and Setup, with a description.'
 			},
 			{
