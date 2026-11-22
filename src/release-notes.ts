@@ -10,11 +10,16 @@ export type ReleaseNote = {
 
 export const releaseNotes: ReleaseNote[] = [
 	{
-		version: '0.12.1',
+		version: '0.13.0',
 		new: [
 			{
 				text: 'Firebase settings for push notifications in App Settings on Android.'
-			},
+			}
+		]
+	},
+	{
+		version: '0.12.1',
+		new: [
 			{
 				text: 'Light, dark or system theme in Appearance settings.'
 			}
