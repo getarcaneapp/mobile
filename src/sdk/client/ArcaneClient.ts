@@ -197,6 +197,10 @@ export class ArcaneClient {
 		this.mobilePush = new MobilePushService(rest);
 	}
 
+	proxyHeaders(url: string): Record<string, string> {
+		return this.transport.proxySupport.headers(url);
+	}
+
 	scoped(toEnvironment: EnvironmentID): ArcaneClient {
 		return new ArcaneClient(
 			{ ...this.configuration, defaultEnvironmentID: toEnvironment },

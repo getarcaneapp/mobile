@@ -1,7 +1,13 @@
+import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { Platform } from 'react-native';
 
+import {
+	ConnectionHeaders,
+	connectionHeaderPresets,
+	type ConnectionHeaderPreset
+} from '@/core/connection-profiles/connection-headers';
 import {
 	ConnectionProfileSync,
 	SavedConnectionCredential,
@@ -28,6 +34,7 @@ export function useConnectionProfiles({ pushed = false }: { pushed?: boolean } =
 	const suggestedServerURL = params.suggested ?? '';
 	const profiles = useConnectionProfileStore((s) => s.profiles);
 	const credentialIDs = useConnectionProfileStore((s) => s.credentialProfileIDs);
+	const headerIDs = useConnectionProfileStore((s) => s.headerProfileIDs);
 	const syncState = useConnectionProfileStore((s) => s.syncState);
 	const serverURL = useClientManager((s) => s.serverURL);
 	const isDemoActive = useClientManager((s) => s.isDemoActive);
@@ -37,6 +44,7 @@ export function useConnectionProfiles({ pushed = false }: { pushed?: boolean } =
 	const currentProfileID = useConnectionProfileStore((s) => s.profile(serverURL)?.id);
 	const isCurrent = (profile: ConnectionProfile) => currentProfileID === profile.id;
 	const hasCredential = (profile: ConnectionProfile) => credentialIDs.has(profile.id);
+	const hasHeaders = (profile: ConnectionProfile) => headerIDs.has(profile.id);
 
 	const canSaveCurrentServer = serverURL !== '' && !isDemoActive && currentProfileID === undefined;
 
@@ -71,10 +79,12 @@ export function useConnectionProfiles({ pushed = false }: { pushed?: boolean } =
 		syncStateDescription: syncStateDescription[syncState],
 		isCurrent,
 		hasCredential,
+		hasHeaders,
 		accessibilityValue: (profile: ConnectionProfile) =>
 			[
 				isCurrent(profile) ? 'Current server' : undefined,
-				hasCredential(profile) ? ConnectionProfileCopy.credentialBadge : undefined
+				hasCredential(profile) ? ConnectionProfileCopy.credentialBadge : undefined,
+				hasHeaders(profile) ? ConnectionProfileCopy.headersBadge : undefined
 			]
 				.filter(Boolean)
 				.join(', '),
@@ -139,6 +149,18 @@ export type ConnectionProfilesModel = ReturnType<typeof useConnectionProfiles>;
 
 type CredentialLoadState = 'loading' | 'ready' | 'failed';
 
+export type HeaderDraft = { id: string; name: string; value: string };
+
+const serverAddressChangedNotice = 'Re-enter the headers after changing the server address.';
+
+function matchesProfileURL(profile: ConnectionProfile, serverURL: string): boolean {
+	try {
+		return ConnectionProfileSync.normalizedServerURL(serverURL) === profile.serverURL;
+	} catch {
+		return false;
+	}
+}
+
 function credentialMatchesDraft(
 	credential: SavedConnectionCredential | undefined,
 	profile: ConnectionProfile,
@@ -155,7 +177,7 @@ function credentialMatchesDraft(
 
 export function useConnectionProfileEditor() {
 	const router = useRouter();
-	const params = useLocalSearchParams<{ id?: string; suggested?: string }>();
+	const params = useLocalSearchParams<{ id?: string; suggested?: string; headers?: string }>();
 	const [profile] = useState<ConnectionProfile | undefined>(() =>
 		params.id
 			? useConnectionProfileStore.getState().profiles.find((p) => p.id === params.id)
@@ -170,6 +192,9 @@ export function useConnectionProfileEditor() {
 	);
 	const [hasExistingCredential, setHasExistingCredential] = useState(false);
 	const [signInNotice, setSignInNotice] = useState<string>();
+	const [headers, setHeaders] = useState<HeaderDraft[]>([]);
+	const [hasExistingHeaders, setHasExistingHeaders] = useState(false);
+	const [headersNotice, setHeadersNotice] = useState<string>();
 	const [validationMessage, setValidationMessage] = useState<string>();
 	const [fieldsRevision, setFieldsRevision] = useState(0);
 
@@ -189,6 +214,13 @@ export function useConnectionProfileEditor() {
 				setHasExistingCredential(true);
 			} else if (credential) {
 				setSignInNotice('Re-enter the sign-in after changing the server address.');
+			}
+			const savedHeaders = useConnectionProfileStore.getState().savedHeaders(profile);
+			if (savedHeaders.length > 0 && matchesProfileURL(profile, serverURL)) {
+				setHeaders(savedHeaders.map((header) => ({ id: randomUUID(), ...header })));
+				setHasExistingHeaders(true);
+			} else if (savedHeaders.length > 0) {
+				setHeadersNotice(serverAddressChangedNotice);
 			}
 			setCredentialLoadState('ready');
 		} catch (error) {
@@ -217,7 +249,13 @@ export function useConnectionProfileEditor() {
 			const credential = SavedConnectionCredential.optional(username, password);
 			useConnectionProfileStore
 				.getState()
-				.saveConnectionProfile(profile, name, serverURL, credential);
+				.saveConnectionProfile(
+					profile,
+					name,
+					serverURL,
+					credential,
+					ConnectionHeaders.make(headers)
+				);
 			showToast(Toasts.success(savedMessage));
 			router.back();
 		} catch (error) {
@@ -238,9 +276,51 @@ export function useConnectionProfileEditor() {
 		hasExistingCredential,
 		signInNotice,
 		validationMessage,
-		initialFocus: (profile === undefined && !serverURL ? 'serverURL' : 'name') as
-			| 'serverURL'
-			| 'name',
+		headers,
+		headersNotice,
+		headersFirst: params.headers === '1',
+		canAddHeader: headers.length < ConnectionHeaders.maximumCount,
+		headerPresets: connectionHeaderPresets.filter((preset) =>
+			preset.names.some(
+				(name) => !headers.some((header) => header.name.trim().toLowerCase() === name.toLowerCase())
+			)
+		),
+		addHeader: () => {
+			setHeaders((current) => [...current, { id: randomUUID(), name: '', value: '' }]);
+			setValidationMessage(undefined);
+		},
+		addHeaderPreset: (preset: ConnectionHeaderPreset) => {
+			setHeaders((current) => [
+				...current.filter((header) => header.name.trim() !== '' || header.value !== ''),
+				...preset.names
+					.filter(
+						(name) =>
+							!current.some((header) => header.name.trim().toLowerCase() === name.toLowerCase())
+					)
+					.map((name) => ({ id: randomUUID(), name, value: '' }))
+			]);
+			setValidationMessage(undefined);
+		},
+		setHeaderName: (id: string, value: string) => {
+			setHeaders((current) =>
+				current.map((header) => (header.id === id ? { ...header, name: value } : header))
+			);
+			setValidationMessage(undefined);
+		},
+		setHeaderValue: (id: string, value: string) => {
+			setHeaders((current) =>
+				current.map((header) => (header.id === id ? { ...header, value } : header))
+			);
+			setValidationMessage(undefined);
+		},
+		removeHeader: (id: string) => {
+			setHeaders((current) => current.filter((header) => header.id !== id));
+			setValidationMessage(undefined);
+		},
+		initialFocus:
+			params.headers === '1'
+				? undefined
+				: ((profile === undefined && !serverURL ? 'serverURL' : 'name') as 'serverURL' | 'name'),
 		canSave: serverURL.trim() !== '' && credentialLoadState === 'ready',
 		setName: (value: string) => {
 			setNameState(value);
@@ -249,13 +329,19 @@ export function useConnectionProfileEditor() {
 		setServerURL: (value: string) => {
 			setServerURLState(value);
 			setValidationMessage(undefined);
-			if (!profile || !hasExistingCredential) return;
+			if (!profile || (!hasExistingCredential && !hasExistingHeaders)) return;
 			try {
 				if (ConnectionProfileSync.normalizedServerURL(value) === profile.serverURL) return;
 			} catch {
 				return;
 			}
-			clearCredential('Re-enter the sign-in after changing the server address.');
+			if (hasExistingCredential)
+				clearCredential('Re-enter the sign-in after changing the server address.');
+			if (hasExistingHeaders) {
+				setHeaders([]);
+				setHasExistingHeaders(false);
+				setHeadersNotice(serverAddressChangedNotice);
+			}
 		},
 		setUsername: (value: string) => {
 			setUsernameState(value);

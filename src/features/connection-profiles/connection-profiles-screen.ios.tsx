@@ -7,6 +7,7 @@ import {
 	HStack,
 	Label,
 	List,
+	Menu,
 	NavigationStack,
 	SecureField,
 	Section,
@@ -65,7 +66,9 @@ import {
 	connectionProfilesConfirmationHost,
 	useConnectionProfileEditor,
 	useConnectionProfiles,
-	type ConnectionProfilesModel
+	type ConnectionProfileEditorModel,
+	type ConnectionProfilesModel,
+	type HeaderDraft
 } from './use-connection-profiles';
 import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
@@ -225,6 +228,16 @@ function ProfileRow({
 						]}
 					/>
 				) : null}
+				{model.hasHeaders(profile) ? (
+					<Image
+						systemName="lock.shield"
+						modifiers={[
+							font({ textStyle: 'caption', weight: 'semibold' }),
+							foregroundStyle(systemColors.indigo),
+							accessibilityLabel(model.copy.headersBadge)
+						]}
+					/>
+				) : null}
 				{current ? (
 					<Text
 						modifiers={[
@@ -279,6 +292,82 @@ function ProfileRow({
 	);
 }
 
+function HeaderFields({
+	model,
+	header
+}: {
+	model: ConnectionProfileEditorModel;
+	header: HeaderDraft;
+}) {
+	const { name, value } = header;
+	const nameText = useNativeState(name);
+	const valueText = useNativeState(value);
+	const syncTexts = useEffectEvent((values: { name: string; value: string }) => {
+		if (nameText.get() !== values.name) nameText.set(values.name);
+		if (valueText.get() !== values.value) valueText.set(values.value);
+	});
+	useEffect(() => {
+		syncTexts({ name, value });
+	}, [name, value]);
+	return (
+		<HStack spacing={12}>
+			<VStack alignment="leading" spacing={8}>
+				<TextField
+					text={nameText}
+					placeholder="Header Name"
+					onTextChange={(text) => model.setHeaderName(header.id, text)}
+					modifiers={[
+						accessibilityLabel('Header Name'),
+						textInputAutocapitalization('never'),
+						autocorrectionDisabled()
+					]}
+				/>
+				<SecureField
+					text={valueText}
+					placeholder="Value"
+					onTextChange={(text) => model.setHeaderValue(header.id, text)}
+					modifiers={[accessibilityLabel(`Value for ${name.trim() || 'header'}`)]}
+				/>
+			</VStack>
+			<Button
+				onPress={() => model.removeHeader(header.id)}
+				modifiers={[
+					buttonStyle('borderless'),
+					accessibilityLabel(`Remove ${name.trim() || 'header'}`)
+				]}
+			>
+				<Image systemName="minus.circle.fill" modifiers={[foregroundStyle(systemColors.red)]} />
+			</Button>
+		</HStack>
+	);
+}
+
+function HeadersSection({ model }: { model: ConnectionProfileEditorModel }) {
+	if (model.credentialLoadState !== 'ready') return null;
+	return (
+		<Section
+			header={<Text>Custom Headers (Optional)</Text>}
+			footer={<Text>{model.headersNotice ?? model.copy.headersFooter}</Text>}
+		>
+			{model.headers.map((header) => (
+				<HeaderFields key={header.id} model={model} header={header} />
+			))}
+			{model.canAddHeader ? (
+				<Menu label={<Label title="Add Header" systemImage="plus.circle.fill" />}>
+					{model.headerPresets.map((preset) => (
+						<Button
+							key={preset.id}
+							label={preset.title}
+							onPress={() => model.addHeaderPreset(preset)}
+						/>
+					))}
+					<Button label="Custom Header" onPress={model.addHeader} />
+				</Menu>
+			) : null}
+		</Section>
+	);
+}
+
 export function ConnectionProfileEditorScreen() {
 	const toolbarAccent = useAppAccentToolbarSymbol();
 	const model = useConnectionProfileEditor();
@@ -311,6 +400,7 @@ export function ConnectionProfileEditorScreen() {
 	const initialFocusField = useEffectEvent(() => model.initialFocus);
 	useEffect(() => {
 		const field = initialFocusField();
+		if (field === undefined) return;
 		const timer = setTimeout(
 			() => (field === 'name' ? nameRef : serverRef).current?.focus().catch(() => {}),
 			350
@@ -361,6 +451,7 @@ export function ConnectionProfileEditorScreen() {
 									]}
 								/>
 							</Section>
+							{model.headersFirst ? <HeadersSection model={model} /> : null}
 							<Section
 								header={<Text>Sign-In (Optional)</Text>}
 								footer={<Text>{model.signInNotice ?? model.copy.signInFooter}</Text>}
@@ -407,6 +498,7 @@ export function ConnectionProfileEditorScreen() {
 									</>
 								)}
 							</Section>
+							{model.headersFirst ? null : <HeadersSection model={model} />}
 							{model.validationMessage ? (
 								<Section>
 									<Label

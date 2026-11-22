@@ -46,6 +46,10 @@ function isSameOrigin(url: string, serverURL: string) {
 	}
 }
 
+function sourceHeaders(headers: Record<string, string>) {
+	return Object.keys(headers).length > 0 ? headers : undefined;
+}
+
 export type CachedAsyncImageProps = {
 	url?: string;
 	size?: number;
@@ -58,6 +62,7 @@ const loadedThisSession = new Set<string>();
 
 export function useCachedImageSource(url: string | undefined, headers?: Record<string, string>) {
 	const serverURL = useClientManager((s) => s.serverURL);
+	const client = useClientManager((s) => s.client);
 	const generation = useImageCacheGeneration((s) => s.value);
 	const resolved = resolveImageURL(url, serverURL);
 	const loadID = `${resolved ?? ''}|${generation}`;
@@ -67,7 +72,9 @@ export function useCachedImageSource(url: string | undefined, headers?: Record<s
 	const source = resolved
 		? {
 				uri: resolved,
-				headers: headers && isSameOrigin(resolved, serverURL) ? headers : undefined,
+				headers: isSameOrigin(resolved, serverURL)
+					? sourceHeaders({ ...client?.proxyHeaders(resolved), ...headers })
+					: undefined,
 				cacheKey: resolved
 			}
 		: undefined;

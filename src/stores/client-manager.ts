@@ -39,6 +39,7 @@ import {
 import { migrateAdvancedFeatures } from '@/core/advanced-features';
 import { requiresPasswordChangeGate } from '@/core/auth/password-change';
 import { defaults, Keys, storage } from '@/core/storage';
+import { useConnectionProfileStore } from '@/stores/connection-profile-store';
 import { TokenPair } from '@/sdk/auth/TokenStore';
 import { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { APIGeneration } from '@/sdk/client/apiGeneration';
@@ -88,6 +89,7 @@ type ClientManagerState = {
 	errorMessage: string | undefined;
 
 	loginCapabilities: LoginCapabilities | undefined;
+	isProxyBlocked: boolean;
 	isOIDCSigningIn: boolean;
 
 	isPasskeySigningIn: boolean;
@@ -273,6 +275,16 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 	let oidcAbort: AbortController | undefined;
 	let demoExpiryTimer: ReturnType<typeof setTimeout> | undefined;
 	let avatarFetchKey: string | undefined;
+	let configuredHeadersKey = '';
+
+	const customHeaders = (url: string): Record<string, string> => {
+		if (isSameOrigin(url, demoBaseURL)) return {};
+		try {
+			return useConnectionProfileStore.getState().headersFor(url);
+		} catch {
+			return {};
+		}
+	};
 
 	const bumpAccess = () => set((s) => ({ accessGeneration: s.accessGeneration + 1 }));
 
@@ -306,7 +318,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			fallbackAPIGeneration: rememberedAPIGeneration(url),
 			retryPolicy: bootstrap ? RetryPolicy.make(1, 300, 300) : RetryPolicy.make(3, 300, 3_000),
 			timeoutMs: bootstrap ? bootstrapTimeoutMs : undefined,
-			additionalHeaders: demoHeaders
+			additionalHeaders: { ...customHeaders(url), ...demoHeaders }
 		});
 		return signal ? client.withSignal(signal) : client;
 	};
@@ -322,6 +334,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		clearPendingAuthentication();
 		set((s) => ({ client: makeClient(url, false), clientGeneration: s.clientGeneration + 1 }));
 		configuredClientURL = url;
+		configuredHeadersKey = JSON.stringify(customHeaders(url));
 	};
 
 	const retireAuthentication = (allowCredentialClear = false) => {
@@ -352,6 +365,17 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		set({ pendingMFAChallenge: preservingMFAChallenge });
 		return get().authenticationGeneration;
 	};
+
+	useConnectionProfileStore.subscribe((state, previous) => {
+		if (state.headersRevision === previous.headersRevision && state.profiles === previous.profiles)
+			return;
+		const current = get();
+		const url = current.parsedServerURL;
+		if (!url || !current.client || current.isDemoActive) return;
+		if (JSON.stringify(customHeaders(url)) === configuredHeadersKey) return;
+		configureClient(url, true);
+		if (current.authState === 'login') void get().checkExistingAuth();
+	});
 
 	const clearSessionState = () => {
 		avatarFetchKey = undefined;
@@ -459,9 +483,12 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			const settings = await client.settings.getPublicSettings({
 				envID: EnvironmentID.localDocker
 			});
-			return LoginCapabilities.fromPublicSettings(settings);
-		} catch {
-			return undefined;
+			return { capabilities: LoginCapabilities.fromPublicSettings(settings), blocked: false };
+		} catch (error) {
+			return {
+				capabilities: undefined,
+				blocked: error instanceof ArcaneError && error.kind === 'proxyAuthenticationRequired'
+			};
 		}
 	};
 
@@ -474,7 +501,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		const generation = get().authenticationGeneration;
 		const next = await fetchLoginCapabilitiesIfAvailable(client);
 		if (!isCurrentAuthentication(generation)) return;
-		set({ loginCapabilities: next });
+		set({ loginCapabilities: next.capabilities, isProxyBlocked: next.blocked });
 	};
 
 	const completeAuthenticatedBootstrap = async (
@@ -620,6 +647,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		if (origin && CredentialBinding.origin === undefined) CredentialBinding.bind(origin);
 		initialClient = makeClient(initialParsed, false);
 		configuredClientURL = initialParsed;
+		configuredHeadersKey = JSON.stringify(customHeaders(initialParsed));
 	}
 	const savedEnvID = storage.string(Keys.activeEnvironmentID);
 	if (savedEnvID === undefined) {
@@ -637,6 +665,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		isLoading: false,
 		errorMessage: undefined,
 		loginCapabilities: undefined,
+		isProxyBlocked: false,
 		isOIDCSigningIn: false,
 		isPasskeySigningIn: false,
 		pendingMFAChallenge: undefined,
@@ -712,7 +741,7 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			lastBootstrapDNSAddresses = [];
 			setCacheSessionIdentity();
 			configureClient(normalized, true);
-			set({ authState: 'login', loginCapabilities: undefined });
+			set({ authState: 'login', loginCapabilities: undefined, isProxyBlocked: false });
 			mirrorToAppGroup();
 			ResponseCache.invalidateAll();
 			void refreshLoginCapabilities();
@@ -1184,7 +1213,10 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 			if (!client || !isAllowedImageURL(urlString, parsedServerURL)) return undefined;
 			const sameOrigin = parsedServerURL !== undefined && isSameOrigin(urlString, parsedServerURL);
 			const headers: Record<string, string> = sameOrigin
-				? await client.authManager.authenticationHeaders().catch(() => ({}))
+				? {
+						...client.proxyHeaders(urlString),
+						...(await client.authManager.authenticationHeaders().catch(() => ({})))
+					}
 				: {};
 			const controller = new AbortController();
 			const timer = setTimeout(() => controller.abort(), 30_000);

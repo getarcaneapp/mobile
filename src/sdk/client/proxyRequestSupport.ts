@@ -89,9 +89,8 @@ export class ProxyRequestSupport {
 
 	async prepare(request: PreparedRequest): Promise<ProxyRequestDelegate> {
 		if (!this.contains(request.url)) throw ArcaneError.proxyAuthenticationRequired();
-		for (const [name, value] of Object.entries(this.additionalHeaders)) {
-			if (ProxyRequestSupport.isAllowed(name, value)) setHeader(request.headers, name, value);
-		}
+		for (const [name, value] of Object.entries(this.headers(request.url)))
+			setHeader(request.headers, name, value);
 		if (this.session) request.handleCookies = false;
 		const context = await this.session?.requestContext(request.url);
 		if (context && context.isValid === false) throw new CancellationError();
@@ -101,6 +100,15 @@ export class ProxyRequestSupport {
 			}
 		}
 		return new ProxyRequestDelegate(this, context, request.url);
+	}
+
+	headers(url: string): Record<string, string> {
+		const headers: Record<string, string> = {};
+		if (!this.contains(url)) return headers;
+		for (const [name, value] of Object.entries(this.additionalHeaders)) {
+			if (ProxyRequestSupport.isAllowed(name, value)) headers[name] = value;
+		}
+		return headers;
 	}
 
 	contains(url: string): boolean {

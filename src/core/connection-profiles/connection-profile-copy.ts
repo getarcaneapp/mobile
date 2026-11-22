@@ -16,6 +16,10 @@ export const ConnectionProfileCopy = {
 	signInFooter: ios
 		? 'A saved sign-in travels with this profile through iCloud Keychain.'
 		: 'A saved sign-in stays with this profile and can be saved to Google Password Manager.',
+	headersFooter: ios
+		? 'Sent with every request to this server, for access proxies like Cloudflare Access or Pangolin. Headers sync through iCloud Keychain.'
+		: 'Sent with every request to this server, for access proxies like Cloudflare Access or Pangolin. Headers stay on this device.',
+	headersBadge: 'Custom headers',
 	deleteMessage(item: string, isCurrent: boolean) {
 		if (ios) {
 			return isCurrent

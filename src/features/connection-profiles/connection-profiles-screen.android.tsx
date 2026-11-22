@@ -25,6 +25,7 @@ import { LongPressMenu } from '@/features/settings/shared/long-press-menu';
 import {
 	useConnectionProfileEditor,
 	useConnectionProfiles,
+	type ConnectionProfileEditorModel,
 	type ConnectionProfilesModel
 } from './use-connection-profiles';
 
@@ -316,6 +317,9 @@ function ProfileRow({
 						{model.hasCredential(profile) ? (
 							<Icon name="key.fill" size={16} color={systemColors.blue} />
 						) : null}
+						{model.hasHeaders(profile) ? (
+							<Icon name="lock.shield" size={16} color={systemColors.indigo} />
+						) : null}
 						{current ? (
 							<Text style={[m3Type.labelMedium, { color: systemColors.green }]}>Current</Text>
 						) : (
@@ -363,6 +367,106 @@ function OutlinedField({
 	);
 }
 
+function PresetChip({ title, onPress }: { title: string; onPress: () => void }) {
+	return (
+		<Pressable
+			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={`Add ${title} headers`}
+			android_ripple={{ color: withOpacity(m3.onSurfaceVariant as string, 0.12) }}
+			style={{
+				flexDirection: 'row',
+				alignItems: 'center',
+				gap: 8,
+				minHeight: 32,
+				paddingLeft: 8,
+				paddingRight: 16,
+				borderRadius: 8,
+				borderWidth: 1,
+				borderColor: m3.outline,
+				overflow: 'hidden'
+			}}
+		>
+			<Icon name="plus" size={18} color={m3.primary} />
+			<Text style={[m3Type.labelLarge, { color: m3.onSurfaceVariant }]}>{title}</Text>
+		</Pressable>
+	);
+}
+
+function HeadersSection({ model }: { model: ConnectionProfileEditorModel }) {
+	if (model.credentialLoadState !== 'ready') return null;
+	return (
+		<>
+			<MaterialSectionHeader title="Custom Headers (Optional)" />
+			<MaterialListGroup>
+				{model.headers.map((header) => (
+					<View
+						key={header.id}
+						style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8 }}
+					>
+						<View style={{ flex: 1 }}>
+							<OutlinedField
+								label="Header Name"
+								value={header.name}
+								onChangeText={(text) => model.setHeaderName(header.id, text)}
+								autoCapitalize="none"
+								autoCorrect={false}
+							/>
+							<OutlinedField
+								label="Value"
+								value={header.value}
+								onChangeText={(text) => model.setHeaderValue(header.id, text)}
+								secureTextEntry
+								autoCapitalize="none"
+								autoCorrect={false}
+							/>
+						</View>
+						<View style={{ marginLeft: -8, marginRight: 4 }}>
+							<IconButton
+								name="minus.circle.fill"
+								label={`Remove ${header.name.trim() || 'header'}`}
+								onPress={() => model.removeHeader(header.id)}
+							/>
+						</View>
+					</View>
+				))}
+				{model.canAddHeader ? (
+					<>
+						<Row
+							icon="plus.circle.fill"
+							iconColor={m3.primary as string}
+							title="Add Header"
+							onPress={model.addHeader}
+						/>
+						{model.headerPresets.length > 0 ? (
+							<View
+								style={{
+									flexDirection: 'row',
+									flexWrap: 'wrap',
+									gap: 8,
+									paddingHorizontal: 16,
+									paddingBottom: 12
+								}}
+							>
+								{model.headerPresets.map((preset) => (
+									<PresetChip
+										key={preset.id}
+										title={preset.title}
+										onPress={() => model.addHeaderPreset(preset)}
+									/>
+								))}
+							</View>
+						) : null}
+					</>
+				) : null}
+			</MaterialListGroup>
+			<Footer>
+				<Text style={footerText()}>{model.headersNotice ?? model.copy.headersFooter}</Text>
+			</Footer>
+		</>
+	);
+}
+
 export function ConnectionProfileEditorScreen() {
 	const model = useConnectionProfileEditor();
 	const nameRef = useRef<TextInputInstance>(null);
@@ -373,6 +477,7 @@ export function ConnectionProfileEditorScreen() {
 	const initialFocusField = useEffectEvent(() => model.initialFocus);
 	useEffect(() => {
 		const field = initialFocusField();
+		if (field === undefined) return;
 		const timer = setTimeout(() => (field === 'name' ? nameRef : serverRef).current?.focus(), 350);
 		return () => clearTimeout(timer);
 	}, []);
@@ -422,6 +527,7 @@ export function ConnectionProfileEditorScreen() {
 					<Text style={footerText()}>{model.copy.serverURLFooter}</Text>
 				</Footer>
 
+				{model.headersFirst ? <HeadersSection model={model} /> : null}
 				<MaterialSectionHeader title="Sign-In (Optional)" />
 				<MaterialListGroup>
 					{model.credentialLoadState === 'loading' ? (
@@ -476,6 +582,7 @@ export function ConnectionProfileEditorScreen() {
 					<Text style={footerText()}>{model.signInNotice ?? model.copy.signInFooter}</Text>
 				</Footer>
 
+				{model.headersFirst ? null : <HeadersSection model={model} />}
 				{model.validationMessage ? (
 					<View
 						style={{

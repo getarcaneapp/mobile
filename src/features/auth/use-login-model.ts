@@ -8,6 +8,7 @@ import {
 	type ConnectionProfile
 } from '@/core/connection-profiles/connection-profile-sync';
 import { ConnectionProfileCopy } from '@/core/connection-profiles/connection-profile-copy';
+import { proxyAuthenticationMessage } from '@/core/errors';
 import { hostAndPort } from '@/core/networking/server-identity';
 import { useClientManager } from '@/stores/client-manager';
 import { useConnectionProfileSelection } from '@/stores/connection-profile-selection';
@@ -35,6 +36,10 @@ export function useLoginModel() {
 	const manager = useClientManager();
 	const credentialProfileIDs = useConnectionProfileStore((s) => s.credentialProfileIDs);
 	const isLaunchSplashPresented = useLaunchSplash((s) => s.isPresented);
+	const currentServerHasHeaders = useConnectionProfileStore((s) => {
+		const profile = s.profile(manager.serverURL);
+		return profile !== undefined && s.headerProfileIDs.has(profile.id);
+	});
 
 	const mode: 'setup' | 'login' = manager.authState === 'setup' ? 'setup' : 'login';
 
@@ -62,6 +67,12 @@ export function useLoginModel() {
 	const isLocalAuthAvailable = manager.isLocalAuthAvailable();
 	const isOIDCAvailable = manager.isOIDCAvailable();
 	const shouldShowPasswordFields = isLocalAuthAvailable && (!isOIDCAvailable || showsPasswordForm);
+
+	const showsProxyNotice =
+		manager.isProxyBlocked &&
+		!isSetupMode &&
+		!manager.isStartingDemo &&
+		!manager.pendingMFAChallenge;
 
 	const focus = (field: LoginField | null) => {
 		if (field === null) setFocusedField(null);
@@ -336,7 +347,32 @@ export function useLoginModel() {
 		isOIDCSigningIn: manager.isOIDCSigningIn,
 		isPasskeySigningIn: manager.isPasskeySigningIn,
 		isUsingSavedSignIn,
-		errorMessage: manager.errorMessage,
+		errorMessage:
+			showsProxyNotice && manager.errorMessage === proxyAuthenticationMessage
+				? undefined
+				: manager.errorMessage,
+		proxyNotice: showsProxyNotice
+			? currentServerHasHeaders
+				? "An access proxy is still blocking this server. Check the profile's custom headers."
+				: 'An access proxy is blocking this server. Add its headers to connect.'
+			: undefined,
+		customHeadersActionTitle: currentServerHasHeaders
+			? 'Edit Custom Headers'
+			: 'Add Custom Headers',
+		openCustomHeaders: () => {
+			focus(null);
+			try {
+				const profile = useConnectionProfileStore
+					.getState()
+					.saveConnectedServer(useClientManager.getState().serverURL);
+				router.push({
+					pathname: '/connection-profile-editor',
+					params: { id: profile.id, suggested: profile.serverURL, headers: '1' }
+				} as never);
+			} catch (error) {
+				showToast(Toasts.error(errorText(error)));
+			}
+		},
 		demoExpiredMessage: manager.demoExpiredMessage,
 		pendingMFAChallenge: manager.pendingMFAChallenge,
 		isLocalAuthAvailable,

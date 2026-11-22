@@ -4,7 +4,14 @@ import { AppState, Platform } from 'react-native';
 import { create } from 'zustand';
 
 import {
+	ConnectionHeaderValidationError,
+	ConnectionHeaders,
+	ConnectionHeadersRecord,
+	type ConnectionHeader
+} from '@/core/connection-profiles/connection-headers';
+import {
 	credentialCloud,
+	headersCloud,
 	passwordManager,
 	profileCloud,
 	type ProfileCloudKind
@@ -32,6 +39,12 @@ const credentialCloudIndexKey = 'arcane.connectionCredentialCloudIDs.v1';
 const credentialService = 'com.getarcaneapp.ios.mobile.connection-credential.v1';
 const credentialOptions: SecureStore.SecureStoreOptions = {
 	keychainAccessible: SecureStore.WHEN_UNLOCKED
+};
+const headersIndexKey = 'arcane.connectionHeaderIDs.v1';
+const headersCloudIndexKey = 'arcane.connectionHeaderCloudIDs.v1';
+const headersService = 'com.getarcaneapp.ios.mobile.connection-headers.v1';
+const headersOptions: SecureStore.SecureStoreOptions = {
+	keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK
 };
 
 export type ConnectionProfileSyncState = ProfileCloudKind | 'unavailable';
@@ -126,6 +139,69 @@ const credentialPersistence = {
 	}
 };
 
+const headersPersistence = {
+	key(profileID: string) {
+		return `${headersService}.${profileID}`;
+	},
+	profileIDs: () => idSet(headersIndexKey),
+	read(profileID: string): string | undefined {
+		return SecureStore.getItem(this.key(profileID), headersOptions) ?? undefined;
+	},
+	decode(raw: string, profileID: string): ConnectionHeadersRecord | undefined {
+		try {
+			const record = ConnectionHeadersRecord.decode(JSON.parse(raw));
+			return record.profileID === profileID ? record : undefined;
+		} catch {
+			return undefined;
+		}
+	},
+	load(profileID: string): ConnectionHeadersRecord | undefined {
+		const raw = this.read(profileID);
+		return raw === undefined ? undefined : this.decode(raw, profileID);
+	},
+	save(record: ConnectionHeadersRecord) {
+		SecureStore.setItem(this.key(record.profileID), JSON.stringify(record), headersOptions);
+		updateIDSet(headersIndexKey, record.profileID, true);
+	},
+	delete(profileID: string) {
+		updateIDSet(headersIndexKey, profileID, false);
+		void SecureStore.deleteItemAsync(this.key(profileID), headersOptions).catch(
+			(error: unknown) => {
+				log('headers delete failed', error);
+				updateIDSet(headersIndexKey, profileID, true);
+				useConnectionProfileStore.getState().loadLocal();
+			}
+		);
+	}
+};
+
+type SyncedSecret<Secret extends { profileID: string }> = {
+	cloud: {
+		isSupported: boolean;
+		profileIDs: () => Promise<Set<string>>;
+		load: (profileID: string) => Promise<Secret | undefined>;
+		save: (record: Secret) => Promise<void>;
+		delete: (profileID: string) => Promise<void>;
+	};
+	cloudIndexKey: string;
+	pending: Map<string, number>;
+	loadLocal: (profileID: string) => Secret | undefined;
+	saveLocal: (record: Secret) => void;
+	deleteLocal: (profileID: string) => void;
+	isValid: (record: Secret, profile: ConnectionProfile) => boolean;
+	same: (local: Secret | undefined, remote: Secret) => boolean;
+};
+
+const beginChange = (pending: Map<string, number>, profileID: string) => {
+	pending.set(profileID, (pending.get(profileID) ?? 0) + 1);
+};
+
+const endChange = (pending: Map<string, number>, profileID: string) => {
+	const remaining = (pending.get(profileID) ?? 1) - 1;
+	if (remaining > 0) pending.set(profileID, remaining);
+	else pending.delete(profileID);
+};
+
 const sameCredential = (a: ConnectionCredentialRecord | undefined, b: ConnectionCredentialRecord) =>
 	a !== undefined &&
 	a.serverURL === b.serverURL &&
@@ -135,6 +211,8 @@ const sameCredential = (a: ConnectionCredentialRecord | undefined, b: Connection
 type ConnectionProfileStoreState = {
 	profiles: ConnectionProfile[];
 	credentialProfileIDs: ReadonlySet<string>;
+	headerProfileIDs: ReadonlySet<string>;
+	headersRevision: number;
 	syncState: ConnectionProfileSyncState;
 
 	profile: (matching: string) => ConnectionProfile | undefined;
@@ -149,12 +227,17 @@ type ConnectionProfileStoreState = {
 		profile: ConnectionProfile | undefined,
 		name: string,
 		serverURL: string,
-		credential: SavedConnectionCredential | undefined
+		credential: SavedConnectionCredential | undefined,
+		headers?: readonly ConnectionHeader[]
 	) => ConnectionProfile;
 	update: (profile: ConnectionProfile, name: string, serverURL: string) => ConnectionProfile;
 	delete: (profile: ConnectionProfile) => void;
 	saveCredential: (profile: ConnectionProfile, username: string, password: string) => void;
 	removeCredential: (profile: ConnectionProfile) => void;
+	savedHeaders: (profile: ConnectionProfile) => readonly ConnectionHeader[];
+	headersFor: (serverURL: string) => Record<string, string>;
+	saveHeaders: (profile: ConnectionProfile, headers: readonly ConnectionHeader[]) => void;
+	removeHeaders: (profile: ConnectionProfile) => void;
 	pickPasswordManagerCredential: (
 		profile: ConnectionProfile
 	) => Promise<SavedConnectionCredential | undefined>;
@@ -169,15 +252,52 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 	let payload: ConnectionProfilePayload = ConnectionProfilePayload.empty;
 	let cloudQueue: Promise<void> = Promise.resolve();
 	const pendingCredentialChanges = new Map<string, number>();
+	const pendingHeaderChanges = new Map<string, number>();
+	let headersByProfileID = new Map<string, readonly ConnectionHeader[]>();
 
-	const beginCredentialChange = (profileID: string) => {
-		pendingCredentialChanges.set(profileID, (pendingCredentialChanges.get(profileID) ?? 0) + 1);
+	const beginCredentialChange = (profileID: string) =>
+		beginChange(pendingCredentialChanges, profileID);
+	const endCredentialChange = (profileID: string) => endChange(pendingCredentialChanges, profileID);
+
+	const publishHeaders = (next: Map<string, readonly ConnectionHeader[]>) => {
+		const changed =
+			next.size !== headersByProfileID.size ||
+			[...next].some(([id, headers]) => {
+				const current = headersByProfileID.get(id);
+				return !current || !ConnectionHeaders.equals(current, headers);
+			});
+		headersByProfileID = next;
+		if (changed)
+			set((s) => ({
+				headerProfileIDs: new Set(next.keys()),
+				headersRevision: s.headersRevision + 1
+			}));
 	};
 
-	const endCredentialChange = (profileID: string) => {
-		const remaining = (pendingCredentialChanges.get(profileID) ?? 1) - 1;
-		if (remaining > 0) pendingCredentialChanges.set(profileID, remaining);
-		else pendingCredentialChanges.delete(profileID);
+	const refreshHeaders = () => {
+		const stored = headersPersistence.profileIDs();
+		const next = new Map<string, readonly ConnectionHeader[]>();
+		for (const profile of get().profiles) {
+			if (!stored.has(profile.id)) continue;
+			let raw: string | undefined;
+			try {
+				raw = headersPersistence.read(profile.id);
+			} catch {
+				const cached = headersByProfileID.get(profile.id);
+				if (cached) next.set(profile.id, cached);
+				continue;
+			}
+			const record = raw === undefined ? undefined : headersPersistence.decode(raw, profile.id);
+			const headers = record ? ConnectionHeadersRecord.headers(record, profile) : undefined;
+			if (!headers) {
+				headersPersistence.delete(profile.id);
+				continue;
+			}
+			next.set(profile.id, headers);
+		}
+		for (const id of stored)
+			if (!get().profiles.some((p) => p.id === id)) headersPersistence.delete(id);
+		publishHeaders(next);
 	};
 
 	const enqueue = (label: string, operation: () => Promise<void>): Promise<void> => {
@@ -235,46 +355,77 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 			if (!ConnectionProfilePayload.equals(payload, stored)) profilePersistence.save(payload);
 			publishProfiles();
 			refreshCredentialProfileIDs();
+			refreshHeaders();
 		} catch {
 			set({ syncState: 'unavailable' });
 		}
 	};
 
-	const syncCredentials = async () => {
-		if (!credentialCloud.isSupported) return;
-		const cloudIDs = await credentialCloud.profileIDs();
-		const confirmed = idSet(credentialCloudIndexKey);
+	const syncSecrets = async <Secret extends { profileID: string }>(
+		secret: SyncedSecret<Secret>
+	) => {
+		if (!secret.cloud.isSupported) return;
+		const cloudIDs = await secret.cloud.profileIDs();
+		const confirmed = idSet(secret.cloudIndexKey);
 		for (const profile of get().profiles) {
-			if (pendingCredentialChanges.has(profile.id)) continue;
-			let local: ConnectionCredentialRecord | undefined;
+			if (secret.pending.has(profile.id)) continue;
+			let local: Secret | undefined;
 			try {
-				local = credentialPersistence.load(profile.id);
+				local = secret.loadLocal(profile.id);
 			} catch {
 				local = undefined;
 			}
 			if (cloudIDs.has(profile.id)) {
-				const remote = await credentialCloud.load(profile.id).catch(() => undefined);
-				if (!remote || !ConnectionCredentialRecord.credential(remote, profile)) {
-					await credentialCloud.delete(profile.id);
-					if (local) credentialPersistence.delete(profile.id);
+				const remote = await secret.cloud.load(profile.id).catch(() => undefined);
+				if (!remote || !secret.isValid(remote, profile)) {
+					await secret.cloud.delete(profile.id);
+					if (local) secret.deleteLocal(profile.id);
 					confirmed.delete(profile.id);
 					continue;
 				}
-				if (!sameCredential(local, remote)) credentialPersistence.save(remote);
+				if (!secret.same(local, remote)) secret.saveLocal(remote);
 				confirmed.add(profile.id);
 			} else if (local) {
 				if (confirmed.has(profile.id)) {
-					credentialPersistence.delete(profile.id);
+					secret.deleteLocal(profile.id);
 					confirmed.delete(profile.id);
 				} else {
-					await credentialCloud.save(local);
+					await secret.cloud.save(local);
 					confirmed.add(profile.id);
 				}
 			}
 		}
 		for (const id of confirmed) if (!get().profiles.some((p) => p.id === id)) confirmed.delete(id);
-		writeIDSet(credentialCloudIndexKey, confirmed);
+		writeIDSet(secret.cloudIndexKey, confirmed);
+	};
+
+	const syncCredentials = async () => {
+		await syncSecrets<ConnectionCredentialRecord>({
+			cloud: credentialCloud,
+			cloudIndexKey: credentialCloudIndexKey,
+			pending: pendingCredentialChanges,
+			loadLocal: (profileID) => credentialPersistence.load(profileID),
+			saveLocal: (record) => credentialPersistence.save(record),
+			deleteLocal: (profileID) => credentialPersistence.delete(profileID),
+			isValid: (record, profile) =>
+				ConnectionCredentialRecord.credential(record, profile) !== undefined,
+			same: sameCredential
+		});
 		refreshCredentialProfileIDs();
+	};
+
+	const syncHeaders = async () => {
+		await syncSecrets<ConnectionHeadersRecord>({
+			cloud: headersCloud,
+			cloudIndexKey: headersCloudIndexKey,
+			pending: pendingHeaderChanges,
+			loadLocal: (profileID) => headersPersistence.load(profileID),
+			saveLocal: (record) => headersPersistence.save(record),
+			deleteLocal: (profileID) => headersPersistence.delete(profileID),
+			isValid: (record, profile) => ConnectionHeadersRecord.headers(record, profile) !== undefined,
+			same: (local, remote) => ConnectionHeadersRecord.equals(local, remote)
+		});
+		refreshHeaders();
 	};
 
 	const syncWithCloud = async () => {
@@ -295,7 +446,7 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 		payload = local;
 		publishProfiles();
 		await syncCredentials();
-		refreshCredentialProfileIDs();
+		await syncHeaders();
 		log(`synced ${get().profiles.length} profile(s) (${kind})`);
 		set({ syncState: kind });
 	};
@@ -374,6 +525,8 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 	const store: ConnectionProfileStoreState = {
 		profiles: [],
 		credentialProfileIDs: new Set(),
+		headerProfileIDs: new Set(),
+		headersRevision: 0,
 		syncState: Platform.OS === 'ios' ? 'iCloudKeychain' : 'deviceOnly',
 
 		profile: (matching) => {
@@ -426,21 +579,27 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 
 		save: (name, serverURL) => write(undefined, name, serverURL),
 
-		saveConnectionProfile: (profile, name, serverURL, credential) => {
+		saveConnectionProfile: (profile, name, serverURL, credential, headers) => {
+			const validHeaders = headers ? ConnectionHeaders.make(headers) : undefined;
 			const saved = profile ? get().update(profile, name, serverURL) : get().save(name, serverURL);
 			if (credential) get().saveCredential(saved, credential.username, credential.password);
 			else if (get().hasSavedCredential(saved)) get().removeCredential(saved);
+			if (validHeaders) get().saveHeaders(saved, validHeaders);
 			return saved;
 		},
 
 		update: (profile, name, serverURL) => {
 			const normalized = ConnectionProfileSync.normalizedServerURL(serverURL);
-			if (normalized !== profile.serverURL) get().removeCredential(profile);
+			if (normalized !== profile.serverURL) {
+				get().removeCredential(profile);
+				get().removeHeaders(profile);
+			}
 			return write(profile.id, name, serverURL);
 		},
 
 		delete: (profile) => {
 			get().removeCredential(profile);
+			get().removeHeaders(profile);
 			loadLocal();
 			const index = payload.records.findIndex((r) => r.id === profile.id);
 			if (index < 0) return;
@@ -502,6 +661,69 @@ export const useConnectionProfileStore = create<ConnectionProfileStoreState>((se
 					}
 				});
 			}
+		},
+
+		savedHeaders: (profile) => headersByProfileID.get(profile.id) ?? [],
+
+		headersFor: (serverURL) => {
+			const profile = get().profile(serverURL);
+			return ConnectionHeaders.record(profile ? (headersByProfileID.get(profile.id) ?? []) : []);
+		},
+
+		saveHeaders: (profile, headers) => {
+			const record = ConnectionHeadersRecord.make(profile, headers);
+			if (record.headers.length === 0) {
+				get().removeHeaders(profile);
+				return;
+			}
+			const existing = headersByProfileID.get(profile.id);
+			if (existing && ConnectionHeaders.equals(existing, record.headers)) return;
+			try {
+				headersPersistence.save(record);
+			} catch {
+				set({ syncState: 'unavailable' });
+				throw new ConnectionHeaderValidationError('persistenceFailed');
+			}
+			publishHeaders(new Map(headersByProfileID).set(profile.id, record.headers));
+			if (!headersCloud.isSupported) return;
+			beginChange(pendingHeaderChanges, profile.id);
+			void enqueue('headers upload', async () => {
+				try {
+					await headersCloud.save(record);
+					updateIDSet(headersCloudIndexKey, profile.id, true);
+					set({ syncState: 'iCloudKeychain' });
+				} finally {
+					endChange(pendingHeaderChanges, profile.id);
+				}
+			});
+		},
+
+		removeHeaders: (profile) => {
+			if (
+				!headersByProfileID.has(profile.id) &&
+				!headersPersistence.profileIDs().has(profile.id) &&
+				!idSet(headersCloudIndexKey).has(profile.id)
+			)
+				return;
+			try {
+				headersPersistence.delete(profile.id);
+			} catch {
+				set({ syncState: 'unavailable' });
+				throw new ConnectionHeaderValidationError('persistenceFailed');
+			}
+			const next = new Map(headersByProfileID);
+			next.delete(profile.id);
+			publishHeaders(next);
+			if (!headersCloud.isSupported) return;
+			beginChange(pendingHeaderChanges, profile.id);
+			void enqueue('headers delete', async () => {
+				try {
+					await headersCloud.delete(profile.id);
+					updateIDSet(headersCloudIndexKey, profile.id, false);
+				} finally {
+					endChange(pendingHeaderChanges, profile.id);
+				}
+			});
 		},
 
 		pickPasswordManagerCredential: async (profile) => {

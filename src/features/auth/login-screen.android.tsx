@@ -121,6 +121,18 @@ export function LoginScreen() {
 										<ErrorBanner message={model.errorMessage} />
 									</Animated.View>
 								) : null}
+								{model.proxyNotice ? (
+									<Animated.View entering={enter} exiting={exit} style={{ gap: 12 }}>
+										<ErrorBanner message={model.proxyNotice} severity="warning" />
+										<TonalButton
+											title={model.customHeadersActionTitle}
+											icon="lock.shield"
+											loading={false}
+											disabled={model.isLoading}
+											onPress={model.openCustomHeaders}
+										/>
+									</Animated.View>
+								) : null}
 								{model.demoExpiredMessage ? (
 									<InfoBanner
 										message={model.demoExpiredMessage}

@@ -164,6 +164,7 @@ export function LoginScreen() {
 								onTapGesture(model.dismissKeyboard),
 								...entrance(model.isSetupMode),
 								...entrance(hashKey(model.errorMessage ?? '')),
+								...entrance(model.proxyNotice !== undefined),
 								...entrance(model.isStartingDemo),
 								...state(model.isLoading),
 								...state(model.isUsingSavedSignIn),
@@ -178,6 +179,18 @@ export function LoginScreen() {
 								<VStack spacing={12} modifiers={[padding({ top: 28 })]}>
 									<FormCard model={model} refs={refs} texts={texts} />
 									{model.errorMessage ? <ErrorBanner message={model.errorMessage} /> : null}
+									{model.proxyNotice ? (
+										<>
+											<ErrorBanner message={model.proxyNotice} severity="warning" />
+											<SecondaryButton
+												title={model.customHeadersActionTitle}
+												icon="lock.shield"
+												loading={false}
+												disabled={model.isLoading}
+												onPress={model.openCustomHeaders}
+											/>
+										</>
+									) : null}
 									{model.demoExpiredMessage ? (
 										<InfoBanner
 											message={model.demoExpiredMessage}

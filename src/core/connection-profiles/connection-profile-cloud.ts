@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 
 import { ArcaneCloudSync, type CloudItemOptions } from '../../../modules/arcane-cloud-sync';
+import { ConnectionHeadersRecord } from '@/core/connection-profiles/connection-headers';
 import {
 	ConnectionCredentialRecord,
 	ConnectionProfilePayload,
@@ -11,6 +12,8 @@ import {
 const profileService = 'com.getarcaneapp.ios.mobile.connection-profile.v1';
 const credentialService = 'com.getarcaneapp.ios.mobile.connection-credential.v1';
 
+const headersService = 'com.getarcaneapp.ios.mobile.connection-headers.v1';
+
 const profileItem: CloudItemOptions = {
 	accessGroup: '4L6GXKX423.com.getarcaneapp.ios.mobile.shared',
 	accessible: 'afterFirstUnlock'
@@ -18,6 +21,10 @@ const profileItem: CloudItemOptions = {
 const credentialItem: CloudItemOptions = {
 	accessGroup: '4L6GXKX423.com.getarcaneapp.ios.mobile',
 	accessible: 'whenUnlocked'
+};
+const headersItem: CloudItemOptions = {
+	accessGroup: '4L6GXKX423.com.getarcaneapp.ios.mobile',
+	accessible: 'afterFirstUnlock'
 };
 const androidPayloadAccount = 'payload';
 
@@ -104,6 +111,35 @@ export const credentialCloud = {
 
 	delete(profileID: string): Promise<void> {
 		return ArcaneCloudSync.deleteItem(credentialService, profileID, credentialItem);
+	}
+};
+
+export const headersCloud = {
+	isSupported: Platform.OS === 'ios',
+
+	async profileIDs(): Promise<Set<string>> {
+		return new Set(await ArcaneCloudSync.listAccounts(headersService, headersItem));
+	},
+
+	async load(profileID: string): Promise<ConnectionHeadersRecord | undefined> {
+		const raw = await ArcaneCloudSync.getItem(headersService, profileID, headersItem);
+		if (raw === undefined) return undefined;
+		const record = ConnectionHeadersRecord.decode(parse(raw));
+		if (record.profileID !== profileID) throw new Error("Headers item doesn't match its account");
+		return record;
+	},
+
+	save(record: ConnectionHeadersRecord): Promise<void> {
+		return ArcaneCloudSync.setItem(
+			headersService,
+			record.profileID,
+			JSON.stringify(record),
+			headersItem
+		);
+	},
+
+	delete(profileID: string): Promise<void> {
+		return ArcaneCloudSync.deleteItem(headersService, profileID, headersItem);
 	}
 };
 

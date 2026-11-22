@@ -32,11 +32,13 @@ function humanizeFieldName(name: string): string {
 	return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
+export const proxyAuthenticationMessage = 'Sign in to the proxy protecting this server';
+
 export function friendlyErrorMessage(error: unknown): string {
 	if (error instanceof ArcaneError) {
 		switch (error.kind) {
 			case 'proxyAuthenticationRequired':
-				return 'Sign in to the proxy protecting this server';
+				return proxyAuthenticationMessage;
 			case 'authenticationRejected':
 				return 'The server rejected authentication';
 			case 'unauthorized':

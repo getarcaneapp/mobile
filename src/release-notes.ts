@@ -14,6 +14,9 @@ export const releaseNotes: ReleaseNote[] = [
 		new: [
 			{
 				text: 'Firebase settings for push notifications in App Settings on Android.'
+			},
+			{
+				text: 'Custom HTTP headers on connection profiles for proxies like Cloudflare Access.'
 			}
 		]
 	},
