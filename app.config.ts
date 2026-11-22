@@ -7,7 +7,7 @@ import withAppIcons from './plugins/with-app-icons.ts';
 import withMaterial3Theme from './plugins/with-material3-theme.ts';
 import withReleaseScheme from './plugins/with-release-scheme.ts';
 
-const MARKETING_VERSION = '0.12.1';
+const MARKETING_VERSION = '0.13.0';
 
 const buildEpochMs = Date.UTC(2020, 0, 1);
 const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
@@ -18,6 +18,7 @@ const googleServicesFile =
 if (env?.EAS_BUILD === 'true' && env.EAS_BUILD_PLATFORM === 'android' && !googleServicesFile) {
 	throw new Error('GOOGLE_SERVICES_JSON is missing; Android push notifications need it.');
 }
+const androidPackage = env?.ARCANE_ANDROID_PACKAGE || 'app.getarcane.android';
 const BUILD_NUMBER = Number(arcaneBuildNumber) || Math.floor((Date.now() - buildEpochMs) / 60_000);
 
 const config: ExpoConfig = {
@@ -49,7 +50,7 @@ const config: ExpoConfig = {
 		}
 	},
 	android: {
-		package: 'app.getarcane.android',
+		package: androidPackage,
 		versionCode: BUILD_NUMBER,
 		adaptiveIcon: {
 			backgroundImage: './assets/images/android-icon-background.png',
