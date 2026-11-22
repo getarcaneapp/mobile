@@ -48,13 +48,9 @@ async function readClipboardSettings(): Promise<string | FirebaseSettings> {
 }
 
 export function useFirebaseSettings() {
-	const [settings, setSettings] = useState<FirebaseSettings>(
-		() => ArcaneFirebase.getOptions() ?? emptyFirebaseSettings
-	);
+	const [saved, setSaved] = useState(() => ArcaneFirebase.getOptions());
+	const [settings, setSettings] = useState<FirebaseSettings>(saved ?? emptyFirebaseSettings);
 	const [busy, setBusy] = useState(false);
-	const [hasSavedSettings, setHasSavedSettings] = useState(
-		() => ArcaneFirebase.getOptions() !== undefined
-	);
 
 	const setField = (field: keyof FirebaseSettings, value: string) =>
 		setSettings((current) => ({ ...current, [field]: value }));
@@ -80,7 +76,7 @@ export function useFirebaseSettings() {
 				showToast(Toasts.error(problem));
 				return;
 			}
-			setHasSavedSettings(ArcaneFirebase.getOptions() !== undefined);
+			setSaved(ArcaneFirebase.getOptions());
 			showToast(Toasts.success('Firebase settings saved'));
 		})();
 	};
@@ -91,7 +87,7 @@ export function useFirebaseSettings() {
 			await clearSettings();
 			setBusy(false);
 			setSettings(emptyFirebaseSettings);
-			setHasSavedSettings(ArcaneFirebase.getOptions() !== undefined);
+			setSaved(ArcaneFirebase.getOptions());
 			showToast(Toasts.info('Firebase settings removed'));
 		})();
 	};
@@ -100,7 +96,7 @@ export function useFirebaseSettings() {
 		settings,
 		setField,
 		busy,
-		hasSavedSettings,
+		hasSavedSettings: saved !== undefined,
 		packageName: Application.applicationId ?? '',
 		importFromClipboard,
 		save,

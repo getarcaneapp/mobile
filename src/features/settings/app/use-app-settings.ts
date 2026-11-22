@@ -21,6 +21,7 @@ import { clearImageCache } from '@/ui/components/cached-async-image';
 import { useItemDeleteConfirmation } from '@/ui/components/delete-confirmation';
 import { showToast, Toasts } from '@/ui/toast';
 
+import { ArcaneFirebase } from '../../../../modules/arcane-firebase';
 import { useSettingsNavigation } from '../shared/settings-routes';
 import { ActivityToastScope } from './activity-toast-scope';
 import { AppSettingsRoutes } from './app-settings-routes';
@@ -121,7 +122,7 @@ export function useAppSettings() {
 	const showsPushToggle = supportsMobilePush && push.isSupported;
 	const pushAvailable = push.serverStatus?.enabled === true && !push.isAuthorizationDenied();
 	const pushEnabled = push.isEnabled(origin);
-	const showsFirebaseRow = push.isSupported && Platform.OS === 'android';
+	const showsFirebaseRow = push.isSupported && ArcaneFirebase.isLinked;
 	const setPushEnabled = (enabled: boolean) => void (enabled ? push.enable() : push.disable());
 
 	const notificationsFooter = (() => {

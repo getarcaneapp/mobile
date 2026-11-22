@@ -48,6 +48,7 @@ object ArcaneFirebase {
   private const val SENDER_ID = "senderId"
   private const val RESTART_REQUEST_CODE = 7301
   private const val RESTART_DELAY_MS = 500L
+  private const val EXIT_DELAY_MS = 100L
 
   fun read(context: Context): ArcaneFirebaseOptions? {
     val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
@@ -103,11 +104,11 @@ object ArcaneFirebase {
     )
     val alarms = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
     alarms.set(AlarmManager.RTC, System.currentTimeMillis() + RESTART_DELAY_MS, pending)
-    Handler(Looper.getMainLooper()).postDelayed({ Process.killProcess(Process.myPid()) }, 100)
+    Handler(Looper.getMainLooper()).postDelayed({ Process.killProcess(Process.myPid()) }, EXIT_DELAY_MS)
   }
 }
 
-suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
+private suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
   addOnSuccessListener { continuation.resume(it) }
   addOnFailureListener { continuation.resumeWithException(it) }
   addOnCanceledListener { continuation.cancel() }

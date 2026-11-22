@@ -1,9 +1,6 @@
-export type FirebaseSettings = {
-	projectId: string;
-	applicationId: string;
-	apiKey: string;
-	senderId: string;
-};
+import type { FirebaseOptions } from '../../modules/arcane-firebase';
+
+export type FirebaseSettings = FirebaseOptions;
 
 export const emptyFirebaseSettings: FirebaseSettings = {
 	projectId: '',

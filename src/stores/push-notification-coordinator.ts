@@ -41,6 +41,7 @@ export type PushCredentials = {
 
 const supportedPushPlatform = pushPlatformFor(Platform.OS);
 const pushPlatform = supportedPushPlatform ?? 'apns';
+const isFirebaseReady = () => pushPlatform !== 'fcm' || ArcaneFirebase.isInitialized();
 
 export const systemNotificationSettingsName =
 	pushPlatform === 'fcm' ? 'Android Settings' : 'iOS Settings';
@@ -330,7 +331,7 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 		serverStatus: undefined,
 		errorMessage: undefined,
 		credentials: undefined,
-		firebaseReady: pushPlatform !== 'fcm' || ArcaneFirebase.isInitialized(),
+		firebaseReady: isFirebaseReady(),
 
 		isSupported: supportedPushPlatform !== undefined,
 		isEnabled: (origin) => get().binding(origin) !== undefined,
@@ -348,11 +349,9 @@ export const usePushNotificationCoordinator = create<PushNotificationState>((set
 
 		firebaseDidChange: async () => {
 			latestDeviceToken = undefined;
-			set({
-				firebaseReady: pushPlatform !== 'fcm' || ArcaneFirebase.isInitialized(),
-				errorMessage: undefined
-			});
-			if (get().firebaseReady) await get().registerIfAuthorized();
+			const firebaseReady = isFirebaseReady();
+			set({ firebaseReady, errorMessage: undefined });
+			if (firebaseReady) await get().registerIfAuthorized();
 		},
 
 		sessionDidChange: () => {
