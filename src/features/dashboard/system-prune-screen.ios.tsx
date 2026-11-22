@@ -33,6 +33,7 @@ import { ToastHost } from '@/ui/toast';
 
 import { pruneOptions, useSystemPrune } from './use-system-prune';
 import { systemPruneConfirmationHost, useSystemPruneRoute } from './use-system-prune-route';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function AgeRow({ text, onChangeText }: { text: string; onChangeText: (value: string) => void }) {
 	return (
@@ -79,6 +80,7 @@ export function SystemPruneScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								disabled(model.isPruning),
 								navigationTitle(model.title),
 								navigationBarTitleDisplayMode('inline')

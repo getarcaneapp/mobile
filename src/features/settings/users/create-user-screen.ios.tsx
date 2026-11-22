@@ -26,6 +26,7 @@ import { roleDisplayName } from '../rbac/rbac-models';
 import { FormErrorSection } from '../shared/form-error-section';
 
 import { useCreateUser, type CreateUserModel } from './use-create-user';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function RolesSection({ model }: { model: CreateUserModel }) {
 	return (
@@ -67,7 +68,11 @@ export function CreateUserScreen() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[navigationTitle('Create User'), navigationBarTitleDisplayMode('inline')]}
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle('Create User'),
+								navigationBarTitleDisplayMode('inline')
+							]}
 						>
 							<Section title="Credentials">
 								<FormTextField

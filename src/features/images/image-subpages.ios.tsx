@@ -50,6 +50,7 @@ import { systemColors } from '@/theme/colors';
 import { byteString } from './image-model';
 import { imageCache } from './image-routes';
 import { useAttestationStatement } from './use-image-tabs';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function ImageAttestationScreen() {
 	const router = useRouter();
@@ -67,7 +68,11 @@ export function ImageAttestationScreen() {
 			<NavigationStack>
 				<Toolbar>
 					<List
-						modifiers={[navigationTitle('Attestation'), navigationBarTitleDisplayMode('inline')]}
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Attestation'),
+							navigationBarTitleDisplayMode('inline')
+						]}
 					>
 						<Section>
 							<LabeledContent label="Type">

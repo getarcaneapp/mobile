@@ -147,7 +147,8 @@ const sheetOptions: ScreenOptions = {
 	sheetGrabberVisible: true,
 	headerShown: Platform.OS === 'android',
 	headerLargeTitleEnabled: false,
-	headerTransparent: false
+	headerTransparent: false,
+	contentStyle: Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : undefined
 };
 
 const largeSheetOptions: ScreenOptions = { ...sheetOptions, sheetAllowedDetents: [1] };

@@ -22,6 +22,7 @@ import { systemColors } from '@/theme/colors';
 import { FormTextField } from '@/ui/components/form-fields';
 
 import { useProjectFileDialog } from './use-project-file-dialog';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function ProjectFileDialogScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -30,7 +31,13 @@ export function ProjectFileDialogScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<Form modifiers={[navigationTitle(model.title), navigationBarTitleDisplayMode('inline')]}>
+					<Form
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle(model.title),
+							navigationBarTitleDisplayMode('inline')
+						]}
+					>
 						{model.needsName ? (
 							<Section title={model.nameSectionTitle}>
 								<FormTextField

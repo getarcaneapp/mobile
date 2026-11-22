@@ -34,6 +34,7 @@ import { SettingsSaveBar, SettingsSaveBarSpacer } from '../shared/settings-save-
 import { BoundTextField } from '../shared/swiftui-text-field';
 
 import { useRegistryForm } from './use-registry-form';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function RegistryFormScreen() {
 	const model = useRegistryForm();
@@ -46,6 +47,7 @@ export function RegistryFormScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								animation(swiftAnimation(Motion.entrance), model.isAWS),
 								navigationTitle(model.title),
 								navigationBarTitleDisplayMode('inline')

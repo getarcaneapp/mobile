@@ -13,6 +13,7 @@ import { SettingsSaveBar } from '../shared/settings-save-bar';
 
 import { RoleDetailForm } from './role-detail-form';
 import { useRoleDetail } from './use-role-detail';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function NewRoleScreen() {
 	const model = useRoleDetail('create');
@@ -25,6 +26,7 @@ export function NewRoleScreen() {
 						<RoleDetailForm
 							model={model}
 							modifiers={[
+								...sheetGlassModifiers(),
 								searchable(searchText, {
 									placement: 'navigationBarDrawer',
 									prompt: 'Search permissions',

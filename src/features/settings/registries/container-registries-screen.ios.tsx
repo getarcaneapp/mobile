@@ -13,6 +13,7 @@ import {
 import {
 	contentShape,
 	font,
+	buttonStyle,
 	foregroundStyle,
 	frame,
 	listStyle,
@@ -22,11 +23,11 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
 
-import { useAccentColor } from '@/theme/accent';
 import { systemColors } from '@/theme/colors';
 import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-swiftui';
 import { DestructiveLabel, ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
+import { DisclosureChevron } from '@/ui/settings-row';
 import { RowIcon } from '@/ui/components/row-icon';
 import { RowPreviewCard } from '@/ui/components/row-preview-card';
 
@@ -82,13 +83,13 @@ function RegistryActionRow({
 	model: ContainerRegistriesModel;
 	registry: ContainerRegistry;
 }) {
-	const accent = useAccentColor();
 	return (
 		<ContextMenu>
 			<ContextMenu.Trigger>
-				<Button onPress={() => model.openEdit(registry)}>
-					<HStack modifiers={[foregroundStyle(accent), contentShape(shapes.rectangle())]}>
+				<Button onPress={() => model.openEdit(registry)} modifiers={[buttonStyle('plain')]}>
+					<HStack modifiers={[contentShape(shapes.rectangle())]}>
 						<RegistryRow registry={registry} />
+						<DisclosureChevron />
 					</HStack>
 				</Button>
 			</ContextMenu.Trigger>

@@ -25,6 +25,7 @@ import { FormPicker, FormTextField } from '@/ui/components/form-fields';
 
 import { useCreateVolume, useRenameVolume, type DriverMode } from './use-volume-sheets';
 import { VolumeRename } from './volume-model';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function CreateVolumeScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -35,7 +36,11 @@ export function CreateVolumeScreen() {
 			<NavigationStack>
 				<Toolbar>
 					<Form
-						modifiers={[navigationTitle('Create Volume'), navigationBarTitleDisplayMode('inline')]}
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Create Volume'),
+							navigationBarTitleDisplayMode('inline')
+						]}
 					>
 						<Section title="Volume Details">
 							<FormTextField
@@ -116,6 +121,7 @@ export function RenameVolumeScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Rename Volume'),
 								navigationBarTitleDisplayMode('inline'),
 								interactiveDismissDisabled(model.isSubmitting)

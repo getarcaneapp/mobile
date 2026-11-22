@@ -35,6 +35,7 @@ import { BoundTextField } from '@/features/containers/swiftui-text-field';
 
 import { useVolumeWorkspaceFile, type WorkspaceReviewPayload } from './use-volume-workspace-file';
 import { routePayloads } from './volume-routes';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function VolumeWorkspaceFileScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -54,6 +55,7 @@ export function VolumeWorkspaceFileScreen() {
 						<VStack
 							alignment="leading"
 							modifiers={[
+								...sheetGlassModifiers(),
 								frame({ maxWidth: Infinity, maxHeight: Infinity, alignment: 'topLeading' }),
 								navigationTitle(model.file.name),
 								navigationBarTitleDisplayMode('inline')
@@ -158,7 +160,7 @@ export function VolumeWorkspaceReviewScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<ScrollView modifiers={[navigationTitle('Server version')]}>
+					<ScrollView modifiers={[...sheetGlassModifiers(), navigationTitle('Server version')]}>
 						<Text
 							modifiers={[
 								font({ textStyle: 'body', design: 'monospaced' }),

@@ -9,41 +9,32 @@ import {
 	HStack,
 	Label,
 	List,
-	ScrollView,
 	Section,
 	Spacer,
 	SwipeActions,
 	Text,
 	VStack
 } from '@expo/ui/swift-ui';
-import { Image } from '@/ui/components/swiftui-image';
 import {
-	accessibilityAddTraits,
-	accessibilityElement,
-	accessibilityLabel,
-	background,
 	buttonStyle,
 	disabled,
 	font,
 	foregroundStyle,
 	frame,
+	lineLimit,
 	listStyle,
-	monospacedDigit,
 	padding,
 	refreshable,
 	shapes,
-	strokeBorder,
 	tint,
 	contentShape
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
 import { AppToolbar } from '@/ui/app-toolbar';
-import type { SFSymbol } from 'sf-symbols-typescript';
 
-import type { Event, EventSeverityCounts } from '@/sdk/models/event/Event';
+import type { Event } from '@/sdk/models/event/Event';
 import { useAccentColor } from '@/theme/accent';
-import { systemColors, withOpacity } from '@/theme/colors';
-import { Radius } from '@/theme/tokens';
+import { systemColors } from '@/theme/colors';
 import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-swiftui';
 import { DestructiveLabel, ResourceCountSectionHeader } from '@/ui/components/labels';
 import { PaginatedListFooter } from '@/ui/components/paginated-list';
@@ -56,152 +47,48 @@ import { EventSeverityFilter } from './events-store';
 import {
 	relativeNamed,
 	severityCount,
-	severityFilterTint,
 	severityIcon,
 	severityTint,
 	useEvents,
 	type EventsModel
 } from './use-events';
+import { eventRedundantDescription, readableEventText } from './event-text';
 
-function SeverityChip({
-	title,
-	count,
-	icon,
-	tintColor,
-	isSelected,
-	onPress
-}: {
-	title: string;
-	count: number;
-	icon: string;
-	tintColor: 'primary' | (string & {});
-	isSelected: boolean;
-	onPress: () => void;
-}) {
-	const selectedFill = tintColor === 'primary' ? '#8E8E9326' : withOpacity(tintColor, 0.15);
-	const selectedStroke = tintColor === 'primary' ? '#8E8E9373' : withOpacity(tintColor, 0.45);
-	return (
-		<Button
-			onPress={onPress}
-			modifiers={[
-				buttonStyle('plain'),
-				accessibilityElement('ignore'),
-				accessibilityLabel(`${title}, ${count.toLocaleString()} events`),
-				...(isSelected ? [accessibilityAddTraits(['isSelected'])] : [])
-			]}
-		>
-			<HStack
-				spacing={7}
-				modifiers={[
-					padding({ horizontal: 12, vertical: 9 }),
-					background(
-						isSelected ? selectedFill : '#8E8E9314',
-						shapes.roundedRectangle({
-							cornerRadius: Radius.standard,
-							roundedCornerStyle: 'continuous'
-						})
-					),
-					strokeBorder({
-						color: isSelected ? selectedStroke : '#00000000',
-						style: { lineWidth: 1 },
-						shape: 'roundedRectangle',
-						cornerRadius: Radius.standard
-					})
-				]}
-			>
-				<Image systemName={icon as SFSymbol} modifiers={[foregroundStyle(tintColor)]} />
-				<VStack alignment="leading" spacing={1}>
-					<Text modifiers={[font({ textStyle: 'caption', weight: 'semibold' })]}>{title}</Text>
-					<Text
-						modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' }), monospacedDigit()]}
-					>
-						{count.toLocaleString()}
-					</Text>
-				</VStack>
-			</HStack>
-		</Button>
-	);
-}
-
-function SeveritySummary({ model, counts }: { model: EventsModel; counts: EventSeverityCounts }) {
-	const selected = model.snapshot.selectedSeverities;
-	return (
-		<ScrollView
-			axes="horizontal"
-			showsIndicators={false}
-			modifiers={[accessibilityLabel('Event severity filters')]}
-		>
-			<HStack spacing={8} modifiers={[padding({ horizontal: 16 })]}>
-				<SeverityChip
-					title="Total"
-					count={counts.total}
-					icon="tray.full.fill"
-					tintColor="primary"
-					isSelected={selected.size === 0}
-					onPress={model.store.clearSeverities}
-				/>
-				{EventSeverityFilter.allCases.map((severity) => (
-					<SeverityChip
-						key={severity}
-						title={EventSeverityFilter.title[severity]}
-						count={severityCount(counts, severity)}
-						icon={EventSeverityFilter.icon[severity]}
-						tintColor={severityFilterTint(severity)}
-						isSelected={selected.has(severity)}
-						onPress={() => model.store.toggle(severity)}
-					/>
-				))}
-			</HStack>
-		</ScrollView>
-	);
-}
+const countTitle = (title: string, count: number | undefined) =>
+	count === undefined ? title : `${title} (${count.toLocaleString()})`;
 
 function EventRow({ event }: { event: Event }) {
+	const meta =
+		event.type !== ''
+			? `${relativeNamed(event.timestamp)} · ${titleCasedWords(event.type)}`
+			: relativeNamed(event.timestamp);
 	return (
 		<HStack alignment="top" spacing={12} modifiers={[padding({ vertical: 2 })]}>
 			<RowIcon systemImage={severityIcon(event.severity)} tint={severityTint(event.severity)} />
-			<VStack alignment="leading" spacing={4}>
-				<Text modifiers={[font({ textStyle: 'body' })]}>{event.title}</Text>
-				{event.description ? (
+			<VStack alignment="leading" spacing={3}>
+				<Text modifiers={[font({ textStyle: 'body' }), lineLimit(2)]}>
+					{readableEventText(event.title)}
+				</Text>
+				{eventRedundantDescription(event) ? null : (
 					<Text
 						modifiers={[
 							font({ textStyle: 'subheadline' }),
-							foregroundStyle({ type: 'hierarchical', style: 'secondary' })
+							foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+							lineLimit(2)
 						]}
 					>
-						{event.description}
+						{readableEventText(event.description ?? '')}
 					</Text>
-				) : null}
-				<HStack spacing={6}>
-					<Text
-						modifiers={[
-							font({ textStyle: 'caption' }),
-							foregroundStyle({ type: 'hierarchical', style: 'tertiary' })
-						]}
-					>
-						{relativeNamed(event.timestamp)}
-					</Text>
-					{event.type !== '' ? (
-						<>
-							<Text
-								modifiers={[
-									font({ textStyle: 'caption' }),
-									foregroundStyle({ type: 'hierarchical', style: 'tertiary' })
-								]}
-							>
-								•
-							</Text>
-							<Text
-								modifiers={[
-									font({ textStyle: 'caption' }),
-									foregroundStyle({ type: 'hierarchical', style: 'tertiary' })
-								]}
-							>
-								{titleCasedWords(event.type)}
-							</Text>
-						</>
-					) : null}
-				</HStack>
+				)}
+				<Text
+					modifiers={[
+						font({ textStyle: 'caption' }),
+						foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+						lineLimit(1)
+					]}
+				>
+					{meta}
+				</Text>
 			</VStack>
 			<Spacer minLength={0} />
 		</HStack>
@@ -274,7 +161,16 @@ export function EventsScreen() {
 	const { snapshot } = model;
 	const accent = useAccentColor();
 	const liveIcon = model.isLive ? 'dot.radiowaves.left.and.right' : 'pause.circle';
-	const icon = useToolbarIcons([liveIcon]);
+	const selected = snapshot.selectedSeverities;
+	const isFiltered = selected.size > 0;
+	const filterIcon = isFiltered
+		? 'line.3.horizontal.decrease.circle.fill'
+		: 'line.3.horizontal.decrease.circle';
+	const counts =
+		snapshot.supportsSeverityCounts && snapshot.severityCounts
+			? snapshot.severityCounts
+			: undefined;
+	const icon = useToolbarIcons([liveIcon, filterIcon]);
 
 	let content;
 	if (snapshot.isLoading && snapshot.events.length === 0) {
@@ -295,11 +191,6 @@ export function EventsScreen() {
 	} else {
 		content = (
 			<List modifiers={[listStyle('insetGrouped'), refreshable(model.refresh)]}>
-				{snapshot.supportsSeverityCounts && snapshot.severityCounts ? (
-					<Section>
-						<SeveritySummary model={model} counts={snapshot.severityCounts} />
-					</Section>
-				) : null}
 				{snapshot.events.length === 0 ? (
 					<ContentUnavailableView
 						title={model.emptyTitle}
@@ -361,6 +252,33 @@ export function EventsScreen() {
 				}}
 			/>
 			<AppToolbar placement="right" tintColor={accent}>
+				<Stack.Toolbar.Menu
+					icon={icon(filterIcon)}
+					accessibilityLabel={isFiltered ? 'Filter, active' : 'Filter'}
+				>
+					<Stack.Toolbar.MenuAction
+						icon="tray.full"
+						isOn={!isFiltered}
+						onPress={model.store.clearSeverities}
+					>
+						{countTitle('All Events', counts?.total)}
+					</Stack.Toolbar.MenuAction>
+					<Stack.Toolbar.Menu inline title="Severity">
+						{EventSeverityFilter.allCases.map((severity) => (
+							<Stack.Toolbar.MenuAction
+								key={severity}
+								icon={EventSeverityFilter.icon[severity] as never}
+								isOn={selected.has(severity)}
+								onPress={() => model.store.toggle(severity)}
+							>
+								{countTitle(
+									EventSeverityFilter.title[severity],
+									counts ? severityCount(counts, severity) : undefined
+								)}
+							</Stack.Toolbar.MenuAction>
+						))}
+					</Stack.Toolbar.Menu>
+				</Stack.Toolbar.Menu>
 				<Stack.Toolbar.Button
 					icon={icon(liveIcon)}
 					accessibilityLabel={model.isLive ? 'Pause live events' : 'Resume live events'}

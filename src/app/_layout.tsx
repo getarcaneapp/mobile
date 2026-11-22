@@ -76,6 +76,8 @@ export default function RootLayout() {
 							name="connection-profiles"
 							options={{
 								presentation: 'formSheet',
+								contentStyle:
+									Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : undefined,
 								sheetAllowedDetents: [0.5, 1],
 								sheetGrabberVisible: true,
 								animation: Platform.OS === 'ios' ? 'default' : 'slide_from_bottom'
@@ -85,6 +87,8 @@ export default function RootLayout() {
 							name="connection-profile-editor"
 							options={{
 								presentation: 'formSheet',
+								contentStyle:
+									Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : undefined,
 								sheetAllowedDetents: [0.5, 1],
 								sheetGrabberVisible: true,
 								animation: Platform.OS === 'ios' ? 'default' : 'slide_from_bottom'
@@ -94,6 +98,8 @@ export default function RootLayout() {
 							name="whats-new"
 							options={{
 								presentation: 'formSheet',
+								contentStyle:
+									Platform.OS === 'ios' ? { backgroundColor: 'transparent' } : undefined,
 								sheetAllowedDetents: [1],
 								sheetGrabberVisible: false,
 								animation: Platform.OS === 'ios' ? 'default' : 'slide_from_bottom'

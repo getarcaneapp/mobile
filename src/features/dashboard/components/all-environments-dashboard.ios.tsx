@@ -761,7 +761,13 @@ function HealthyStat({ model }: { model: AllEnvironmentsDashboardModel }) {
 	return <StatCard id="healthy" value={stat.value} detail={stat.detail} />;
 }
 
-function AttentionCountStat({ model }: { model: AllEnvironmentsDashboardModel }) {
+function AttentionCountStat({
+	model,
+	onPress
+}: {
+	model: AllEnvironmentsDashboardModel;
+	onPress: () => void;
+}) {
 	const attention = useOverviewAttention(model);
 	return (
 		<StatCard
@@ -769,6 +775,7 @@ function AttentionCountStat({ model }: { model: AllEnvironmentsDashboardModel })
 			value={String(attention.items.length)}
 			detail={`${attention.critical} critical`}
 			loading={attention.loading}
+			onPress={onPress}
 		/>
 	);
 }
@@ -845,7 +852,7 @@ function StatWidget({
 		case 'healthy':
 			return <HealthyStat model={model} />;
 		case 'attentionCount':
-			return <AttentionCountStat model={model} />;
+			return <AttentionCountStat model={model} onPress={props.onOpenAttention} />;
 		case 'updates':
 			return <UpdatesStat model={model} onPress={props.onOpenUpdates} />;
 		case 'risk':

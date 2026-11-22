@@ -35,6 +35,7 @@ import { colors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
 
 import { usePreviewWalkthrough, type WalkthroughContent } from './preview-walkthrough';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export type PreviewWalkthroughViewProps = {
 	content: WalkthroughContent;
@@ -149,7 +150,7 @@ export function PreviewWalkthroughView({
 	return (
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
-				<Toolbar modifiers={[navigationBarTitleDisplayMode('inline')]}>
+				<Toolbar modifiers={[...sheetGlassModifiers(), navigationBarTitleDisplayMode('inline')]}>
 					<VStack spacing={0}>
 						<TabView
 							selection={String(model.page)}

@@ -39,7 +39,6 @@ import {
 	padding,
 	refreshable,
 	scaleEffect,
-	shapes,
 	tint
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack } from 'expo-router';
@@ -165,13 +164,7 @@ function TextFileEditor({
 					<VStack
 						modifiers={[
 							padding({ all: 16 }),
-							background(
-								{ type: 'material', material: 'regular' },
-								shapes.roundedRectangle({
-									cornerRadius: Radius.nested,
-									roundedCornerStyle: 'continuous'
-								})
-							)
+							glassEffectCompat({ shape: 'roundedRectangle', cornerRadius: Radius.nested })
 						]}
 					>
 						<ArcaneLoadingViewSwiftUI label="Loading file..." />

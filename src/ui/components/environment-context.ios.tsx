@@ -39,6 +39,7 @@ import {
 	type EnvironmentContextPickerProps
 } from './environment-context.types';
 import { ResourceStatusBadge } from './resource-status-badge';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export { EnvironmentSwitcherToolbarButton } from './environment-switcher-button';
 
@@ -58,6 +59,7 @@ export function EnvironmentContextPicker({
 			<NavigationStack>
 				<Toolbar
 					modifiers={[
+						...sheetGlassModifiers(),
 						navigationTitle('Choose Agent'),
 						navigationBarTitleDisplayMode('inline'),
 						searchable(searchText, { prompt: 'Search agents', onChange: setSearch })

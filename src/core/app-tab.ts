@@ -369,7 +369,11 @@ export function accessSurfaceIDs(tab: AppTab): string[] {
 				'customize.category.templates',
 				'customize.category.registries',
 				'customize.category.variables',
-				'customize.category.git-repositories'
+				'customize.category.git-repositories',
+				'route.projects.templates',
+				'route.images.registries',
+				'route.projects.variables',
+				'route.gitops.repositories'
 			];
 		case 'settings':
 			return [
@@ -386,13 +390,13 @@ export function accessSurfaceIDs(tab: AppTab): string[] {
 				'settings.category.diagnostics'
 			];
 		case 'templateRegistries':
-			return ['customize.category.templates'];
+			return ['customize.category.templates', 'route.projects.templates'];
 		case 'containerRegistries':
-			return ['customize.category.registries'];
+			return ['customize.category.registries', 'route.images.registries'];
 		case 'variables':
-			return ['customize.category.variables'];
+			return ['customize.category.variables', 'route.projects.variables'];
 		case 'gitRepositories':
-			return ['customize.category.git-repositories'];
+			return ['customize.category.git-repositories', 'route.gitops.repositories'];
 		case 'gitOps':
 			return ['route.gitops', 'route.environments.gitops'];
 		case 'apiKeys':

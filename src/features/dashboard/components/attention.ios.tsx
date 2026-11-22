@@ -23,6 +23,7 @@ import {
 	accessibilityHint,
 	accessibilityLabel,
 	background,
+	buttonStyle,
 	contentShape,
 	contentTransition,
 	fixedSize,
@@ -56,6 +57,7 @@ import {
 } from '../dashboard-logic';
 import { DashboardRowChevron } from './dashboard-parts';
 import { symbolRenderingMode } from '../../../../modules/arcane-swiftui-extras';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 const hierarchicalSecondary = { type: 'hierarchical', style: 'secondary' } as const;
 
@@ -288,8 +290,8 @@ export function AttentionCenterSheet({
 	const critical = items.filter((i) => i.severity === 'critical');
 	const warnings = items.filter((i) => i.severity === 'warning');
 	const row = (item: NeedsAttentionItem) => (
-		<Button key={item.id} onPress={() => onSelect(item)}>
-			<HStack modifiers={[padding({ vertical: 2 })]}>
+		<Button key={item.id} onPress={() => onSelect(item)} modifiers={[buttonStyle('plain')]}>
+			<HStack modifiers={[padding({ vertical: 2 }), contentShape(shapes.rectangle())]}>
 				<AttentionItemRow item={item} showsDetail />
 			</HStack>
 		</Button>
@@ -300,7 +302,11 @@ export function AttentionCenterSheet({
 				modifiers={[presentationDetents(['medium', 'large']), presentationDragIndicator('visible')]}
 			>
 				<Toolbar
-					modifiers={[navigationTitle('Attention Center'), navigationBarTitleDisplayMode('inline')]}
+					modifiers={[
+						...sheetGlassModifiers(),
+						navigationTitle('Attention Center'),
+						navigationBarTitleDisplayMode('inline')
+					]}
 				>
 					{items.length === 0 ? (
 						<ContentUnavailableView

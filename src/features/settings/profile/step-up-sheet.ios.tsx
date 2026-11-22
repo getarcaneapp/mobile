@@ -23,6 +23,7 @@ import { FormSecureField } from '@/ui/components/form-fields';
 
 import type { StepUpSheetProps } from './step-up-sheet.types';
 import { useStepUpSheet } from './use-step-up-sheet';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function StepUpContent(props: StepUpSheetProps) {
 	const sheet = useStepUpSheet(props);
@@ -30,7 +31,11 @@ function StepUpContent(props: StepUpSheetProps) {
 		<NavigationStack modifiers={[presentationDetents(['medium'])]}>
 			<Toolbar>
 				<Form
-					modifiers={[navigationTitle('Confirm Identity'), navigationBarTitleDisplayMode('inline')]}
+					modifiers={[
+						...sheetGlassModifiers(),
+						navigationTitle('Confirm Identity'),
+						navigationBarTitleDisplayMode('inline')
+					]}
 				>
 					<Section>
 						<Text modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>

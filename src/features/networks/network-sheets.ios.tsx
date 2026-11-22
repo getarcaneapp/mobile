@@ -36,6 +36,7 @@ import { StatusIcon } from '@/ui/components/resource-status-badge';
 import { containerDisplayName, containerIsRunning } from '@/features/containers/container-model';
 
 import { networkDrivers, useConnectNetworkContainer, useCreateNetwork } from './use-network-sheets';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function CreateNetworkScreen() {
 	const { envID = '0' } = useLocalSearchParams<{ envID?: string }>();
@@ -46,7 +47,11 @@ export function CreateNetworkScreen() {
 			<NavigationStack>
 				<Toolbar>
 					<Form
-						modifiers={[navigationTitle('Create Network'), navigationBarTitleDisplayMode('inline')]}
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Create Network'),
+							navigationBarTitleDisplayMode('inline')
+						]}
 					>
 						{model.errorMessage ? (
 							<Section>
@@ -139,6 +144,7 @@ export function ConnectNetworkContainerScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle(`Connect to ${name}`),
 								navigationBarTitleDisplayMode('inline')
 							]}

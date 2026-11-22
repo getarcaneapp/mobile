@@ -35,6 +35,7 @@ import {
 } from './container-model';
 import { useContainersFilter, useContainersFilterStore } from './containers-filter-store';
 import { BoundTextField } from './swiftui-text-field';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function ContainersFilterScreen() {
 	const router = useRouter();
@@ -48,7 +49,13 @@ export function ContainersFilterScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<Form modifiers={[navigationTitle('Filter'), navigationBarTitleDisplayMode('inline')]}>
+					<Form
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Filter'),
+							navigationBarTitleDisplayMode('inline')
+						]}
+					>
 						<Section header={<Text>Sort</Text>}>
 							<Picker
 								label="Sort"

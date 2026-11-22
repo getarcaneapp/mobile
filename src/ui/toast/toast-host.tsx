@@ -1,20 +1,12 @@
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-	FadeIn,
-	FadeOut,
-	ReduceMotion,
-	SlideInDown,
-	SlideOutDown
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useSegments } from 'expo-router';
 
 import { colors } from '@/theme/colors';
 import { useAccentColor } from '@/theme/accent';
-import { springConfig } from '@/theme/motion';
-import { Motion } from '@/theme/tokens';
 import { CapsuleProgressBorder } from '@/ui/components/capsule-progress-border';
 import { GlassSurface } from '@/ui/glass';
 import { Icon } from '@/ui/Icon';
@@ -22,8 +14,6 @@ import { Icon } from '@/ui/Icon';
 import { dismissToast, useToastPresenter, type Toast } from './presenter';
 
 const barClearance = 60;
-
-const toastSpring = springConfig(Motion.toast.response, Motion.toast.dampingFraction);
 
 export function ToastHost({ reservesTabBarSpace = true }: { reservesTabBarSpace?: boolean }) {
 	const toast = useToastPresenter((s) => s.activeToast);
@@ -106,18 +96,13 @@ function ToastCapsule({ toast }: { toast: Toast }) {
 	return (
 		<GestureDetector gesture={swipe}>
 			<Animated.View
-				entering={SlideInDown.springify()
-					.mass(toastSpring.mass ?? 1)
-					.stiffness(toastSpring.stiffness ?? 100)
-					.damping(toastSpring.damping ?? 10)
-					.reduceMotion(ReduceMotion.System)
-					.withInitialValues({ originY: 100 })}
-				exiting={SlideOutDown.duration(250).reduceMotion(ReduceMotion.System)}
+				entering={FadeIn.duration(220).reduceMotion(ReduceMotion.System)}
+				exiting={FadeOut.duration(200).reduceMotion(ReduceMotion.System)}
 				style={{ paddingHorizontal: 15 }}
 				accessibilityRole="alert"
 			>
 				<GlassSurface style={{ borderRadius: 999, borderCurve: 'continuous' }}>
-					<Animated.View entering={FadeIn} exiting={FadeOut}>
+					<View>
 						{tapAction ? (
 							<Pressable
 								onPress={() => {
@@ -130,7 +115,7 @@ function ToastCapsule({ toast }: { toast: Toast }) {
 						) : (
 							content
 						)}
-					</Animated.View>
+					</View>
 					<CapsuleProgressBorder
 						fraction={toast.activityProgress}
 						isActive={

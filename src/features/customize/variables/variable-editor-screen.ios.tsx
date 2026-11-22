@@ -35,6 +35,7 @@ import { ToastHost } from '@/ui/toast';
 
 import { useVariableEditor } from './use-variable-editor';
 import { useSyncedNativeText } from '@/ui/components/synced-native-text';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function BoundSecureField({
 	placeholder,
@@ -66,7 +67,11 @@ export function VariableEditorScreen() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[navigationTitle(model.title), navigationBarTitleDisplayMode('inline')]}
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle(model.title),
+								navigationBarTitleDisplayMode('inline')
+							]}
 						>
 							<Section title="Variable" footer={<Text>{model.variableFooter}</Text>}>
 								<FormTextField

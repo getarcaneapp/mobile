@@ -121,13 +121,28 @@ async function fetchAuthenticationForm(
 	client: ArcaneClient,
 	environmentID: EnvironmentID
 ): Promise<{ form: AuthenticationForm; oidcLocked: boolean }> {
-	const path = client.rest.environmentPath(environmentID, 'settings');
-	const text = await client.transport.rawRequest(path);
-	const dtos = client.transport.decode<PublicSetting[]>(text);
+	const dtos =
+		(await client.apiGeneration()) === 'v3'
+			? await client.settings.getGlobalSettings({ scope: 'authentication' })
+			: await client.settings.getSettings({ envID: environmentID });
 	const dict: Record<string, string> = {};
 	for (const dto of dtos) dict[dto.key] = dto.value;
 	const oidcLocked = PublicSetting.isLocked(dtos.find((dto) => dto.key === 'oidcEnabled'));
 	return { form: formFromSettings(dict), oidcLocked };
+}
+
+async function writeAuthenticationSettings(
+	client: ArcaneClient,
+	environmentID: EnvironmentID,
+	body: Record<string, string>
+): Promise<void> {
+	if ((await client.apiGeneration()) === 'v3') {
+		await client.settings.updateGlobalSettings({ scope: 'authentication', body });
+		return;
+	}
+	await client.rest.put<PublicSetting[]>(client.rest.environmentPath(environmentID, 'settings'), {
+		body
+	});
 }
 
 export function useAuthenticationSettings() {
@@ -242,7 +257,7 @@ export function useAuthenticationSettings() {
 					setIfPresent('oidcProviderLogoUrl');
 
 					const path = client.rest.environmentPath(activeEnvironmentID, 'settings');
-					await client.rest.put<PublicSetting[]>(path, { body });
+					await writeAuthenticationSettings(client, activeEnvironmentID, body);
 					if (cached) cached.invalidate(activeEnvironmentID, [path, `${path}*`]);
 					setOriginalState(latestForm.current);
 					showToast(Toasts.success('Authentication settings saved'));

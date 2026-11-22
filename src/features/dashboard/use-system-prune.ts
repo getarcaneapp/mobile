@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react';
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
 import { hasPermission } from '@/core/auth/permissions';
+import { loadPruneDefaults } from '@/core/prune-defaults';
 import { ResponseCache } from '@/core/networking/response-cache';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { ArcaneError } from '@/sdk/errors/ArcaneError';
 import type { Environment } from '@/sdk/models/environment/EnvironmentModel';
 import { Permission } from '@/sdk/models/role/Permission';
-import type { PublicSetting } from '@/sdk/models/settings/Settings';
 import type {
 	PruneAllRequest,
 	PruneBuildCacheMode,
@@ -58,54 +58,42 @@ export const pruneOptions = {
 const isOneOf = <T extends string>(options: { value: T }[], raw: string | undefined): raw is T =>
 	raw !== undefined && options.some((o) => o.value === raw);
 
-async function loadPruneDefaults(
+type PruneDefaultSetters = {
+	setContainerMode: (mode: PruneContainerMode) => void;
+	setContainerAge: (age: string) => void;
+	setImageMode: (mode: PruneImageMode) => void;
+	setImageAge: (age: string) => void;
+	setVolumeMode: (mode: PruneVolumeMode) => void;
+	setNetworkMode: (mode: PruneNetworkMode) => void;
+	setNetworkAge: (age: string) => void;
+	setBuildCacheMode: (mode: PruneBuildCacheMode) => void;
+	setBuildCacheAge: (age: string) => void;
+	setDefaultsLoaded: (loaded: boolean) => void;
+};
+
+async function applyPruneDefaults(
 	client: ArcaneClient,
-	environmentID: EnvironmentID,
+	environmentIDs: readonly EnvironmentID[],
 	isCancelled: () => boolean,
-	setters: {
-		setContainerMode: (mode: PruneContainerMode) => void;
-		setContainerAge: (age: string) => void;
-		setImageMode: (mode: PruneImageMode) => void;
-		setImageAge: (age: string) => void;
-		setVolumeMode: (mode: PruneVolumeMode) => void;
-		setNetworkMode: (mode: PruneNetworkMode) => void;
-		setNetworkAge: (age: string) => void;
-		setBuildCacheMode: (mode: PruneBuildCacheMode) => void;
-		setBuildCacheAge: (age: string) => void;
-	}
+	setters: PruneDefaultSetters
 ) {
-	try {
-		const text = await client.transport.rawRequest(
-			client.rest.environmentPath(environmentID, 'settings')
-		);
-		const settings = JSON.parse(text) as PublicSetting[] | { data?: PublicSetting[] };
-		const list = Array.isArray(settings) ? settings : (settings.data ?? []);
-		if (isCancelled()) return;
-		const dict = new Map(list.map((s) => [s.key, s.value]));
-		const mode = (key: string) => dict.get(key);
-		const until = (key: string) => {
-			const value = dict.get(key);
-			return value ? value : undefined;
-		};
-		const c = mode('pruneContainerMode');
-		if (isOneOf(pruneOptions.containers, c)) setters.setContainerMode(c);
-		const cu = until('pruneContainerUntil');
-		if (cu) setters.setContainerAge(cu);
-		const i = mode('pruneImageMode');
-		if (isOneOf(pruneOptions.images, i)) setters.setImageMode(i);
-		const iu = until('pruneImageUntil');
-		if (iu) setters.setImageAge(iu);
-		const v = mode('pruneVolumeMode');
-		if (isOneOf(pruneOptions.volumes, v)) setters.setVolumeMode(v);
-		const n = mode('pruneNetworkMode');
-		if (isOneOf(pruneOptions.networks, n)) setters.setNetworkMode(n);
-		const nu = until('pruneNetworkUntil');
-		if (nu) setters.setNetworkAge(nu);
-		const b = mode('pruneBuildCacheMode');
-		if (isOneOf(pruneOptions.buildCache, b)) setters.setBuildCacheMode(b);
-		const bu = until('pruneBuildCacheUntil');
-		if (bu) setters.setBuildCacheAge(bu);
-	} catch {}
+	const defaults = await loadPruneDefaults(client, environmentIDs);
+	if (isCancelled()) return;
+	const c = defaults.pruneContainerMode;
+	if (isOneOf(pruneOptions.containers, c)) setters.setContainerMode(c);
+	if (defaults.pruneContainerUntil) setters.setContainerAge(defaults.pruneContainerUntil);
+	const i = defaults.pruneImageMode;
+	if (isOneOf(pruneOptions.images, i)) setters.setImageMode(i);
+	if (defaults.pruneImageUntil) setters.setImageAge(defaults.pruneImageUntil);
+	const v = defaults.pruneVolumeMode;
+	if (isOneOf(pruneOptions.volumes, v)) setters.setVolumeMode(v);
+	const n = defaults.pruneNetworkMode;
+	if (isOneOf(pruneOptions.networks, n)) setters.setNetworkMode(n);
+	if (defaults.pruneNetworkUntil) setters.setNetworkAge(defaults.pruneNetworkUntil);
+	const b = defaults.pruneBuildCacheMode;
+	if (isOneOf(pruneOptions.buildCache, b)) setters.setBuildCacheMode(b);
+	if (defaults.pruneBuildCacheUntil) setters.setBuildCacheAge(defaults.pruneBuildCacheUntil);
+	setters.setDefaultsLoaded(true);
 }
 
 async function performPrune({
@@ -167,15 +155,16 @@ export function useSystemPrune({
 	environments?: Environment[];
 	onDismiss: () => void;
 }) {
-	const [containerMode, setContainerMode] = useState<PruneContainerMode>('none');
+	const [containerMode, setContainerMode] = useState<PruneContainerMode>('stopped');
 	const [containerAge, setContainerAge] = useState('24h');
-	const [imageMode, setImageMode] = useState<PruneImageMode>('none');
+	const [imageMode, setImageMode] = useState<PruneImageMode>('dangling');
 	const [imageAge, setImageAge] = useState('24h');
 	const [volumeMode, setVolumeMode] = useState<PruneVolumeMode>('none');
-	const [networkMode, setNetworkMode] = useState<PruneNetworkMode>('none');
+	const [networkMode, setNetworkMode] = useState<PruneNetworkMode>('unused');
 	const [networkAge, setNetworkAge] = useState('24h');
 	const [buildCacheMode, setBuildCacheMode] = useState<PruneBuildCacheMode>('none');
 	const [buildCacheAge, setBuildCacheAge] = useState('24h');
+	const [defaultsLoaded, setDefaultsLoaded] = useState(false);
 	const [isPruning, setIsPruning] = useState(false);
 	const operationRunning = useAllEnvironmentsOperationStore((s) => s.isRunning);
 
@@ -184,26 +173,35 @@ export function useSystemPrune({
 		(m) => m !== 'none'
 	).length;
 
+	const targetKey = (environments?.map((environment) => environment.id) ?? [environmentID]).join(
+		'\n'
+	);
 	useEffect(() => {
-		if (isAll) return;
 		const client = useClientManager.getState().client;
 		if (!client) return;
 		let cancelled = false;
-		void loadPruneDefaults(client, environmentID, () => cancelled, {
-			setContainerMode,
-			setContainerAge,
-			setImageMode,
-			setImageAge,
-			setVolumeMode,
-			setNetworkMode,
-			setNetworkAge,
-			setBuildCacheMode,
-			setBuildCacheAge
-		});
+		setDefaultsLoaded(false);
+		void applyPruneDefaults(
+			client,
+			targetKey === '' ? [] : targetKey.split('\n'),
+			() => cancelled,
+			{
+				setContainerMode,
+				setContainerAge,
+				setImageMode,
+				setImageAge,
+				setVolumeMode,
+				setNetworkMode,
+				setNetworkAge,
+				setBuildCacheMode,
+				setBuildCacheAge,
+				setDefaultsLoaded
+			}
+		);
 		return () => {
 			cancelled = true;
 		};
-	}, [environmentID, isAll]);
+	}, [targetKey]);
 
 	const request: PruneAllRequest = {
 		containers:
@@ -264,7 +262,8 @@ export function useSystemPrune({
 			: selectedCount > 0
 				? `Prune (${selectedCount})`
 				: 'Prune',
-		confirmDisabled: selectedCount === 0 || operationRunning || environments?.length === 0,
+		confirmDisabled:
+			!defaultsLoaded || selectedCount === 0 || operationRunning || environments?.length === 0,
 		confirmation: {
 			title: isAll ? 'Prune all agents?' : 'Prune resources?',
 			message: isAll

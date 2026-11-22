@@ -80,6 +80,7 @@ import {
 	type SwarmStackEditorModel,
 	type SwarmStacksModel
 } from './use-swarm-stacks';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function StackLink({ model, stack }: { model: SwarmStacksModel; stack: SwarmStackSummary }) {
 	const link = (
@@ -357,6 +358,7 @@ function SwarmStackEditorScreenContent() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								disabled(model.isSaving),
 								navigationTitle(model.title),
 								navigationBarTitleDisplayMode('inline')

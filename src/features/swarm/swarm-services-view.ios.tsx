@@ -57,6 +57,7 @@ import {
 	useSwarmServices,
 	type SwarmServicesModel
 } from './use-swarm-services';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function SwarmServiceRow({
 	service,
@@ -302,6 +303,7 @@ export function SwarmScaleScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle(`Scale ${service?.name ?? ''}`),
 								navigationBarTitleDisplayMode('inline')
 							]}

@@ -70,9 +70,9 @@ export default function TabsLayout() {
 						</NativeTabs.Trigger>
 					);
 				})}
-				<NativeTabs.Trigger name="(more)" accessibilityLabel="More">
+				<NativeTabs.Trigger name="(more)" role="search" accessibilityLabel="More">
 					<NativeTabs.Trigger.Label hidden={!showTabLabels}>More</NativeTabs.Trigger.Label>
-					<NativeTabs.Trigger.Icon sf="ellipsis.circle.fill" md="more_horiz" />
+					<NativeTabs.Trigger.Icon sf="square.grid.2x2.fill" md="more_horiz" />
 				</NativeTabs.Trigger>
 			</NativeTabs>
 		</>

@@ -1,3 +1,4 @@
+import { loadPruneDefaults } from '@/core/prune-defaults';
 import { File } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
@@ -14,7 +15,7 @@ import { useEnvironmentsStore } from '@/stores/environments-store';
 import { showToast, Toasts } from '@/ui/toast';
 
 import { imagesChanged, startImagePull } from './image-actions';
-import { imagePruneResultMessage, type ImagePruneMode } from './image-model';
+import { imagePruneResultMessage, ImagePruneModes, type ImagePruneMode } from './image-model';
 import { pickedFileName } from '@/core/picked-file-name';
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -275,6 +276,21 @@ export function useImagePrune(environmentID: EnvironmentID) {
 	const [mode, setMode] = useState<ImagePruneMode>('dangling');
 	const [until, setUntil] = useState('24h');
 	const [isPruning, setIsPruning] = useState(false);
+
+	useEffect(() => {
+		const client = useClientManager.getState().client;
+		if (!client) return;
+		let cancelled = false;
+		void loadPruneDefaults(client, [environmentID]).then((defaults) => {
+			if (cancelled) return;
+			const saved = ImagePruneModes.find((option) => option.value === defaults.pruneImageMode);
+			if (saved) setMode(saved.value);
+			if (defaults.pruneImageUntil) setUntil(defaults.pruneImageUntil);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [environmentID]);
 
 	const runPrune = async () => {
 		const client = useClientManager.getState().client;

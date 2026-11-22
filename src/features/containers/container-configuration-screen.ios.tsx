@@ -39,6 +39,7 @@ import {
 	type ContainerConfigurationModel
 } from './use-container-configuration';
 import { AdvancedGate } from '@/features/navigation/advanced-gate';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 const multilineModifiers = [lineLimit(8), font({ textStyle: 'body', design: 'monospaced' })];
 
@@ -382,6 +383,7 @@ function ContainerConfigurationScreenContent() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle(model.title),
 								navigationBarTitleDisplayMode('inline'),
 								textInputAutocapitalization('never'),

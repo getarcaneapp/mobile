@@ -36,6 +36,7 @@ import {
 	useTemplateEditor,
 	type TemplateEditorModel
 } from './use-template-editor';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function FileEditor({
 	model,
@@ -81,6 +82,7 @@ export function TemplateEditorScreen() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								disabled(model.isSaving),
 								navigationTitle(model.title),
 								navigationBarTitleDisplayMode('inline')

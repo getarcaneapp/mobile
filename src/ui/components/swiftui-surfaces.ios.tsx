@@ -1,5 +1,6 @@
 import { Background, Overlay, RoundedRectangle } from '@expo/ui/swift-ui';
 import {
+	containerBackground,
 	foregroundStyle,
 	glassEffect,
 	shadow,
@@ -12,7 +13,11 @@ import { useAccentColor } from '@/theme/accent';
 import { colors, withOpacity } from '@/theme/colors';
 import { Radius } from '@/theme/tokens';
 
-import { groupedHex, useIsDark, useReduceTransparency } from './accessibility';
+import { useIsDark, useReduceTransparency } from './accessibility';
+
+export const sheetGlassModifiers = (): ModifierConfig[] => [
+	containerBackground('#00000000', 'navigation')
+];
 
 type GlassShape = 'circle' | 'capsule' | 'rectangle' | 'roundedRectangle';
 
@@ -115,12 +120,6 @@ export function GlassCardBackground({
 	);
 
 	if (!reduceTransparency) {
-		const wash = withOpacity(
-			isDark
-				? groupedHex.dark.secondarySystemGroupedBackground
-				: groupedHex.light.secondarySystemGroupedBackground,
-			0.78
-		);
 		return (
 			<Overlay>
 				<Background
@@ -129,9 +128,6 @@ export function GlassCardBackground({
 					]}
 				>
 					{children}
-					<Background.Content>
-						<RoundedRectangle cornerRadius={cornerRadius} modifiers={[foregroundStyle(wash)]} />
-					</Background.Content>
 				</Background>
 				{isHighlighted
 					? rim(withOpacity(accent, 0.45), 1.5)

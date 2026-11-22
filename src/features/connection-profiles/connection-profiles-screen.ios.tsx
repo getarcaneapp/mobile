@@ -67,6 +67,7 @@ import {
 	useConnectionProfiles,
 	type ConnectionProfilesModel
 } from './use-connection-profiles';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function ConnectionProfilesScreen({ pushed = false }: { pushed?: boolean }) {
 	const toolbarAccent = useAppAccentToolbarSymbol();
@@ -96,6 +97,7 @@ export function ConnectionProfilesScreen({ pushed = false }: { pushed?: boolean 
 						<ProfilesList
 							model={model}
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Connection Profiles'),
 								navigationBarTitleDisplayMode('inline')
 							]}
@@ -322,7 +324,11 @@ export function ConnectionProfileEditorScreen() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[navigationTitle(model.title), navigationBarTitleDisplayMode('inline')]}
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle(model.title),
+								navigationBarTitleDisplayMode('inline')
+							]}
 						>
 							<Section
 								header={<Text>Profile</Text>}

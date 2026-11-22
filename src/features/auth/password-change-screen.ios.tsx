@@ -22,6 +22,7 @@ import { FormSecureField } from '@/ui/components/form-fields';
 import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 
 import { usePasswordChange } from './use-password-change';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function PasswordChangeScreen() {
 	const model = usePasswordChange();
@@ -34,6 +35,7 @@ export function PasswordChangeScreen() {
 				<Toolbar>
 					<Form
 						modifiers={[
+							...sheetGlassModifiers(),
 							navigationTitle('Change Password'),
 							navigationBarTitleDisplayMode('inline')
 						]}

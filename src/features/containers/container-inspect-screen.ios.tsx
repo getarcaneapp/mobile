@@ -33,6 +33,7 @@ import { ArcaneLoadingViewSwiftUI } from '@/ui/components/arcane-loading-view-sw
 import { ToastHost } from '@/ui/toast';
 
 import { useContainerInspect } from './use-container-inspect';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function ContainerInspectScreen() {
 	const toolbarAccent = useAppAccentToolbarSymbol();
@@ -87,7 +88,7 @@ export function ContainerInspectScreen() {
 		<View style={{ flex: 1, backgroundColor: colors.systemGroupedBackground }}>
 			<Host style={{ flex: 1 }}>
 				<NavigationStack>
-					<Toolbar>
+					<Toolbar modifiers={sheetGlassModifiers()}>
 						{body}
 						<Toolbar.Content>
 							<ToolbarItem placement="topBarLeading">

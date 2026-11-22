@@ -54,6 +54,7 @@ import {
 	useSwarmKeyValueDetail,
 	useSwarmKeyValues
 } from './use-swarm-key-values';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function SwarmKeyValuesScreen() {
 	const model = useSwarmKeyValues();
@@ -224,7 +225,11 @@ function SwarmKeyValueCreateScreenContent() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[navigationTitle(model.title), navigationBarTitleDisplayMode('inline')]}
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle(model.title),
+								navigationBarTitleDisplayMode('inline')
+							]}
 						>
 							<Section>
 								<FormTextField

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'vite-plus/test';
 
-import { filterMoreGroups, moreGroups } from '../../features/settings/more-groups';
+import { filterMoreGroups, moreGroups, tileRows } from '../../features/settings/more-groups';
 import { ServerCapabilities } from '../../sdk/client/ServerCapabilities';
 import type { User } from '../../sdk/models/user/User';
 import { advancedTabs, initialAdvancedFeatures } from '../advanced-tabs';
@@ -42,9 +42,18 @@ describe('advanced features', () => {
 		assert.ok(visible.every((tab) => tabs.has(tab)));
 	});
 
-	it('drops the empty Setup group', () => {
-		const titles = filterMoreGroups(moreGroups, available(false), '').map((g) => g.title);
-		assert.ok(!titles.includes('Setup'));
-		assert.ok(filterMoreGroups(moreGroups, available(true), '').some((g) => g.title === 'Setup'));
+	it('lists advanced destinations only when on', () => {
+		const listed = (advancedFeatures: boolean) =>
+			filterMoreGroups(moreGroups, available(advancedFeatures), '').flatMap((g) => g.tabs);
+		assert.ok(!listed(false).some((tab) => advancedTabs.has(tab)));
+		assert.ok(listed(false).includes('gitOps'));
+		assert.ok(listed(true).includes('gitRepositories'));
+	});
+
+	it('pads the last tile row', () => {
+		assert.deepEqual(tileRows(['networks', 'ports', 'volumes', 'swarm']), [
+			['networks', 'ports', 'volumes'],
+			['swarm', undefined, undefined]
+		]);
 	});
 });

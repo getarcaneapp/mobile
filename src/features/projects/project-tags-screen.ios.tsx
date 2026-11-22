@@ -42,6 +42,7 @@ import {
 	projectTagIsComposeManaged
 } from './project-model';
 import { useProjectTags } from './use-project-tags';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function ProjectTagsScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -52,7 +53,13 @@ export function ProjectTagsScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<Form modifiers={[navigationTitle('Tags'), navigationBarTitleDisplayMode('inline')]}>
+					<Form
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Tags'),
+							navigationBarTitleDisplayMode('inline')
+						]}
+					>
 						{model.rows.length > 0 ? (
 							<Section
 								header={<Text>Tags</Text>}

@@ -25,6 +25,7 @@ import { useAppAccentToolbarSymbol } from '@/ui/components/swiftui-toolbar';
 
 import { capitalizedWords, connectionHasNoAddress, topologyConnections } from './topology-layout';
 import { useTopologyNodePayload } from './use-network-topology';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function TopologyNodeSheet() {
 	const router = useRouter();
@@ -39,6 +40,7 @@ export function TopologyNodeSheet() {
 				<Toolbar>
 					<List
 						modifiers={[
+							...sheetGlassModifiers(),
 							navigationTitle(node.name === '' ? 'Topology Node' : node.name),
 							navigationBarTitleDisplayMode('inline')
 						]}

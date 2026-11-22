@@ -61,6 +61,7 @@ import {
 	type PresentationSection,
 	type WhatsNewPresentation
 } from './whats-new-model';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 const secondary = { type: 'hierarchical', style: 'secondary' } as const;
 const tertiary = { type: 'hierarchical', style: 'tertiary' } as const;
@@ -75,7 +76,7 @@ export function WhatsNewScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack modifiers={[tint(accent)]}>
 				<Toolbar>
-					<VStack spacing={0}>
+					<VStack modifiers={sheetGlassModifiers()} spacing={0}>
 						<WhatsNewReleaseContent whatsNew={whatsNew} />
 						<BottomSheet isPresented={showsArchive} onIsPresentedChange={setShowsArchive}>
 							<WhatsNewArchiveView onDone={() => setShowsArchive(false)} />
@@ -314,6 +315,7 @@ function WhatsNewArchiveView({ onDone }: { onDone: () => void }) {
 			<Toolbar>
 				<List
 					modifiers={[
+						...sheetGlassModifiers(),
 						listStyle('insetGrouped'),
 						navigationTitle('Previous Releases'),
 						navigationBarTitleDisplayMode('inline')

@@ -2,53 +2,65 @@ import { tabTitle, type AppTab } from '@/core/app-tab';
 
 export type MoreDestinationGroup = { title: string; tabs: AppTab[] };
 
+export const resourcesTitle = 'Resources';
+
+export const moreTiles: AppTab[] = [
+	'dashboard',
+	'projects',
+	'containers',
+	'images',
+	'networks',
+	'ports',
+	'networkTopology',
+	'volumes',
+	'swarm',
+	'imageVulnerabilities'
+];
+
 export const moreGroups: MoreDestinationGroup[] = [
 	{
-		title: 'Monitor',
+		title: 'Activity',
+		tabs: ['updates', 'events', 'activityHistory']
+	},
+	{
+		title: 'Automation',
+		tabs: ['gitOps', 'gitRepositories', 'webhooks', 'jobs', 'builds']
+	},
+	{
+		title: 'Access',
 		tabs: [
-			'dashboard',
-			'updates',
-			'events',
-			'activities',
-			'activityHistory',
-			'imageVulnerabilities'
+			'users',
+			'roles',
+			'apiKeys',
+			'authentication',
+			'oidcRoleMappings',
+			'federatedCredentials'
 		]
 	},
 	{
-		title: 'Resources',
+		title: 'Server',
 		tabs: [
-			'projects',
-			'containers',
-			'images',
-			'networks',
-			'ports',
-			'networkTopology',
-			'volumes',
-			'swarm'
-		]
-	},
-	{
-		title: 'Operations',
-		tabs: ['gitOps', 'systemBackups', 'variables', 'notifications', 'apiKeys', 'users']
-	},
-	{
-		title: 'Setup',
-		tabs: [
-			'customize',
+			'systemBackups',
+			'notifications',
+			'variables',
 			'templateRegistries',
 			'containerRegistries',
-			'gitRepositories',
-			'builds',
-			'webhooks',
-			'authentication',
-			'roles',
-			'oidcRoleMappings',
-			'federatedCredentials',
-			'jobs',
 			'timeouts'
 		]
 	}
 ];
+
+export const moreTileColumns = 3;
+
+export function tileRows(tabs: readonly AppTab[]): (AppTab | undefined)[][] {
+	const rows: (AppTab | undefined)[][] = [];
+	for (let index = 0; index < tabs.length; index += moreTileColumns) {
+		const row: (AppTab | undefined)[] = tabs.slice(index, index + moreTileColumns);
+		while (row.length < moreTileColumns) row.push(undefined);
+		rows.push(row);
+	}
+	return rows;
+}
 
 export function filterMoreGroups(
 	groups: readonly MoreDestinationGroup[],

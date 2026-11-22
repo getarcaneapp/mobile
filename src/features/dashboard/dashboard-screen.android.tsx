@@ -18,11 +18,7 @@ import { GlassCard } from '@/ui/components/surfaces';
 import { m3Type } from '@/ui/components/type-scale';
 
 import { AllEnvironmentsDashboard } from './components/all-environments-dashboard';
-import {
-	AttentionCenterSheet,
-	AttentionSummarySheet,
-	AttentionToolbarButton
-} from './components/attention.android';
+import { AttentionCenterSheet, AttentionSummarySheet } from './components/attention.android';
 import {
 	CountAvailabilityNote,
 	DashboardGreeting,
@@ -274,12 +270,11 @@ export function DashboardScreen() {
 			<Stack.Screen options={{ title: 'Dashboard', headerTitle: '' }} />
 			<Stack.Toolbar placement="left">
 				<Stack.Toolbar.View>
-					<AttentionToolbarButton
-						items={model.attentionItems}
-						isPresented={model.showAttentionSummary}
-						setPresented={model.setShowAttentionSummary}
-						onSelect={model.performAttention}
-						onOpenCenter={model.openAttentionCenter}
+					<ToolbarIconButton
+						icon="clock.arrow.circlepath"
+						label="Activity Center"
+						color={m3.onSurfaceVariant}
+						onPress={model.openActivityCenter}
 					/>
 				</Stack.Toolbar.View>
 			</Stack.Toolbar>
@@ -296,14 +291,6 @@ export function DashboardScreen() {
 			<Stack.Toolbar placement="right">
 				<Stack.Toolbar.View>
 					<View style={{ flexDirection: 'row', alignItems: 'center' }}>
-						{
-							<ToolbarIconButton
-								icon="clock.arrow.circlepath"
-								label="Activity Center"
-								color={m3.onSurfaceVariant}
-								onPress={model.openActivityCenter}
-							/>
-						}
 						{model.canPrune ? (
 							<ToolbarIconButton
 								icon="trash"
@@ -375,6 +362,7 @@ export function DashboardScreen() {
 							onOpenContainer={model.openContainer}
 							onOpenUpdates={model.openImageUpdates}
 							onOpenSecurity={model.openSecurity}
+							onOpenAttention={model.openAttentionCenter}
 							onAttention={model.runOverviewAction}
 							onOpenActivity={model.openActivity}
 							onOpenJobs={model.openJobs}

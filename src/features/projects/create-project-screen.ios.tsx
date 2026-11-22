@@ -51,6 +51,7 @@ import {
 	type CreateProjectModel
 } from './use-create-project';
 import { AdvancedGate } from '@/features/navigation/advanced-gate';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function EditorRow({
 	text,
@@ -126,7 +127,13 @@ function DockerRunSheet({ model }: { model: CreateProjectModel }) {
 	return (
 		<NavigationStack>
 			<Toolbar>
-				<Form modifiers={[navigationTitle('Import Command'), ...plainTextInput]}>
+				<Form
+					modifiers={[
+						...sheetGlassModifiers(),
+						navigationTitle('Import Command'),
+						...plainTextInput
+					]}
+				>
 					<Section title="Docker Run Command">
 						<BoundField
 							placeholder=""
@@ -177,6 +184,7 @@ function CreateProjectScreenContent() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Create Project'),
 								navigationBarTitleDisplayMode('inline'),
 								disabled(model.isLoading)

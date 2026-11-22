@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import {
 	memo,
 	useEffect,
@@ -10,7 +9,13 @@ import {
 } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+	cancelAnimation,
+	useAnimatedStyle,
+	useSharedValue,
+	withDecay,
+	withTiming
+} from 'react-native-reanimated';
 import Svg, { Circle, Defs, Path, Pattern, Rect } from 'react-native-svg';
 
 import type { TopologyNode } from '@/sdk/models/network/Topology';
@@ -27,15 +32,17 @@ import {
 	nodeAccent,
 	nodeAccessibilityDescription,
 	nodeAddressLines,
-	nodePosition,
-	nodeSize,
 	nodeTitle,
 	networkSummary,
-	type TopologyConnection,
 	type TopologyGraphLayout,
-	TopologyScale
+	type TopologyPlacement,
+	TopologyScale,
+	widthFitScale
 } from './topology-layout';
+import { GlassSurface } from '@/ui/glass';
 
+const edgeInset = 12;
+const legendInset = 44;
 const minimumScale = TopologyScale.minimum;
 const maximumScale = TopologyScale.maximum;
 
@@ -46,11 +53,7 @@ function useSecondary(opacity: number) {
 
 function Material({ style, children }: { style: object; children: ReactNode }) {
 	if (Platform.OS === 'ios') {
-		return (
-			<BlurView tint="systemMaterial" intensity={100} style={[style, { overflow: 'hidden' }]}>
-				{children}
-			</BlurView>
-		);
+		return <GlassSurface style={[style, { overflow: 'hidden' }]}>{children}</GlassSurface>;
 	}
 	return <View style={[style, { backgroundColor: m3.surfaceContainerHigh }]}>{children}</View>;
 }
@@ -81,24 +84,19 @@ function GridBackground() {
 	);
 }
 
-function EdgeCanvas({ graph }: { graph: TopologyGraphLayout }) {
-	const stroke = useSecondary(0.42);
-	const arrowFill = useSecondary(0.55);
-	const connectors: string[] = [];
-	const arrows: string[] = [];
-	for (const edge of graph.edges) {
-		const source = graph.nodeByID.get(edge.source);
-		const target = graph.nodeByID.get(edge.target);
-		if (!source || !target) continue;
-		const sp = nodePosition(graph, source);
-		const tp = nodePosition(graph, target);
-		const start = { x: sp.x + nodeSize(source).width / 2, y: sp.y };
-		const end = { x: tp.x - nodeSize(target).width / 2, y: tp.y };
-		const control = Math.max((end.x - start.x) * 0.45, 40);
-		connectors.push(
-			`M${start.x} ${start.y} C${start.x + control} ${start.y} ${end.x - control} ${end.y} ${end.x} ${end.y}`
-		);
-		arrows.push(`M${end.x} ${end.y} L${end.x - 9} ${end.y - 5} L${end.x - 9} ${end.y + 5} Z`);
+const railRadius = 10;
+
+function RailCanvas({ graph }: { graph: TopologyGraphLayout }) {
+	const stroke = useSecondary(0.5);
+	const segments: string[] = [];
+	for (const rail of graph.rails) {
+		const last = rail.stops[rail.stops.length - 1];
+		if (last === undefined) continue;
+		segments.push(`M${rail.x} ${rail.top} V${last - railRadius}`);
+		for (const stop of rail.stops)
+			segments.push(
+				`M${rail.x} ${stop - railRadius} Q${rail.x} ${stop} ${rail.x + railRadius} ${stop} H${rail.childLeft}`
+			);
 	}
 	return (
 		<Svg
@@ -110,34 +108,51 @@ function EdgeCanvas({ graph }: { graph: TopologyGraphLayout }) {
 			importantForAccessibility="no-hide-descendants"
 		>
 			<Path
-				d={connectors.join(' ')}
+				d={segments.join(' ')}
 				stroke={stroke}
 				strokeWidth={1.5}
 				strokeLinecap="round"
 				strokeLinejoin="round"
 				fill="none"
 			/>
-			<Path d={arrows.join(' ')} fill={arrowFill} />
 		</Svg>
 	);
 }
 
+function NodeBadge({ text, color }: { text: string; color: string }) {
+	return (
+		<Text
+			style={{
+				fontSize: 12,
+				fontWeight: '600',
+				color,
+				paddingHorizontal: 8,
+				paddingVertical: 3,
+				borderRadius: 999,
+				overflow: 'hidden',
+				backgroundColor: withOpacity(color, 0.14)
+			}}
+		>
+			{text}
+		</Text>
+	);
+}
+
 function NodeCard({
-	node,
-	connections,
+	placement,
 	onSelect
 }: {
-	node: TopologyNode;
-	connections: TopologyConnection[];
+	placement: TopologyPlacement;
 	onSelect: (node: TopologyNode) => void;
 }) {
 	const secondary = useSecondary(1);
-	const tertiary = useSecondary(0.5);
-	const isNetwork = node.type === 'network';
+	const { node, kind, connections, frame } = placement;
+	const isNetwork = kind === 'network';
+	const isLink = kind === 'link';
 	const accent = nodeAccent(node) ?? secondary;
 	const addressLines = nodeAddressLines(node, connections);
-	const summary = networkSummary(node);
-	const size = nodeSize(node);
+	const extraNetworks = placement.memberCount - 1;
+	const iconSize = isLink ? 26 : 34;
 	return (
 		<Pressable
 			onPress={() => onSelect(node)}
@@ -146,88 +161,88 @@ function NodeCard({
 			accessibilityHint="Shows topology details"
 			style={{
 				position: 'absolute',
-				width: size.width,
-				height: size.height,
-				padding: 14,
-				gap: 8,
+				left: frame.x,
+				top: frame.y,
+				width: frame.width,
+				height: frame.height,
+				paddingHorizontal: 12,
+				justifyContent: 'center',
+				gap: 6,
 				borderRadius: Radius.standard,
 				borderCurve: 'continuous',
 				borderWidth: 1,
-				borderColor: withOpacity(accent, 0.55),
-				backgroundColor: colors.secondarySystemGroupedBackground
+				borderStyle: isLink ? 'dashed' : 'solid',
+				borderColor: withOpacity(accent, isLink ? 0.4 : 0.55),
+				backgroundColor: isLink ? 'transparent' : colors.secondarySystemGroupedBackground
 			}}
 		>
 			<View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
 				<View
 					style={{
-						width: 32,
-						height: 32,
-						borderRadius: 16,
+						width: iconSize,
+						height: iconSize,
+						borderRadius: iconSize / 2,
 						alignItems: 'center',
 						justifyContent: 'center',
-						backgroundColor: withOpacity(accent, 0.12)
+						backgroundColor: withOpacity(accent, 0.14)
 					}}
 				>
-					<Icon name={isNetwork ? 'network' : 'shippingbox.fill'} size={17} color={accent} />
+					<Icon
+						name={isNetwork ? 'network' : 'shippingbox.fill'}
+						size={isLink ? 14 : 18}
+						color={accent}
+					/>
 				</View>
-				<View style={{ flex: 1, gap: 2 }}>
-					<Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: colors.label }}>
+				<View style={{ flex: 1, gap: 1 }}>
+					<Text
+						numberOfLines={1}
+						style={{ fontSize: isLink ? 15 : 16, fontWeight: '600', color: colors.label }}
+					>
 						{nodeTitle(node)}
 					</Text>
 					{isNetwork ? (
-						<Text numberOfLines={1} style={{ fontSize: 12, color: secondary }}>
-							{summary}
+						<Text numberOfLines={1} style={{ fontSize: 13, color: secondary }}>
+							{networkSummary(node)}
+						</Text>
+					) : isLink ? (
+						<Text
+							numberOfLines={1}
+							style={{ fontSize: 12, fontFamily: monoFamily, color: secondary }}
+						>
+							{addressLines[0] ?? 'No address'}
 						</Text>
 					) : node.metadata.status ? (
-						<Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '500', color: accent }}>
+						<Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '500', color: accent }}>
 							{capitalizedWords(node.metadata.status)}
 						</Text>
 					) : null}
 				</View>
-				{node.metadata.isDefault === true ? (
-					<Text
-						style={{
-							fontSize: 11,
-							fontWeight: '600',
-							color: systemColors.teal,
-							paddingHorizontal: 6,
-							paddingVertical: 3,
-							borderRadius: 999,
-							overflow: 'hidden',
-							backgroundColor: withOpacity(systemColors.teal, 0.12)
-						}}
-					>
-						Default
-					</Text>
+				{isNetwork ? (
+					node.metadata.isDefault === true ? (
+						<NodeBadge text="Default" color={systemColors.teal} />
+					) : (
+						<NodeBadge text={String(placement.memberCount)} color={secondary} />
+					)
+				) : extraNetworks > 0 && !isLink ? (
+					<NodeBadge text={`+${extraNetworks}`} color={systemColors.teal} />
 				) : null}
 			</View>
-			{!isNetwork ? (
-				<>
+			{kind === 'container' ? (
+				<View style={{ gap: 3 }}>
 					{node.metadata.image ? (
-						<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-							<Icon name="opticaldisc" size={11} color={secondary} />
-							<Text numberOfLines={1} style={{ flex: 1, fontSize: 11, color: secondary }}>
-								{node.metadata.image}
-							</Text>
-						</View>
+						<Text numberOfLines={1} style={{ fontSize: 12, color: secondary }}>
+							{node.metadata.image}
+						</Text>
 					) : null}
-					{addressLines.slice(0, 2).map((line, index) => (
-						<View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-							<Icon name="number" size={11} color={secondary} />
-							<Text
-								numberOfLines={1}
-								style={{ flex: 1, fontSize: 11, fontFamily: monoFamily, color: secondary }}
-							>
-								{line}
-							</Text>
-						</View>
-					))}
-					{addressLines.length > 2 ? (
+					{addressLines[0] ? (
 						<Text
-							style={{ fontSize: 11, color: tertiary }}
-						>{`+${addressLines.length - 2} more connections`}</Text>
+							numberOfLines={1}
+							style={{ fontSize: 12, fontFamily: monoFamily, color: secondary }}
+						>
+							{addressLines[0]}
+						</Text>
 					) : null}
-				</>
+				</View>
 			) : null}
 		</Pressable>
 	);
@@ -244,27 +259,10 @@ const GraphContent = memo(
 	}) {
 		return (
 			<View style={{ width: graph.contentSize.width, height: graph.contentSize.height }}>
-				<EdgeCanvas graph={graph} />
-				{graph.nodes.map((node) => {
-					const position = nodePosition(graph, node);
-					const size = nodeSize(node);
-					return (
-						<View
-							key={node.id}
-							style={{
-								position: 'absolute',
-								left: position.x - size.width / 2,
-								top: position.y - size.height / 2
-							}}
-						>
-							<NodeCard
-								node={node}
-								connections={graph.connectionsByNode.get(node.id) ?? []}
-								onSelect={onSelect}
-							/>
-						</View>
-					);
-				})}
+				<RailCanvas graph={graph} />
+				{graph.placements.map((placement) => (
+					<NodeCard key={placement.key} placement={placement} onSelect={onSelect} />
+				))}
 			</View>
 		);
 	},
@@ -296,20 +294,44 @@ export function TopologyDiagram({
 	});
 	const [select] = useState(() => (node: TopologyNode) => onSelectRef.current(node));
 
-	const fit = (size: { width: number; height: number }, animated: boolean) => {
+	const viewWidth = useSharedValue(0);
+	const viewHeight = useSharedValue(0);
+	const isOverview = useRef(false);
+	const contentWidth = graph.contentSize.width;
+	const contentHeight = graph.contentSize.height;
+
+	const limits = (currentScale: number) => {
+		'worklet';
+		const overflowX = (contentWidth * currentScale - viewWidth.value) / 2;
+		const overflowY = (contentHeight * currentScale - viewHeight.value) / 2;
+		return {
+			minX: overflowX > 0 ? -overflowX - edgeInset : 0,
+			maxX: overflowX > 0 ? overflowX + edgeInset : 0,
+			minY: overflowY > 0 ? -overflowY - edgeInset : overflowY + edgeInset + legendInset,
+			maxY: overflowY + edgeInset + legendInset
+		};
+	};
+
+	const fit = (size: { width: number; height: number }, animated: boolean, overview: boolean) => {
 		if (size.width <= 0 || size.height <= 0) return;
-		const target = fitScale(size, graph.contentSize);
+		const target = overview
+			? fitScale({ width: size.width, height: size.height - legendInset }, graph.contentSize)
+			: widthFitScale(size, graph.contentSize);
+		const top = (contentHeight * target - size.height) / 2 + edgeInset + legendInset;
 		const duration = animated && !reduceMotion ? 300 : 0;
 		scale.set(duration > 0 ? withTiming(target, { duration }) : target);
 		offsetX.set(duration > 0 ? withTiming(0, { duration }) : 0);
-		offsetY.set(duration > 0 ? withTiming(0, { duration }) : 0);
+		offsetY.set(duration > 0 ? withTiming(top, { duration }) : top);
 		savedScale.set(target);
 		savedX.set(0);
-		savedY.set(0);
+		savedY.set(top);
+		isOverview.current = overview;
 	};
 
 	const fitViewport = useEffectEvent((width: number, height: number) => {
-		fit({ width, height }, hasFitted.current);
+		viewWidth.set(width);
+		viewHeight.set(height);
+		fit({ width, height }, hasFitted.current, false);
 		if (width > 0) hasFitted.current = true;
 	});
 
@@ -319,13 +341,21 @@ export function TopologyDiagram({
 
 	const pan = Gesture.Pan()
 		.minDistance(5)
-		.onUpdate((event) => {
-			offsetX.set(savedX.value + event.translationX);
-			offsetY.set(savedY.value + event.translationY);
-		})
-		.onEnd(() => {
+		.onBegin(() => {
+			cancelAnimation(offsetX);
+			cancelAnimation(offsetY);
 			savedX.set(offsetX.value);
 			savedY.set(offsetY.value);
+		})
+		.onUpdate((event) => {
+			const bounds = limits(scale.value);
+			offsetX.set(Math.min(Math.max(savedX.value + event.translationX, bounds.minX), bounds.maxX));
+			offsetY.set(Math.min(Math.max(savedY.value + event.translationY, bounds.minY), bounds.maxY));
+		})
+		.onEnd((event) => {
+			const bounds = limits(scale.value);
+			offsetX.set(withDecay({ velocity: event.velocityX, clamp: [bounds.minX, bounds.maxX] }));
+			offsetY.set(withDecay({ velocity: event.velocityY, clamp: [bounds.minY, bounds.maxY] }));
 		});
 	const pinch = Gesture.Pinch()
 		.onUpdate((event) => {
@@ -333,6 +363,9 @@ export function TopologyDiagram({
 		})
 		.onEnd(() => {
 			savedScale.set(scale.value);
+			const bounds = limits(scale.value);
+			offsetX.set(withTiming(Math.min(Math.max(offsetX.value, bounds.minX), bounds.maxX)));
+			offsetY.set(withTiming(Math.min(Math.max(offsetY.value, bounds.minY), bounds.maxY)));
 		});
 	const gesture = Gesture.Simultaneous(pan, pinch);
 
@@ -410,7 +443,7 @@ export function TopologyDiagram({
 					</Material>
 				</View>
 				<Pressable
-					onPress={() => fit(viewport, true)}
+					onPress={() => fit(viewport, true, !isOverview.current)}
 					accessibilityRole="button"
 					accessibilityLabel="Fit topology to screen"
 					style={{ position: 'absolute', right: 12, bottom: 12 }}

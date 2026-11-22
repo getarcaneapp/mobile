@@ -20,6 +20,7 @@ import { EnvironmentFilterSection } from '@/ui/components/environment-label';
 import { securityFilterActions, useSecurityFilter } from './security-filter-store';
 import { SeverityBadge } from './vulnerability-rows';
 import { severityDisplayLabel, VulnerabilitySeverities } from './vulnerability-model';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 const allImagesTag = '__all_images__';
 
@@ -34,7 +35,13 @@ export function SecurityFilterScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<Form modifiers={[navigationTitle('Filters'), navigationBarTitleDisplayMode('inline')]}>
+					<Form
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Filters'),
+							navigationBarTitleDisplayMode('inline')
+						]}
+					>
 						<EnvironmentFilterSection
 							environments={filter.environments}
 							selection={filter.environmentFilter}

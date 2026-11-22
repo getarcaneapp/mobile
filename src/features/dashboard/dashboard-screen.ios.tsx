@@ -46,7 +46,7 @@ import { CardEntrance } from '@/ui/components/swiftui-motion';
 import { GlassCardBackground } from '@/ui/components/swiftui-surfaces';
 
 import { AllEnvironmentsDashboard } from './components/all-environments-dashboard';
-import { AttentionCenterSheet, AttentionToolbarButton } from './components/attention';
+import { AttentionCenterSheet } from './components/attention';
 import {
 	CountAvailabilityNote,
 	DashboardGreeting,
@@ -321,15 +321,12 @@ export function DashboardScreen() {
 				options={{ title: 'Dashboard', headerTitle: '', headerLargeTitleEnabled: false }}
 			/>
 			<AppToolbar placement="left">
-				<Stack.Toolbar.View>
-					<AttentionToolbarButton
-						items={model.attentionItems}
-						isPresented={model.showAttentionSummary}
-						setPresented={model.setShowAttentionSummary}
-						onSelect={model.performAttention}
-						onOpenCenter={model.openAttentionCenter}
-					/>
-				</Stack.Toolbar.View>
+				<Stack.Toolbar.Button
+					icon="clock.arrow.circlepath"
+					separateBackground
+					accessibilityLabel="Activity Center"
+					onPress={model.openActivityCenter}
+				/>
 			</AppToolbar>
 			{!model.allEnvironmentsPreview ? (
 				<EnvironmentSwitcherToolbarButton
@@ -342,14 +339,6 @@ export function DashboardScreen() {
 				/>
 			) : null}
 			<AppToolbar placement="right">
-				{
-					<Stack.Toolbar.Button
-						icon="clock.arrow.circlepath"
-						separateBackground
-						accessibilityLabel="Activity Center"
-						onPress={model.openActivityCenter}
-					/>
-				}
 				{model.canPrune ? (
 					<Stack.Toolbar.Button
 						icon="trash"
@@ -409,6 +398,7 @@ export function DashboardScreen() {
 									onOpenContainer={model.openContainer}
 									onOpenUpdates={model.openImageUpdates}
 									onOpenSecurity={model.openSecurity}
+									onOpenAttention={model.openAttentionCenter}
 									onAttention={model.runOverviewAction}
 									onOpenActivity={model.openActivity}
 									onOpenJobs={model.openJobs}

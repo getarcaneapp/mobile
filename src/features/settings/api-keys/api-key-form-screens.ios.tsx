@@ -37,6 +37,7 @@ import { ToastHost } from '@/ui/toast';
 import { SettingsSaveBar, SettingsSaveBarSpacer } from '../shared/settings-save-bar';
 import { PermissionPicker } from './permission-picker';
 import { useCreateAPIKey, useEditAPIKey } from './use-api-key-form';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 const permissionsFooter = 'Select at least one permission. API keys cannot exceed your own access.';
 
@@ -115,6 +116,7 @@ function CreateAPIKeyScreenContent() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Create API Key'),
 								navigationBarTitleDisplayMode('inline'),
 								...search,
@@ -223,6 +225,7 @@ function EditAPIKeyScreenContent() {
 					<Toolbar>
 						<Form
 							modifiers={[
+								...sheetGlassModifiers(),
 								navigationTitle('Edit API Key'),
 								navigationBarTitleDisplayMode('inline'),
 								...search,

@@ -48,6 +48,7 @@ import {
 	type PairsField,
 	type SwarmServiceEditorModel
 } from './use-swarm-service-editor';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 const plainField = [textInputAutocapitalization('never'), autocorrectionDisabled()];
 const monoField = [...plainField, font({ textStyle: 'body', design: 'monospaced' })];
@@ -106,7 +107,11 @@ function SwarmServiceEditorScreenContent() {
 				<NavigationStack>
 					<Toolbar>
 						<Form
-							modifiers={[navigationTitle(model.title), navigationBarTitleDisplayMode('inline')]}
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle(model.title),
+								navigationBarTitleDisplayMode('inline')
+							]}
 						>
 							<Section title="Service">
 								<FormTextField

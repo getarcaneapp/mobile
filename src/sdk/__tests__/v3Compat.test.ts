@@ -60,6 +60,18 @@ describe('translateRouteForV3', () => {
 		expect(route('GET', 'app-version')).toBe('GET app/version');
 	});
 
+	it('moves git repositories under gitops', () => {
+		expect(route('GET', 'customize/git-repositories')).toBe('GET gitops/repositories');
+		expect(route('PUT', 'customize/git-repositories/r1')).toBe('PATCH gitops/repositories/r1');
+		expect(route('DELETE', 'customize/git-repositories/r1')).toBe('DELETE gitops/repositories/r1');
+		expect(route('POST', 'customize/git-repositories/r1/test')).toBe(
+			'POST gitops/repositories/r1?action=test'
+		);
+		expect(route('GET', 'customize/git-repositories/r1/branches')).toBe(
+			'GET gitops/repositories/r1/branches'
+		);
+	});
+
 	it('moves notification settings out of the environment scope', () => {
 		expect(route('GET', 'environments/e1/notifications/settings')).toBe(
 			'GET notifications/settings'
@@ -111,6 +123,10 @@ describe('v3 response normalizers', () => {
 		const normalize = v3ResponseNormalizer('GET', 'environments/0/settings');
 		const settings = [{ key: 'oidcEnabled', value: 'true', type: 'bool', locked: true }];
 		expect(normalize?.({ settings, runtime: {}, readOnly: false })).toEqual(settings);
+		expect(
+			v3ResponseNormalizer('GET', 'settings/authentication')?.({ settings, readOnly: false })
+		).toEqual(settings);
+		expect(v3ResponseNormalizer('GET', 'settings')?.({ settings })).toEqual(settings);
 		const envelope = v3ResponseNormalizer('PUT', 'environments/0/settings');
 		expect(envelope?.({ settings, runtime: {}, readOnly: false })).toEqual({
 			success: true,

@@ -13,6 +13,7 @@ import { View } from 'react-native';
 
 import { useAccentColor } from '@/theme/accent';
 import { ToastHost } from '@/ui/toast';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export type BackupFormConfirm = { label: string; disabled: boolean; onPress: () => void };
 
@@ -65,7 +66,9 @@ export function BackupFormChrome({
 			<Host style={{ flex: 1 }}>
 				<NavigationStack>
 					<Toolbar>
-						<Form modifiers={[navigationTitle(title), ...modifiers]}>{children}</Form>
+						<Form modifiers={[...sheetGlassModifiers(), navigationTitle(title), ...modifiers]}>
+							{children}
+						</Form>
 						<Toolbar.Content>
 							{onCancel ? (
 								<ToolbarItem placement="cancellationAction">

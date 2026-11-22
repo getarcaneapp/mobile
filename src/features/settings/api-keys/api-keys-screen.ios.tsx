@@ -193,7 +193,7 @@ export function APIKeysDestination() {
 						/>
 					}
 				>
-					<List.ForEach data={apiKeys} keyExtractor={stableItemKey} estimatedItemSize={64}>
+					<List.ForEach data={apiKeys} keyExtractor={stableItemKey} estimatedItemSize={76}>
 						{({ item }) => <KeyLink model={model} apiKey={item} />}
 					</List.ForEach>
 					<PaginatedListFooter

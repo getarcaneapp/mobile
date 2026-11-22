@@ -3,12 +3,43 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { friendlyErrorMessage } from '@/core/errors';
 import { withCleanup } from '@/core/with-cleanup';
 import { EnvironmentID } from '@/sdk/client/environment';
+import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { PublicSetting } from '@/sdk/models/settings/Settings';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
 function isEnabledValue(value: string | undefined): boolean {
 	return value?.toLowerCase() === 'true';
+}
+
+async function fetchUserSettings(client: ArcaneClient): Promise<Map<string, string>> {
+	const settings = await client.settings.getSettings({ envID: EnvironmentID.localDocker });
+	const values = new Map(settings.map((setting) => [setting.key, setting.value]));
+	if ((await client.apiGeneration()) !== 'v3') return values;
+	const manager = await client.settings
+		.getGlobalSettings({ scope: 'manager' })
+		.catch((): PublicSetting[] => []);
+	for (const setting of manager) values.set(setting.key, setting.value);
+	return values;
+}
+
+async function writeUserSettings(
+	client: ArcaneClient,
+	changes: Record<string, string>
+): Promise<void> {
+	const { avatarMaxUploadSizeMb, ...environment } = changes;
+	const usesGlobal = avatarMaxUploadSizeMb !== undefined && (await client.apiGeneration()) === 'v3';
+	const local = usesGlobal ? environment : changes;
+	if (Object.keys(local).length > 0) {
+		const path = client.rest.environmentPath(EnvironmentID.localDocker, 'settings');
+		await client.rest.put<PublicSetting[]>(path, { body: local });
+	}
+	if (usesGlobal) {
+		await client.settings.updateGlobalSettings({
+			scope: 'manager',
+			body: { avatarMaxUploadSizeMb }
+		});
+	}
 }
 
 export function useUserSettings() {
@@ -41,8 +72,7 @@ export function useUserSettings() {
 		await withCleanup(
 			async () => {
 				try {
-					const settings = await client.settings.getSettings({ envID: EnvironmentID.localDocker });
-					const values = new Map(settings.map((setting) => [setting.key, setting.value]));
+					const values = await fetchUserSettings(client);
 					if (!mounted.current) return;
 
 					const gravatarEnabled = isEnabledValue(values.get('enableGravatar'));
@@ -109,8 +139,7 @@ export function useUserSettings() {
 		await withCleanup(
 			async () => {
 				try {
-					const path = client.rest.environmentPath(EnvironmentID.localDocker, 'settings');
-					await client.rest.put<PublicSetting[]>(path, { body: changedSettings });
+					await writeUserSettings(client, changedSettings);
 					if (!mounted.current) return;
 
 					const gravatarChanged = changedSettings.enableGravatar !== undefined;

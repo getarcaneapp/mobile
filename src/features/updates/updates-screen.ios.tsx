@@ -24,6 +24,7 @@ import { ResourceActionsToolbar } from '@/ui/components/toolbar';
 import { ImageUpdatesView } from './image-updates-view';
 import { EnvironmentPickerRow, UpdaterRunSheet } from './updater-run';
 import { PickerMode, useUpdatesScreen } from './use-updates-screen';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function UpdatesScreen() {
 	const model = useUpdatesScreen();
@@ -59,6 +60,7 @@ export function UpdatesScreen() {
 						<Toolbar>
 							<List
 								modifiers={[
+									...sheetGlassModifiers(),
 									listStyle('insetGrouped'),
 									navigationTitle(PickerMode.title(mode ?? 'history')),
 									navigationBarTitleDisplayMode('inline')

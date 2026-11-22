@@ -90,6 +90,7 @@ import {
 	TrailingField,
 	ValueRow
 } from './compose-ui.ios';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function AddConfigurationToolbar({
 	readOnly,
@@ -316,7 +317,7 @@ function NameSheetContent({
 	return (
 		<NavigationStack>
 			<Toolbar>
-				<Form modifiers={[navigationTitle(title), ...plainTextInput]}>
+				<Form modifiers={[...sheetGlassModifiers(), navigationTitle(title), ...plainTextInput]}>
 					<BoundField placeholder={placeholder} value={name} onChange={setName} />
 					<ErrorText error={error} />
 				</Form>
@@ -775,7 +776,7 @@ function ComposeEntrySheet({
 
 	return (
 		<NavigationStack>
-			<VStack spacing={0}>
+			<VStack modifiers={sheetGlassModifiers()} spacing={0}>
 				<Toolbar>
 					<Form
 						modifiers={[
@@ -1014,7 +1015,13 @@ export function ComposeStringListForm({
 			<Sheet isPresented={adding} onDismiss={() => setAdding(false)}>
 				<NavigationStack>
 					<Toolbar>
-						<Form modifiers={[navigationTitle('Add value'), ...plainTextInput]}>
+						<Form
+							modifiers={[
+								...sheetGlassModifiers(),
+								navigationTitle('Add value'),
+								...plainTextInput
+							]}
+						>
 							<TrailingField title="Value" value={newValue} onChange={setNewValue} />
 							<ErrorText error={error} />
 						</Form>
@@ -1214,7 +1221,7 @@ export function ComposeNetworkAttachmentsForm({
 			</Form>
 			<Sheet isPresented={adding} onDismiss={() => setAdding(false)}>
 				<NavigationStack>
-					<VStack spacing={0}>
+					<VStack modifiers={sheetGlassModifiers()} spacing={0}>
 						<Toolbar>
 							<Form modifiers={[navigationTitle('Add network'), ...plainTextInput]}>
 								<VStack alignment="leading">

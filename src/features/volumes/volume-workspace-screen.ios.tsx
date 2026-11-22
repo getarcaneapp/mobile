@@ -36,6 +36,7 @@ import {
 	useWorkspaceAction,
 	type VolumeWorkspaceModel
 } from './use-volume-workspace';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 function WorkspaceRow({ model, file }: { model: VolumeWorkspaceModel; file: ProjectFile }) {
 	const label = (
@@ -147,7 +148,7 @@ export function VolumeWorkspaceActionScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<Form modifiers={[navigationTitle(model.title)]}>
+					<Form modifiers={[...sheetGlassModifiers(), navigationTitle(model.title)]}>
 						<BoundTextField
 							placeholder={model.placeholder}
 							value={model.input}

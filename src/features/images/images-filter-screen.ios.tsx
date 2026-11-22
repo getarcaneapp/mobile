@@ -30,6 +30,7 @@ import {
 	useImagesFilterStore,
 	type ImagesFilterState
 } from './images-filter-store';
+import { sheetGlassModifiers } from '@/ui/components/swiftui-surfaces';
 
 export function ImagesFilterScreen() {
 	const toolbarSymbol = useAppAccentToolbarSymbol();
@@ -43,7 +44,13 @@ export function ImagesFilterScreen() {
 		<Host style={{ flex: 1 }}>
 			<NavigationStack>
 				<Toolbar>
-					<Form modifiers={[navigationTitle('Filter'), navigationBarTitleDisplayMode('inline')]}>
+					<Form
+						modifiers={[
+							...sheetGlassModifiers(),
+							navigationTitle('Filter'),
+							navigationBarTitleDisplayMode('inline')
+						]}
+					>
 						<Section title="Sort">
 							<Picker
 								label="Sort"
