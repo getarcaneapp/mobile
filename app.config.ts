@@ -46,7 +46,7 @@ const config: ExpoConfig = {
 			ITSAppUsesNonExemptEncryption: false,
 			NSSupportsLiveActivities: true,
 			NSAppTransportSecurity: { NSAllowsArbitraryLoads: true },
-			NSFaceIDUsageDescription: 'Arcane uses Face ID to unlock saved credentials.'
+			NSFaceIDUsageDescription: 'Arcane uses Face ID to unlock the app and saved credentials.'
 		}
 	},
 	android: {
@@ -83,6 +83,10 @@ const config: ExpoConfig = {
 			}
 		],
 		'expo-secure-store',
+		[
+			'expo-local-authentication',
+			{ faceIDPermission: 'Arcane uses Face ID to unlock the app and saved credentials.' }
+		],
 		'@bacons/apple-targets',
 		'expo-localization',
 		'expo-sharing',

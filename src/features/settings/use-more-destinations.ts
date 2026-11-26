@@ -5,11 +5,18 @@ import { AppTabIDs, type AppTab } from '@/core/app-tab';
 import { useClientManager } from '@/stores/client-manager';
 import { resolveTabs, useNavTabsStore } from '@/stores/nav-tabs-store';
 
-import { filterMoreGroups, moreGroups, moreTiles, resourcesTitle } from './more-groups';
+import {
+	filterMoreGroups,
+	moreGroups,
+	moreTiles,
+	resourcesTitle,
+	serverSettingsGroups,
+	workspaceGroups
+} from './more-groups';
 
 export type { MoreDestinationGroup } from './more-groups';
 
-export function useMoreDestinations(search: string) {
+function useDestinationAccess() {
 	const router = useRouter();
 	const canAccess = useClientManager((s) => s.canAccess);
 	const accessGeneration = useClientManager((s) => s.accessGeneration);
@@ -24,26 +31,6 @@ export function useMoreDestinations(search: string) {
 		[pinned, available]
 	);
 
-	const isSearching = search.trim() !== '';
-	const listed = useMemo(
-		() =>
-			isSearching ? available : new Set([...available].filter((tab) => !visibleTabs.has(tab))),
-		[isSearching, available, visibleTabs]
-	);
-	const tiles = useMemo(
-		() => (isSearching ? [] : moreTiles.filter((tab) => listed.has(tab))),
-		[isSearching, listed]
-	);
-	const filteredGroups = useMemo(
-		() =>
-			filterMoreGroups(
-				isSearching ? [{ title: resourcesTitle, tabs: moreTiles }, ...moreGroups] : moreGroups,
-				listed,
-				search
-			),
-		[isSearching, search, listed]
-	);
-
 	const open = (tab: AppTab) => {
 		if (!available.has(tab)) return;
 		if (visibleTabs.has(tab)) {
@@ -53,5 +40,49 @@ export function useMoreDestinations(search: string) {
 		}
 	};
 
-	return { isSearching, tiles, filteredGroups, visibleTabs, open };
+	return { available, visibleTabs, open };
+}
+
+export function useMoreDestinations(search: string) {
+	const { available, visibleTabs, open } = useDestinationAccess();
+	const isSearching = search.trim() !== '';
+	const listed = useMemo(
+		() =>
+			isSearching ? available : new Set([...available].filter((tab) => !visibleTabs.has(tab))),
+		[isSearching, available, visibleTabs]
+	);
+	const tileGroups = useMemo(
+		() =>
+			isSearching
+				? []
+				: filterMoreGroups(
+						[{ title: resourcesTitle, tabs: moreTiles }, ...workspaceGroups],
+						listed,
+						''
+					),
+		[isSearching, listed]
+	);
+	const searchResults = useMemo(
+		() =>
+			isSearching
+				? filterMoreGroups(
+						[{ title: resourcesTitle, tabs: moreTiles }, ...moreGroups],
+						listed,
+						search
+					)
+				: [],
+		[isSearching, search, listed]
+	);
+	const hasServerSettings = useMemo(
+		() => serverSettingsGroups.some((group) => group.tabs.some((tab) => available.has(tab))),
+		[available]
+	);
+
+	return { isSearching, tileGroups, searchResults, hasServerSettings, visibleTabs, open };
+}
+
+export function useServerSettingsDestinations() {
+	const { available, visibleTabs, open } = useDestinationAccess();
+	const groups = useMemo(() => filterMoreGroups(serverSettingsGroups, available, ''), [available]);
+	return { groups, visibleTabs, open };
 }

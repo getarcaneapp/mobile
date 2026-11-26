@@ -130,6 +130,8 @@ export default function TabStackLayout({ segment }: { segment?: string }) {
 				<Stack.Screen name="swarm-stack-editor" options={largeSheetOptions} />
 				<Stack.Screen name="swarm-kv-create" options={largeSheetOptions} />
 				<Stack.Screen name="swarm-service/[id]/logs" options={fullScreenOptions} />
+				<Stack.Screen name="podman-quadlet-editor" options={largeSheetOptions} />
+				<Stack.Screen name="podman-secret-form" options={largeSheetOptions} />
 			</Stack>
 		</TabStackGroupContext>
 	);

@@ -8,5 +8,8 @@ struct ArcaneWidgetsBundle: WidgetBundle {
         EnvironmentsWidget()
         UpdatesWidget()
         DeployLiveActivity()
+        ContainerActionControl()
+        ProjectActionControl()
+        DestinationControl()
     }
 }

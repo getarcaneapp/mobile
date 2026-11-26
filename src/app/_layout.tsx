@@ -6,8 +6,12 @@ import { AppState, Platform, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
+import { AppLock } from '@/core/app-lock/app-lock-store';
 import { Keys, useStoredString } from '@/core/storage';
 import { startEnvironmentChangeWatcher } from '@/core/environment-change-watcher';
+import { startQuickActions } from '@/core/quick-actions';
+import { startShortcutPublisher } from '@/core/shortcuts/shortcut-publisher';
+import { startPodmanStatusWatcher } from '@/core/podman-status-watcher';
 import { startWidgetPublisher } from '@/core/widgets/widget-publisher';
 import { useClientManager } from '@/stores/client-manager';
 import { useLaunchSplash } from '@/stores/launch-splash-store';
@@ -15,6 +19,7 @@ import { usePushNotificationCoordinator } from '@/stores/push-notification-coord
 import { useAccentColor } from '@/theme/accent';
 import { applyStoredColorScheme } from '@/theme/color-scheme';
 import { useAppearanceRemountKey } from '@/theme/use-appearance-remount';
+import { AppLockOverlay } from '@/ui/components/app-lock-overlay';
 import { ArcaneLaunchSplash } from '@/ui/components/arcane-launch-splash';
 import { DeleteConfirmationHost } from '@/ui/components/delete-confirmation';
 import { ToastHost } from '@/ui/toast';
@@ -38,8 +43,12 @@ export default function RootLayout() {
 
 	useEffect(() => usePushNotificationCoordinator.getState().observeDeviceToken(), []);
 
+	useEffect(() => AppLock.start(), []);
 	useEffect(() => startWidgetPublisher(), []);
+	useEffect(() => startQuickActions(), []);
+	useEffect(() => startShortcutPublisher(), []);
 	useEffect(() => startEnvironmentChangeWatcher(), []);
+	useEffect(() => startPodmanStatusWatcher(), []);
 
 	useEffect(() => {
 		const subscription = AppState.addEventListener('change', (state) => {
@@ -112,6 +121,7 @@ export default function RootLayout() {
 					{showsLaunchSplash ? (
 						<ArcaneLaunchSplash accentColorHex={accentColorHex} onFinished={dismissLaunchSplash} />
 					) : null}
+					<AppLockOverlay />
 				</ThemeProvider>
 			</KeyboardProvider>
 		</GestureHandlerRootView>

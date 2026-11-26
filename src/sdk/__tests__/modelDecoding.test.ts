@@ -4,6 +4,7 @@ import { describe, it } from 'vite-plus/test';
 import { parseArcaneJSON } from '../http/json';
 import { ActivityStatus } from '../models/activity/Activity';
 import { ContainerListResponse } from '../models/container/ContainerDetails';
+import { ProjectURL } from '../models/project/Project';
 
 function row(id: string, extra: Record<string, unknown> = {}) {
 	return {
@@ -53,5 +54,19 @@ describe('open enums with unknown(String)', () => {
 		assert.equal(status, 'paused-by-admin');
 		assert.equal(ActivityStatus.isKnown(status), false);
 		assert.equal(ActivityStatus.isKnown(ActivityStatus.decode('running')), true);
+	});
+});
+
+describe('ProjectURL.decode', () => {
+	it('accepts plain strings and labeled objects', () => {
+		assert.deepEqual(ProjectURL.decode('https://a.example'), { url: 'https://a.example' });
+		assert.deepEqual(ProjectURL.decode({ url: 'https://b.example', label: 'Docs' }), {
+			url: 'https://b.example',
+			label: 'Docs'
+		});
+		assert.deepEqual(ProjectURL.decode({ url: 'https://c.example' }), {
+			url: 'https://c.example',
+			label: undefined
+		});
 	});
 });

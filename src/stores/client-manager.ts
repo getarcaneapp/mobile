@@ -40,6 +40,7 @@ import { migrateAdvancedFeatures } from '@/core/advanced-features';
 import { requiresPasswordChangeGate } from '@/core/auth/password-change';
 import { defaults, Keys, storage } from '@/core/storage';
 import { useConnectionProfileStore } from '@/stores/connection-profile-store';
+import { usePodmanStatusStore } from '@/stores/podman-status-store';
 import { TokenPair } from '@/sdk/auth/TokenStore';
 import { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { APIGeneration } from '@/sdk/client/apiGeneration';
@@ -287,6 +288,10 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 	};
 
 	const bumpAccess = () => set((s) => ({ accessGeneration: s.accessGeneration + 1 }));
+
+	usePodmanStatusStore.subscribe((state, previous) => {
+		if (state.detectedEnvironmentIDs !== previous.detectedEnvironmentIDs) bumpAccess();
+	});
 
 	storage.subscribe(Keys.advancedFeatures, () => {
 		const next = defaults.getBoolean(Keys.advancedFeatures) ?? false;
@@ -701,7 +706,11 @@ export const useClientManager = create<ClientManagerState>((set, get) => {
 		},
 		isOIDCAvailable: () => get().loginCapabilities?.oidcEnabled === true,
 		isLocalAuthAvailable: () => get().loginCapabilities?.localAuthEnabled ?? true,
-		canAccess: (tab) => canAccessTab(tab, get()),
+		canAccess: (tab) =>
+			canAccessTab(tab, {
+				...get(),
+				podmanEnvironmentIDs: usePodmanStatusStore.getState().detectedEnvironmentIDs
+			}),
 		acceptsEnvironmentContext: (id) =>
 			get().allEnvironmentsPreview || get().activeEnvironmentID === id,
 		isCurrentAuthentication,

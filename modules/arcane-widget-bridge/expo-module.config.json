@@ -1,6 +1,7 @@
 {
 	"platforms": ["apple"],
 	"apple": {
-		"modules": ["ArcaneWidgetBridgeModule"]
+		"modules": ["ArcaneWidgetBridgeModule"],
+		"appDelegateSubscribers": ["ArcaneSpotlightAppDelegate"]
 	}
 }

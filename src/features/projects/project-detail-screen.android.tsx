@@ -8,7 +8,6 @@ import {
 	RefreshControl,
 	ScrollView,
 	Text,
-	useWindowDimensions,
 	View
 } from 'react-native';
 
@@ -27,6 +26,7 @@ import { Icon } from '@/ui/Icon';
 import { M3Section, TextButtonRow } from '@/features/containers/android-material';
 import { AndroidResourceActionsToolbar } from '@/features/containers/android-toolbar';
 import { containerIsRunning } from '@/features/containers/container-model';
+import { useContentPaneWidth } from '@/features/navigation/use-navigation-layout';
 
 import { ProjectFileBrowserRow } from './project-file-row';
 import { EmbeddedProjectLogs } from './project-logs';
@@ -126,7 +126,7 @@ function ProjectHeader({ model }: { model: ProjectDetailModel }) {
 					showsHorizontalScrollIndicator={false}
 					contentContainerStyle={{ gap: 12 }}
 				>
-					{links.map((url) => (
+					{links.map(({ url, title }) => (
 						<Pressable
 							key={url}
 							onPress={() => void Linking.openURL(url)}
@@ -134,7 +134,7 @@ function ProjectHeader({ model }: { model: ProjectDetailModel }) {
 							style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
 						>
 							<Icon name="arrow.up.right.square" size={12} color={m3.primary} />
-							<Text style={[m3Type.bodySmall, { color: m3.primary }]}>{url}</Text>
+							<Text style={[m3Type.bodySmall, { color: m3.primary }]}>{title}</Text>
 						</Pressable>
 					))}
 				</ScrollView>
@@ -388,8 +388,7 @@ export function ProjectDetailScreen() {
 		name = ''
 	} = useLocalSearchParams<{ id?: string; envID?: string; name?: string }>();
 	const model = useProjectDetail(envID, id, name);
-	const { width } = useWindowDimensions();
-	const isRegular = width >= 840;
+	const isRegular = useContentPaneWidth() >= 840;
 
 	useDeleteConfirmation(model.showDeleteConfirm, model.setShowDeleteConfirm, {
 		title: 'Delete Project',
@@ -413,7 +412,12 @@ export function ProjectDetailScreen() {
 
 	return (
 		<>
-			<Stack.Screen options={{ title: model.displayName }} />
+			<Stack.Screen
+				options={{
+					title: model.displayName,
+					...(isRegular ? { contentStyle: { backgroundColor: colors.systemBackground } } : {})
+				}}
+			/>
 			<AndroidResourceActionsToolbar
 				primary={model.toolbar.primary}
 				secondary={model.toolbar.secondary}

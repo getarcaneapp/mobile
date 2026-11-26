@@ -16,6 +16,7 @@ import {
 	NetworkTopologyDestination,
 	NetworksDestination
 } from '@/features/networks/networks-destination';
+import { PodmanDestination } from '@/features/podman/podman-destination';
 import { PortsDestination } from '@/features/ports/ports-destination';
 import { SwarmDestination } from '@/features/swarm/swarm-destination';
 import { CustomizeDestination } from '@/features/customize/customize-destination';
@@ -31,7 +32,12 @@ import { OIDCRoleMappingsDestination } from '@/features/settings/rbac/oidc-role-
 import { RolesDestination } from '@/features/settings/rbac/roles-screen';
 import { ContainerRegistriesDestination } from '@/features/settings/registries/container-registries-destination';
 import { AuthenticationDestination } from '@/features/settings/system/authentication-settings-screen';
-import { TimeoutsDestination } from '@/features/settings/system/settings-category-screen';
+import { BrandingDestination } from '@/features/settings/system/branding-settings-screen';
+import { DiagnosticsDestination } from '@/features/settings/system/diagnostics-screen';
+import {
+	TimeoutsDestination,
+	TunnelDestination
+} from '@/features/settings/system/settings-category-screen';
 import { TemplateRegistriesDestination } from '@/features/settings/templates/template-registries-destination';
 import { UsersDestination } from '@/features/settings/users/users-screen';
 import { WebhooksDestination } from '@/features/settings/webhooks/webhooks-screen';
@@ -72,6 +78,8 @@ export function AppTabDestination({ tab }: { tab: AppTab }) {
 			return <EventsDestination />;
 		case 'swarm':
 			return <SwarmDestination />;
+		case 'podman':
+			return <PodmanDestination />;
 		case 'customize':
 			return <CustomizeDestination />;
 		case 'settings':
@@ -100,6 +108,12 @@ export function AppTabDestination({ tab }: { tab: AppTab }) {
 			return <RolesDestination />;
 		case 'timeouts':
 			return <TimeoutsDestination />;
+		case 'tunnel':
+			return <TunnelDestination />;
+		case 'branding':
+			return <BrandingDestination />;
+		case 'diagnostics':
+			return <DiagnosticsDestination />;
 		case 'systemBackups':
 			return <SystemBackupsDestination />;
 		case 'federatedCredentials':

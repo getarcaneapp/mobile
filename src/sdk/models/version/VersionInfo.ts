@@ -11,6 +11,7 @@ export interface VersionInfo {
 	buildTime?: string;
 	displayVersion: string;
 	isSemverVersion: boolean;
+	isStableVersion?: boolean;
 	newestVersion?: string;
 	newestDigest?: string;
 	updateAvailable: boolean;

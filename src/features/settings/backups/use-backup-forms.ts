@@ -16,6 +16,7 @@ import {
 	useEmitOnDismiss,
 	useGlobalPermissions
 } from './backup-scope';
+import { trackSystemBackup } from './backup-live-activity';
 
 export function useDismiss() {
 	const navigation = useNavigation();
@@ -77,13 +78,14 @@ export function useSystemBackupCreate(discover: boolean) {
 						scope.check();
 						showToast(Toasts.info(`Found ${count} backups`));
 					} else {
-						await client.systemBackups.create({
+						const run = await client.systemBackups.create({
 							request: {
 								destination,
 								s3DestinationId,
 								recoveryKey: recoveryKeyValue
 							}
 						});
+						trackSystemBackup(run);
 						scope.check();
 						showToast(Toasts.info('Backup started. Check history for completion.'));
 					}

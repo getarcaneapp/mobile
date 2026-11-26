@@ -2,6 +2,7 @@ import type { EnvironmentID } from '../client/environment';
 import type { RESTService } from '../http/RESTService';
 import type { SettingCategory } from '../models/category/Category';
 import type { SettingsSearchResponse } from '../models/search/Search';
+import { BrandImageSlot } from '../models/settings/BrandImage';
 import type { PublicSetting, SettingDto, UpdateSettings } from '../models/settings/Settings';
 
 export type GlobalSettingsScope = 'manager' | 'authentication';
@@ -60,5 +61,29 @@ export class SettingsService {
 	async categories(): Promise<SettingCategory[]> {
 		const text = await this.rest.transport.rawRequest('settings/categories');
 		return this.rest.transport.decode<SettingCategory[]>(text);
+	}
+
+	async uploadBrandImage(args: {
+		slot: BrandImageSlot;
+		fileURL: string;
+		filename: string;
+		contentType?: string;
+	}): Promise<void> {
+		await this.rest.transport.multipartUpload(BrandImageSlot.uploadPath(args.slot), {
+			method: 'PUT',
+			files: [
+				{
+					fieldName: 'file',
+					filename: args.filename,
+					uri: args.fileURL,
+					contentType: args.contentType
+				}
+			],
+			decode: () => undefined
+		});
+	}
+
+	deleteBrandImage(args: { slot: BrandImageSlot }): Promise<void> {
+		return this.rest.deleteVoid(BrandImageSlot.uploadPath(args.slot));
 	}
 }

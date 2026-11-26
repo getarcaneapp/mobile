@@ -1,5 +1,12 @@
-import { accessSurfaceIDs, isEnvironmentScoped, requiresAdmin, type AppTab } from '@/core/app-tab';
+import {
+	accessSurfaceIDs,
+	isEnvironmentScoped,
+	requiresAccessSurface,
+	requiresAdmin,
+	type AppTab
+} from '@/core/app-tab';
 import { isAdvancedTab } from '@/core/advanced-tabs';
+import type { APIGeneration } from '@/sdk/client/apiGeneration';
 import type { ServerCapabilities } from '@/sdk/client/ServerCapabilities';
 import { PermissionsManifest } from '@/sdk/models/role/PermissionsManifest';
 import type { PublicSetting } from '@/sdk/models/settings/Settings';
@@ -33,6 +40,8 @@ export interface AccessContext {
 	activeEnvironmentID: string;
 	allEnvironmentsPreview: boolean;
 	advancedFeatures: boolean;
+	apiGeneration?: APIGeneration;
+	podmanEnvironmentIDs?: ReadonlySet<string>;
 }
 
 export function canAccessTab(tab: AppTab, context: AccessContext): boolean {
@@ -45,6 +54,14 @@ export function canAccessTab(tab: AppTab, context: AccessContext): boolean {
 			return User.hasPermission(user, 'federated:list');
 		case 'systemBackups':
 			return User.isGlobalAdmin(user) && User.hasPermission(user, 'system-backups:read');
+		case 'podman':
+			if (
+				context.apiGeneration !== 'v3' ||
+				!context.podmanEnvironmentIDs?.has(context.activeEnvironmentID) ||
+				!User.hasPermission(user, 'podman:read', context.activeEnvironmentID)
+			)
+				return false;
+			break;
 		default:
 			break;
 	}
@@ -53,6 +70,7 @@ export function canAccessTab(tab: AppTab, context: AccessContext): boolean {
 	const surfaces = accessSurfaceIDs(tab).filter((id) =>
 		manifest?.accessSurfaces.some((surface) => surface.id === id)
 	);
+	if (requiresAccessSurface(tab) && surfaces.length === 0) return false;
 	if (manifest && surfaces.length > 0) {
 		const scopes =
 			context.allEnvironmentsPreview && isEnvironmentScoped(tab)

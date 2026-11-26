@@ -28,6 +28,8 @@ import { ProjectsService } from '../services/ProjectsService';
 import { RolesService } from '../services/RolesService';
 import { S3DestinationsService } from '../services/S3DestinationsService';
 import { SettingsService } from '../services/SettingsService';
+import { DiagnosticsService } from '../services/DiagnosticsService';
+import { PodmanService } from '../services/PodmanService';
 import { SwarmService } from '../services/SwarmService';
 import { SystemBackupsService } from '../services/SystemBackupsService';
 import { SystemService } from '../services/SystemService';
@@ -93,6 +95,7 @@ export class ArcaneClient {
 	readonly volumes: VolumesService;
 	readonly networks: NetworksService;
 	readonly projects: ProjectsService;
+	readonly podman: PodmanService;
 	readonly swarm: SwarmService;
 	readonly system: SystemService;
 	readonly dashboard: DashboardService;
@@ -107,6 +110,7 @@ export class ArcaneClient {
 	readonly builds: BuildsService;
 	readonly jobs: JobsService;
 	readonly settings: SettingsService;
+	readonly diagnostics: DiagnosticsService;
 	readonly updater: UpdaterService;
 	readonly vulnerabilities: VulnerabilitiesService;
 	readonly ports: PortsService;
@@ -176,6 +180,7 @@ export class ArcaneClient {
 		this.volumes = new VolumesService(rest);
 		this.networks = new NetworksService(rest);
 		this.projects = new ProjectsService(rest);
+		this.podman = new PodmanService(rest);
 		this.swarm = new SwarmService(rest);
 		this.system = new SystemService(rest);
 		this.dashboard = new DashboardService(rest);
@@ -190,6 +195,7 @@ export class ArcaneClient {
 		this.builds = new BuildsService(rest);
 		this.jobs = new JobsService(rest);
 		this.settings = new SettingsService(rest);
+		this.diagnostics = new DiagnosticsService(rest);
 		this.updater = new UpdaterService(rest);
 		this.vulnerabilities = new VulnerabilitiesService(rest);
 		this.ports = new PortsService(rest);

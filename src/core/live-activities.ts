@@ -17,9 +17,12 @@ type Entry = {
 	sentAt: number;
 	pending?: LiveActivityContentState;
 	timer?: ReturnType<typeof setTimeout>;
+	heartbeat?: ReturnType<typeof setInterval>;
 };
 
 const minimumUpdateIntervalMs = 1000;
+const heartbeatCheckMs = 15_000;
+const heartbeatRefreshMs = 30_000;
 const lingerSeconds: Record<LiveActivityOutcome, number> = {
 	success: 4,
 	failure: 8,
@@ -68,8 +71,15 @@ function flushPending(entry: Entry) {
 	if (pending && current === entry) send(entry, pending);
 }
 
+function refresh(entry: Entry) {
+	if (current !== entry || entry.pending) return;
+	if (Date.now() - entry.sentAt >= heartbeatRefreshMs) send(entry, entry.sent);
+}
+
 function end(entry: Entry, state: LiveActivityContentState | undefined, linger: number) {
 	clearPending(entry);
+	if (entry.heartbeat) clearInterval(entry.heartbeat);
+	entry.heartbeat = undefined;
 	if (current === entry) current = undefined;
 	enqueue(entry, (id) => ArcaneWidgetBridge.endActivity(id, state, linger));
 }
@@ -86,7 +96,15 @@ export const LiveActivities = {
 		const id = ArcaneWidgetBridge.areActivitiesEnabled()
 			? ArcaneWidgetBridge.startActivity(attributes, state).catch(() => undefined)
 			: Promise.resolve(undefined);
-		current = { key, id, tail: Promise.resolve(), sent: state, sentAt: Date.now() };
+		const entry: Entry = { key, id, tail: Promise.resolve(), sent: state, sentAt: Date.now() };
+		entry.heartbeat = setInterval(() => refresh(entry), heartbeatCheckMs);
+		current = entry;
+	},
+
+	isSupported,
+
+	isActive(key: string) {
+		return current?.key === key;
 	},
 
 	update(key: string, update: LiveActivityProgress) {
@@ -100,7 +118,7 @@ export const LiveActivities = {
 		const latest = entry.pending ?? entry.sent;
 		if (latest.phase === state.phase && latest.progress === state.progress) return;
 		const elapsed = Date.now() - entry.sentAt;
-		if (state.phase !== entry.sent.phase || elapsed >= minimumUpdateIntervalMs) {
+		if (!entry.timer && elapsed >= minimumUpdateIntervalMs) {
 			send(entry, state);
 			return;
 		}
@@ -108,13 +126,13 @@ export const LiveActivities = {
 		entry.timer ??= setTimeout(() => flushPending(entry), minimumUpdateIntervalMs - elapsed);
 	},
 
-	finish(key: string, outcome: LiveActivityOutcome, progress?: number) {
+	finish(key: string, outcome: LiveActivityOutcome, progress?: number, phase?: string) {
 		const entry = current;
 		if (!entry || entry.key !== key) return;
 		end(
 			entry,
 			{
-				phase: outcomePhase[outcome],
+				phase: phase ?? outcomePhase[outcome],
 				progress: outcome === 'success' ? 1 : normalizedProgress(progress),
 				state: outcome === 'success' ? 'success' : 'failure'
 			},
@@ -122,9 +140,18 @@ export const LiveActivities = {
 		);
 	},
 
+	dismiss(key: string) {
+		const entry = current;
+		if (!entry || entry.key !== key) return;
+		end(entry, undefined, 0);
+	},
+
 	endAll() {
 		if (!isSupported()) return;
-		if (current) clearPending(current);
+		if (current) {
+			clearPending(current);
+			if (current.heartbeat) clearInterval(current.heartbeat);
+		}
 		current = undefined;
 		void ArcaneWidgetBridge.endAllActivities().catch(() => {});
 	}

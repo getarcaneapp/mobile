@@ -12,6 +12,7 @@ export const AppTabIDs = [
 	'networkTopology',
 	'volumes',
 	'swarm',
+	'podman',
 	'events',
 	'customize',
 	'settings',
@@ -33,17 +34,21 @@ export const AppTabIDs = [
 	'federatedCredentials',
 	'timeouts',
 	'activityHistory',
-	'builds'
+	'builds',
+	'branding',
+	'tunnel',
+	'diagnostics'
 ] as const;
 
 export type AppTab = (typeof AppTabIDs)[number];
 
-export type AppTabSection = 'management' | 'resources' | 'swarm' | 'administration';
+export type AppTabSection = 'management' | 'resources' | 'swarm' | 'podman' | 'administration';
 
 export const sectionTitle: Record<AppTabSection, string> = {
 	management: 'Management',
 	resources: 'Resources',
 	swarm: 'Swarm',
+	podman: 'Podman',
 	administration: 'Administration'
 };
 
@@ -59,6 +64,7 @@ export const tabTitle: Record<AppTab, string> = {
 	networkTopology: 'Topology',
 	volumes: 'Volumes',
 	swarm: 'Swarm',
+	podman: 'Podman',
 	events: 'Events',
 	customize: 'Customize',
 	settings: 'More',
@@ -80,7 +86,10 @@ export const tabTitle: Record<AppTab, string> = {
 	oidcRoleMappings: 'OIDC Role Mappings',
 	timeouts: 'Timeouts',
 	activityHistory: 'Activity History',
-	builds: 'Builds'
+	builds: 'Builds',
+	branding: 'Branding',
+	tunnel: 'Agent Tunnel',
+	diagnostics: 'Diagnostics'
 };
 
 export function tabBarTitle(tab: AppTab): string {
@@ -95,6 +104,8 @@ export function tabBarTitle(tab: AppTab): string {
 			return 'OIDC Roles';
 		case 'activities':
 			return 'Activity';
+		case 'tunnel':
+			return 'Tunnel';
 		default:
 			return tabTitle[tab];
 	}
@@ -112,6 +123,7 @@ export const systemImage: Record<AppTab, string> = {
 	networkTopology: 'point.topleft.down.curvedto.point.bottomright.up',
 	volumes: 'externaldrive.fill',
 	swarm: 'square.stack.3d.up',
+	podman: 'cube.transparent',
 	events: 'clock.badge.exclamationmark',
 	customize: 'paintbrush.pointed.fill',
 	settings: 'ellipsis.circle.fill',
@@ -133,7 +145,10 @@ export const systemImage: Record<AppTab, string> = {
 	oidcRoleMappings: 'person.badge.key.fill',
 	timeouts: 'clock',
 	activityHistory: 'list.bullet.rectangle',
-	builds: 'hammer.fill'
+	builds: 'hammer.fill',
+	branding: 'paintpalette.fill',
+	tunnel: 'cable.connector',
+	diagnostics: 'stethoscope'
 };
 
 export function iconColor(tab: AppTab): SystemColorName {
@@ -168,6 +183,7 @@ export function iconColor(tab: AppTab): SystemColorName {
 		case 'customize':
 		case 'containerRegistries':
 		case 'roles':
+		case 'podman':
 			return 'purple';
 		case 'settings':
 			return 'gray';
@@ -180,7 +196,12 @@ export function iconColor(tab: AppTab): SystemColorName {
 		case 'apiKeys':
 			return 'yellow';
 		case 'jobs':
+		case 'branding':
 			return 'pink';
+		case 'tunnel':
+			return 'cyan';
+		case 'diagnostics':
+			return 'green';
 		case 'timeouts':
 		case 'builds':
 			return 'brown';
@@ -203,6 +224,8 @@ export function section(tab: AppTab): AppTabSection {
 			return 'resources';
 		case 'swarm':
 			return 'swarm';
+		case 'podman':
+			return 'podman';
 		default:
 			return 'administration';
 	}
@@ -229,7 +252,10 @@ export function children(tab: AppTab): AppTab[] {
 				'roles',
 				'timeouts',
 				'activityHistory',
-				'builds'
+				'builds',
+				'branding',
+				'tunnel',
+				'diagnostics'
 			];
 		default:
 			return [];
@@ -260,6 +286,9 @@ export function parent(tab: AppTab): AppTab | undefined {
 		case 'timeouts':
 		case 'activityHistory':
 		case 'builds':
+		case 'branding':
+		case 'tunnel':
+		case 'diagnostics':
 			return 'settings';
 		default:
 			return undefined;
@@ -313,6 +342,20 @@ export function requiresAdmin(tab: AppTab): boolean {
 		case 'timeouts':
 		case 'activityHistory':
 		case 'builds':
+		case 'branding':
+		case 'tunnel':
+		case 'diagnostics':
+			return true;
+		default:
+			return false;
+	}
+}
+
+export function requiresAccessSurface(tab: AppTab): boolean {
+	switch (tab) {
+		case 'branding':
+		case 'tunnel':
+		case 'diagnostics':
 			return true;
 		default:
 			return false;
@@ -332,6 +375,7 @@ export function isEnvironmentScoped(tab: AppTab): boolean {
 		case 'gitOps':
 		case 'jobs':
 		case 'swarm':
+		case 'podman':
 			return true;
 		default:
 			return false;
@@ -362,6 +406,14 @@ export function accessSurfaceIDs(tab: AppTab): string[] {
 			return ['route.volumes'];
 		case 'swarm':
 			return ['route.swarm'];
+		case 'podman':
+			return [
+				'route.podman',
+				'route.podman.quadlets',
+				'route.podman.kube',
+				'route.podman.secrets',
+				'route.podman.autoupdate'
+			];
 		case 'events':
 			return ['route.events'];
 		case 'customize':
@@ -387,7 +439,9 @@ export function accessSurfaceIDs(tab: AppTab): string[] {
 				'settings.category.appearance',
 				'settings.category.build',
 				'settings.category.timeouts',
-				'settings.category.diagnostics'
+				'settings.category.diagnostics',
+				'settings.category.branding',
+				'settings.category.tunnel'
 			];
 		case 'templateRegistries':
 			return ['customize.category.templates', 'route.projects.templates'];
@@ -419,6 +473,12 @@ export function accessSurfaceIDs(tab: AppTab): string[] {
 			return ['settings.category.activity'];
 		case 'builds':
 			return ['settings.category.build'];
+		case 'branding':
+			return ['settings.category.branding'];
+		case 'tunnel':
+			return ['settings.category.tunnel'];
+		case 'diagnostics':
+			return ['settings.category.diagnostics'];
 		case 'activities':
 			return ['route.activities'];
 		case 'systemBackups':

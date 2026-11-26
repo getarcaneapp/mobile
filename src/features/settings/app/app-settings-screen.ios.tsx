@@ -29,6 +29,7 @@ import {
 import { advancedFeaturesDescription, advancedFeaturesTitle } from '@/core/advanced-tabs';
 import { Stack } from 'expo-router';
 
+import { AppLockGrace } from '@/core/app-lock/app-lock-policy';
 import { LiveStatsLimit } from '@/stores/dashboard-stream-logic';
 import { systemColors } from '@/theme/colors';
 import { DisclosureChevron, SettingsRow } from '@/ui/settings-row';
@@ -47,6 +48,7 @@ export function AppSettingsScreen() {
 			<Host style={{ flex: 1 }}>
 				<List modifiers={[listStyle('insetGrouped')]}>
 					<GeneralSection model={model} />
+					<SecuritySection model={model} />
 					<AdvancedSection model={model} />
 					<DashboardSection model={model} />
 					<NotificationsSection model={model} />
@@ -76,6 +78,34 @@ function GeneralSection({ model }: { model: AppSettingsModel }) {
 					color={systemColors.indigo}
 				/>
 			</Toggle>
+		</Section>
+	);
+}
+
+function SecuritySection({ model }: { model: AppSettingsModel }) {
+	return (
+		<Section title="Security">
+			<Toggle isOn={model.appLockEnabled} onIsOnChange={model.setAppLockEnabled}>
+				<SettingsRow
+					title={model.appLockTitle}
+					systemImage="lock.fill"
+					color={systemColors.green}
+				/>
+			</Toggle>
+			{model.appLockEnabled ? (
+				<Picker<number>
+					label={<SettingsRow title="Lock" systemImage="timer" color={systemColors.gray} />}
+					selection={model.appLockGrace}
+					onSelectionChange={model.setAppLockGrace}
+					modifiers={[pickerStyle('menu')]}
+				>
+					{AppLockGrace.choices.map((choice) => (
+						<Text key={choice} modifiers={[tag(choice)]}>
+							{AppLockGrace.title(choice)}
+						</Text>
+					))}
+				</Picker>
+			) : null}
 		</Section>
 	);
 }

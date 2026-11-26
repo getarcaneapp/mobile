@@ -14,10 +14,11 @@ export const moreTiles: AppTab[] = [
 	'networkTopology',
 	'volumes',
 	'swarm',
+	'podman',
 	'imageVulnerabilities'
 ];
 
-export const moreGroups: MoreDestinationGroup[] = [
+export const workspaceGroups: MoreDestinationGroup[] = [
 	{
 		title: 'Activity',
 		tabs: ['updates', 'events', 'activityHistory']
@@ -25,9 +26,14 @@ export const moreGroups: MoreDestinationGroup[] = [
 	{
 		title: 'Automation',
 		tabs: ['gitOps', 'gitRepositories', 'webhooks', 'jobs', 'builds']
-	},
+	}
+];
+
+export const serverSettingsTitle = 'Server Settings';
+
+export const serverSettingsGroups: MoreDestinationGroup[] = [
 	{
-		title: 'Access',
+		title: 'Users & Access',
 		tabs: [
 			'users',
 			'roles',
@@ -38,17 +44,24 @@ export const moreGroups: MoreDestinationGroup[] = [
 		]
 	},
 	{
-		title: 'Server',
+		title: 'Configuration',
 		tabs: [
-			'systemBackups',
 			'notifications',
 			'variables',
-			'templateRegistries',
 			'containerRegistries',
-			'timeouts'
+			'templateRegistries',
+			'timeouts',
+			'tunnel',
+			'branding'
 		]
+	},
+	{
+		title: 'Maintenance',
+		tabs: ['systemBackups', 'diagnostics']
 	}
 ];
+
+export const moreGroups: MoreDestinationGroup[] = [...workspaceGroups, ...serverSettingsGroups];
 
 export const moreTileColumns = 3;
 

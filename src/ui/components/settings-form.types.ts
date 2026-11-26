@@ -20,6 +20,7 @@ export type SettingFieldDef = {
 	maxValue?: number;
 	stacked?: boolean;
 	visibleWhen?: SettingFieldCondition;
+	hiddenWhenUnsupported?: boolean;
 };
 
 export type SettingsSectionDef = { id: string; title: string; fields: SettingFieldDef[] };
@@ -430,12 +431,52 @@ export const timeoutSettings: SettingsCategoryDef = {
 	]
 };
 
+export const tunnelSettings: SettingsCategoryDef = {
+	id: 'tunnel',
+	title: 'Agent Tunnel',
+	icon: 'cable.connector',
+	summary: 'Agent tunnel buffer windows',
+	sections: [
+		{
+			id: 'buffer-windows',
+			title: 'Buffer Windows',
+			fields: [
+				{
+					key: 'http2ReceiveWindowMb',
+					label: 'HTTP/2 Receive Window (MiB)',
+					type: number,
+					description: 'Applies to the manager only. Requires restarting the manager.',
+					minValue: 1,
+					maxValue: 256,
+					hiddenWhenUnsupported: true
+				},
+				{
+					key: 'agentTunnelStreamWindowMb',
+					label: 'Stream Window (MiB)',
+					type: number,
+					description: 'Applies on the next tunnel reconnect.',
+					minValue: 1,
+					maxValue: 64,
+					hiddenWhenUnsupported: true
+				}
+			]
+		}
+	]
+};
+
 export function rangeHint(field: SettingFieldDef): string | undefined {
 	const { minValue: min, maxValue: max } = field;
 	if (min !== undefined && max !== undefined) return `Allowed: ${min}–${max}`;
 	if (min !== undefined) return `Minimum: ${min}`;
 	if (max !== undefined) return `Maximum: ${max}`;
 	return undefined;
+}
+
+export function numberFieldHelper(field: SettingFieldDef): string | undefined {
+	const parts = [field.description, rangeHint(field)].filter(
+		(part): part is string => part !== undefined && part !== ''
+	);
+	return parts.length === 0 ? undefined : parts.join(' ');
 }
 
 export function networkOptions(networkNames: string[], selected: string): string[] {

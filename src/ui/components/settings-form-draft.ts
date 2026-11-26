@@ -58,6 +58,7 @@ export function settingLockCaption(reason: SettingLockReason | undefined): strin
 }
 
 export function isFieldVisible(field: SettingFieldDef, values: Record<string, string>): boolean {
+	if (field.hiddenWhenUnsupported && values[field.key] === undefined) return false;
 	const condition = field.visibleWhen;
 	if (!condition) return true;
 	return values[condition.key] === condition.value;

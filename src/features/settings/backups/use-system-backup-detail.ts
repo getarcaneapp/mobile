@@ -9,6 +9,7 @@ import type { S3Destination } from '@/sdk/models/backup/S3Destination';
 import { useClientManager } from '@/stores/client-manager';
 import { showToast, Toasts } from '@/ui/toast';
 
+import { withRestoreActivity } from './backup-live-activity';
 import type { BackupOperation } from './backup-policy-draft';
 import { useBackupNavigation } from './backup-routes';
 import {
@@ -101,15 +102,15 @@ export function useSystemBackupDetail(entry: BackupHistoryEntry) {
 			async () => {
 				try {
 					if (operation === 'restore') {
-						if (isVolume) {
-							await client.volumes.restoreBackup({
-								envID: EnvironmentID.localDocker,
-								name: entry.resourceName,
-								backupID: entry.id
-							});
-						} else {
-							await client.systemBackups.restore({ id: entry.id, request: { recoveryKey } });
-						}
+						await withRestoreActivity(entry, () =>
+							isVolume
+								? client.volumes.restoreBackup({
+										envID: EnvironmentID.localDocker,
+										name: entry.resourceName,
+										backupID: entry.id
+									})
+								: client.systemBackups.restore({ id: entry.id, request: { recoveryKey } })
+						);
 						scope.check();
 						showToast(
 							Toasts.info('Restore request accepted. Refresh server state before further changes.')

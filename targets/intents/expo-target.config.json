@@ -1,0 +1,11 @@
+{
+	"type": "app-intent",
+	"name": "ArcaneIntents",
+	"displayName": "Arcane Shortcuts",
+	"bundleIdentifier": ".ArcaneIntents",
+	"deploymentTarget": "26.0",
+	"frameworks": ["AppIntents"],
+	"entitlements": {
+		"com.apple.security.application-groups": ["group.com.getarcaneapp.ios.mobile"]
+	}
+}

@@ -7,8 +7,7 @@ import {
 	padding
 } from '@expo/ui/swift-ui/modifiers';
 
-import { useWindowDimensions } from 'react-native';
-
+import { useContentPaneWidth } from '@/features/navigation/use-navigation-layout';
 import { systemColors } from '@/theme/colors';
 import { EnvironmentLabel } from '@/ui/components/environment-label';
 import { imageReferenceParts } from '@/ui/components/image-reference';
@@ -55,7 +54,7 @@ export function ImageRow({
 	environmentName?: string;
 	environmentColor?: string;
 }) {
-	const { width } = useWindowDimensions();
+	const width = useContentPaneWidth();
 	const reference = imageReferenceParts(row.displayName);
 	return (
 		<HStack spacing={12} modifiers={[padding({ vertical: 2 }), accessibilityElement('combine')]}>

@@ -35,7 +35,7 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Platform, useWindowDimensions, View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { colors, systemColors } from '@/theme/colors';
 import { useIsDark } from '@/ui/components/accessibility';
@@ -50,6 +50,7 @@ import { ResourceActionsToolbar } from '@/ui/components/toolbar';
 import { DisclosureChevron } from '@/ui/settings-row';
 
 import { containerIsRunning } from '@/features/containers/container-model';
+import { useContentPaneWidth } from '@/features/navigation/use-navigation-layout';
 
 import { ProjectFileBrowserRow } from './project-file-row';
 import { EmbeddedProjectLogs } from './project-logs';
@@ -71,7 +72,7 @@ import {
 import { pluralCount } from '@/core/plural';
 
 function useIsRegularWidth() {
-	const { width } = useWindowDimensions();
+	const width = useContentPaneWidth();
 	return Platform.OS === 'ios' && Platform.isPad && width >= 600;
 }
 
@@ -111,11 +112,11 @@ function ProjectMetadata({ model }: { model: ProjectDetailModel }) {
 			{links.length > 0 ? (
 				<ScrollView axes="horizontal" modifiers={[scrollIndicators('hidden')]}>
 					<HStack spacing={12} modifiers={[fixedSize({ horizontal: true, vertical: false })]}>
-						{links.map((url) => (
+						{links.map(({ url, title }) => (
 							<Link key={url} destination={url} modifiers={[buttonStyle('borderless')]}>
 								<HStack spacing={4}>
 									<Image systemName="arrow.up.right.square" />
-									<Text>{url}</Text>
+									<Text>{title}</Text>
 								</HStack>
 							</Link>
 						))}

@@ -1,108 +1,42 @@
 import {
 	Button,
 	ContentUnavailableView,
-	Grid,
 	HStack,
 	List,
 	Section,
 	Spacer,
-	Text,
 	TextField,
-	VStack,
 	ZStack
 } from '@expo/ui/swift-ui';
-import { Host } from '@/ui/host';
-import { Image } from '@/ui/components/swiftui-image';
 import {
 	accessibilityHint,
 	autocorrectionDisabled,
 	buttonStyle,
 	contentShape,
-	font,
 	foregroundStyle,
-	frame,
-	lineLimit,
-	listRowBackground,
-	listRowInsets,
 	listSectionSpacing,
 	listStyle,
-	padding,
 	shapes,
 	submitLabel
 } from '@expo/ui/swift-ui/modifiers';
-import type { SFSymbol } from 'sf-symbols-typescript';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 
-import { iconColor, systemImage, tabBarTitle, tabTitle, type AppTab } from '@/core/app-tab';
 import { systemColors } from '@/theme/colors';
-import { DashboardCardBackground } from '@/ui/components/swiftui-surfaces';
-import { DisclosureChevron, SettingsRow } from '@/ui/settings-row';
+import { Image } from '@/ui/components/swiftui-image';
+import { Host } from '@/ui/host';
+import { DisclosureChevron } from '@/ui/settings-row';
 
-import { tileRows } from './more-groups';
-
+import { serverSettingsTitle } from './more-groups';
+import { DestinationRowGroup, LinkRow, TileSection } from './more-parts';
 import { UserAccountLabel } from './user-account-label';
 import { useMoreDestinations } from './use-more-destinations';
-
-function DestinationTile({ tab, onPress }: { tab: AppTab | undefined; onPress: () => void }) {
-	if (tab === undefined) return <Spacer modifiers={[frame({ maxWidth: Infinity })]} />;
-	return (
-		<Button
-			onPress={onPress}
-			modifiers={[buttonStyle('plain'), accessibilityHint(`Opens ${tabTitle[tab]}`)]}
-		>
-			<DashboardCardBackground>
-				<VStack
-					spacing={8}
-					modifiers={[
-						frame({ maxWidth: Infinity, minHeight: 56 }),
-						padding({ vertical: 14, horizontal: 6 }),
-						contentShape(shapes.rectangle())
-					]}
-				>
-					<Image
-						systemName={systemImage[tab] as SFSymbol}
-						modifiers={[
-							font({ textStyle: 'title2' }),
-							foregroundStyle(systemColors[iconColor(tab)]),
-							frame({ height: 30 })
-						]}
-					/>
-					<Text modifiers={[font({ textStyle: 'footnote', weight: 'medium' }), lineLimit(1)]}>
-						{tabBarTitle(tab)}
-					</Text>
-				</VStack>
-			</DashboardCardBackground>
-		</Button>
-	);
-}
-
-function AppRow({
-	title,
-	symbol,
-	color,
-	onPress
-}: {
-	title: string;
-	symbol: string;
-	color: string;
-	onPress: () => void;
-}) {
-	return (
-		<Button onPress={onPress} modifiers={[buttonStyle('plain')]}>
-			<HStack modifiers={[contentShape(shapes.rectangle())]}>
-				<SettingsRow title={title} systemImage={symbol} color={color} />
-				<Spacer />
-				<DisclosureChevron />
-			</HStack>
-		</Button>
-	);
-}
 
 export function MoreScreen() {
 	const router = useRouter();
 	const [search, setSearch] = useState('');
-	const { isSearching, tiles, filteredGroups, visibleTabs, open } = useMoreDestinations(search);
+	const { isSearching, tileGroups, searchResults, hasServerSettings, visibleTabs, open } =
+		useMoreDestinations(search);
 
 	return (
 		<>
@@ -117,129 +51,72 @@ export function MoreScreen() {
 									modifiers={[foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}
 								/>
 								<TextField
-									placeholder="Search destinations"
+									placeholder="Search pages and settings"
 									onTextChange={setSearch}
 									modifiers={[autocorrectionDisabled(true), submitLabel('search')]}
 								/>
 							</HStack>
 						</Section>
-						{isSearching ? null : (
-							<Section>
-								<Button
-									onPress={() => router.push('/(tabs)/(more)/profile')}
-									modifiers={[buttonStyle('plain'), accessibilityHint('Opens profile')]}
-								>
-									<HStack modifiers={[contentShape(shapes.rectangle())]}>
-										<UserAccountLabel />
-										<Spacer />
-										<DisclosureChevron />
-									</HStack>
-								</Button>
-							</Section>
-						)}
-						{tiles.length > 0 ? (
-							<Section>
-								<Grid
-									horizontalSpacing={10}
-									verticalSpacing={10}
-									modifiers={[
-										frame({ maxWidth: Infinity }),
-										listRowBackground('clear'),
-										listRowInsets({ top: 0, leading: 0, bottom: 0, trailing: 0 })
-									]}
-								>
-									{tileRows(tiles).map((row, rowIndex) => (
-										<Grid.Row key={rowIndex}>
-											{row.map((tab, index) => (
-												<DestinationTile
-													key={tab ?? `empty-${index}`}
-													tab={tab}
-													onPress={() => (tab ? open(tab) : undefined)}
-												/>
-											))}
-										</Grid.Row>
-									))}
-								</Grid>
-							</Section>
-						) : null}
-						{filteredGroups.map((group) => (
-							<Section key={group.title} title={group.title}>
-								{group.tabs.map((tab) => {
-									const isTab = visibleTabs.has(tab);
-									return (
-										<Button
-											key={tab}
-											onPress={() => open(tab)}
-											modifiers={[
-												buttonStyle('plain'),
-												accessibilityHint(
-													isTab ? `Switches to the ${tabTitle[tab]} tab` : `Opens ${tabTitle[tab]}`
-												)
-											]}
-										>
-											<HStack
-												modifiers={[
-													frame({ maxWidth: Infinity, alignment: 'leading' }),
-													contentShape(shapes.rectangle())
-												]}
-											>
-												<SettingsRow
-													title={tabTitle[tab]}
-													systemImage={systemImage[tab]}
-													color={systemColors[iconColor(tab)]}
-												/>
-												<Spacer />
-												{isTab ? (
-													<>
-														<Text
-															modifiers={[
-																font({ textStyle: 'caption', weight: 'semibold' }),
-																foregroundStyle({ type: 'hierarchical', style: 'secondary' })
-															]}
-														>
-															Tab
-														</Text>
-														<Image
-															systemName="arrow.turn.down.left"
-															modifiers={[
-																font({ textStyle: 'caption', weight: 'semibold' }),
-																foregroundStyle({ type: 'hierarchical', style: 'tertiary' })
-															]}
-														/>
-													</>
-												) : (
-													<DisclosureChevron />
-												)}
-											</HStack>
-										</Button>
-									);
-								})}
-							</Section>
-						))}
-						{isSearching ? null : (
-							<Section title="App">
-								<AppRow
-									title="App Settings"
-									symbol="gearshape.fill"
-									color={systemColors.gray}
-									onPress={() => router.push('/(tabs)/(more)/app-settings')}
+						{isSearching ? (
+							searchResults.map((group) => (
+								<DestinationRowGroup
+									key={group.title}
+									group={group}
+									visibleTabs={visibleTabs}
+									onOpen={open}
 								/>
-								<AppRow
-									title="Preview Features"
-									symbol="flask.fill"
-									color={systemColors.purple}
-									onPress={() => router.push('/(tabs)/(more)/preview-features')}
-								/>
-								<AppRow
-									title="What's New"
-									symbol="sparkles"
-									color={systemColors.yellow}
-									onPress={() => router.push('/whats-new')}
-								/>
-							</Section>
+							))
+						) : (
+							<>
+								<Section>
+									<Button
+										onPress={() => router.push('/(tabs)/(more)/profile')}
+										modifiers={[buttonStyle('plain'), accessibilityHint('Opens profile')]}
+									>
+										<HStack modifiers={[contentShape(shapes.rectangle())]}>
+											<UserAccountLabel />
+											<Spacer />
+											<DisclosureChevron />
+										</HStack>
+									</Button>
+								</Section>
+								{tileGroups.map((group) => (
+									<TileSection key={group.title} group={group} onOpen={open} />
+								))}
+								<Section title="Settings">
+									{hasServerSettings ? (
+										<LinkRow
+											title={serverSettingsTitle}
+											symbol="server.rack"
+											color={systemColors.indigo}
+											onPress={() => router.push('/(tabs)/(more)/server-settings' as never)}
+										/>
+									) : null}
+									<LinkRow
+										title="App Settings"
+										symbol="gearshape.fill"
+										color={systemColors.gray}
+										onPress={() => router.push('/(tabs)/(more)/app-settings')}
+									/>
+									<LinkRow
+										title="Preview Features"
+										symbol="flask.fill"
+										color={systemColors.purple}
+										onPress={() => router.push('/(tabs)/(more)/preview-features')}
+									/>
+								</Section>
+								<Section>
+									<LinkRow
+										title="What's New"
+										symbol="sparkles"
+										color={systemColors.yellow}
+										onPress={() => router.push('/whats-new')}
+									/>
+								</Section>
+							</>
 						)}
 					</List>
-					{isSearching && filteredGroups.length === 0 ? (
+					{isSearching && searchResults.length === 0 ? (
 						<ContentUnavailableView
 							title={`No Results for “${search}”`}
 							systemImage="magnifyingglass"

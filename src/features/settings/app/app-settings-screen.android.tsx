@@ -2,6 +2,7 @@ import { advancedFeaturesDescription, advancedFeaturesTitle } from '@/core/advan
 import { Stack } from 'expo-router';
 import { Linking, Pressable, ScrollView, Text } from 'react-native';
 
+import { AppLockGrace } from '@/core/app-lock/app-lock-policy';
 import { LiveStatsLimit } from '@/stores/dashboard-stream-logic';
 import { colors, systemColors } from '@/theme/colors';
 import { m3 } from '@/ui/components/material-colors';
@@ -19,6 +20,10 @@ import { supportLinks, useAppSettings } from './use-app-settings';
 const liveStatsOptions = LiveStatsLimit.choices.map((choice) => ({
 	value: choice as number,
 	title: LiveStatsLimit.title(choice)
+}));
+const appLockGraceOptions = AppLockGrace.choices.map((choice) => ({
+	value: choice as number,
+	title: AppLockGrace.title(choice)
 }));
 const toastScopeOptions = ActivityToastScope.allCases.map((scope) => ({
 	value: scope,
@@ -50,6 +55,26 @@ export function AppSettingsScreen() {
 						value={model.rememberLastTab}
 						onValueChange={model.setRememberLastTab}
 					/>
+				</M3Section>
+
+				<M3Section title="Security">
+					<IconSwitchRow
+						title={model.appLockTitle}
+						icon="lock.fill"
+						iconColor={systemColors.green}
+						value={model.appLockEnabled}
+						onValueChange={model.setAppLockEnabled}
+					/>
+					{model.appLockEnabled ? (
+						<MenuValueRow
+							title="Lock"
+							icon="timer"
+							iconColor={systemColors.gray}
+							options={appLockGraceOptions}
+							selection={model.appLockGrace}
+							onSelect={model.setAppLockGrace}
+						/>
+					) : null}
 				</M3Section>
 
 				<M3Section footer={advancedFeaturesDescription}>

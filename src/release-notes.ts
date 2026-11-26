@@ -17,6 +17,61 @@ export const releaseNotes: ReleaseNote[] = [
 			},
 			{
 				text: 'Custom HTTP headers on connection profiles for proxies like Cloudflare Access.'
+			},
+			{
+				text: 'App Lock with Face ID, Touch ID or the device passcode.'
+			},
+			{
+				text: 'Shortcuts and Siri actions to open, start, stop or redeploy containers and projects.'
+			},
+			{
+				text: 'Control Center controls for containers, projects and Arcane sections on iOS.'
+			},
+			{
+				text: 'Containers and projects in Spotlight search on iOS.'
+			},
+			{
+				text: 'Home Screen quick actions for Dashboard, Containers, Projects and Updates.'
+			},
+			{
+				text: 'Sidebar on iPad and navigation rail on Android tablets.'
+			},
+			{
+				text: 'Podman section with pods, quadlets, Kube YAML, secrets and auto-update on Arcane v3.'
+			},
+			{
+				text: 'Live Activities for system backups and restores.'
+			},
+			{
+				text: 'Branding: upload or remove the logo, favicon and app icon on Arcane v3.'
+			},
+			{
+				text: 'Agent Tunnel settings for HTTP/2 and stream buffer windows on Arcane v3.'
+			},
+			{
+				text: 'Diagnostics with live runtime stats, connections, actors, goroutines and logs.'
+			},
+			{
+				text: 'Project links show their labels.'
+			}
+		],
+		changed: [
+			{
+				text: 'More shows pages as tiles, with server settings on their own screen.'
+			},
+			{
+				text: 'Image pulls show combined progress across all layers.'
+			},
+			{
+				text: 'Project builds show the current build step and progress.'
+			}
+		],
+		fixed: [
+			{
+				text: 'Projects failing to load when a project has labeled URLs.'
+			},
+			{
+				text: 'Live Activities going stale during long operations.'
 			}
 		]
 	},

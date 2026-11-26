@@ -185,11 +185,13 @@ export function computeProjectSections<Item extends ProjectListItem>(
 	];
 }
 
-export function projectLinks(project: Pick<ProjectDetails, 'urls'>): string[] {
+export type ProjectLink = { url: string; title: string };
+
+export function projectLinks(project: Pick<ProjectDetails, 'urls'>): ProjectLink[] {
 	const seen = new Set<string>();
-	const links: string[] = [];
+	const links: ProjectLink[] = [];
 	for (const value of project.urls ?? []) {
-		const trimmed = value.trim();
+		const trimmed = value.url.trim();
 		let url: URL;
 		try {
 			url = new URL(trimmed);
@@ -201,7 +203,8 @@ export function projectLinks(project: Pick<ProjectDetails, 'urls'>): string[] {
 		if (url.hostname === '') continue;
 		if (seen.has(trimmed)) continue;
 		seen.add(trimmed);
-		links.push(trimmed);
+		const label = value.label?.trim();
+		links.push({ url: trimmed, title: label ? label : trimmed });
 	}
 	return links;
 }

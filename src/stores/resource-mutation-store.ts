@@ -9,9 +9,11 @@ export type ResourceKind =
 	| 'volumes'
 	| 'networks'
 	| 'environments'
-	| 'swarm';
+	| 'swarm'
+	| 'podman';
 
-const versionKey = (kind: ResourceKind, envID?: EnvironmentID) => `${kind}::${envID ?? '_global_'}`;
+export const versionKey = (kind: ResourceKind, envID?: EnvironmentID) =>
+	`${kind}::${envID ?? '_global_'}`;
 
 type ResourceMutationState = {
 	versions: Readonly<Record<string, number>>;

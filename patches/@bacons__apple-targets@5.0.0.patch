@@ -1,0 +1,22 @@
+diff --git a/build/configuration-list.js b/build/configuration-list.js
+index 3a2a4c124ca58cae8813640dffe0667a98b69e39..8117ff9ded2d21ccda9ed337b04a9a5f8f546e17 100644
+--- a/build/configuration-list.js
++++ b/build/configuration-list.js
+@@ -113,7 +113,7 @@ function createActionConfigurationList({ name, displayName, cwd, bundleId, deplo
+         },
+     };
+ }
+-function createAppIntentConfigurationList({ name, displayName, cwd, bundleId, }) {
++function createAppIntentConfigurationList({ name, displayName, cwd, bundleId, deploymentTarget, }) {
+     const commonBuildSettings = {
+         ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: "YES",
+         CLANG_ANALYZER_NONNULL: "YES",
+@@ -132,7 +132,7 @@ function createAppIntentConfigurationList({ name, displayName, cwd, bundleId, })
+         INFOPLIST_FILE: cwd + "/Info.plist",
+         INFOPLIST_KEY_CFBundleDisplayName: displayName !== null && displayName !== void 0 ? displayName : name,
+         INFOPLIST_KEY_NSHumanReadableCopyright: "",
+-        IPHONEOS_DEPLOYMENT_TARGET: "17.0",
++        IPHONEOS_DEPLOYMENT_TARGET: deploymentTarget !== null && deploymentTarget !== void 0 ? deploymentTarget : "17.0",
+         LD_RUNPATH_SEARCH_PATHS: [
+             "$(inherited)",
+             "@executable_path/Frameworks",

@@ -77,6 +77,35 @@ export const Permission = {
 		unlock: 'swarm:unlock'
 	},
 
+	Podman: {
+		read: 'podman:read',
+		autoUpdate: 'podman:autoupdate',
+		podsList: 'podman-pods:list',
+		podsRead: 'podman-pods:read',
+		podsDelete: 'podman-pods:delete',
+		podsPrune: 'podman-pods:prune',
+		podsStart: 'podman-pods:start',
+		podsStop: 'podman-pods:stop',
+		podsRestart: 'podman-pods:restart',
+		podsPause: 'podman-pods:pause',
+		podsKill: 'podman-pods:kill',
+		quadletsList: 'podman-quadlets:list',
+		quadletsRead: 'podman-quadlets:read',
+		quadletsCreate: 'podman-quadlets:create',
+		quadletsUpdate: 'podman-quadlets:update',
+		quadletsDelete: 'podman-quadlets:delete',
+		quadletsStart: 'podman-quadlets:start',
+		quadletsStop: 'podman-quadlets:stop',
+		quadletsRestart: 'podman-quadlets:restart',
+		secretsList: 'podman-secrets:list',
+		secretsCreate: 'podman-secrets:create',
+		secretsUpdate: 'podman-secrets:update',
+		secretsDelete: 'podman-secrets:delete',
+		kubeRead: 'podman-kube:read',
+		kubeCreate: 'podman-kube:create',
+		kubeDelete: 'podman-kube:delete'
+	},
+
 	Users: {
 		list: 'users:list',
 		read: 'users:read',

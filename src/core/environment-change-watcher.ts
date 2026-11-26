@@ -15,7 +15,8 @@ const allResourceKinds: readonly ResourceKind[] = [
 	'volumes',
 	'networks',
 	'environments',
-	'swarm'
+	'swarm',
+	'podman'
 ];
 
 const kindResources: Readonly<Record<string, readonly ResourceKind[]>> = {
@@ -27,7 +28,7 @@ const kindResources: Readonly<Record<string, readonly ResourceKind[]>> = {
 	volume: ['volumes'],
 	network: ['networks', 'containers'],
 	system: ['containers', 'projects', 'images', 'volumes', 'networks'],
-	podman: ['containers'],
+	podman: ['containers', 'podman'],
 	environment: ['environments'],
 	lifecycle: ['environments'],
 	swarm: ['swarm'],

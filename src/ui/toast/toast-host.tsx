@@ -5,6 +5,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useSegments } from 'expo-router';
 
+import { useNavigationLayout } from '@/features/navigation/use-navigation-layout';
 import { colors } from '@/theme/colors';
 import { useAccentColor } from '@/theme/accent';
 import { CapsuleProgressBorder } from '@/ui/components/capsule-progress-border';
@@ -18,6 +19,7 @@ const barClearance = 60;
 export function ToastHost({ reservesTabBarSpace = true }: { reservesTabBarSpace?: boolean }) {
 	const toast = useToastPresenter((s) => s.activeToast);
 	const insets = useSafeAreaInsets();
+	const showsTabBar = useNavigationLayout() === 'tabBar';
 	return (
 		<View
 			pointerEvents="box-none"
@@ -25,7 +27,7 @@ export function ToastHost({ reservesTabBarSpace = true }: { reservesTabBarSpace?
 				position: 'absolute',
 				left: 0,
 				right: 0,
-				bottom: insets.bottom + (reservesTabBarSpace ? barClearance : 0)
+				bottom: insets.bottom + (reservesTabBarSpace && showsTabBar ? barClearance : 0)
 			}}
 		>
 			{toast ? <ToastCapsule key={toast.id} toast={toast} /> : null}

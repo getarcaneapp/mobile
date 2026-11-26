@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
 import { useAdvancedFeatures } from '@/core/advanced-features';
+import { AppLockGrace, biometryTitle } from '@/core/app-lock/app-lock-policy';
+import { AppLock, useAppLock } from '@/core/app-lock/app-lock-store';
 import { AvatarDiskCache } from '@/core/auth/avatar-disk-cache';
 import { formatFileBytes } from '@/core/networking/remote-data-limits';
 import { ResponseCache } from '@/core/networking/response-cache';
@@ -80,10 +82,28 @@ function useLiveStatsLimit(): [number, (value: number) => void] {
 	return [value, (next) => defaults.set(LiveStatsLimit.preferenceKey, next)];
 }
 
+function useAppLockGrace(): [number, (value: number) => void] {
+	const value = useSyncExternalStore(
+		(listener) => storage.subscribe(Keys.appLockGraceSeconds, listener),
+		() => AppLockGrace.from(defaults.getNumber(Keys.appLockGraceSeconds))
+	);
+	return [value, (next) => defaults.set(Keys.appLockGraceSeconds, next)];
+}
+
+async function changeAppLock(enabled: boolean) {
+	const changed = await AppLock.setEnabled(enabled);
+	if (changed || !enabled) return;
+	if ((await AppLock.availability()) === 'noDeviceSecurity')
+		showToast(Toasts.error('Set a device passcode to use App Lock.'));
+}
+
 type PendingDestructive = 'clearCache';
 
 export function useAppSettings() {
 	const [rememberLastTab, setRememberLastTab] = useStoredBool(Keys.rememberLastTab, true);
+	const [appLockEnabled] = useStoredBool(Keys.appLockEnabled, false);
+	const [appLockGrace, setAppLockGrace] = useAppLockGrace();
+	const biometry = useAppLock((s) => s.biometry);
 	const [advancedFeatures, setAdvancedFeatures] = useAdvancedFeatures();
 	const [liveStatsLimit, storeLiveStatsLimit] = useLiveStatsLimit();
 	const [activityToastScopeRawValue, setActivityToastScopeRawValue] = useStoredString(
@@ -174,6 +194,11 @@ export function useAppSettings() {
 	return {
 		rememberLastTab,
 		setRememberLastTab,
+		appLockEnabled,
+		setAppLockEnabled: (enabled: boolean) => void changeAppLock(enabled),
+		appLockTitle: `Require ${biometryTitle(biometry, Platform.OS === 'ios' ? 'ios' : 'android')}`,
+		appLockGrace,
+		setAppLockGrace,
 		advancedFeatures,
 		setAdvancedFeatures,
 		liveStatsLimit,

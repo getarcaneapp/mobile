@@ -158,25 +158,42 @@ export class LogStream implements AsyncIterable<LogLine> {
 	}
 }
 
+function decodeJSONMessage<Element>(
+	message: WebSocketMessage,
+	decoder: Decoder<Element> | undefined
+): Element {
+	const text = message.kind === 'string' ? message.value : decodeUTF8(message.value);
+	let raw: unknown;
+	try {
+		raw = parseArcaneJSON(text);
+	} catch (error) {
+		throw ArcaneError.decoding(String(error));
+	}
+	return decoder ? decoder(raw) : (raw as Element);
+}
+
 export class StatsStream<Element> implements AsyncIterable<Element> {
 	private readonly transport: ArcaneTransport;
 	private readonly path: string;
 	private readonly query: QueryItem[];
 	private readonly decoder: Decoder<Element> | undefined;
 	private readonly config: WebSocketStreamConfig;
+	private readonly policy: BufferingPolicy;
 
 	constructor(
 		transport: ArcaneTransport,
 		path: string,
 		query: QueryItem[] = [],
 		decode?: Decoder<Element>,
-		config?: WebSocketStreamConfig
+		config?: WebSocketStreamConfig,
+		policy: BufferingPolicy = BufferingPolicy.bufferingNewest(1)
 	) {
 		this.transport = transport;
 		this.path = path;
 		this.query = query;
 		this.decoder = decode;
 		this.config = config ?? transport.webSocketConfig;
+		this.policy = policy;
 	}
 
 	[Symbol.asyncIterator](): AsyncIterator<Element> {
@@ -193,19 +210,10 @@ export class StatsStream<Element> implements AsyncIterable<Element> {
 					encodeOutbound: () => {
 						throw new Error('Stats streams are receive-only');
 					},
-					decodeInbound: (message) => {
-						const text = message.kind === 'string' ? message.value : decodeUTF8(message.value);
-						let raw: unknown;
-						try {
-							raw = parseArcaneJSON(text);
-						} catch (error) {
-							throw ArcaneError.decoding(String(error));
-						}
-						return decoder ? decoder(raw) : (raw as Element);
-					}
+					decodeInbound: (message) => decodeJSONMessage(message, decoder)
 				});
 			},
-			BufferingPolicy.bufferingNewest(1),
+			this.policy,
 			signal
 		);
 	}

@@ -15,8 +15,16 @@ export type LiveActivityContentState = {
 	detail?: string;
 };
 
-declare class ArcaneWidgetBridgeNativeModule extends NativeModule {
+export type SpotlightItem = { id: string; title: string; subtitle: string; kind: string };
+
+type ArcaneWidgetBridgeEvents = { onLink: (event: { url: string }) => void };
+
+declare class ArcaneWidgetBridgeNativeModule extends NativeModule<ArcaneWidgetBridgeEvents> {
 	writeSnapshot(json: string, reload: boolean): Promise<boolean>;
+	writeSharedFile(name: string, json: string): Promise<boolean>;
+	indexSpotlight(items: SpotlightItem[]): Promise<void>;
+	clearSpotlight(): Promise<void>;
+	takePendingLink(): string | null;
 	areActivitiesEnabled(): boolean;
 	startActivity(
 		attributes: LiveActivityAttributes,
@@ -38,6 +46,25 @@ export const ArcaneWidgetBridge = {
 
 	writeSnapshot: async (json: string, reload: boolean): Promise<boolean> =>
 		native ? native.writeSnapshot(json, reload) : false,
+
+	writeSharedFile: async (name: string, json: string): Promise<boolean> =>
+		native ? native.writeSharedFile(name, json) : false,
+
+	indexSpotlight: async (items: SpotlightItem[]): Promise<void> => {
+		if (native) await native.indexSpotlight(items);
+	},
+
+	clearSpotlight: async (): Promise<void> => {
+		if (native) await native.clearSpotlight();
+	},
+
+	takePendingLink: (): string | undefined => native?.takePendingLink() ?? undefined,
+
+	addLinkListener: (listener: (url: string) => void): (() => void) => {
+		if (!native) return () => {};
+		const subscription = native.addListener('onLink', (event) => listener(event.url));
+		return () => subscription.remove();
+	},
 
 	areActivitiesEnabled: (): boolean => native?.areActivitiesEnabled() ?? false,
 

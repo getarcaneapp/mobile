@@ -10,6 +10,7 @@ import {
 } from '@/core/networking/remote-data-limits';
 import { LiveActivities } from '@/core/live-activities';
 import { cachedClient } from '@/core/networking/use-cached-client';
+import { buildStepProgress } from '@/core/operation-progress';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import type { DeployOptions } from '@/sdk/models/project/Project';
 import type { OperationStreamEvent } from '@/sdk/types/streaming/OperationStreamEvent';
@@ -188,6 +189,15 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 			patch({ progressFraction: fraction });
 	};
 
+	const updateBuildStep = (event: OperationStreamEvent): boolean => {
+		const step = buildStepProgress(event);
+		if (!step) return false;
+		updatePhase(step.phase);
+		if (get().operation?.progressFraction !== step.progress)
+			patch({ progressFraction: step.progress });
+		return true;
+	};
+
 	const reportProgress = () => {
 		const operation = get().operation;
 		if (!operation || get().isSheetPresented || operation.status.kind !== 'running') return;
@@ -301,15 +311,20 @@ export const useProjectDeploymentStore = create<State>((set, get) => {
 									? client.projects.pullImagesStream({ envID, projectID: targetID })
 									: client.projects.buildStream({ envID, projectID: targetID });
 					const signal = abort?.signal;
+					let buildStepSeen = false;
 					for await (const event of signal ? stream.withSignal(signal) : stream) {
 						if (get().operation?.id !== operation.id) return;
 						const isError = (event.error?.trim() ?? '') !== '';
 						const display = displayText(event);
 						if (display !== undefined) appendStreamed(display, isError);
 						if (!isError) {
-							const phase = (event.phase ?? event.status)?.trim();
-							if (phase) updatePhase(phase);
-							updateProgress(event);
+							if (kind === 'build' && updateBuildStep(event)) {
+								buildStepSeen = true;
+							} else {
+								const phase = (event.phase ?? event.status)?.trim();
+								if (phase) updatePhase(phase);
+								if (!buildStepSeen) updateProgress(event);
+							}
 						}
 						reportProgress();
 					}

@@ -96,5 +96,8 @@ export const Keys = {
 	lastSelectedTabID: 'arcane.lastSelectedTabID',
 	showTabLabels: 'arcane.showTabLabels',
 	navBarTabs: 'arcane.navBarTabs',
-	advancedFeatures: 'arcane.advancedFeatures'
+	advancedFeatures: 'arcane.advancedFeatures',
+	appLockEnabled: 'arcane.appLockEnabled',
+	appLockGraceSeconds: 'arcane.appLockGraceSeconds',
+	shortcutToken: 'arcane.shortcutToken'
 } as const;

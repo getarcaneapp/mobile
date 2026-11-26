@@ -3,6 +3,7 @@ import { randomUUID } from 'expo-crypto';
 import { friendlyErrorMessage, isCancellation } from '@/core/errors';
 import { LiveActivities } from '@/core/live-activities';
 import { cachedClient } from '@/core/networking/use-cached-client';
+import { createPullProgress } from '@/core/operation-progress';
 import type { ArcaneClient } from '@/sdk/client/ArcaneClient';
 import type { EnvironmentID } from '@/sdk/client/environment';
 import { ArcaneRequestOptions } from '@/sdk/http/requestOptions';
@@ -62,6 +63,7 @@ export function startImagePull(
 	void (async () => {
 		let failure: string | undefined;
 		let progress: number | undefined;
+		const tracker = createPullProgress();
 		try {
 			const { name, tag } = parseImageNameAndTag(reference);
 			for await (const event of client.images.pullStream({
@@ -69,12 +71,10 @@ export function startImagePull(
 				options: { imageName: name, tag }
 			})) {
 				if (event.error) failure = event.error;
-				const detail = event.progressDetail;
-				if (detail?.current !== undefined && detail.total !== undefined && detail.total > 0) {
-					progress = Math.min(Math.max(detail.current / detail.total, 0), 1);
-					showActivityToast(id, title, progress);
-					LiveActivities.update(id, { phase: 'Pulling', progress });
-				}
+				const update = tracker.apply(event);
+				if (update.progress !== progress) showActivityToast(id, title, update.progress);
+				progress = update.progress;
+				LiveActivities.update(id, update);
 			}
 		} catch (error) {
 			failure = isCancellation(error) ? 'Cancelled' : friendlyErrorMessage(error);

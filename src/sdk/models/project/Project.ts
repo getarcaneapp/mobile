@@ -129,6 +129,19 @@ export const ProjectCreateResponse = {
 	}
 } as const;
 
+export interface ProjectURL {
+	url: string;
+	label?: string;
+}
+
+export const ProjectURL = {
+	decode(this: void, raw: unknown): ProjectURL {
+		if (typeof raw === 'string') return { url: raw };
+		const o = D.object(raw, 'ProjectURL');
+		return { url: D.string(o, 'url'), label: D.optString(o, 'label') };
+	}
+} as const;
+
 export interface ProjectDetails {
 	id: string;
 	name: string;
@@ -138,7 +151,7 @@ export interface ProjectDetails {
 	iconUrl?: string;
 	iconLightUrl?: string;
 	iconDarkUrl?: string;
-	urls?: string[];
+	urls?: ProjectURL[];
 	tags?: ProjectTag[];
 	composeContent?: string;
 	composeFileName?: string;
@@ -195,7 +208,7 @@ export const ProjectDetails = {
 			iconUrl: D.optString(o, 'iconUrl'),
 			iconLightUrl: D.optString(o, 'iconLightUrl'),
 			iconDarkUrl: D.optString(o, 'iconDarkUrl'),
-			urls: D.optArray(o, 'urls', D.str),
+			urls: D.optArray(o, 'urls', ProjectURL.decode),
 			tags: D.optArray(o, 'tags', D.cast<ProjectTag>),
 			composeContent: D.optString(o, 'composeContent'),
 			composeFileName: D.optString(o, 'composeFileName'),

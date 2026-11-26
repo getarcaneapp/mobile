@@ -1,13 +1,14 @@
 import { useRootNavigationState, useSegments } from 'expo-router';
 import { NativeTabs } from 'expo-router/native-tabs';
-import { useEffect, useMemo, useRef } from 'react';
-import { Keyboard, Platform } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Keyboard, Platform, View } from 'react-native';
 
-import { AppTabIDs, pinnableTabs, systemImage, tabBarTitle, type AppTab } from '@/core/app-tab';
+import { pinnableTabs, systemImage, tabBarTitle } from '@/core/app-tab';
 import { Keys, storage, useStoredBool } from '@/core/storage';
+import { LargeScreenNavigation } from '@/features/navigation/large-screen-navigation';
+import { useNavigationLayout } from '@/features/navigation/use-navigation-layout';
+import { useVisibleTabs } from '@/features/navigation/use-visible-tabs';
 import { useAutomaticWhatsNewPresentation } from '@/features/whats-new/automatic-whats-new';
-import { useClientManager } from '@/stores/client-manager';
-import { resolveTabs, useNavTabsStore } from '@/stores/nav-tabs-store';
 import { useAccentColor } from '@/theme/accent';
 import { materialSymbol } from '@/ui/symbols';
 
@@ -34,48 +35,45 @@ function TabsNavigationObserver() {
 export default function TabsLayout() {
 	const accent = useAccentColor();
 	const [showTabLabels] = useStoredBool(Keys.showTabLabels, false);
-	const pinned = useNavTabsStore((s) => s.pinnedTabs);
-	const canAccess = useClientManager((s) => s.canAccess);
-	const accessGeneration = useClientManager((s) => s.accessGeneration);
-
-	const visible = useMemo(() => {
-		void accessGeneration;
-		const available = new Set<AppTab>(AppTabIDs.filter(canAccess));
-		return resolveTabs(pinned, available);
-	}, [pinned, canAccess, accessGeneration]);
+	const { visible } = useVisibleTabs();
+	const layout = useNavigationLayout();
 
 	return (
-		<>
+		<View style={{ flex: 1, flexDirection: 'row' }}>
 			<TabsNavigationObserver />
-			<NativeTabs
-				tintColor={accent}
-				minimizeBehavior="never"
-				labelVisibilityMode={showTabLabels ? 'labeled' : 'unlabeled'}
-			>
-				{[...visible, ...pinnableTabs.filter((tab) => !visible.includes(tab))].map((tab) => {
-					return (
-						<NativeTabs.Trigger
-							key={tab}
-							name={`(${tab})`}
-							hidden={!visible.includes(tab)}
-							accessibilityLabel={tabBarTitle(tab)}
-						>
-							<NativeTabs.Trigger.Label hidden={!showTabLabels}>
-								{tabBarTitle(tab)}
-							</NativeTabs.Trigger.Label>
-							<NativeTabs.Trigger.Icon
-								sf={systemImage[tab] as never}
-								md={materialSymbol(systemImage[tab]) as never}
-							/>
-						</NativeTabs.Trigger>
-					);
-				})}
-				<NativeTabs.Trigger name="(more)" role="search" accessibilityLabel="More">
-					<NativeTabs.Trigger.Label hidden={!showTabLabels}>More</NativeTabs.Trigger.Label>
-					<NativeTabs.Trigger.Icon sf="square.grid.2x2.fill" md="more_horiz" />
-				</NativeTabs.Trigger>
-			</NativeTabs>
-		</>
+			<LargeScreenNavigation layout={layout} />
+			<View style={{ flex: 1 }}>
+				<NativeTabs
+					hidden={layout !== 'tabBar'}
+					tintColor={accent}
+					minimizeBehavior="never"
+					labelVisibilityMode={showTabLabels ? 'labeled' : 'unlabeled'}
+				>
+					{[...visible, ...pinnableTabs.filter((tab) => !visible.includes(tab))].map((tab) => {
+						return (
+							<NativeTabs.Trigger
+								key={tab}
+								name={`(${tab})`}
+								hidden={!visible.includes(tab)}
+								accessibilityLabel={tabBarTitle(tab)}
+							>
+								<NativeTabs.Trigger.Label hidden={!showTabLabels}>
+									{tabBarTitle(tab)}
+								</NativeTabs.Trigger.Label>
+								<NativeTabs.Trigger.Icon
+									sf={systemImage[tab] as never}
+									md={materialSymbol(systemImage[tab]) as never}
+								/>
+							</NativeTabs.Trigger>
+						);
+					})}
+					<NativeTabs.Trigger name="(more)" role="search" accessibilityLabel="More">
+						<NativeTabs.Trigger.Label hidden={!showTabLabels}>More</NativeTabs.Trigger.Label>
+						<NativeTabs.Trigger.Icon sf="square.grid.2x2.fill" md="more_horiz" />
+					</NativeTabs.Trigger>
+				</NativeTabs>
+			</View>
+		</View>
 	);
 }
 

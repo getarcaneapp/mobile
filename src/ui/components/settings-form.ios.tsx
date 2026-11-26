@@ -54,7 +54,7 @@ import {
 	filterContainerSelectRows,
 	networkOptions,
 	optionLabel,
-	rangeHint,
+	numberFieldHelper,
 	selectedContainerNames,
 	settingBool,
 	toggleContainerSelection,
@@ -122,7 +122,7 @@ function SettingFieldControl({ field, draft, onOpenContainerSelect }: SettingFie
 					onChangeText={setValue}
 					minValue={field.minValue}
 					maxValue={field.maxValue}
-					helper={rangeHint(field)}
+					helper={numberFieldHelper(field)}
 				/>
 			);
 		case 'password':

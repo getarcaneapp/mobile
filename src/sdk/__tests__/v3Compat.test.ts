@@ -26,6 +26,17 @@ function route(method: string, path: string, query: { name: string; value?: stri
 }
 
 describe('translateRouteForV3', () => {
+	it('maps Podman routes onto agent paths', () => {
+		expect(route('GET', 'environments/e1/podman/status')).toBe('GET agents/e1/podman/status');
+		expect(
+			route('POST', 'environments/e1/podman/pods/web', [{ name: 'action', value: 'restart' }])
+		).toBe('POST agents/e1/podman/pods/web?action=restart');
+		expect(route('PUT', 'environments/0/podman/quadlets/web.container')).toBe(
+			'PUT agents/0/podman/quadlets/web.container'
+		);
+		expect(route('POST', 'environments/0/podman/kube/play')).toBe('POST agents/0/podman/kube/play');
+	});
+
 	it('turns legacy verb endpoints into action queries', () => {
 		expect(route('POST', 'environments/0/containers/abc/restart')).toBe(
 			'POST agents/0/containers/abc?action=restart'
